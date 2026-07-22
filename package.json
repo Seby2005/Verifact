@@ -1,0 +1,28 @@
+{
+  "name": "fact-checker-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open-source AI fact-checking web application",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^14.2.29",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.5.0"
+  }
+}
