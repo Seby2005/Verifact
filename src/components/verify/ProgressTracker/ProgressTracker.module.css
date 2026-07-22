@@ -1,0 +1,137 @@
+.container {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: var(--space-8);
+  }
+}
+
+.header {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-900);
+  margin-bottom: var(--space-2);
+}
+
+.subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+  min-height: 24px;
+  transition: opacity 200ms ease-in-out;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 6px;
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-3);
+}
+
+.progressFill {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: width 300ms ease-in-out;
+}
+
+.timerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  margin-bottom: var(--space-6);
+}
+
+.stepsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.completedStep {
+  color: var(--color-gray-500);
+  opacity: 0.7;
+}
+
+.currentStep {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.pendingStep {
+  color: var(--color-gray-400);
+}
+
+.stepIcon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.checkIcon {
+  color: var(--color-success);
+  font-weight: bold;
+}
+
+.pendingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-gray-300);
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-primary-light);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.motivationalText {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px dashed var(--color-gray-200);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  font-style: italic;
+  color: var(--color-gray-500);
+  transition: opacity 300ms ease-in-out;
+}
