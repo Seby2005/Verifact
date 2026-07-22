@@ -1,0 +1,36 @@
+.card {
+  background-color: var(--color-white);
+  border-radius: var(--radius-md);
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+/* Variants */
+.default {
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-gray-100);
+}
+
+.bordered {
+  border: 1px solid var(--color-gray-200);
+}
+
+.flat {
+  background-color: var(--color-gray-50);
+}
+
+/* Padding */
+.padding-none {
+  padding: 0;
+}
+
+.padding-sm {
+  padding: 0.75rem;
+}
+
+.padding-md {
+  padding: 1.25rem;
+}
+
+.padding-lg {
+  padding: 2rem;
+}

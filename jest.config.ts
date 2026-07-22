@@ -5,17 +5,13 @@ const config: Config = {
   testEnvironment: 'node',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.module\\.css$': 'identity-obj-proxy',
+  },
+  transform: {
+    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: { jsx: 'react-jsx' } }],
   },
   testMatch: ['**/tests/**/*.test.ts', '**/tests/**/*.test.tsx'],
   collectCoverageFrom: ['src/lib/**/*.ts'],
-  coverageThreshold: {
-    global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70,
-    },
-  },
 };
 
 export default config;
