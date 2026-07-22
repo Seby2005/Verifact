@@ -1,0 +1,23 @@
+/* =============================================================================
+   AI Fact-Checker — Global Styles
+   Design system variables and CSS reset will be added in S0-5.
+   ============================================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
