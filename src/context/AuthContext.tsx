@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import type { AuthContextValue, UserProfile, UserTier } from '@/types/user';
 import { TIER_CONFIG } from '@/types/user';
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createBrowserClient();
 
-  const fetchProfile = async (userId: string, email: string): Promise<void> => {
+  const fetchProfile = useCallback(async (userId: string, email: string): Promise<void> => {
     try {
       const { data } = await supabase
         .from('profiles')
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString(),
       });
     }
-  };
+  }, [supabase]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabase, fetchProfile]);
 
   const signOut = async (): Promise<void> => {
     await supabase.auth.signOut();

@@ -89,7 +89,7 @@ export function VerificationHistoryRow({
   return (
     <div className={styles.row}>
       <div className={styles.claimCell} title={item.input_text}>
-        "{truncatedText}"
+        &quot;{truncatedText}&quot;
       </div>
 
       <div>{getVerdictBadge()}</div>

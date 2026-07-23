@@ -10,6 +10,7 @@ export function getAnonymousUsage(): { count: number; lastReset: string } {
 }
 
 export function incrementAnonymousUsage(): void {
+  if (typeof window === 'undefined') return;
   const usage = getAnonymousUsage();
   localStorage.setItem(
     'agy_anon_usage',
