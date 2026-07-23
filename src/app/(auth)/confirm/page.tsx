@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import styles from './Confirm.module.css';
 
-export default function ConfirmPage() {
+function ConfirmContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || 'adresa ta de email';
 
@@ -76,5 +76,13 @@ export default function ConfirmPage() {
         Înapoi la autentificare
       </Link>
     </div>
+  );
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={<div>Se încarcă...</div>}>
+      <ConfirmContent />
+    </Suspense>
   );
 }
