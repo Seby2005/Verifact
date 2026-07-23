@@ -19,7 +19,7 @@ export async function ensureProfileExists(userId: string, _email?: string): Prom
       tier: 'free',
       verifications_count: 0,
       verifications_reset: today,
-    });
+    } as never);
   }
 }
 
