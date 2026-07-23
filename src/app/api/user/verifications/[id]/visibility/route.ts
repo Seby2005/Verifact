@@ -22,7 +22,7 @@ export async function PATCH(
   const supabase = createServerClient();
   const { error } = await supabase
     .from('verifications')
-    .update({ is_public: body.isPublic })
+    .update({ is_public: body.isPublic } as never)
     .eq('id', params.id)
     .eq('user_id', user.id);
 
