@@ -1,10 +1,6 @@
 import { getAuthenticatedUser } from '@/lib/supabase/auth-helpers';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 
-interface ProfileRecord {
-  tier?: string | null;
-}
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const limitParam = parseInt(url.searchParams.get('limit') || '30', 10);
