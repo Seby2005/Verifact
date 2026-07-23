@@ -120,7 +120,7 @@ export async function POST(request: Request): Promise<Response> {
     if (!report.fromCache) {
       await saveVerification(report, supabase);
       if (user) {
-        await incrementUsageCount(user.id);
+        await incrementUsageCount(user.id, supabase);
       }
     }
 
