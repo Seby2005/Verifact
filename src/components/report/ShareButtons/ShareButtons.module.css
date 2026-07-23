@@ -1,0 +1,13 @@
+﻿.wrapper { background: white; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-md); }
+.disclaimer { font-size: 0.8rem; color: var(--color-gray-400); font-style: italic; line-height: 1.5; margin-bottom: 1.25rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.btn { padding: 0.5rem 1rem; border-radius: var(--radius-sm); font-size: 0.875rem; font-weight: 500; cursor: pointer; border: 1px solid transparent; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; transition: all var(--transition-fast); }
+.copyBtn { background: var(--color-primary); color: white; border: none; }
+.copyBtn:hover { background: var(--color-primary-hover); }
+.twitterBtn { background: #000; color: white; }
+.twitterBtn:hover { background: #333; }
+.emailBtn { background: var(--color-gray-100); color: var(--color-gray-700); border-color: var(--color-gray-200); }
+.emailBtn:hover { background: var(--color-gray-200); }
+.reportBtn { background: transparent; color: var(--color-error); border-color: var(--color-error-light); }
+.reportBtn:hover { background: var(--color-error-light); }
+@media (max-width: 480px) { .actions { flex-direction: column; } .btn { justify-content: center; } }

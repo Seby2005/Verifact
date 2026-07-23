@@ -1,0 +1,53 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.socialButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--color-gray-300);
+  background-color: #ffffff;
+  color: var(--color-gray-800);
+}
+
+.socialButton:hover:not(:disabled) {
+  background-color: var(--color-gray-100);
+  border-color: var(--color-gray-400);
+}
+
+.socialButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.googleBtn {
+  background-color: #ffffff;
+}
+
+.githubBtn {
+  background-color: #24292e;
+  color: #ffffff;
+  border-color: #24292e;
+}
+
+.githubBtn:hover:not(:disabled) {
+  background-color: #1b1f23;
+  border-color: #1b1f23;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+}

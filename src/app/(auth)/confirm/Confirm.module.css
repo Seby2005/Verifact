@@ -1,0 +1,73 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+  padding: 12px 0;
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: #eff6ff;
+  color: var(--color-blue-600);
+  font-size: 32px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-gray-900);
+}
+
+.description {
+  font-size: 15px;
+  color: var(--color-gray-600);
+  line-height: 1.6;
+}
+
+.emailHighlight {
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+.resendBtn {
+  padding: 10px 20px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: var(--color-gray-800);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.resendBtn:hover:not(:disabled) {
+  background-color: var(--color-gray-100);
+}
+
+.resendBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.backToLogin {
+  font-size: 14px;
+  color: var(--color-blue-600);
+  text-decoration: none;
+}
+
+.backToLogin:hover {
+  text-decoration: underline;
+}
+
+.notice {
+  font-size: 13px;
+  color: var(--color-green-600);
+}
