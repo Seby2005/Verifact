@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/context/AuthContext';
 import styles from './Navbar.module.css';
 
 export interface NavbarProps {
@@ -12,11 +13,8 @@ export interface NavbarProps {
   onLogout?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({
-  isAuthenticated = false,
-  userInitials = 'FC',
-  onLogout,
-}) => {
+export const Navbar: React.FC<NavbarProps> = () => {
+  const { user, isAuthenticated, isLoading, signOut } = useAuth();
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
@@ -31,13 +29,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsMobileOpen(false);
     setIsDropdownOpen(false);
   }, [pathname]);
 
-  // Close mobile menu on ESC key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
@@ -59,15 +55,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     { href: '/pricing', label: 'Prețuri' },
   ];
 
-  const handleNavClick = (href: string): void => {
-    setIsMobileOpen(false);
-    if (href.startsWith('#')) {
-      const targetEl = document.querySelector(href);
-      if (targetEl) {
-        targetEl.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  };
+  const userInitials = user?.username
+    ? user.username.slice(0, 2).toUpperCase()
+    : user?.email
+    ? user.email.slice(0, 2).toUpperCase()
+    : 'FC';
 
   return (
     <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}>
@@ -115,7 +107,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             </Button>
           </Link>
 
-          {!isAuthenticated ? (
+          {isLoading ? (
+            <div className={styles.skeleton} />
+          ) : !isAuthenticated ? (
             <>
               <Link href="/login">
                 <Button variant="ghost" size="sm">
@@ -141,19 +135,35 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
               {isDropdownOpen && (
                 <div className={styles.dropdown} role="menu">
+                  <div className={styles.dropdownHeader}>
+                    <div className={styles.userName}>
+                      👤 {user?.username || user?.email?.split('@')[0]}
+                    </div>
+                    <div className={styles.userEmail}>{user?.email}</div>
+                    <div className={styles.userUsageBadge}>
+                      [{user?.tier?.toUpperCase()}] {user?.verificationsCount}/{user?.verificationsLimit} folosit
+                    </div>
+                  </div>
+
                   <Link href="/dashboard" className={styles.dropdownItem} role="menuitem">
                     Dashboard
                   </Link>
                   <Link href="/settings" className={styles.dropdownItem} role="menuitem">
-                    Setări
+                    Setări cont
                   </Link>
+                  <Link href="/pricing" className={`${styles.dropdownItem} ${styles.upgradeLink}`} role="menuitem">
+                    Upgrade la Pro →
+                  </Link>
+
+                  <div className={styles.dropdownDivider} />
+
                   <button
                     type="button"
                     className={styles.dropdownItem}
                     role="menuitem"
                     onClick={() => {
                       setIsDropdownOpen(false);
-                      onLogout?.();
+                      signOut();
                     }}
                   >
                     Deconectare
@@ -199,7 +209,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   key={link.href}
                   href={link.href}
                   className={`${styles.mobileNavLink} ${isActive ? styles.mobileActiveLink : ''}`}
-                  onClick={() => handleNavClick(link.href)}
+                  onClick={() => setIsMobileOpen(false)}
                   aria-current={isActive ? 'page' : undefined}
                 >
                   {link.label}
@@ -239,7 +249,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     size="md"
                     onClick={() => {
                       setIsMobileOpen(false);
-                      onLogout?.();
+                      signOut();
                     }}
                   >
                     Deconectare
