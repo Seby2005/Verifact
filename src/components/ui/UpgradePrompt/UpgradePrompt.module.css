@@ -1,0 +1,172 @@
+.inlineBanner {
+  background-color: #fefce8;
+  border: 1px solid #fef08a;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.bannerHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.bannerIcon {
+  font-size: 20px;
+}
+
+.bannerTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #854d0e;
+  line-height: 1.4;
+}
+
+.bannerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btnPrimary {
+  padding: 8px 14px;
+  border-radius: 6px;
+  background-color: var(--color-blue-600);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.btnPrimary:hover {
+  background-color: var(--color-blue-700);
+}
+
+.btnSecondary {
+  padding: 8px 14px;
+  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid #ca8a04;
+  color: #854d0e;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.btnSecondary:hover {
+  background-color: #fef08a;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 200;
+  animation: fadeIn 0.2s ease;
+}
+
+.modalContent {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.rocketIcon {
+  width: 64px;
+  height: 64px;
+  color: var(--color-blue-600);
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-gray-900);
+}
+
+.modalText {
+  font-size: 14px;
+  color: var(--color-gray-600);
+  line-height: 1.5;
+}
+
+.benefitsList {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.benefitItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-gray-800);
+}
+
+.modalCta {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: var(--color-blue-600);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.modalCta:hover {
+  background-color: var(--color-blue-700);
+}
+
+.closeLink {
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--color-gray-500);
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.closeLink:hover {
+  color: var(--color-gray-800);
+  text-decoration: underline;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

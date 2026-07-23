@@ -1,4 +1,4 @@
-﻿import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { verifyContent } from '@/lib/verification/orchestrator';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
 import { saveVerification, checkUsageLimit, incrementUsageCount } from '@/lib/verification/db-operations';
@@ -120,7 +120,7 @@ export async function POST(request: Request): Promise<Response> {
     if (!report.fromCache) {
       await saveVerification(report, supabase);
       if (user) {
-        await incrementUsageCount(user.id, supabase);
+        await incrementUsageCount(user.id);
       }
     }
 
