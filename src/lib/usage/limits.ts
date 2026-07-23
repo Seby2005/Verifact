@@ -2,6 +2,12 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { TIER_CONFIG } from '@/types/user';
 import type { UsageLimitCheck, UserTier } from '@/types/user';
 
+interface ProfileRecord {
+  tier?: string | null;
+  verifications_count?: number | null;
+  verifications_reset?: string | null;
+}
+
 function getFirstOfNextMonth(): string {
   const date = new Date();
   return new Date(date.getFullYear(), date.getMonth() + 1, 1)
@@ -12,12 +18,13 @@ function getFirstOfNextMonth(): string {
 export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> {
   const supabase = createServerClient();
 
-  const { data: profile } = await supabase
+  const { data } = await supabase
     .from('profiles')
     .select('tier, verifications_count, verifications_reset')
     .eq('id', userId)
     .single();
 
+  const profile = data as ProfileRecord | null;
   const today = new Date().toISOString().split('T')[0];
 
   if (!profile) {
@@ -41,7 +48,7 @@ export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> 
       .update({
         verifications_count: 0,
         verifications_reset: firstOfNextMonth,
-      })
+      } as never)
       .eq('id', userId);
     currentCount = 0;
   }
@@ -62,17 +69,18 @@ export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> 
 
 export async function incrementUsageCount(userId: string): Promise<void> {
   const supabase = createServerClient();
-  const { error } = await supabase.rpc('increment_verifications_count', { user_id: userId });
+  const { error } = await supabase.rpc('increment_verifications_count' as never, { user_id: userId } as never);
   if (error) {
     const { data } = await supabase
       .from('profiles')
       .select('verifications_count')
       .eq('id', userId)
       .single();
-    if (data) {
+    const profile = data as ProfileRecord | null;
+    if (profile) {
       await supabase
         .from('profiles')
-        .update({ verifications_count: (data.verifications_count || 0) + 1 })
+        .update({ verifications_count: (profile.verifications_count || 0) + 1 } as never)
         .eq('id', userId);
     }
   }
