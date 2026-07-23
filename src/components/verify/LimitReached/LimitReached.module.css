@@ -1,0 +1,76 @@
+.card {
+  background-color: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 520px;
+  margin: 24px auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 1.375rem;
+  font-weight: 800;
+  color: #92400E;
+  margin-bottom: 8px;
+}
+
+.description {
+  color: #B45309;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.countdown {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #78350F;
+  background-color: #FEF3C7;
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-bottom: 24px;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ctaBtn {
+  background-color: #2563EB;
+  color: #ffffff;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.9375rem;
+  transition: background-color 0.15s ease;
+}
+
+.ctaBtn:hover {
+  background-color: #1D4ED8;
+}
+
+.secondaryBtn {
+  background-color: #ffffff;
+  color: #374151;
+  border: 1px solid #D1D5DB;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.9375rem;
+}
+
+.secondaryBtn:hover {
+  background-color: #F9FAFB;
+}
