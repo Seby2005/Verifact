@@ -1,3 +1,7 @@
+/* =============================================================================
+   Open Source & Transparency Page Module Styles
+   ============================================================================= */
+
 .main {
   width: 100%;
   overflow-x: hidden;
@@ -22,7 +26,13 @@
   gap: var(--space-10);
 }
 
-/* Section 1 - Hero */
+/* === Section 1 — Hero === */
+.heroSection {
+  padding: 96px 20px 80px;
+  background: linear-gradient(180deg, var(--color-blue-50) 0%, var(--color-bg-primary) 100%);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
 .hero {
   text-align: center;
   align-items: center;
@@ -43,26 +53,71 @@
 }
 
 .title {
-  font-size: 40px;
+  font-size: 42px;
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   line-height: var(--line-height-tight);
   margin: 0;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
   font-size: var(--font-size-lg);
   color: var(--color-text-secondary);
-  max-width: 680px;
+  max-width: 720px;
   margin: 0 auto;
   line-height: var(--line-height-relaxed);
+}
+
+.badgeRow {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: var(--space-2);
+}
+
+.badgeItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.badgeMit {
+  background-color: var(--color-yellow-50);
+  color: var(--color-yellow-700);
+  border: 1px solid var(--color-yellow-200);
+}
+
+.badgeTs {
+  background-color: var(--color-blue-50);
+  color: var(--color-blue-700);
+  border: 1px solid var(--color-blue-200);
+}
+
+.badgeCi {
+  background-color: var(--color-green-50);
+  color: var(--color-green-700);
+  border: 1px solid var(--color-green-200);
+}
+
+.heroBtnGroup {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: var(--space-4);
 }
 
 .ctaButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
+  min-height: 46px;
   gap: var(--space-2);
   background-color: var(--color-gray-900);
   color: var(--color-white);
@@ -71,7 +126,6 @@
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
   transition: background-color var(--transition-fast), transform var(--transition-fast);
-  margin-top: var(--space-2);
 }
 
 .ctaButton:hover {
@@ -80,19 +134,30 @@
   text-decoration: none;
 }
 
+.secondaryCtaBtn {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+.secondaryCtaBtn:hover {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-gray-300);
+}
+
 .githubIcon {
   width: 20px;
   height: 20px;
   fill: currentColor;
 }
 
-/* Section 2 - Diagram */
+/* === Section Headers === */
 .sectionHeader {
   text-align: center;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-4);
 }
 
 .sectionTitle {
@@ -100,27 +165,182 @@
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   margin: 0;
+  letter-spacing: -0.3px;
 }
 
 .sectionSubtitle {
   font-size: var(--font-size-base);
   color: var(--color-text-muted);
   margin: 0;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
+/* === Section 2 — Pillars Grid === */
+.pillarsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+}
+
+.pillarCard {
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.pillarCard:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.pillarIconWrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-blue-50);
+  color: var(--color-blue-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pillarTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.pillarText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+/* === Section 3 — Comparison (Open vs Closed) === */
+.comparisonGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+}
+
+.comparisonCard {
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  border: 1px solid;
+}
+
+.openCard {
+  background-color: var(--color-green-50);
+  border-color: var(--color-green-200);
+}
+
+.closedCard {
+  background-color: var(--color-gray-50);
+  border-color: var(--color-gray-200);
+}
+
+.cardHeaderRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.openStatusBadge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 4px 10px;
+  background-color: var(--color-green-100);
+  color: var(--color-green-700);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-sm);
+}
+
+.closedStatusBadge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 4px 10px;
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-sm);
+}
+
+.comparisonCardTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.comparisonList {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.honestNoteBox {
+  background-color: var(--color-blue-50);
+  border: 1px solid var(--color-blue-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.noteIcon {
+  font-size: 24px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.noteContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.noteTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-blue-700);
+  margin: 0;
+}
+
+.noteText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+/* === Section 4 — Diagram & Accordions === */
 .diagramFlow {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-5);
-  padding: var(--space-5) 0;
-}
-
-@media (max-width: 767px) {
-  .diagramFlow {
-    gap: var(--space-3);
-    padding: var(--space-3) 0;
-  }
+  padding: var(--space-3) 0;
 }
 
 .flowBox {
@@ -130,7 +350,7 @@
   padding: var(--space-3) var(--space-6);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
   text-align: center;
 }
 
@@ -144,13 +364,6 @@
   width: 24px;
   height: 24px;
   color: var(--color-gray-400);
-}
-
-@media (max-width: 767px) {
-  .arrowDown {
-    width: 18px;
-    height: 18px;
-  }
 }
 
 .layersGrid {
@@ -231,7 +444,6 @@
   color: #7e22ce;
 }
 
-/* Section 3 - Accordion */
 .accordionList {
   display: flex;
   flex-direction: column;
@@ -300,11 +512,11 @@
   margin-bottom: var(--space-2);
 }
 
-/* Section 4 - Open Source */
+/* === Section 5 — Open Source Code & Contrib === */
 .openSourceCard {
   background-color: var(--color-bg-primary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   padding: var(--space-8);
   display: flex;
   flex-direction: column;
@@ -316,50 +528,57 @@
   margin-top: var(--space-2);
 }
 
-.badgeRow {
+.codeSection {
   display: flex;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.badgeItem {
-  display: inline-flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-}
-
-.badgeMit {
-  background-color: var(--color-yellow-50);
-  color: var(--color-yellow-700);
-  border: 1px solid var(--color-yellow-200);
-}
-
-.badgeCi {
-  background-color: var(--color-green-50);
-  color: var(--color-green-700);
-  border: 1px solid var(--color-green-200);
 }
 
 .codeBlockTitle {
-  margin: 0 0 var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
 }
 
 .codeBlock {
-  background-color: #1e293b;
+  background-color: #0f172a;
   color: #f8fafc;
   padding: var(--space-4) var(--space-5);
   border-radius: var(--radius-md);
-  font-family: var(--font-mono);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   overflow-x: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
+}
+
+.contribBox {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.contribTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.contribList {
+  margin: 0;
+  padding-left: var(--space-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.contribList li {
+  margin-bottom: var(--space-2);
 }
 
 .btnGroup {
@@ -368,13 +587,7 @@
   flex-wrap: wrap;
 }
 
-.secondaryCtaBtn {
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-}
-
-/* Section 5 - Stats */
+/* === Section 6 — Stats === */
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -390,6 +603,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  box-shadow: var(--shadow-card);
 }
 
 .statNumber {
@@ -408,10 +622,11 @@
   background-color: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-7);
+  padding: var(--space-6);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  box-shadow: var(--shadow-card);
 }
 
 .chartTitle {
@@ -473,7 +688,7 @@
   text-align: right;
 }
 
-/* Section 6 - Limitations */
+/* === Section 7 — Warning / Disclaimer === */
 .warningCard {
   background-color: var(--color-yellow-50);
   border: 1px solid var(--color-yellow-200);
@@ -512,34 +727,38 @@
   line-height: var(--line-height-relaxed);
 }
 
-/* Media Queries */
+/* === Media Queries (Mobile First Responsive Design) === */
 @media (max-width: 1023px) {
+  .pillarsGrid,
+  .comparisonGrid {
+    grid-template-columns: 1fr;
+  }
+
   .layersGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 639px) {
-  .statsGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 767px) {
+  .heroSection {
+    padding: 64px 16px 48px;
+  }
+
   .section,
   .sectionAlt {
     padding: 48px 16px;
   }
 
   .title {
-    font-size: 28px;
+    font-size: 30px;
   }
 
   .subtitle {
     font-size: 16px;
   }
 
-  .layersGrid {
+  .layersGrid,
+  .statsGrid {
     grid-template-columns: 1fr;
   }
 
@@ -557,12 +776,18 @@
     width: 100%;
   }
 
-  .btnGroup {
+  .btnGroup,
+  .heroBtnGroup {
     flex-direction: column;
     width: 100%;
   }
 
-  .btnGroup > * {
+  .btnGroup > *,
+  .heroBtnGroup > * {
     width: 100%;
+  }
+
+  .openSourceCard {
+    padding: var(--space-5);
   }
 }

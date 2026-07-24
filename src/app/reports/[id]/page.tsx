@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { VerdictHeader } from '@/components/report/VerdictHeader';
 import { ScoreBreakdown } from '@/components/report/ScoreBreakdown';
 import { LayerDetails } from '@/components/report/LayerDetails';
@@ -12,7 +12,7 @@ import styles from './report.module.css';
 interface ReportPageProps { params: { id: string }; }
 
 async function getReport(id: string): Promise<VerificationReport | null> {
-  const supabase = createClient();
+  const supabase = createAdminClient();
   type VerificationRow = { report_json: Record<string, unknown> };
   const { data, error } = await (supabase.from('verifications') as unknown as {
     select: (cols: string) => {

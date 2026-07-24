@@ -48,37 +48,83 @@ function validateAIOutput(output: string, context: AIAnalysisContext): void {
 }
 
 /**
- * Generates an AI analysis of the fact-checking results using Gemini 2.0 Flash.
- *
- * Key configuration:
- * - temperature: 0.1 (very low — maximizes factual adherence, minimizes creativity)
- * - topP: 0.8 (reduces probability of unlikely tokens)
- * - maxOutputTokens: 1024 (caps analysis length)
+ * Generates a fallback summary when Gemini API is unavailable or rate-limited.
  */
-export async function generateAIAnalysis(context: AIAnalysisContext): Promise<string> {
-  const genAI = createGenAIClient();
+function generateFallbackAnalysis(context: AIAnalysisContext): string {
+  const claimText = context.claim || context.inputText || '';
+  const language = context.language;
+  const layers = context.layers;
+  const scoreBreakdown = context.scoreBreakdown;
 
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    generationConfig: {
-      temperature: 0.1,       // CRITICAL: very low temperature → more factual, less creative
-      maxOutputTokens: 1024,
-      topP: 0.8,
-    },
-  });
+  const isRo = language === 'ro';
+  const scorePercent = Math.round(scoreBreakdown?.finalScore ?? 50);
 
-  const prompt = buildAnalysisPrompt(context);
+  const l1Count = layers?.layer1?.results?.length ?? 0;
+  const l2Count = layers?.layer2?.results?.length ?? 0;
+  const l3Count = layers?.layer3?.results?.length ?? 0;
+  const l4Count = layers?.layer4?.results?.length ?? 0;
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  const text = response.text();
-
-  if (!text || text.trim().length < 50) {
-    throw new Error('Gemini returned empty or too-short analysis');
+  if (isRo) {
+    return (
+      `Sinteză automată: Afirmația „${claimText.slice(0, 150)}...” a fost analizată pe 4 straturi de verificare, ` +
+      `obținând un scor agregat de veridicitate de ${scorePercent}%. ` +
+      `Au fost identificate ${l1Count} verificări anterioare, ${l2Count} articole de presă, ` +
+      `${l3Count} documente oficiale și ${l4Count} mențiuni în social media. ` +
+      `Pentru detalii specifice despre fiecare sursă, consultați secțiunile de mai jos.`
+    );
   }
 
-  // Validate output for hallucinated URLs
-  validateAIOutput(text, context);
-
-  return text;
+  return (
+    `Automated synthesis: The claim "${claimText.slice(0, 150)}..." was analyzed across 4 verification layers, ` +
+    `achieving an aggregate credibility score of ${scorePercent}%. ` +
+    `Found ${l1Count} prior fact-checks, ${l2Count} news articles, ` +
+    `${l3Count} official documents, and ${l4Count} social media mentions. ` +
+    `Please refer to the source breakdowns below for detailed evidence.`
+  );
 }
+
+/**
+ * Generates an AI analysis of the fact-checking results using Gemini API.
+ *
+ * Tries multiple model candidates in order of preference.
+ * Falls back to a deterministic structured summary if the API is unavailable or rate-limited.
+ */
+export async function generateAIAnalysis(context: AIAnalysisContext): Promise<string> {
+  let genAI: GoogleGenerativeAI;
+  try {
+    genAI = createGenAIClient();
+  } catch (err) {
+    console.warn('[Gemini] Client initialization failed:', err);
+    return generateFallbackAnalysis(context);
+  }
+
+  const candidateModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite'];
+  const prompt = buildAnalysisPrompt(context);
+
+  for (const modelName of candidateModels) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1024,
+          topP: 0.8,
+        },
+      });
+
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+
+      if (text && text.trim().length >= 50) {
+        validateAIOutput(text, context);
+        return text;
+      }
+    } catch (err) {
+      console.warn(`[Gemini] Model ${modelName} failed:`, err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  console.warn('[Gemini] All AI models failed/rate-limited. Returning fallback analysis.');
+  return generateFallbackAnalysis(context);
+}
+

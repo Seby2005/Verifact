@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/supabase/auth-helpers';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   const userOnly = searchParams.get('user_only') === 'true';
 
   const user = await getAuthenticatedUser();
-  const supabase = createServerClient();
+  const supabase = userOnly && user ? createServerClient() : createAdminClient();
 
   let query = supabase
     .from('verifications')
