@@ -2,6 +2,19 @@ import { POST } from '@/app/api/ocr/route';
 import { clearRateLimits } from '@/lib/utils/rate-limit';
 import { NextRequest } from 'next/server';
 
+// Never hit the real Google Vision API from tests — it's slow, costs real
+// quota once a live key is configured, and CI sets a non-empty placeholder
+// GOOGLE_CLOUD_API_KEY that would otherwise trigger a genuine (and failing)
+// network request. This suite only exercises the route's own logic
+// (validation, rate limiting, response shape), not the Vision integration.
+jest.mock('@/lib/ocr/vision', () => ({
+  processImageOCR: jest.fn().mockResolvedValue({
+    text: 'Test OCR Content',
+    confidence: 0.92,
+    language: 'ro',
+  }),
+}));
+
 describe('OCR API Route /api/ocr', () => {
   beforeEach(() => {
     clearRateLimits();
