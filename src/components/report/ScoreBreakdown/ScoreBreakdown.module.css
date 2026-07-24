@@ -1,25 +1,25 @@
-﻿.card { background: white; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-md); }
-.header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
-.heading { font-size: 1.1rem; font-weight: 600; color: var(--color-gray-900); }
-.formulaBtn { font-size: 0.8rem; color: var(--color-primary); background: var(--color-primary-light); border: none; padding: 0.35rem 0.75rem; border-radius: var(--radius-sm); cursor: pointer; font-weight: 500; }
-.formulaBtn:hover { background: #dbeafe; }
-.formulaBox { background: var(--color-gray-50); border: 1px solid var(--color-gray-200); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: var(--color-gray-700); display: flex; flex-direction: column; gap: 0.4rem; }
-.formulaBox code { font-family: monospace; background: var(--color-gray-200); padding: 0.1rem 0.4rem; border-radius: 3px; }
-.totalRow { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--color-gray-100); }
-.totalLabel { font-size: 0.95rem; font-weight: 600; color: var(--color-gray-700); white-space: nowrap; }
-.totalBarWrap { flex: 1; display: flex; align-items: center; gap: 0.75rem; }
-.totalTrack { flex: 1; height: 18px; background: var(--color-gray-100); border-radius: var(--radius-full); overflow: hidden; }
-.totalFill { height: 100%; border-radius: var(--radius-full); transition: width 0.6s ease; }
-.totalValue { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
-.layerBars { display: flex; flex-direction: column; gap: 0.75rem; }
-.barRow { display: flex; align-items: center; gap: 0.75rem; }
-.barLabel { font-size: 0.82rem; color: var(--color-gray-600); width: 160px; flex-shrink: 0; }
-.barTrack { flex: 1; height: 10px; background: var(--color-gray-100); border-radius: var(--radius-full); overflow: hidden; }
-.barFill { height: 100%; border-radius: var(--radius-full); transition: width 0.5s ease; }
-.barValue { font-size: 0.82rem; font-weight: 600; color: var(--color-gray-700); width: 55px; text-align: right; flex-shrink: 0; }
-.success { background: var(--color-success) !important; color: var(--color-success) !important; }
-.warning { background: var(--color-warning) !important; color: var(--color-warning) !important; }
-.unclear { background: var(--color-unclear) !important; color: var(--color-unclear) !important; }
-.error { background: var(--color-error) !important; color: var(--color-error) !important; }
-.adjustedNote { margin-top: 1rem; font-size: 0.8rem; color: var(--color-gray-500); font-style: italic; }
-@media (max-width: 600px) { .barLabel { width: 120px; font-size: 0.75rem; } .totalRow { flex-wrap: wrap; } }
+.card { background: var(--color-bg-primary); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: var(--shadow-card); }
+.header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
+.heading { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); }
+.formulaBtn { font-size: var(--font-size-xs); color: var(--color-blue-600); background: var(--color-blue-50); border: none; padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); cursor: pointer; font-weight: var(--font-weight-medium); }
+.formulaBtn:hover { background: var(--color-blue-100); }
+.formulaBox { background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-5); font-size: var(--font-size-sm); color: var(--color-text-secondary); display: flex; flex-direction: column; gap: var(--space-1); }
+.formulaBox code { font-family: monospace; background: var(--color-bg-tertiary); padding: 2px 6px; border-radius: var(--radius-sm); }
+.totalRow { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5); padding-bottom: var(--space-5); border-bottom: 1px solid var(--color-border-subtle); }
+.totalLabel { font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); white-space: nowrap; }
+.totalBarWrap { flex: 1; display: flex; align-items: center; gap: var(--space-3); }
+.totalTrack { flex: 1; height: 18px; background: var(--color-bg-tertiary); border-radius: var(--radius-full); overflow: hidden; }
+.totalFill { height: 100%; border-radius: var(--radius-full); width: var(--bar-width, 0%); transition: width var(--transition-base); }
+.totalValue { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); white-space: nowrap; }
+.layerBars { display: flex; flex-direction: column; gap: var(--space-3); }
+.barRow { display: flex; align-items: center; gap: var(--space-3); }
+.barLabel { font-size: var(--font-size-xs); color: var(--color-text-secondary); width: 160px; flex-shrink: 0; }
+.barTrack { flex: 1; height: 10px; background: var(--color-bg-tertiary); border-radius: var(--radius-full); overflow: hidden; }
+.barFill { height: 100%; border-radius: var(--radius-full); width: var(--bar-width, 0%); transition: width var(--transition-base); }
+.barValue { font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); width: 55px; text-align: right; flex-shrink: 0; }
+.success { background-color: var(--color-green-500); color: var(--color-green-500); }
+.warning { background-color: var(--color-yellow-500); color: var(--color-yellow-500); }
+.unclear { background-color: var(--color-orange-500); color: var(--color-orange-500); }
+.error { background-color: var(--color-red-500); color: var(--color-red-500); }
+.adjustedNote { margin-top: var(--space-4); font-size: var(--font-size-xs); color: var(--color-text-muted); font-style: italic; }
+@media (max-width: 600px) { .barLabel { width: 120px; font-size: var(--font-size-xs); } .totalRow { flex-wrap: wrap; } }

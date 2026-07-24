@@ -271,7 +271,7 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
               <span className={styles.fileSize}>({file.name} · {formatFileSize(file.size)})</span>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className={styles.actionBtnGroup}>
               <Button variant="ghost" size="sm" type="button" onClick={handleRemove}>
                 Șterge și încarcă alta
               </Button>

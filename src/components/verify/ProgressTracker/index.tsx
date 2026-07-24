@@ -134,7 +134,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
           >
             <div
               className={styles.progressFill}
-              style={{ width: `${progressPercentage}%` }}
+              style={{ '--progress-width': `${progressPercentage}%` } as React.CSSProperties}
             />
           </div>
 
@@ -193,7 +193,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
       )}
 
       {isFinished && reportId && (
-        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+        <div className={styles.actionArea}>
           <Button variant="primary" size="lg" onClick={handleGoToReport}>
             Vezi raportul complet →
           </Button>
@@ -201,7 +201,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
       )}
 
       {hasError && (
-        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+        <div className={styles.actionAreaGap}>
           <Button variant="outline" size="md" onClick={onRetry}>
             Reîncearcă verificarea
           </Button>

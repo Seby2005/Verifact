@@ -79,5 +79,31 @@
 .linearFill {
   height: 100%;
   border-radius: var(--radius-full);
+  width: var(--progress-width, 0%);
   transition: width 600ms ease-out, background-color 300ms ease;
+}
+
+/* Verdict Variant Color Classes */
+.verdictTrue {
+  color: var(--color-green-500);
+  background-color: var(--color-green-500);
+  stroke: var(--color-green-500);
+}
+
+.verdictPartial {
+  color: var(--color-yellow-500);
+  background-color: var(--color-yellow-500);
+  stroke: var(--color-yellow-500);
+}
+
+.verdictUnclear {
+  color: var(--color-orange-500);
+  background-color: var(--color-orange-500);
+  stroke: var(--color-orange-500);
+}
+
+.verdictFalse {
+  color: var(--color-red-500);
+  background-color: var(--color-red-500);
+  stroke: var(--color-red-500);
 }

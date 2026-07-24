@@ -89,9 +89,9 @@ export const Tabs: React.FC<TabsProps> = ({
         <div
           className={styles.indicator}
           style={{
-            width: `${100 / (items.length || 1)}%`,
-            transform: `translateX(${activeIndex * 100}%)`,
-          }}
+            '--tab-count': items.length || 1,
+            '--tab-index': activeIndex >= 0 ? activeIndex : 0,
+          } as React.CSSProperties}
         />
       </div>
 

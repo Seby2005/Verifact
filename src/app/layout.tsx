@@ -1,15 +1,5 @@
 import type { Metadata } from 'next';
-
-// Inter is self-hosted via @fontsource (not next/font/google): this removes
-// a network dependency on fonts.googleapis.com at *build time* (which broke
-// builds in network-restricted CI/sandbox environments) and stops the
-// browser from making a third-party request to Google Fonts on every page
-// load — a small privacy win that fits the project's stated confidentiality
-// values (see docs/PRD.md).
-import '@fontsource/inter/400.css';
-import '@fontsource/inter/500.css';
-import '@fontsource/inter/600.css';
-import '@fontsource/inter/700.css';
+import { Inter } from 'next/font/google';
 
 import './globals.css';
 import { Navbar, Footer } from '@/components/layout';
@@ -17,6 +7,11 @@ import { AuthProvider } from '@/context/AuthContext';
 import { I18nProvider } from '@/i18n';
 import { createMetadata } from '@/lib/seo/metadata';
 import { APP_NAME, APP_DESCRIPTION } from '@/config/branding';
+
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = createMetadata({
   title: `${APP_NAME} — Inteligență Artificială pentru Verificarea Știrilor și Faptelor`,
@@ -30,12 +25,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ro">
-      <body style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <html lang="ro" className={inter.className}>
+      <body className="app-body">
         <I18nProvider>
           <AuthProvider>
             <Navbar />
-            <main style={{ flex: 1 }}>{children}</main>
+            <main className="app-main">{children}</main>
             <Footer />
           </AuthProvider>
         </I18nProvider>

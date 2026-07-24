@@ -1,114 +1,120 @@
 .container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 32px 16px;
+  padding: var(--space-8) var(--space-4);
 }
 
 .grid {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-6);
 }
 
 @media (min-width: 992px) {
   .grid {
     display: grid;
     grid-template-columns: 320px 1fr;
-    gap: 32px;
+    gap: var(--space-8);
   }
 }
 
 .leftColumn {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-6);
 }
 
 .userCard {
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid var(--color-gray-200);
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-card);
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .avatar {
   width: 52px;
   height: 52px;
-  border-radius: 50%;
-  background-color: #eff6ff;
+  border-radius: var(--radius-full);
+  background-color: var(--color-blue-50);
   color: var(--color-blue-600);
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #dbeafe;
+  border: 2px solid var(--color-blue-100);
 }
 
 .userInfo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   overflow: hidden;
 }
 
 .userName {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-gray-900);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .userEmail {
-  font-size: 13px;
-  color: var(--color-gray-500);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .quickLinksCard {
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid var(--color-gray-200);
-  padding: 20px;
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  padding: var(--space-5);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .quickLinksTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-gray-700);
-  margin-bottom: 4px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-1);
 }
 
 .quickLink {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  border-radius: 6px;
-  color: var(--color-gray-700);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.15s ease;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  transition: background-color var(--transition-fast);
 }
 
 .quickLink:hover {
-  background-color: var(--color-gray-100);
+  background-color: var(--color-bg-tertiary);
   color: var(--color-blue-600);
 }
 
 .rightColumn {
   display: flex;
   flex-direction: column;
+}
+
+.loadingBox {
+  text-align: center;
+  padding: var(--space-16) 0;
+  color: var(--color-text-secondary);
 }

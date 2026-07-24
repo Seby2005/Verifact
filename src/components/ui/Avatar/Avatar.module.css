@@ -10,6 +10,14 @@
   box-shadow: 0 0 0 2px var(--color-bg-primary);
 }
 
+.color0 { background-color: var(--color-blue-500); }
+.color1 { background-color: var(--color-green-500); }
+.color2 { background-color: var(--color-yellow-500); }
+.color3 { background-color: var(--color-blue-700); }
+.color4 { background-color: var(--color-red-500); }
+.color5 { background-color: var(--color-orange-500); }
+.color6 { background-color: var(--color-gray-700); }
+
 .sm {
   width: 32px;
   height: 32px;

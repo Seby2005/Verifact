@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Hero, VerifySection, AnimatedStats, HowItWorks, ImpactStats, Testimonials, FinalCTA } from '@/components/home';
+import styles from './Home.module.css';
 
 export const metadata = {
   title: 'AI Fact-Checker — Verificare instantă de știri și dezinformare',
@@ -9,7 +10,7 @@ export const metadata = {
 
 export default function HomePage() {
   return (
-    <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <main className={styles.main}>
       {/* Above the fold: Hero + Formular de verificare */}
       <Hero />
 
@@ -26,24 +27,25 @@ export default function HomePage() {
       <ImpactStats />
 
       {/* Secțiune Încredere & Transparență / Open Source */}
-      <section style={{ backgroundColor: 'var(--color-gray-50)', padding: '4rem 1rem', borderTop: '1px solid var(--color-gray-100)' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-gray-900)', marginBottom: '1rem' }}>
+      <section className={styles.transparencySection}>
+        <div className={styles.transparencyContainer}>
+          <h2 className={styles.transparencyTitle}>
             Transparență Radicală & Cod Sursă Deschis
           </h2>
-          <p style={{ fontSize: '1rem', color: 'var(--color-gray-600)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-            Proiectul nostru este 100% open source под licență MIT. Algoritmul de fact-checking, sursele interogate și formulele de scoring sunt publice. Nu luăm decizii editoriale politice.
+          <p className={styles.transparencyDesc}>
+            Proiectul nostru este 100% open source sub licență MIT. Algoritmul de fact-checking, sursele interogate și formulele de scoring sunt publice. Nu luăm decizii editoriale politice.
           </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/transparency" style={{ textDecoration: 'none' }}>
-              <span style={{ display: 'inline-block', padding: '0.75rem 1.25rem', backgroundColor: 'var(--color-primary)', color: '#fff', borderRadius: '6px', fontWeight: 600, fontSize: '0.9rem' }}>
-                Vezi explicația algoritmului →
-              </span>
+          <div className={styles.transparencyBtnGroup}>
+            <Link href="/transparency" className={styles.primaryBtn}>
+              Vezi explicația algoritmului →
             </Link>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-              <span style={{ display: 'inline-block', padding: '0.75rem 1.25rem', backgroundColor: '#fff', color: 'var(--color-gray-800)', border: '1px solid var(--color-gray-300)', borderRadius: '6px', fontWeight: 600, fontSize: '0.9rem' }}>
-                Codul pe GitHub (MIT License)
-              </span>
+            <a
+              href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.secondaryBtn}
+            >
+              Codul pe GitHub (MIT License)
             </a>
           </div>
         </div>

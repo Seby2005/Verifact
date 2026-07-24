@@ -1,14 +1,20 @@
 import React from 'react';
-import { getScoreColor } from '@/lib/constants/verdicts';
 import styles from './ProgressBar.module.css';
 
 export interface ProgressBarProps {
   value: number; // 0 - 100
   variant?: 'linear' | 'circular';
-  size?: number; // size in px for circular, height for linear
+  size?: number; // size in px for circular
   showValueLabel?: boolean;
   label?: string;
   className?: string;
+}
+
+function getVerdictStyleClass(val: number): string {
+  if (val >= 85) return styles.verdictTrue;
+  if (val >= 60) return styles.verdictPartial;
+  if (val >= 40) return styles.verdictUnclear;
+  return styles.verdictFalse;
 }
 
 export const ProgressBar: React.FC<ProgressBarProps> = ({
@@ -20,7 +26,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   className = '',
 }) => {
   const clampedValue = Math.min(100, Math.max(0, value));
-  const dynamicColor = getScoreColor(clampedValue);
+  const verdictClass = getVerdictStyleClass(clampedValue);
 
   if (variant === 'circular') {
     const strokeWidth = Math.max(6, Math.round(size * 0.08));
@@ -31,7 +37,6 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
     return (
       <div
         className={`${styles.circularWrapper} ${className}`}
-        style={{ width: size, height: size }}
         role="progressbar"
         aria-valuenow={clampedValue}
         aria-valuemin={0}
@@ -53,18 +58,15 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
             cy={size / 2}
             r={radius}
             strokeWidth={strokeWidth}
-            className={styles.circularProgress}
-            style={{
-              stroke: dynamicColor,
-              strokeDasharray: circumference,
-              strokeDashoffset,
-            }}
+            className={`${styles.circularProgress} ${verdictClass}`}
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
           />
         </svg>
 
         {showValueLabel ? (
           <div className={styles.centerLabel}>
-            <span className={styles.scoreNumber} style={{ color: dynamicColor }}>
+            <span className={`${styles.scoreNumber} ${verdictClass}`}>
               {clampedValue}%
             </span>
             {label ? <span className={styles.subText}>{label}</span> : null}
@@ -80,7 +82,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         <div className={styles.labelRow}>
           {label ? <span className={styles.linearLabel}>{label}</span> : <div />}
           {showValueLabel ? (
-            <span className={styles.linearValue} style={{ color: dynamicColor }}>
+            <span className={`${styles.linearValue} ${verdictClass}`}>
               {clampedValue}%
             </span>
           ) : null}
@@ -95,11 +97,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         aria-valuemax={100}
       >
         <div
-          className={styles.linearFill}
-          style={{
-            width: `${clampedValue}%`,
-            backgroundColor: dynamicColor,
-          }}
+          className={`${styles.linearFill} ${verdictClass}`}
+          style={{ '--progress-width': `${clampedValue}%` } as React.CSSProperties}
         />
       </div>
     </div>

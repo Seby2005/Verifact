@@ -45,14 +45,14 @@
   gap: var(--space-2);
   font-size: 1.25rem;
   font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
+  color: var(--color-blue-500);
   text-decoration: none;
 }
 
 .logoIcon {
   width: 24px;
   height: 24px;
-  color: var(--color-primary);
+  color: var(--color-blue-500);
 }
 
 .tagline {
@@ -100,7 +100,7 @@
 }
 
 .link:hover {
-  color: var(--color-primary);
+  color: var(--color-blue-500);
   text-decoration: underline;
 }
 
@@ -120,6 +120,12 @@
   justify-content: space-between;
   font-size: var(--font-size-xs);
   color: var(--color-gray-600);
+}
+
+.disclaimer {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
 }
 
 @media (min-width: 768px) {

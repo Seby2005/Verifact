@@ -19,18 +19,16 @@ interface TwitterSearchResponse {
   };
 }
 
-interface GoogleSearchItem {
+interface TavilySearchResult {
   title: string;
-  link: string;
-  snippet: string;
-  displayLink: string;
-  pagemap?: {
-    metatags?: Array<Record<string, string>>;
-  };
+  url: string;
+  content: string;
+  score: number;
+  published_date?: string;
 }
 
-interface GoogleSearchResponse {
-  items?: GoogleSearchItem[];
+interface TavilySearchResponse {
+  results?: TavilySearchResult[];
 }
 
 /**
@@ -103,38 +101,43 @@ async function searchTwitter(
 }
 
 /**
- * Searches social media via Google Custom Search as a fallback.
+ * Searches social media via Tavily as a fallback (Twitter API not
+ * configured). Restricted to the social platform domains on purpose —
+ * unlike layer2's news search, we specifically only want posts from
+ * these platforms here, so include_domains is the right tool.
  */
-async function searchSocialViaGoogle(
+async function searchSocialViaTavily(
   text: string,
   namedEntities: string[]
 ): Promise<SocialMediaPost[]> {
-  const apiKey = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY;
-  const cx = process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID;
-  if (!apiKey || !cx) return [];
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) return [];
 
   const entityQuery = namedEntities.slice(0, 2).join(' ');
-  const searchQuery = `${entityQuery || text.slice(0, 100)} (site:twitter.com OR site:facebook.com OR site:youtube.com)`;
+  const searchQuery = entityQuery || text.slice(0, 200);
 
-  const params = new URLSearchParams({
-    key: apiKey,
-    cx,
-    q: searchQuery,
-    num: '8',
+  const response = await fetch('https://api.tavily.com/search', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      query: searchQuery,
+      search_depth: 'basic',
+      max_results: 8,
+      include_domains: ['twitter.com', 'x.com', 'facebook.com', 'youtube.com'],
+    }),
+    signal: AbortSignal.timeout(8000),
   });
-
-  const response = await fetch(
-    `https://www.googleapis.com/customsearch/v1?${params.toString()}`,
-    { signal: AbortSignal.timeout(8000) }
-  );
 
   if (!response.ok) return [];
 
-  const data = await response.json() as GoogleSearchResponse;
-  const items = data.items ?? [];
+  const data = await response.json() as TavilySearchResponse;
+  const items = data.results ?? [];
 
   return items.map((item): SocialMediaPost => {
-    const platform = determinePlatform(item.link);
+    const platform = determinePlatform(item.url);
     const isOriginal = namedEntities.some(e =>
       item.title.toLowerCase().includes(e.toLowerCase())
     );
@@ -143,12 +146,9 @@ async function searchSocialViaGoogle(
       platform,
       author: extractSocialAuthor(item.title),
       authorVerified: false,
-      postUrl: item.link,
-      postDate:
-        item.pagemap?.metatags?.[0]?.['article:published_time'] ??
-        item.pagemap?.metatags?.[0]?.['og:updated_time'] ??
-        '',
-      content: item.snippet,
+      postUrl: item.url,
+      postDate: item.published_date ?? '',
+      content: item.content,
       isOriginalSource: isOriginal,
     };
   });
@@ -233,9 +233,9 @@ export async function runLayer4(
     }
   }
 
-  // Fallback: Google Custom Search on social media
+  // Fallback: Tavily search restricted to social platform domains
   try {
-    const results = await searchSocialViaGoogle(text, namedEntities);
+    const results = await searchSocialViaTavily(text, namedEntities);
     return buildLayer4Result(results, startTime);
   } catch (error) {
     return {

@@ -128,9 +128,9 @@ export default function SettingsPage() {
             <p className={styles.helpText}>Numele de utilizator este vizibil pe rapoartele tale publice.</p>
           </div>
 
-          <hr style={{ margin: '24px 0', border: 'none', borderTop: '1px solid var(--color-gray-100)' }} />
+          <hr className={styles.divider} />
 
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px' }}>Schimbare parolă</h3>
+          <h3 className={styles.subheading}>Schimbare parolă</h3>
 
           <div className={styles.fieldGroup}>
             <label className={styles.label} htmlFor="current-pass">
@@ -186,17 +186,17 @@ export default function SettingsPage() {
 
         <div className={styles.tierInfo}>
           <div>
-            <div style={{ fontWeight: 600 }}>Plan curent</div>
+            <div className={styles.tierLabel}>Plan curent</div>
             <div className={styles.helpText}>Limita ta se resetează lunar</div>
           </div>
           <span className={styles.tierBadge}>{user?.tier || 'free'}</span>
         </div>
 
-        <div style={{ marginTop: '32px' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#DC2626', marginBottom: '8px' }}>
+        <div className={styles.dangerZone}>
+          <h3 className={styles.dangerTitle}>
             Ștergere cont
           </h3>
-          <p className={styles.helpText} style={{ marginBottom: '16px' }}>
+          <p className={styles.dangerHelpText}>
             După ștergerea contului, toate datele și istoricul verificărilor vor fi eliminate definitiv.
           </p>
           <button

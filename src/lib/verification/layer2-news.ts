@@ -24,18 +24,16 @@ interface NewsAPIResponse {
   articles: NewsAPIArticle[];
 }
 
-interface GoogleSearchItem {
+interface TavilySearchResult {
   title: string;
-  link: string;
-  snippet: string;
-  displayLink: string;
-  pagemap?: {
-    metatags?: Array<Record<string, string>>;
-  };
+  url: string;
+  content: string;
+  score: number;
+  published_date?: string;
 }
 
-interface GoogleSearchResponse {
-  items?: GoogleSearchItem[];
+interface TavilySearchResponse {
+  results?: TavilySearchResult[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -183,58 +181,49 @@ async function fetchFromNewsAPI(
 }
 
 /**
- * Fetches news articles from Google Custom Search API.
+ * Fetches news articles from Tavily (full-web search, no domain cap —
+ * unlike Google Custom Search, which now restricts new engines to 50
+ * domains). No include_domains filter is applied on purpose: we want
+ * genuine web-wide coverage, ranked by Tavily's own relevance score,
+ * rather than a hand-maintained allowlist.
+ * Free tier: 1000 credits/month, 1 credit per `basic` search call.
  */
-async function fetchFromGoogleSearch(
-  text: string,
-  language: Language
-): Promise<NewsArticle[]> {
-  const apiKey = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY;
-  const cx = process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID;
-  if (!apiKey || !cx) return [];
+async function fetchFromTavily(text: string): Promise<NewsArticle[]> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) return []; // Gracefully degrade if not configured
 
-  // Restrict to credible news domains
-  const newsDomains = [
-    'digi24.ro', 'g4media.ro', 'hotnews.ro', 'mediafax.ro', 'protv.ro',
-    'pressone.ro', 'recorder.ro', 'adevarul.ro',
-    'reuters.com', 'apnews.com', 'bbc.com', 'ft.com',
-  ].join(' OR site:');
-
-  const params = new URLSearchParams({
-    key: apiKey,
-    cx,
-    q: `${text.slice(0, 200)} (site:${newsDomains})`,
-    lr: language === 'ro' ? 'lang_ro' : 'lang_en',
-    num: '8',
-    dateRestrict: 'y2', // last 2 years
+  const response = await fetch('https://api.tavily.com/search', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      query: text.slice(0, 400),
+      search_depth: 'basic',
+      topic: 'news',
+      max_results: 10,
+    }),
+    signal: AbortSignal.timeout(8000),
   });
-
-  const response = await fetch(
-    `https://www.googleapis.com/customsearch/v1?${params.toString()}`,
-    { signal: AbortSignal.timeout(8000) }
-  );
 
   if (!response.ok) return [];
 
-  const data = await response.json() as GoogleSearchResponse;
-  if (!data.items?.length) return [];
+  const data = await response.json() as TavilySearchResponse;
+  if (!data.results?.length) return [];
 
-  return data.items.map((item): NewsArticle => {
-    const credibilityScore = getCredibilityScore(item.link);
-    const publishedAt =
-      item.pagemap?.metatags?.[0]?.['article:published_time'] ??
-      item.pagemap?.metatags?.[0]?.['og:updated_time'] ??
-      '';
-
-    const sentiment = detectSentiment(item.title, item.snippet, text, credibilityScore);
+  return data.results.map((item): NewsArticle => {
+    const credibilityScore = getCredibilityScore(item.url);
+    const domain = extractDomain(item.url);
+    const sentiment = detectSentiment(item.title, item.content, text, credibilityScore);
 
     return {
       title: item.title,
-      source: item.displayLink.replace(/^www\./, ''),
-      sourceUrl: `https://${item.displayLink}`,
-      articleUrl: item.link,
-      publishedAt,
-      snippet: item.snippet,
+      source: domain,
+      sourceUrl: domain,
+      articleUrl: item.url,
+      publishedAt: item.published_date ?? '',
+      snippet: item.content,
       sentiment,
       credibilityScore,
     };
@@ -279,7 +268,7 @@ export function calculateLayer2Score(articles: NewsArticle[]): number {
 }
 
 /**
- * Layer 2: News sources (NewsAPI + Google Custom Search)
+ * Layer 2: News sources (NewsAPI + Tavily full-web search)
  * Checks if the claim appears in credible journalistic sources.
  */
 export async function runLayer2(
@@ -291,7 +280,7 @@ export async function runLayer2(
   // Run both searches in parallel
   const [newsApiResult, searchResult] = await Promise.allSettled([
     fetchFromNewsAPI(text, language),
-    fetchFromGoogleSearch(text, language),
+    fetchFromTavily(text),
   ]);
 
   const allArticles: NewsArticle[] = [

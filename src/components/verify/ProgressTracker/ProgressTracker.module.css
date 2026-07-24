@@ -2,11 +2,11 @@
   width: 100%;
   max-width: 560px;
   margin: 0 auto;
-  background-color: var(--color-white);
-  border: 1px solid var(--color-gray-100);
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-modal);
 }
 
 @media (min-width: 768px) {
@@ -23,13 +23,13 @@
 .title {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-900);
+  color: var(--color-text-primary);
   margin-bottom: var(--space-2);
 }
 
 .subtitle {
   font-size: var(--font-size-sm);
-  color: var(--color-primary);
+  color: var(--color-blue-500);
   font-weight: var(--font-weight-medium);
   min-height: 24px;
   transition: opacity 200ms ease-in-out;
@@ -38,7 +38,7 @@
 .progressTrack {
   width: 100%;
   height: 6px;
-  background-color: var(--color-gray-100);
+  background-color: var(--color-bg-tertiary);
   border-radius: var(--radius-full);
   overflow: hidden;
   margin-bottom: var(--space-3);
@@ -46,8 +46,9 @@
 
 .progressFill {
   height: 100%;
-  background-color: var(--color-primary);
+  background-color: var(--color-blue-500);
   border-radius: var(--radius-full);
+  width: var(--progress-width, 0%);
   transition: width 300ms ease-in-out;
 }
 
@@ -56,7 +57,7 @@
   justify-content: space-between;
   align-items: center;
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--color-text-muted);
   margin-bottom: var(--space-6);
 }
 
@@ -77,28 +78,28 @@
 }
 
 .completedStep {
-  color: var(--color-gray-500);
+  color: var(--color-text-muted);
   opacity: 0.7;
 }
 
 .currentStep {
-  background-color: var(--color-primary-light);
-  color: var(--color-primary);
+  background-color: var(--color-blue-50);
+  color: var(--color-blue-600);
   font-weight: var(--font-weight-bold);
 }
 
 .pendingStep {
-  color: var(--color-gray-400);
+  color: var(--color-text-muted);
 }
 
 .unavailableStep {
-  color: var(--color-warning);
-  background-color: var(--color-warning-light, #fffbeb);
+  color: var(--color-yellow-600);
+  background-color: var(--color-yellow-50);
 }
 
 .errorStep {
-  color: var(--color-error);
-  background-color: var(--color-error-light, #fef2f2);
+  color: var(--color-red-600);
+  background-color: var(--color-red-50);
 }
 
 .stepLabel {
@@ -110,7 +111,7 @@
 .unavailBadge {
   font-size: var(--font-size-xs);
   font-style: normal;
-  color: var(--color-warning);
+  color: var(--color-yellow-600);
   font-weight: var(--font-weight-medium);
 }
 
@@ -124,16 +125,16 @@
 }
 
 .checkIcon {
-  color: var(--color-success);
+  color: var(--color-green-500);
   font-weight: bold;
 }
 
 .warnIcon {
-  color: var(--color-warning);
+  color: var(--color-yellow-500);
 }
 
 .errorIcon {
-  color: var(--color-error);
+  color: var(--color-red-500);
   font-weight: bold;
 }
 
@@ -147,10 +148,23 @@
 .spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid var(--color-primary-light);
-  border-top-color: var(--color-primary);
+  border: 2px solid var(--color-blue-50);
+  border-top-color: var(--color-blue-500);
   border-radius: 50%;
   animation: spin 800ms linear infinite;
+}
+
+.actionArea {
+  margin-top: var(--space-6);
+  display: flex;
+  justify-content: center;
+}
+
+.actionAreaGap {
+  margin-top: var(--space-6);
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
 }
 
 @keyframes spin {

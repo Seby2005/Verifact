@@ -59,6 +59,8 @@
   height: 3px;
   background-color: var(--color-blue-500);
   border-radius: var(--radius-full);
+  width: calc(100% / var(--tab-count, 1));
+  transform: translateX(calc(var(--tab-index, 0) * 100%));
   transition: transform var(--transition-base), width var(--transition-base);
   z-index: 2;
 }

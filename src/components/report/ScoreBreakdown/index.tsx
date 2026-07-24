@@ -17,7 +17,10 @@ function ScoreBar({ value, label, max = 100 }: { value: number; label: string; m
     <div className={styles.barRow}>
       <span className={styles.barLabel}>{label}</span>
       <div className={styles.barTrack} role="progressbar" aria-valuenow={value} aria-valuemax={max} aria-label={label}>
-        <div className={`${styles.barFill} ${styles[color]}`} style={{ width: `${pct}%` }} />
+        <div
+          className={`${styles.barFill} ${styles[color]}`}
+          style={{ '--bar-width': `${pct}%` } as React.CSSProperties}
+        />
       </div>
       <span className={styles.barValue}>{value}/100</span>
     </div>
@@ -56,7 +59,10 @@ export function ScoreBreakdown({ breakdown }: ScoreBreakdownProps) {
         <span className={styles.totalLabel}>Scor total:</span>
         <div className={styles.totalBarWrap}>
           <div className={styles.totalTrack} role="progressbar" aria-valuenow={finalScore} aria-valuemax={100} aria-label={`Scor total ${finalScore}`}>
-            <div className={`${styles.totalFill} ${styles[color]}`} style={{ width: `${finalScore}%` }} />
+            <div
+              className={`${styles.totalFill} ${styles[color]}`}
+              style={{ '--bar-width': `${finalScore}%` } as React.CSSProperties}
+            />
           </div>
           <span className={`${styles.totalValue} ${styles[color]}`}>{finalScore}%</span>
         </div>

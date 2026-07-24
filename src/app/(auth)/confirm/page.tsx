@@ -58,7 +58,7 @@ function ConfirmContent() {
         <span className={styles.notice}>Emailul de confirmare a fost retrimis!</span>
       )}
       {resendStatus === 'error' && (
-        <span className={styles.notice} style={{ color: 'var(--color-red-600)' }}>
+        <span className={`${styles.notice} ${styles.noticeError}`}>
           Nu am putut retrimite emailul. Încearcă din nou mai târziu.
         </span>
       )}

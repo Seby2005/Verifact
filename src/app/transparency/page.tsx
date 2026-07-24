@@ -166,7 +166,7 @@ export default function TransparencyPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
             </svg>
 
-            <div className={styles.flowBox} style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none' }}>
+            <div className={`${styles.flowBox} ${styles.finalFlowBox}`}>
               Raport Detaliat cu Surse Citabile & Verdict
             </div>
           </div>
@@ -313,7 +313,7 @@ export default function TransparencyPage() {
           <div className={styles.openSourceCard}>
             <div>
               <h2 className={styles.sectionTitle}>Codul sursă este 100% Public</h2>
-              <p className={styles.sectionSubtitle} style={{ marginTop: '8px' }}>
+              <p className={`${styles.sectionSubtitle} ${styles.subtitleMargin}`}>
                 Dezvoltăm transparent. Aplicația Fact-Checker AI este un proiect open source licențiat sub licența MIT.
               </p>
             </div>
@@ -324,7 +324,7 @@ export default function TransparencyPage() {
             </div>
 
             <div>
-              <h4 style={{ margin: '0 0 8px', color: '#111827' }}>Cum rulezi proiectul local în 3 pași:</h4>
+              <h4 className={styles.codeBlockTitle}>Cum rulezi proiectul local în 3 pași:</h4>
               <div className={styles.codeBlock}>
                 <code>
                   git clone https://github.com/Seby2005/fact-checker-ai.git<br />
@@ -334,7 +334,7 @@ export default function TransparencyPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <div className={styles.btnGroup}>
               <a
                 href="https://github.com/Seby2005/fact-checker-ai"
                 target="_blank"
@@ -343,7 +343,10 @@ export default function TransparencyPage() {
               >
                 Deschide pe GitHub &rarr;
               </a>
-              <Link href="/pricing" className={styles.ctaButton} style={{ backgroundColor: '#ffffff', color: '#111827', border: '1px solid #e9ecef' }}>
+              <Link
+                href="/pricing"
+                className={`${styles.ctaButton} ${styles.secondaryCtaBtn}`}
+              >
                 Ghid Contribuții (CONTRIBUTING)
               </Link>
             </div>
@@ -383,7 +386,10 @@ export default function TransparencyPage() {
             <div className={styles.barRow}>
               <span className={styles.barLabel}>Adevărat</span>
               <div className={styles.barTrack}>
-                <div className={styles.barFill} style={{ width: `${truePct}%`, backgroundColor: '#16a34a' }} />
+                <div
+                  className={`${styles.barFill} ${styles.fillTrue}`}
+                  style={{ '--bar-width': `${truePct}%` } as React.CSSProperties}
+                />
               </div>
               <span className={styles.barValue}>{truePct}%</span>
             </div>
@@ -391,7 +397,10 @@ export default function TransparencyPage() {
             <div className={styles.barRow}>
               <span className={styles.barLabel}>Fals</span>
               <div className={styles.barTrack}>
-                <div className={styles.barFill} style={{ width: `${falsePct}%`, backgroundColor: '#dc2626' }} />
+                <div
+                  className={`${styles.barFill} ${styles.fillFalse}`}
+                  style={{ '--bar-width': `${falsePct}%` } as React.CSSProperties}
+                />
               </div>
               <span className={styles.barValue}>{falsePct}%</span>
             </div>
@@ -399,7 +408,10 @@ export default function TransparencyPage() {
             <div className={styles.barRow}>
               <span className={styles.barLabel}>Parțial</span>
               <div className={styles.barTrack}>
-                <div className={styles.barFill} style={{ width: `${partialPct}%`, backgroundColor: '#d97706' }} />
+                <div
+                  className={`${styles.barFill} ${styles.fillPartial}`}
+                  style={{ '--bar-width': `${partialPct}%` } as React.CSSProperties}
+                />
               </div>
               <span className={styles.barValue}>{partialPct}%</span>
             </div>
@@ -407,7 +419,10 @@ export default function TransparencyPage() {
             <div className={styles.barRow}>
               <span className={styles.barLabel}>Neclar</span>
               <div className={styles.barTrack}>
-                <div className={styles.barFill} style={{ width: `${unclearPct}%`, backgroundColor: '#6c757d' }} />
+                <div
+                  className={`${styles.barFill} ${styles.fillUnclear}`}
+                  style={{ '--bar-width': `${unclearPct}%` } as React.CSSProperties}
+                />
               </div>
               <span className={styles.barValue}>{unclearPct}%</span>
             </div>

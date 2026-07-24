@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
-import styles from '@/app/(auth)/login/Login.module.css';
+import styles from './ResetPassword.module.css';
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('');
@@ -53,8 +53,8 @@ export default function ResetPasswordPage() {
       </div>
 
       {status === 'success' ? (
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: 'var(--color-green-600)', fontSize: '14px' }}>
+        <div className={styles.successContainer}>
+          <div className={styles.successAlert}>
             Am trimis un link de resetare la <strong>{email}</strong>. Verifică-ți inbox-ul.
           </div>
           <Link href="/login" className={styles.registerLink}>

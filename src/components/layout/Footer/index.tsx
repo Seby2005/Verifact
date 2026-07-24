@@ -113,7 +113,7 @@ export const Footer: React.FC = () => {
           <div>
             <span>© {currentYear} FactCheck AI. Proiect Open Source sub Licență MIT.</span>
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--color-gray-500)', marginTop: '0.25rem' }}>
+          <div className={styles.disclaimer}>
             ⚠️ Rapoartele sunt generate automat de AI pe baza surselor colectate și nu reprezintă o judecată editorială definitivă.
           </div>
         </div>

@@ -17,23 +17,23 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   style,
   ...props
 }) => {
-  const customStyle: React.CSSProperties = {
-    width: width !== undefined ? (typeof width === 'number' ? `${width}px` : width) : undefined,
-    height: height !== undefined ? (typeof height === 'number' ? `${height}px` : height) : undefined,
-    ...style,
-  };
+  const cssVars: Record<string, string> = {};
+  if (width !== undefined) {
+    cssVars['--skeleton-width'] = typeof width === 'number' ? `${width}px` : width;
+  }
+  if (height !== undefined) {
+    cssVars['--skeleton-height'] = typeof height === 'number' ? `${height}px` : height;
+  }
+
+  const combinedStyle = Object.keys(cssVars).length > 0 || style ? { ...cssVars, ...style } as React.CSSProperties : undefined;
 
   if (variant === 'text' && lines > 1) {
     return (
-      <div className={styles.textGroup} {...props}>
+      <div className={styles.textGroup} style={combinedStyle} {...props}>
         {Array.from({ length: lines }).map((_, index) => (
           <div
             key={index}
             className={`${styles.skeleton} ${styles.text} ${className}`}
-            style={{
-              ...customStyle,
-              width: index === lines - 1 && !width ? '70%' : customStyle.width,
-            }}
           />
         ))}
       </div>
@@ -48,5 +48,5 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     .filter(Boolean)
     .join(' ');
 
-  return <div className={classNames} style={customStyle} {...props} />;
+  return <div className={classNames} style={combinedStyle} {...props} />;
 };

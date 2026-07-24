@@ -89,7 +89,7 @@ export function DashboardClient() {
   if (isAuthLoading || !isAuthenticated || !user) {
     return (
       <div className={styles.container}>
-        <div style={{ textAlign: 'center', padding: '60px 0' }}>
+        <div className={styles.loadingBox}>
           Se încarcă dashboard-ul...
         </div>
       </div>

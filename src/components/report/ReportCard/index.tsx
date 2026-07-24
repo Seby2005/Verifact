@@ -26,11 +26,11 @@ const VERDICT_CLASSES: Record<string, string> = {
   unclear: styles.verdictUnclear,
 };
 
-const VERDICT_COLORS: Record<string, string> = {
-  true: '#16a34a',
-  false: '#dc2626',
-  partial: '#d97706',
-  unclear: '#6c757d',
+const FILL_CLASSES: Record<string, string> = {
+  true: styles.fillTrue,
+  false: styles.fillFalse,
+  partial: styles.fillPartial,
+  unclear: styles.fillUnclear,
 };
 
 export const ReportCard: React.FC<ReportCardProps> = ({
@@ -69,7 +69,8 @@ export const ReportCard: React.FC<ReportCardProps> = ({
 
   const verdictLabel = VERDICT_LABELS[verdict] || 'Necunoscut';
   const verdictClass = VERDICT_CLASSES[verdict] || styles.verdictUnclear;
-  const scoreColor = VERDICT_COLORS[verdict] || '#2563eb';
+  const fillClass = FILL_CLASSES[verdict] || styles.fillUnclear;
+  const clampedScore = Math.min(100, Math.max(0, score));
 
   return (
     <article className={styles.card} data-testid="report-card">
@@ -92,11 +93,8 @@ export const ReportCard: React.FC<ReportCardProps> = ({
       <div className={styles.scoreContainer}>
         <div className={styles.scoreBar}>
           <div
-            className={styles.scoreFill}
-            style={{
-              width: `${Math.min(100, Math.max(0, score))}%`,
-              backgroundColor: scoreColor,
-            }}
+            className={`${styles.scoreFill} ${fillClass}`}
+            style={{ '--score-width': `${clampedScore}%` } as React.CSSProperties}
           />
         </div>
         <span className={styles.scoreText}>{score}%</span>

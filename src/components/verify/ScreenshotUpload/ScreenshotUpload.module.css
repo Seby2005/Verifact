@@ -1,8 +1,8 @@
 .dropzone {
   position: relative;
   min-height: 160px;
-  background-color: var(--color-gray-50);
-  border: 2px dashed var(--color-gray-200);
+  background-color: var(--color-bg-secondary);
+  border: 2px dashed var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
   display: flex;
@@ -15,38 +15,38 @@
 }
 
 .dropzone:hover {
-  border-color: var(--color-primary);
-  background-color: var(--color-primary-light);
+  border-color: var(--color-blue-500);
+  background-color: var(--color-blue-50);
 }
 
 .dragOver {
-  border-color: var(--color-primary);
-  background-color: var(--color-primary-light);
+  border-color: var(--color-blue-500);
+  background-color: var(--color-blue-50);
 }
 
 .uploadIcon {
   width: 48px;
   height: 48px;
-  color: var(--color-gray-400);
+  color: var(--color-text-muted);
   margin-bottom: var(--space-3);
   transition: color var(--transition-fast);
 }
 
 .dropzone:hover .uploadIcon,
 .dragOver .uploadIcon {
-  color: var(--color-primary);
+  color: var(--color-blue-500);
 }
 
 .primaryText {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
-  color: var(--color-gray-800);
+  color: var(--color-text-primary);
   margin-bottom: var(--space-1);
 }
 
 .secondaryText {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-400);
+  color: var(--color-text-muted);
   margin-bottom: var(--space-3);
 }
 
@@ -56,7 +56,7 @@
 
 .hintText {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-400);
+  color: var(--color-text-muted);
   margin-top: var(--space-3);
 }
 
@@ -65,11 +65,11 @@
 }
 
 .previewCard {
-  background-color: var(--color-white);
-  border: 1px solid var(--color-gray-100);
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .previewHeader {
@@ -78,7 +78,7 @@
   max-height: 300px;
   overflow: hidden;
   border-radius: var(--radius-md);
-  background-color: var(--color-gray-50);
+  background-color: var(--color-bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,7 +109,7 @@
 }
 
 .removeBtn:hover {
-  background-color: var(--color-error);
+  background-color: var(--color-red-600);
 }
 
 .fileMetaRow {
@@ -118,7 +118,12 @@
   justify-content: space-between;
   margin-top: var(--space-3);
   padding-top: var(--space-2);
-  border-top: 1px solid var(--color-gray-100);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.actionBtnGroup {
+  display: flex;
+  gap: var(--space-2);
 }
 
 .successStatus {
@@ -127,12 +132,12 @@
   gap: var(--space-2);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--color-success);
+  color: var(--color-green-600);
 }
 
 .fileSize {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-400);
+  color: var(--color-text-muted);
   margin-left: var(--space-2);
 }
 
@@ -141,15 +146,15 @@
   align-items: center;
   gap: var(--space-2);
   font-size: var(--font-size-sm);
-  color: var(--color-primary);
+  color: var(--color-blue-500);
   margin-top: var(--space-3);
 }
 
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid var(--color-primary-light);
-  border-top-color: var(--color-primary);
+  border: 2px solid var(--color-blue-50);
+  border-top-color: var(--color-blue-500);
   border-radius: 50%;
   animation: spin 800ms linear infinite;
 }
@@ -160,8 +165,8 @@
 
 .ocrSection {
   margin-top: var(--space-4);
-  background-color: var(--color-gray-50);
-  border: 1px solid var(--color-gray-100);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-4);
 }
@@ -173,7 +178,7 @@
   width: 100%;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-800);
+  color: var(--color-text-primary);
   background: none;
   border: none;
   cursor: pointer;
@@ -186,17 +191,17 @@
   margin-top: var(--space-3);
   padding: var(--space-3);
   font-size: var(--font-size-sm);
-  line-height: 1.5;
-  border: 1px solid var(--color-gray-200);
+  line-height: var(--line-height-base);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  background-color: var(--color-white);
-  color: var(--color-gray-900);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
   resize: vertical;
 }
 
 .ocrNote {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--color-text-secondary);
   margin-top: var(--space-2);
 }
 
@@ -205,7 +210,7 @@
   align-items: center;
   gap: var(--space-2);
   font-size: var(--font-size-xs);
-  color: var(--color-warning);
+  color: var(--color-yellow-600);
   margin-top: var(--space-2);
   font-weight: var(--font-weight-medium);
 }
@@ -216,9 +221,9 @@
   gap: var(--space-2);
   margin-top: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  background-color: var(--color-error-light);
-  border: 1px solid rgba(220, 38, 38, 0.2);
+  background-color: var(--color-red-50);
+  border: 1px solid var(--color-red-100);
   border-radius: var(--radius-md);
-  color: var(--color-error);
+  color: var(--color-red-600);
   font-size: var(--font-size-sm);
 }

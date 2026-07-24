@@ -42,7 +42,7 @@ export function UsageCard({ tier, current, limit, resetDate }: UsageCardProps) {
         <div className={styles.progressTrack}>
           <div
             className={`${styles.progressBar} ${barClass}`}
-            style={{ width: `${percentage}%` }}
+            style={{ '--progress-width': `${percentage}%` } as React.CSSProperties}
           />
         </div>
 

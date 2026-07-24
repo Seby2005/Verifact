@@ -7,15 +7,7 @@ export interface AvatarProps {
   className?: string;
 }
 
-const PRESET_COLORS = [
-  '#2563EB', // Blue
-  '#16A34A', // Green
-  '#D97706', // Amber
-  '#7C3AED', // Purple
-  '#DB2777', // Pink
-  '#0891B2', // Cyan
-  '#EA580C', // Orange
-];
+const COLOR_COUNT = 7;
 
 function getInitials(name: string): string {
   if (!name) return 'U';
@@ -30,13 +22,12 @@ function getInitials(name: string): string {
   return clean.substring(0, 2).toUpperCase();
 }
 
-function stringToColor(str: string): string {
+function getColorIndex(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const index = Math.abs(hash) % PRESET_COLORS.length;
-  return PRESET_COLORS[index];
+  return Math.abs(hash) % COLOR_COUNT;
 }
 
 export const Avatar: React.FC<AvatarProps> = ({
@@ -45,12 +36,12 @@ export const Avatar: React.FC<AvatarProps> = ({
   className = '',
 }) => {
   const initials = getInitials(name);
-  const bgColor = stringToColor(name);
+  const colorIndex = getColorIndex(name);
+  const colorClass = styles[`color${colorIndex}`] || styles.color0;
 
   return (
     <div
-      className={`${styles.avatar} ${styles[size]} ${className}`}
-      style={{ backgroundColor: bgColor }}
+      className={`${styles.avatar} ${styles[size]} ${colorClass} ${className}`}
       aria-label={`Avatar pentru ${name}`}
       role="img"
     >
