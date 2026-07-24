@@ -30,19 +30,6 @@
   letter-spacing: 0.05em;
 }
 
-.languageIndicator {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--color-gray-50);
-  border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-full);
-  color: var(--color-gray-700);
-}
-
 .tabsList {
   display: flex;
   background-color: var(--color-gray-50);
@@ -94,37 +81,32 @@
 }
 
 .textareaWrapper {
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .textarea {
   width: 100%;
   min-height: 140px;
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--font-size-base);
-  line-height: 1.6;
-  font-family: inherit;
-  color: var(--color-gray-900);
-  background-color: var(--color-white);
-  border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-md);
-  resize: vertical;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.textarea:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-focus);
+.textareaFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-xs);
+  padding: 0 var(--space-1);
+}
+
+.charError {
+  color: var(--color-error);
+  font-weight: var(--font-weight-medium);
 }
 
 .charCounter {
-  position: absolute;
-  bottom: var(--space-3);
-  right: var(--space-3);
-  font-size: var(--font-size-xs);
   color: var(--color-gray-400);
-  pointer-events: none;
+  margin-left: auto;
 }
 
 .charWarning {
@@ -138,50 +120,6 @@
   gap: var(--space-3);
 }
 
-.urlInputRow {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.urlIcon {
-  position: absolute;
-  left: var(--space-3);
-  width: 20px;
-  height: 20px;
-  color: var(--color-gray-400);
-  pointer-events: none;
-}
-
-.urlInput {
-  width: 100%;
-  padding: var(--space-3) var(--space-4) var(--space-3) 40px;
-  font-size: var(--font-size-base);
-  border: 1px solid var(--color-gray-200);
-  border-radius: var(--radius-md);
-  color: var(--color-gray-900);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.urlInput:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-focus);
-}
-
-.urlValid {
-  border-color: var(--color-success);
-}
-
-.urlInvalid {
-  border-color: var(--color-error);
-}
-
-.urlFeedback {
-  font-size: var(--font-size-xs);
-  color: var(--color-error);
-}
-
 .urlPreviewCard {
   background-color: var(--color-gray-50);
   border: 1px solid var(--color-gray-200);
@@ -189,7 +127,7 @@
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .urlDomain {
@@ -197,8 +135,8 @@
   color: var(--color-primary);
   font-weight: var(--font-weight-semibold);
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: var(--space-1);
 }
 
 .urlTitle {
@@ -207,9 +145,14 @@
   color: var(--color-gray-900);
 }
 
-.urlMeta {
+.blockedNotice {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--color-warning);
+  background-color: var(--color-warning-light, #fffbeb);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  margin-top: var(--space-1);
 }
 
 .skeletonCard {
@@ -235,8 +178,39 @@
   100% { opacity: 0.6; }
 }
 
+.actionRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .actionRow {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.languageBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+}
+
+.langFlag {
+  font-weight: var(--font-weight-semibold);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-full);
+  color: var(--color-gray-800);
+}
+
 .submitBtn {
-  width: 100%;
+  flex: 1;
   height: 48px;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
@@ -250,7 +224,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-3);
+  margin-top: var(--space-4);
   font-size: var(--font-size-xs);
   color: var(--color-gray-600);
 }

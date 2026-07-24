@@ -1,0 +1,74 @@
+{
+  "common": {
+    "appName": "Verifact",
+    "tagline": "Inteligență Artificială pentru Verificarea Știrilor și Faptelor",
+    "search": "Căutare",
+    "cancel": "Anulează",
+    "save": "Salvează",
+    "delete": "Șterge",
+    "close": "Închide",
+    "loading": "Se încarcă...",
+    "error": "Eroare",
+    "success": "Succes",
+    "info": "Informație",
+    "warning": "Atenție",
+    "language": "Limbă",
+    "theme": "Temă",
+    "dark": "Întunecat",
+    "light": "Luminos"
+  },
+  "verify": {
+    "title": "Verifică orice afirmație sau știre",
+    "subtitle": "Upload screenshot, lipsește text sau introdu URL-ul unui articol pentru analiză în sub 30 secunde.",
+    "tabScreenshot": "Screenshot",
+    "tabText": "Text Direct",
+    "tabUrl": "URL Articol",
+    "textPlaceholder": "Lipește textul pe care vrei să îl verifici...",
+    "urlPlaceholder": "https://example.com/stire-sau-articol",
+    "submitButton": "Verifică acum",
+    "verifying": "Verificare în curs...",
+    "verdict": {
+      "true": "PROBABIL ADEVĂRAT",
+      "partial": "PARȚIAL ADEVĂRAT",
+      "unclear": "NECLAR / CONTEXT LIPSĂ",
+      "false": "PROBABIL FALS",
+      "neutral": "NEVERIFICAT"
+    }
+  },
+  "report": {
+    "title": "Raport de Verificare",
+    "verdictHeader": "Verdict și Scor de Veridicitate",
+    "executiveSummary": "Rezumat Executiv",
+    "layers": "Analiză pe Straturi",
+    "sources": "Surse Citate",
+    "disclaimer": "Acest raport este generat de AI și nu reprezintă o decizie editorială absolută. Consultați sursele citate.",
+    "share": "Partajează",
+    "downloadPdf": "Descarcă PDF"
+  },
+  "auth": {
+    "login": "Autentificare",
+    "register": "Înregistrare",
+    "email": "Adresă de Email",
+    "password": "Parolă",
+    "continueGoogle": "Continuă cu Google",
+    "continueGithub": "Continuă cu GitHub"
+  },
+  "dashboard": {
+    "title": "Dashboard Utilizator",
+    "history": "Istoric Verificări",
+    "usage": "Limita de Verificări",
+    "upgrade": "Treci la Pro"
+  },
+  "pricing": {
+    "title": "Planuri & Prețuri",
+    "free": "Gratuit",
+    "pro": "Pro",
+    "business": "Business"
+  },
+  "errors": {
+    "generic": "A apărut o eroare, te rugăm să reîncerci.",
+    "network": "Eroare de conexiune la rețea.",
+    "unauthorized": "Trebuie să fii autentificat pentru a accesa această pagină.",
+    "rateLimit": "Ai atins limita maximă de verificări pentru planul curent."
+  }
+}

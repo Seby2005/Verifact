@@ -1,0 +1,69 @@
+.tabsContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.tabList {
+  display: flex;
+  position: relative;
+  border-bottom: 2px solid var(--color-border);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.tabButton {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  outline: none;
+  z-index: 1;
+}
+
+.tabButton:hover {
+  color: var(--color-text-primary);
+}
+
+.tabButton:focus-visible {
+  outline: 2px solid var(--color-blue-500);
+  outline-offset: -2px;
+}
+
+.selected {
+  color: var(--color-blue-500);
+  font-weight: var(--font-weight-semibold);
+}
+
+.iconSlot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.indicator {
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  height: 3px;
+  background-color: var(--color-blue-500);
+  border-radius: var(--radius-full);
+  transition: transform var(--transition-base), width var(--transition-base);
+  z-index: 2;
+}
+
+.tabPanel {
+  padding: var(--space-6) 0;
+  outline: none;
+}

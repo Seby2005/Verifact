@@ -2,18 +2,13 @@
 
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Textarea';
 import styles from './ScreenshotUpload.module.css';
 
 export interface ScreenshotUploadProps {
   onTextExtracted?: (text: string, confidence: number) => void;
   onError?: (error: string) => void;
   onFileSelected?: (file: File | null) => void;
-}
-
-export interface OCRResult {
-  text: string;
-  confidence: number;
-  language: string;
 }
 
 export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
@@ -27,26 +22,41 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState<boolean>(false);
   const [extractedText, setExtractedText] = useState<string>('');
-  const [confidence, setConfidence] = useState<number>(1);
+  const [confidence, setConfidence] = useState<number | null>(null);
+  const [hasExtracted, setHasExtracted] = useState<boolean>(false);
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState<boolean>(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateAndProcessFile = (selectedFile: File): void => {
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const validateAndSelectFile = (selectedFile: File): void => {
     setErrorMsg(null);
+    setExtractedText('');
+    setConfidence(null);
+    setHasExtracted(false);
 
     // Validate size (max 10MB)
-    if (selectedFile.size > 10 * 1024 * 1024) {
-      const err = 'Fișierul este prea mare. Maxim 10MB.';
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (selectedFile.size > MAX_SIZE) {
+      const err = `Fișierul încărcat are ${formatFileSize(selectedFile.size)}. Dimensiunea maximă permisă este 10 MB.`;
       setErrorMsg(err);
       onError?.(err);
       return;
     }
 
-    // Validate type
+    // Validate MIME type strictly
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(selectedFile.type)) {
-      const err = 'Format nepermis. Acceptăm doar JPEG, PNG și WEBP.';
+    const fileNameLower = selectedFile.name.toLowerCase();
+    const hasValidExt = fileNameLower.endsWith('.jpg') || fileNameLower.endsWith('.jpeg') || fileNameLower.endsWith('.png') || fileNameLower.endsWith('.webp');
+
+    if (!allowedTypes.includes(selectedFile.type) && !hasValidExt) {
+      const err = 'Format fișier nepermis. Vă rugăm încărcați doar imagini JPEG, PNG sau WEBP.';
       setErrorMsg(err);
       onError?.(err);
       return;
@@ -57,46 +67,62 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
 
     const objectUrl = URL.createObjectURL(selectedFile);
     setPreviewUrl(objectUrl);
-
-    // Run OCR process
-    runOCR(selectedFile);
   };
 
-  const runOCR = async (imgFile: File): Promise<void> => {
+  const runOCR = async (): Promise<void> => {
+    if (!file) return;
+
     setIsExtracting(true);
-    setExtractedText('');
+    setErrorMsg(null);
 
     try {
-      // Convert image to base64
-      const base64Str = await fileToBase64(imgFile);
+      const base64Str = await fileToBase64(file);
       const pureBase64 = base64Str.replace(/^data:image\/\w+;base64,/, '');
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const response = await fetch('/api/ocr', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
         body: JSON.stringify({
           image: pureBase64,
-          mimeType: imgFile.type as 'image/jpeg' | 'image/png' | 'image/webp',
+          mimeType: file.type || 'image/jpeg',
         }),
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'A apărut o eroare la procesarea imaginii.');
+        throw new Error(data.error || 'Nu s-a putut extrage textul din imagine.');
       }
 
-      setExtractedText(data.text);
-      setConfidence(data.confidence ?? 0.9);
-      onTextExtracted?.(data.text, data.confidence ?? 0.9);
-    } catch {
-      // Fallback mock text if API route is not available or errors in DEV mode
-      const fallbackText = 'Guvernul a anunțat noi măsuri economice aplicabile de la 1 august 2025 pentru sprijinirea sectorului IMM.';
-      setExtractedText(fallbackText);
-      setConfidence(0.85);
-      onTextExtracted?.(fallbackText, 0.85);
+      const text = data.text?.trim() || '';
+      if (!text) {
+        throw new Error('Nu am putut detecta text în această imagine. Vă rugăm încercați o altă imagine sau introduceți textul manual.');
+      }
+
+      const conf = data.confidence ?? 0.85;
+      setExtractedText(text);
+      setConfidence(conf);
+      setHasExtracted(true);
+      onTextExtracted?.(text, conf);
+    } catch (err: unknown) {
+      let message = 'A apărut o eroare la extragerea textului din imagine.';
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          message = 'Procesarea OCR a depășit timpul maxim (10s). Reîncercați sau introduceți textul manual.';
+        } else {
+          message = err.message;
+        }
+      }
+      setErrorMsg(message);
+      onError?.(message);
     } finally {
       setIsExtracting(false);
     }
@@ -129,20 +155,25 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
     setDragOver(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      validateAndProcessFile(e.dataTransfer.files[0]);
+      validateAndSelectFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     if (e.target.files && e.target.files.length > 0) {
-      validateAndProcessFile(e.target.files[0]);
+      validateAndSelectFile(e.target.files[0]);
     }
   };
 
   const handleRemove = (): void => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setFile(null);
     setPreviewUrl(null);
     setExtractedText('');
+    setConfidence(null);
+    setHasExtracted(false);
     setErrorMsg(null);
     onFileSelected?.(null);
     if (fileInputRef.current) {
@@ -153,14 +184,7 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
     const val = e.target.value;
     setExtractedText(val);
-    onTextExtracted?.(val, confidence);
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024 * 1024) {
-      return `${(bytes / 1024).toFixed(1)} KB`;
-    }
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    onTextExtracted?.(val, confidence ?? 1);
   };
 
   return (
@@ -169,6 +193,7 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
+        data-testid="screenshot-input"
         className={styles.hiddenInput}
         onChange={handleFileChange}
         aria-label="Selectează fișier screenshot"
@@ -206,20 +231,20 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
           </svg>
 
           <p className={styles.primaryText}>
-            {dragOver ? 'Dă drumul pentru a uploada' : 'Trage screenshot-ul aici'}
+            {dragOver ? 'Eliberează fișierul aici' : 'Trage screenshot-ul aici (desktop)'}
           </p>
           <p className={styles.secondaryText}>sau</p>
 
           <div className={styles.selectBtn}>
             <Button variant="outline" size="sm" type="button" onClick={(e) => e.stopPropagation()}>
-              Selectează fișier
+              Alege fișier din telefon/PC
             </Button>
           </div>
 
-          <p className={styles.hintText}>Acceptăm JPEG, PNG, WEBP · Maxim 10MB</p>
+          <p className={styles.hintText}>Acceptăm imagini JPEG, PNG, WEBP · Maxim 10MB</p>
         </div>
       ) : (
-        <div className={styles.previewCard}>
+        <div className={styles.previewCard} data-testid="screenshot-preview">
           <div className={styles.previewHeader}>
             {previewUrl && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -233,7 +258,8 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
               type="button"
               className={styles.removeBtn}
               onClick={handleRemove}
-              aria-label="Șterge screenshot-ul încărcat"
+              aria-label="Șterge și încarcă alta"
+              title="Șterge și încarcă alta"
             >
               ✕
             </button>
@@ -241,22 +267,30 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
 
           <div className={styles.fileMetaRow}>
             <div className={styles.successStatus}>
-              <span>✓ Screenshot încărcat</span>
-              <span className={styles.fileSize}>({formatFileSize(file.size)})</span>
+              <span>✓ Screenshot selectat</span>
+              <span className={styles.fileSize}>({file.name} · {formatFileSize(file.size)})</span>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
-              Schimbă imaginea
-            </Button>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <Button variant="ghost" size="sm" type="button" onClick={handleRemove}>
+                Șterge și încarcă alta
+              </Button>
+              {!hasExtracted && !isExtracting && (
+                <Button variant="primary" size="sm" type="button" onClick={runOCR}>
+                  🔍 Extrage text
+                </Button>
+              )}
+            </div>
           </div>
 
           {isExtracting && (
             <div className={styles.ocrLoading}>
               <span className={styles.spinner} />
-              <span>Extrag textul din imagine...</span>
+              <span>Extrag textul din imagine (Google Cloud Vision API)...</span>
             </div>
           )}
 
-          {!isExtracting && extractedText && (
+          {hasExtracted && (
             <div className={styles.ocrSection}>
               <button
                 type="button"
@@ -264,24 +298,27 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
                 onClick={() => setIsCollapsibleOpen(!isCollapsibleOpen)}
                 aria-expanded={isCollapsibleOpen}
               >
-                <span>Text extras din imagine</span>
+                <span>Text extras din imagine (editabil)</span>
                 <span>{isCollapsibleOpen ? '▲' : '▼'}</span>
               </button>
 
               {isCollapsibleOpen && (
                 <>
-                  <textarea
+                  <Textarea
+                    label="Text extras din imagine"
+                    data-testid="ocr-text-area"
                     className={styles.ocrTextarea}
                     value={extractedText}
                     onChange={handleTextChange}
                     aria-label="Text extras din imagine editabil"
+                    placeholder="Textul extras va apărea aici..."
                   />
                   <p className={styles.ocrNote}>
-                    Textul a fost extras automat. Poți corecta dacă este necesar.
+                    Textul a fost extras automat. Poți corecta eventualele greșeli înainte de verificare.
                   </p>
-                  {confidence < 0.7 && (
-                    <div className={styles.confidenceWarning}>
-                      <span>⚠️ Calitate OCR: {Math.round(confidence * 100)}% — verifică textul</span>
+                  {confidence !== null && confidence < 0.7 && (
+                    <div className={styles.confidenceWarning} role="alert">
+                      <span>⚠️ Calitate OCR: {Math.round(confidence * 100)}% — Verifică textul extras, calitatea imaginii pare scăzută.</span>
                     </div>
                   )}
                 </>

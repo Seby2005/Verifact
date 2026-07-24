@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState } from 'react';
 import type { ScoreBreakdown as ScoreBreakdownType } from '@/types/verification';
 import styles from './ScoreBreakdown.module.css';
@@ -26,7 +26,7 @@ function ScoreBar({ value, label, max = 100 }: { value: number; label: string; m
 
 export function ScoreBreakdown({ breakdown }: ScoreBreakdownProps) {
   const [showFormula, setShowFormula] = useState(false);
-  const { finalScore } = breakdown;
+  const finalScore = breakdown?.finalScore ?? 0;
   const color = finalScore >= 85 ? 'success' : finalScore >= 60 ? 'warning' : finalScore >= 40 ? 'unclear' : 'error';
 
   return (
@@ -64,7 +64,7 @@ export function ScoreBreakdown({ breakdown }: ScoreBreakdownProps) {
 
       <div className={styles.layerBars}>
         {LAYER_KEYS.map((key, i) => (
-          <ScoreBar key={key} value={breakdown[key]} label={LAYER_LABELS[i]} />
+          <ScoreBar key={key} value={breakdown[key] ?? 0} label={LAYER_LABELS[i]} />
         ))}
       </div>
 

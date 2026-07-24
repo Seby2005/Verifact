@@ -22,7 +22,7 @@ export async function saveVerification(
     score: report.score,
     report_json: report as unknown as Record<string, unknown>,
     is_public: report.isPublic,
-    language: report.language === 'unknown' ? 'ro' : report.language,
+    language: report.language || 'ro',
     processing_time: report.processingTime,
   };
 

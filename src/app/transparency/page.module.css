@@ -1,0 +1,493 @@
+.main {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.section {
+  padding: 80px 20px;
+}
+
+.sectionAlt {
+  padding: 80px 20px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* Section 1 - Hero */
+.hero {
+  text-align: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.title {
+  font-size: 40px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 18px;
+  color: #4b5563;
+  max-width: 680px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #111827;
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 150ms ease, transform 150ms ease;
+  margin-top: 8px;
+}
+
+.ctaButton:hover {
+  background-color: #1f2937;
+  transform: translateY(-2px);
+}
+
+.githubIcon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* Section 2 - Diagram */
+.sectionHeader {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-size: 30px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.sectionSubtitle {
+  font-size: 16px;
+  color: #6c757d;
+  margin: 0;
+}
+
+.diagramFlow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
+}
+
+.flowBox {
+  background-color: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 14px 24px;
+  font-weight: 600;
+  color: #374151;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  text-align: center;
+}
+
+.arrowDown {
+  width: 24px;
+  height: 24px;
+  color: #9ca3af;
+}
+
+.layersGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.layerCard {
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 2px solid;
+  transition: transform 200ms ease;
+}
+
+.layerCard:hover {
+  transform: translateY(-4px);
+}
+
+.layerBadge {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.layerTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: #111827;
+}
+
+.layerDesc {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.s1Card {
+  background-color: #dbeafe;
+  border-color: #2563eb;
+}
+
+.s1Card .layerBadge {
+  color: #1d4ed8;
+}
+
+.s2Card {
+  background-color: #d1fae5;
+  border-color: #16a34a;
+}
+
+.s2Card .layerBadge {
+  color: #15803d;
+}
+
+.s3Card {
+  background-color: #fef3c7;
+  border-color: #d97706;
+}
+
+.s3Card .layerBadge {
+  color: #b45309;
+}
+
+.s4Card {
+  background-color: #f3e8ff;
+  border-color: #9333ea;
+}
+
+.s4Card .layerBadge {
+  color: #7e22ce;
+}
+
+/* Section 3 - Accordion */
+.accordionList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.accordionItem {
+  background-color: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 150ms ease;
+}
+
+.accordionHeader {
+  width: 100%;
+  padding: 20px 24px;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.accordionHeader:hover {
+  background-color: #f8f9fa;
+}
+
+.accordionIcon {
+  width: 20px;
+  height: 20px;
+  transition: transform 200ms ease;
+  color: #6c757d;
+}
+
+.iconRotated {
+  transform: rotate(180deg);
+}
+
+.accordionBody {
+  padding: 0 24px 24px;
+  color: #4b5563;
+  font-size: 15px;
+  line-height: 1.6;
+  border-top: 1px solid #f8f9fa;
+  margin-top: 4px;
+  padding-top: 16px;
+}
+
+.accordionBody p {
+  margin: 0 0 12px;
+}
+
+.accordionBody ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.accordionBody li {
+  margin-bottom: 6px;
+}
+
+/* Section 4 - Open Source */
+.openSourceCard {
+  background-color: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.badgeRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.badgeItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.badgeMit {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.badgeCi {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.codeBlock {
+  background-color: #1e293b;
+  color: #f8fafc;
+  padding: 16px 20px;
+  border-radius: 10px;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+/* Section 5 - Stats */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.statCard {
+  background-color: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statNumber {
+  font-size: 36px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.statLabel {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.chartContainer {
+  background-color: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chartTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.barLabel {
+  width: 120px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.barTrack {
+  flex: 1;
+  height: 20px;
+  background-color: #f3f4f6;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 500ms ease;
+}
+
+.barValue {
+  width: 48px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  text-align: right;
+}
+
+/* Section 6 - Limitations */
+.warningCard {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.warningIcon {
+  width: 28px;
+  height: 28px;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.warningContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.warningTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0;
+}
+
+.warningList {
+  margin: 0;
+  padding-left: 20px;
+  color: #78350f;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Media Queries */
+@media (max-width: 1023px) {
+  .layersGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .section,
+  .sectionAlt {
+    padding: 48px 16px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .layersGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .barRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .barLabel {
+    width: 100%;
+  }
+
+  .barTrack {
+    width: 100%;
+  }
+}

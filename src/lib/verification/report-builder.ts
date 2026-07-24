@@ -34,69 +34,86 @@ export function extractExecutiveSummary(aiAnalysis: string): string {
  * Combines sources from all layers into a unified, deduplicated, sorted list.
  */
 function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
-  const { layer1, layer2, layer3, layer4 } = params;
+  const layer1 = params.layer1 || params.layers?.layer1;
+  const layer2 = params.layer2 || params.layers?.layer2;
+  const layer3 = params.layer3 || params.layers?.layer3;
+  const layer4 = params.layer4 || params.layers?.layer4;
   const sources: CombinedSource[] = [];
 
   // Layer 1: Fact-check sources
-  for (const r of layer1.results) {
-    if (!r.reviewUrl) continue;
-    sources.push({
-      title: `Fact-check: ${r.claimReviewed.slice(0, 80)}${r.claimReviewed.length > 80 ? '...' : ''}`,
-      url: r.reviewUrl,
-      publisher: r.publisher,
-      publishedAt: r.reviewDate,
-      sourceType: 'fact_check',
-      relevance: r.relevanceScore,
-      supports: r.ratingValue > 0.6 ? true : r.ratingValue < 0.4 ? false : null,
-    });
+  if (layer1?.results) {
+    for (const r of layer1.results) {
+      const url = r.reviewUrl || r.url;
+      if (!url) continue;
+      const claimText = r.claimReviewed || r.title || '';
+      sources.push({
+        title: `Fact-check: ${claimText.slice(0, 80)}${claimText.length > 80 ? '...' : ''}`,
+        url,
+        publisher: r.publisher,
+        publishedAt: r.reviewDate || r.date,
+        sourceType: 'fact_check',
+        relevance: r.relevanceScore,
+        supports: (r.ratingValue ?? 0.5) > 0.6 ? true : (r.ratingValue ?? 0.5) < 0.4 ? false : null,
+      });
+    }
   }
 
   // Layer 2: News articles
-  for (const a of layer2.results) {
-    if (!a.articleUrl) continue;
-    sources.push({
-      title: a.title,
-      url: a.articleUrl,
-      publisher: a.source,
-      publishedAt: a.publishedAt,
-      sourceType: 'news',
-      relevance: a.credibilityScore,
-      supports:
-        a.sentiment === 'confirms' ? true
-        : a.sentiment === 'contradicts' ? false
-        : null,
-    });
+  if (layer2?.results) {
+    for (const a of layer2.results) {
+      const url = a.articleUrl || a.url;
+      if (!url) continue;
+      sources.push({
+        title: a.title,
+        url,
+        publisher: a.source,
+        publishedAt: a.publishedAt,
+        sourceType: 'news',
+        relevance: a.credibilityScore ?? 0.5,
+        supports:
+          a.sentiment === 'confirms' ? true
+          : a.sentiment === 'contradicts' ? false
+          : null,
+      });
+    }
   }
 
   // Layer 3: Official sources
-  for (const o of layer3.results) {
-    if (!o.documentUrl) continue;
-    sources.push({
-      title: o.title,
-      url: o.documentUrl,
-      publisher: o.organization,
-      publishedAt: o.publishedAt,
-      sourceType: 'official',
-      relevance: 0.9, // Official sources are always highly relevant
-      supports:
-        o.supportsOrDenies === 'supports' ? true
-        : o.supportsOrDenies === 'denies' ? false
-        : null,
-    });
+  if (layer3?.results) {
+    for (const o of layer3.results) {
+      const url = o.documentUrl || o.url;
+      if (!url) continue;
+      sources.push({
+        title: o.title,
+        url,
+        publisher: o.organization || o.publisher || 'Oficial',
+        publishedAt: o.publishedAt || o.publishedDate,
+        sourceType: 'official',
+        relevance: 0.9, // Official sources are always highly relevant
+        supports:
+          o.supportsOrDenies === 'supports' ? true
+          : o.supportsOrDenies === 'denies' ? false
+          : null,
+      });
+    }
   }
 
   // Layer 4: Social media
-  for (const p of layer4.results) {
-    if (!p.postUrl) continue;
-    sources.push({
-      title: `${p.author}: "${p.content.slice(0, 60)}${p.content.length > 60 ? '...' : ''}"`,
-      url: p.postUrl,
-      publisher: p.platform,
-      publishedAt: p.postDate,
-      sourceType: 'social',
-      relevance: p.isOriginalSource ? 0.8 : 0.4,
-      supports: null, // Social media posts are informational, not verdicts
-    });
+  if (layer4?.results) {
+    for (const p of layer4.results) {
+      const url = p.postUrl || p.url;
+      if (!url) continue;
+      const text = p.content || p.text || '';
+      sources.push({
+        title: `${p.author || 'User'}: "${text.slice(0, 60)}${text.length > 60 ? '...' : ''}"`,
+        url,
+        publisher: p.platform,
+        publishedAt: p.postDate || p.date,
+        sourceType: 'social',
+        relevance: p.isOriginalSource ? 0.8 : 0.4,
+        supports: null, // Social media posts are informational, not verdicts
+      });
+    }
   }
 
   // Deduplicate by URL
@@ -108,9 +125,11 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
   });
 
   // Sort: official > fact_check > news > social, then by relevance
-  const typeOrder = { official: 0, fact_check: 1, news: 2, social: 3 };
+  const typeOrder: Record<string, number> = { official: 0, fact_check: 1, news: 2, social: 3 };
   unique.sort((a, b) => {
-    const typeDiff = typeOrder[a.sourceType] - typeOrder[b.sourceType];
+    const aOrder = typeOrder[a.sourceType || ''] ?? 99;
+    const bOrder = typeOrder[b.sourceType || ''] ?? 99;
+    const typeDiff = aOrder - bOrder;
     if (typeDiff !== 0) return typeDiff;
     return b.relevance - a.relevance;
   });
@@ -133,8 +152,8 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
     processingTime,
   } = params;
 
-  const verdict = scoreToVerdict(scoreBreakdown.finalScore);
-  const confidenceLevel = scoreToConfidence(scoreBreakdown.availableLayers);
+  const verdict = scoreToVerdict(scoreBreakdown?.finalScore ?? 50);
+  const confidenceLevel = scoreToConfidence(scoreBreakdown?.availableLayers ?? 4);
 
   const disclaimer =
     input.language === 'ro'
@@ -142,26 +161,35 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
       : 'This report is automatically generated by an AI system and does not represent a final editorial decision. The veracity score is an estimate based on sources available at the time of verification. Consult the cited sources for full context. The application takes no responsibility for third-party source content.';
 
   const sources = buildCombinedSources(params);
-  const executiveSummary = extractExecutiveSummary(aiAnalysis);
+  const rawAnalysis = typeof aiAnalysis === 'object' ? aiAnalysis.summary : (aiAnalysis ?? '');
+  const executiveSummary = extractExecutiveSummary(rawAnalysis);
 
   return {
     id: crypto.randomUUID(),
+    claim: input.text,
     inputText: input.text,
     inputType: input.inputType,
     language: input.language,
     verdict,
-    score: scoreBreakdown.finalScore,
+    score: scoreBreakdown?.finalScore ?? 50,
     confidenceLevel,
+    processingTimeMs: processingTime,
+    processingTime,
     scoreBreakdown,
     executiveSummary,
+    layers: {
+      layer1: layer1 || { status: 'unavailable', results: [] },
+      layer2: layer2 || { status: 'unavailable', results: [] },
+      layer3: layer3 || { status: 'unavailable', results: [] },
+      layer4: layer4 || { status: 'unavailable', results: [] },
+    },
     layer1,
     layer2,
     layer3,
     layer4,
-    aiAnalysis,
+    aiAnalysis: typeof aiAnalysis === 'string' ? aiAnalysis : aiAnalysis?.summary,
     sources,
     disclaimer,
-    processingTime,
     createdAt: new Date().toISOString(),
     isPublic: input.isPublic,
     userId: input.userId,

@@ -13,7 +13,6 @@ interface ReportPageProps { params: { id: string }; }
 
 async function getReport(id: string): Promise<VerificationReport | null> {
   const supabase = createClient();
-  // Use a broader type cast to avoid Supabase 'never' inference on partial select
   type VerificationRow = { report_json: Record<string, unknown> };
   const { data, error } = await (supabase.from('verifications') as unknown as {
     select: (cols: string) => {
@@ -44,5 +43,44 @@ export default async function ReportPage({ params }: ReportPageProps) {
   const ratingValue = Math.round((report.score / 100) * 4 + 1);
   const verdictNames: Record<string,string> = { true: 'Adevarat', partial: 'Partial Adevarat', unclear: 'Neclar', false: 'Fals' };
   const jsonLd = { '@context': 'https://schema.org', '@type': 'ClaimReview', url: reportUrl, claimReviewed: report.inputText, datePublished: report.createdAt, reviewRating: { '@type': 'Rating', ratingValue: String(ratingValue), bestRating: '5', worstRating: '1', alternateName: verdictNames[report.verdict] }, author: { '@type': 'Organization', name: 'AI Fact-Checker', url: appUrl } };
-  return (<><script type='application/ld+json' dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} /><main className={styles.main}><VerdictHeader verdict={report.verdict} score={report.score} inputText={report.inputText} confidenceLevel={report.confidenceLevel} availableLayers={report.scoreBreakdown.availableLayers} processingTime={report.processingTime} createdAt={report.createdAt} /><div className={styles.content}><section className={styles.summaryCard} aria-labelledby='summary-heading'><h2 id='summary-heading' className={styles.summaryHeading}>Rezumat executiv</h2><p className={styles.summaryText}>{report.executiveSummary}</p></section><ScoreBreakdown breakdown={report.scoreBreakdown} /><LayerDetails layer1={report.layer1} layer2={report.layer2} layer3={report.layer3} layer4={report.layer4} aiAnalysis={report.aiAnalysis} /><SourcesList sources={report.sources} /><ShareButtons reportId={report.id} reportUrl={reportUrl} disclaimer={report.disclaimer} /></div></main></>);
+  
+  const layer1 = report.layer1 || report.layers?.layer1;
+  const layer2 = report.layer2 || report.layers?.layer2;
+  const layer3 = report.layer3 || report.layers?.layer3;
+  const layer4 = report.layer4 || report.layers?.layer4;
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <main className={styles.main}>
+        <VerdictHeader
+          verdict={report.verdict}
+          score={report.score}
+          inputText={report.inputText || report.claim || ''}
+          confidenceLevel={report.confidenceLevel ?? 'medium'}
+          availableLayers={Array.isArray(report.scoreBreakdown?.availableLayers) ? report.scoreBreakdown.availableLayers.length : 4}
+          processingTime={report.processingTimeMs ?? report.processingTime ?? 0}
+          createdAt={report.createdAt}
+        />
+        <div className={styles.content}>
+          <section className={styles.summaryCard} aria-labelledby="summary-heading">
+            <h2 id="summary-heading" className={styles.summaryHeading}>Rezumat executiv</h2>
+            <p className={styles.summaryText}>{report.executiveSummary}</p>
+          </section>
+          {report.scoreBreakdown && <ScoreBreakdown breakdown={report.scoreBreakdown} />}
+          {layer1 && layer2 && layer3 && layer4 && (
+            <LayerDetails
+              layer1={layer1}
+              layer2={layer2}
+              layer3={layer3}
+              layer4={layer4}
+              aiAnalysis={typeof report.aiAnalysis === 'string' ? report.aiAnalysis : report.executiveSummary}
+            />
+          )}
+          {report.sources && <SourcesList sources={report.sources} />}
+          <ShareButtons reportId={report.id} reportUrl={reportUrl} disclaimer={report.disclaimer || 'Acest raport este generat de AI.'} />
+        </div>
+      </main>
+    </>
+  );
 }

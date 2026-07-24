@@ -6,6 +6,9 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   isLoading?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  tooltipWhenDisabled?: string;
   children: React.ReactNode;
 }
 
@@ -14,11 +17,16 @@ export const Button: React.FC<ButtonProps> = ({
   size = 'md',
   fullWidth = false,
   isLoading = false,
+  leftIcon,
+  rightIcon,
+  tooltipWhenDisabled,
   children,
   className = '',
   disabled,
   ...props
 }) => {
+  const isButtonDisabled = disabled || isLoading;
+
   const classNames = [
     styles.button,
     styles[variant],
@@ -30,19 +38,35 @@ export const Button: React.FC<ButtonProps> = ({
     .filter(Boolean)
     .join(' ');
 
-  return (
+  const buttonElement = (
     <button
       className={classNames}
-      disabled={disabled || isLoading}
+      disabled={isButtonDisabled}
       aria-busy={isLoading}
+      aria-disabled={isButtonDisabled}
       {...props}
     >
       {isLoading ? (
         <span className={styles.spinner} aria-hidden="true" />
+      ) : leftIcon ? (
+        <span className={styles.iconSlot}>{leftIcon}</span>
       ) : null}
-      <span className={isLoading ? styles.hiddenText : styles.text}>
-        {children}
-      </span>
+
+      <span className={styles.label}>{children}</span>
+
+      {!isLoading && rightIcon ? (
+        <span className={styles.iconSlot}>{rightIcon}</span>
+      ) : null}
     </button>
   );
+
+  if (disabled && tooltipWhenDisabled) {
+    return (
+      <span className={styles.tooltipWrapper} title={tooltipWhenDisabled}>
+        {buttonElement}
+      </span>
+    );
+  }
+
+  return buttonElement;
 };

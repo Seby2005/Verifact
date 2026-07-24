@@ -27,10 +27,10 @@ function validateAIOutput(output: string, context: AIAnalysisContext): void {
 
   // Build set of valid source URLs from context
   const validUrls = new Set<string>();
-  context.layer1.results.forEach(r => r.reviewUrl && validUrls.add(r.reviewUrl));
-  context.layer2.results.forEach(a => a.articleUrl && validUrls.add(a.articleUrl));
-  context.layer3.results.forEach(o => o.documentUrl && validUrls.add(o.documentUrl));
-  context.layer4.results.forEach(p => p.postUrl && validUrls.add(p.postUrl));
+  context.layers?.layer1?.results?.forEach(r => r.reviewUrl && validUrls.add(r.reviewUrl));
+  context.layers?.layer2?.results?.forEach(a => a.articleUrl && validUrls.add(a.articleUrl));
+  context.layers?.layer3?.results?.forEach(o => o.documentUrl && validUrls.add(o.documentUrl));
+  context.layers?.layer4?.results?.forEach(p => p.postUrl && validUrls.add(p.postUrl));
 
   // Check for hallucinated URLs
   for (const url of mentionedUrls) {

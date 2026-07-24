@@ -111,9 +111,10 @@ export async function POST(request: Request): Promise<Response> {
     const report = await verifyContent({
       text: validatedInput.text,
       language: validatedInput.language,
+      type: validatedInput.inputType,
       inputType: validatedInput.inputType,
       isPublic: validatedInput.isPublic,
-      userId: user?.id ?? null,
+      userId: user?.id ?? undefined,
     });
 
     // 5. Save to Supabase (non-blocking for cache hits)

@@ -1,63 +1,70 @@
-.overlay {
+.backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-  backdrop-filter: blur(2px);
-  animation: fadeIn 0.2s ease-in-out;
+  padding: var(--space-4);
+  animation: fadeIn var(--transition-fast);
 }
 
-.content {
-  background-color: var(--color-white);
+.modal {
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-modal);
   width: 100%;
-  max-width: 540px;
-  max-height: 90vh;
+  max-width: 560px;
+  max-height: calc(100vh - var(--space-8));
   display: flex;
   flex-direction: column;
+  z-index: var(--z-modal);
+  outline: none;
+  animation: scaleUp var(--transition-fast);
   overflow: hidden;
-  animation: scaleUp 0.2s ease-in-out;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--color-gray-200);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .title {
-  font-size: 1.25rem;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-900);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
 }
 
 .closeButton {
-  font-size: 1.5rem;
-  line-height: 1;
-  color: var(--color-gray-500);
-  padding: 0.25rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  padding: var(--space-1);
   border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .closeButton:hover {
-  color: var(--color-gray-800);
+  color: var(--color-text-primary);
   background-color: var(--color-gray-100);
 }
 
 .body {
-  padding: 1.25rem;
+  padding: var(--space-6);
   overflow-y: auto;
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-base);
 }
 
 @keyframes fadeIn {
@@ -71,11 +78,11 @@
 
 @keyframes scaleUp {
   from {
-    transform: scale(0.95);
     opacity: 0;
+    transform: scale(0.96);
   }
   to {
-    transform: scale(1);
     opacity: 1;
+    transform: scale(1);
   }
 }

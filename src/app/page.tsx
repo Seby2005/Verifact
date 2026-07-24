@@ -1,86 +1,56 @@
-'use client';
+import React from 'react';
+import Link from 'next/link';
+import { Hero, VerifySection, AnimatedStats, HowItWorks, ImpactStats, Testimonials, FinalCTA } from '@/components/home';
 
-import React, { useState } from 'react';
-import { Hero, AnimatedStats, HowItWorks, ImpactStats, Testimonials, FinalCTA } from '@/components/home';
-import { VerifyForm, VerifyFormData } from '@/components/verify/VerifyForm';
-import { ProgressTracker } from '@/components/verify/ProgressTracker';
-import { Card, Badge, Button } from '@/components/ui';
+export const metadata = {
+  title: 'AI Fact-Checker — Verificare instantă de știri și dezinformare',
+  description: 'Aplicație open source de fact-checking. Verifică instant screenshot-uri, text și URL-uri cu inteligență artificială transparentă și surse jurnalistice/oficiale.',
+};
 
 export default function HomePage() {
-  const [isVerifying, setIsVerifying] = useState<boolean>(false);
-  const [isComplete, setIsComplete] = useState<boolean>(false);
-  const [lastSubmittedData, setLastSubmittedData] = useState<VerifyFormData | null>(null);
-
-  const handleFormSubmit = async (data: VerifyFormData): Promise<void> => {
-    setLastSubmittedData(data);
-    setIsComplete(false);
-    setIsVerifying(true);
-  };
-
-  const handleProgressComplete = (): void => {
-    setIsVerifying(false);
-    setIsComplete(true);
-  };
-
-  const handleReset = (): void => {
-    setIsVerifying(false);
-    setIsComplete(false);
-    setLastSubmittedData(null);
-  };
-
   return (
-    <>
+    <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Above the fold: Hero + Formular de verificare */}
       <Hero />
 
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1rem' }}>
-        {!isVerifying && !isComplete && (
-          <VerifyForm onSubmit={handleFormSubmit} />
-        )}
+      <React.Suspense fallback={null}>
+        <VerifySection />
+      </React.Suspense>
 
-        {isVerifying && (
-          <ProgressTracker autoPlay onComplete={handleProgressComplete} />
-        )}
-
-        {isComplete && (
-          <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-            <Card variant="default" padding="lg">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Badge variant="partial">⚠️ PARȚIAL ADEVĂRAT (67%)</Badge>
-                  <span style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>
-                    Sprint 1 — Stub Raport
-                  </span>
-                </div>
-
-                <div style={{ borderTop: '1px solid var(--color-gray-100)', paddingTop: '1rem' }}>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-gray-900)', marginBottom: '0.5rem' }}>
-                    Afirmația analizată:
-                  </h3>
-                  <blockquote style={{ fontSize: '0.95rem', color: 'var(--color-gray-700)', fontStyle: 'italic', background: 'var(--color-gray-50)', padding: '0.75rem 1rem', borderRadius: '6px', borderLeft: '3px solid var(--color-primary)' }}>
-                    &ldquo;{lastSubmittedData?.text || 'Conținut de verificat'}&rdquo;
-                  </blockquote>
-                </div>
-
-                <p style={{ fontSize: '0.9rem', color: 'var(--color-gray-600)', lineHeight: 1.5 }}>
-                  Raport real detaliat și căutare multi-strat disponibilă în Sprint 2. Conținutul a fost procesat cu succes și extras corect.
-                </p>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                  <Button variant="primary" size="md" onClick={handleReset}>
-                    Verifică alt conținut
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
-      </div>
-
+      {/* Statistici reale preluated din DB */}
       <AnimatedStats />
+
+      {/* Cum funcționează secțiunea vizuală 3-4 pași */}
       <HowItWorks />
+
       <ImpactStats />
+
+      {/* Secțiune Încredere & Transparență / Open Source */}
+      <section style={{ backgroundColor: 'var(--color-gray-50)', padding: '4rem 1rem', borderTop: '1px solid var(--color-gray-100)' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-gray-900)', marginBottom: '1rem' }}>
+            Transparență Radicală & Cod Sursă Deschis
+          </h2>
+          <p style={{ fontSize: '1rem', color: 'var(--color-gray-600)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            Proiectul nostru este 100% open source под licență MIT. Algoritmul de fact-checking, sursele interogate și formulele de scoring sunt publice. Nu luăm decizii editoriale politice.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/transparency" style={{ textDecoration: 'none' }}>
+              <span style={{ display: 'inline-block', padding: '0.75rem 1.25rem', backgroundColor: 'var(--color-primary)', color: '#fff', borderRadius: '6px', fontWeight: 600, fontSize: '0.9rem' }}>
+                Vezi explicația algoritmului →
+              </span>
+            </Link>
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+              <span style={{ display: 'inline-block', padding: '0.75rem 1.25rem', backgroundColor: '#fff', color: 'var(--color-gray-800)', border: '1px solid var(--color-gray-300)', borderRadius: '6px', fontWeight: 600, fontSize: '0.9rem' }}>
+                Codul pe GitHub (MIT License)
+              </span>
+            </a>
+          </div>
+        </div>
+      </section>
+
       <Testimonials />
       <FinalCTA />
-    </>
+    </main>
   );
 }

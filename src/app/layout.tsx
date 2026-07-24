@@ -1,22 +1,28 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+
+// Inter is self-hosted via @fontsource (not next/font/google): this removes
+// a network dependency on fonts.googleapis.com at *build time* (which broke
+// builds in network-restricted CI/sandbox environments) and stops the
+// browser from making a third-party request to Google Fonts on every page
+// load — a small privacy win that fits the project's stated confidentiality
+// values (see docs/PRD.md).
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
 
 import './globals.css';
 import { Navbar, Footer } from '@/components/layout';
 import { AuthProvider } from '@/context/AuthContext';
+import { I18nProvider } from '@/i18n';
+import { createMetadata } from '@/lib/seo/metadata';
+import { APP_NAME, APP_DESCRIPTION } from '@/config/branding';
 
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
-  display: 'swap',
+export const metadata: Metadata = createMetadata({
+  title: `${APP_NAME} — Inteligență Artificială pentru Verificarea Știrilor și Faptelor`,
+  description: APP_DESCRIPTION,
+  path: '/',
 });
-
-export const metadata: Metadata = {
-  title: 'AI Fact-Checker — Verifică știrile cu inteligență artificială',
-  description:
-    'Aplicație open source de verificare a știrilor și conținutului de pe rețelele sociale, folosind inteligență artificială. Upload screenshot sau text și primești un raport detaliat.',
-};
 
 export default function RootLayout({
   children,
@@ -24,13 +30,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ro" className={inter.variable}>
-      <body className={inter.className} style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <AuthProvider>
-          <Navbar />
-          <main style={{ flex: 1 }}>{children}</main>
-          <Footer />
-        </AuthProvider>
+    <html lang="ro">
+      <body style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <I18nProvider>
+          <AuthProvider>
+            <Navbar />
+            <main style={{ flex: 1 }}>{children}</main>
+            <Footer />
+          </AuthProvider>
+        </I18nProvider>
       </body>
     </html>
   );

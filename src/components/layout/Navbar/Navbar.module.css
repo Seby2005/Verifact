@@ -97,6 +97,27 @@
   }
 }
 
+.langSelector {
+  display: flex;
+  align-items: center;
+}
+
+.langSelect {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  outline: none;
+}
+
+.langSelect:hover {
+  border-color: var(--color-gray-300);
+}
+
 .userMenu {
   position: relative;
 }
@@ -301,6 +322,32 @@
 .mobileNavLink:hover,
 .mobileActiveLink {
   color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.mobileLangRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  padding: var(--space-2) 0;
+}
+
+.mobileLangBtn {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-200);
+  background: var(--color-gray-50);
+  color: var(--color-gray-700);
+  cursor: pointer;
+}
+
+.activeLangBtn {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
   font-weight: var(--font-weight-semibold);
 }
 

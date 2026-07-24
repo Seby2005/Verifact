@@ -212,7 +212,9 @@ export async function runLayer3(
 
   return {
     status: 'success',
+    sources: sources.slice(0, 6),
     results: sources.slice(0, 6),
+    summary: `${sources.length} official documents found`,
     layerScore: calculateLayer3Score(sources),
     processingTime: Date.now() - startTime,
   };

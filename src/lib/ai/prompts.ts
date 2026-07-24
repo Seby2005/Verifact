@@ -1,4 +1,4 @@
-import type { AIAnalysisContext } from '@/types/verification';
+import type { AIAnalysisContext, ScoreBreakdown } from '@/types/verification';
 
 interface PromptData {
   inputText: string;
@@ -6,7 +6,7 @@ interface PromptData {
   newsArticles: string;
   officialDocs: string;
   socialPosts: string;
-  scoreBreakdown: AIAnalysisContext['scoreBreakdown'];
+  scoreBreakdown: ScoreBreakdown;
 }
 
 function buildRomanianPrompt(data: PromptData): string {
@@ -31,7 +31,9 @@ REGULI STRICTE — RESPECTĂ-LE FĂRĂ EXCEPȚIE:
 ═══════════════════════════════════════════
 AFIRMAȚIA DE VERIFICAT:
 ═══════════════════════════════════════════
-"${data.inputText}"
+<user_claim>
+${data.inputText}
+</user_claim>
 
 ═══════════════════════════════════════════
 SCORUL CALCULAT ALGORITMIC:
@@ -102,7 +104,9 @@ STRICT RULES — FOLLOW WITHOUT EXCEPTION:
 ═══════════════════════════════════════════
 CLAIM TO VERIFY:
 ═══════════════════════════════════════════
-"${data.inputText}"
+<user_claim>
+${data.inputText}
+</user_claim>
 
 ═══════════════════════════════════════════
 ALGORITHMIC SCORE:
@@ -156,39 +160,42 @@ YOUR RESPONSE STRUCTURE (follow exactly):
  * Includes all layer results as structured context for Gemini.
  */
 export function buildAnalysisPrompt(context: AIAnalysisContext): string {
-  const { inputText, language, layer1, layer2, layer3, layer4, scoreBreakdown } = context;
+  const inputText = context.inputText || context.claim || context.input?.text || '';
+  const language = context.language;
+  const { layer1, layer2, layer3, layer4 } = context.layers;
+  const scoreBreakdown: ScoreBreakdown = context.scoreBreakdown || { finalScore: 0, availableLayers: 4, weights: { factCheck: 0.4, news: 0.3, official: 0.3 } };
 
   // Format layer 1 results
-  const factChecks = layer1.results.length > 0
-    ? layer1.results
-        .map(r => `- "${r.claimReviewed.slice(0, 150)}" — ${r.rating} (${r.publisher})`)
+  const factChecks = (layer1.results || []).length > 0
+    ? (layer1.results || [])
+        .map(r => `- "${(r.claimReviewed || '').slice(0, 150)}" — ${r.rating} (${r.publisher})`)
         .join('\n')
     : language === 'ro'
       ? 'Niciun fact-check anterior găsit pentru această afirmație.'
       : 'No previous fact-checks found for this claim.';
 
   // Format layer 2 results
-  const newsArticles = layer2.results.length > 0
-    ? layer2.results
-        .map(a => `- [${a.sentiment.toUpperCase()}] "${a.title}" — ${a.source}`)
+  const newsArticles = (layer2.results || []).length > 0
+    ? (layer2.results || [])
+        .map(a => `- [${(a.sentiment || 'neutral').toUpperCase()}] "${a.title}" — ${a.source}`)
         .join('\n')
     : language === 'ro'
       ? 'Niciun articol de știri relevant găsit.'
       : 'No relevant news articles found.';
 
   // Format layer 3 results
-  const officialDocs = layer3.results.length > 0
-    ? layer3.results
-        .map(o => `- ${o.organization}: "${o.relevantQuote.slice(0, 200)}"`)
+  const officialDocs = (layer3.results || []).length > 0
+    ? (layer3.results || [])
+        .map(o => `- ${o.organization || o.publisher || 'Oficial'}: "${(o.relevantQuote || o.snippet || '').slice(0, 200)}"`)
         .join('\n')
     : language === 'ro'
       ? 'Nicio sursă oficială găsită.'
       : 'No official sources found.';
 
   // Format layer 4 results
-  const socialPosts = layer4.results.length > 0
-    ? layer4.results
-        .map(p => `- ${p.author}${p.authorRole ? ` (${p.authorRole})` : ''}: "${p.content.slice(0, 200)}"`)
+  const socialPosts = (layer4.results || []).length > 0
+    ? (layer4.results || [])
+        .map(p => `- ${p.author || 'User'}: "${(p.content || p.text || '').slice(0, 200)}"`)
         .join('\n')
     : language === 'ro'
       ? 'Nicio declarație publică relevantă găsită.'

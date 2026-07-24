@@ -76,6 +76,12 @@ export function calculateScore(layers: {
   const availableLayers = (Object.values(available) as boolean[]).filter(Boolean).length;
 
   return {
+    weights: {
+      factCheck: 0.35,
+      news: 0.30,
+      official: 0.25,
+      social: 0.10,
+    },
     layer1Weight: 0.35,
     layer2Weight: 0.30,
     layer3Weight: 0.25,

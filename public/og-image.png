@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" fill="none">
+  <rect width="1200" height="630" fill="#0F172A"/>
+  <rect opacity="0.1" width="1200" height="630" fill="url(#grid)"/>
+  
+  <g transform="translate(100, 180)">
+    <!-- Symbol -->
+    <path d="M48 8L12 24V52C12 76.6 29 99 48 104C67 99 84 76.6 84 52V24L48 8Z" fill="#2563EB"/>
+    <path d="M32 52L42 62 L64 38" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Title -->
+    <text x="120" y="65" font-family="'Inter', sans-serif" font-weight="800" font-size="64" fill="#FFFFFF">
+      Veri<tspan fill="#3B82F6">fact</tspan>
+    </text>
+    <text x="120" y="110" font-family="'Inter', sans-serif" font-weight="500" font-size="28" fill="#94A3B8">
+      Inteligență Artificială pentru Verificarea Știrilor și Faptelor
+    </text>
+
+    <!-- Subtitle / Card -->
+    <rect x="0" y="170" width="1000" height="140" rx="16" fill="#1E293B" stroke="#334155" stroke-width="2"/>
+    <text x="40" y="230" font-family="'Inter', sans-serif" font-weight="600" font-size="26" fill="#F8FAFC">
+      Transparent. Incertitudine Măsurabilă. Surse Verificabile Direct.
+    </text>
+    <text x="40" y="275" font-family="'Inter', sans-serif" font-weight="400" font-size="20" fill="#94A3B8">
+      Verifică screenshot-uri, articole sau text direct în limba Română și Engleză.
+    </text>
+  </g>
+
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+    </pattern>
+  </defs>
+</svg>

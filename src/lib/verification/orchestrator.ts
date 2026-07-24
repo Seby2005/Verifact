@@ -110,8 +110,10 @@ export async function verifyContent(
 
   // 6. Generate AI analysis with all results as context
   const aiAnalysis = await generateAIAnalysis({
+    claim: input.text,
     inputText: input.text,
     language: input.language,
+    layers: { layer1, layer2, layer3, layer4 },
     layer1,
     layer2,
     layer3,
@@ -122,6 +124,7 @@ export async function verifyContent(
   // 7. Build final report
   const report = buildReport({
     input,
+    layers: { layer1, layer2, layer3, layer4 },
     layer1,
     layer2,
     layer3,

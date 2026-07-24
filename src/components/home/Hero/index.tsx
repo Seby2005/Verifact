@@ -1,51 +1,39 @@
-'use client';
-
 import React from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import styles from './Hero.module.css';
 
 export const Hero: React.FC = () => {
-  const scrollTo = (selector: string): void => {
-    const el = document.querySelector(selector);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
     <section className={styles.section} aria-label="Hero">
       <div className={styles.badge}>
-        <span>🆕 Acum disponibil în română</span>
+        <span>🛡️ Transparență maximă & Cod Open Source</span>
       </div>
 
       <h1 className={styles.title}>
-        Verifică orice știre în<br />
-        secunde, cu <span className={styles.highlight}>AI</span>
+        Acces instant la adevăr, prin <br />
+        <span className={styles.highlight}>inteligență artificială</span> și surse verificabile
       </h1>
 
       <p className={styles.subtitle}>
-        Încarcă un screenshot, introdu un text sau un URL și primești instant un raport detaliat cu surse verificabile. Gratuit, transparent și open source.
+        Încarcă un screenshot sau introdu text/URL și primești un raport detaliat de veridicitate cu surse oficiale citate în sub 30 de secunde. Fără manipulare, fără partizanat politic.
       </p>
 
       <div className={styles.ctaGroup}>
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={() => scrollTo('#verify-section')}
-        >
-          Verifică acum — gratuit
-        </Button>
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={() => scrollTo('#how-it-works')}
-        >
-          Cum funcționează?
-        </Button>
+        <Link href="#verify-section">
+          <Button variant="primary" size="lg">
+            Verifică acum — gratuit
+          </Button>
+        </Link>
+        <Link href="#how-it-works">
+          <Button variant="outline" size="lg">
+            Cum funcționează?
+          </Button>
+        </Link>
       </div>
 
       <p className={styles.disclaimer}>
-        Fără cont necesar · 10 verificări gratuite/lună · Open Source
+        Fără cont obligatoriu · 10 verificări gratuite/lună · Licență MIT
       </p>
     </section>
   );

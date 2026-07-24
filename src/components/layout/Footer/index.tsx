@@ -3,6 +3,8 @@ import Link from 'next/link';
 import styles from './Footer.module.css';
 
 export const Footer: React.FC = () => {
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer className={styles.footer}>
       <div className={styles.container}>
@@ -26,16 +28,16 @@ export const Footer: React.FC = () => {
               <span>FactCheck AI</span>
             </Link>
             <p className={styles.tagline}>
-              Instrument open source de verificare a știrilor și conținutului digital folosind inteligență artificială transparentă și baze de date verificate.
+              Platformă open source de verificare a știrilor și conținutului digital, bazată pe inteligență artificială transparentă și baze de date de fact-checking verificate.
             </p>
             <div className={styles.openSourceBadge}>
-              <span>Open Source cu ❤️ pentru adevăr</span>
+              <span>Licență MIT · Cod deschis pe GitHub</span>
             </div>
           </div>
 
-          {/* Column 2: Product Links */}
+          {/* Column 2: Product & Nav Links */}
           <div>
-            <h2 className={styles.colTitle}>Produs</h2>
+            <h2 className={styles.colTitle}>Produs & Navigare</h2>
             <ul className={styles.linkList}>
               <li>
                 <Link href="/" className={styles.link}>
@@ -53,11 +55,6 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/#how-it-works" className={styles.link}>
-                  Cum funcționează
-                </Link>
-              </li>
-              <li>
                 <Link href="/transparency" className={styles.link}>
                   Transparență & Algoritm
                 </Link>
@@ -65,9 +62,9 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Column 3: External & Resources */}
+          {/* Column 3: Legal & Resources */}
           <div>
-            <h2 className={styles.colTitle}>Resurse & Comunitate</h2>
+            <h2 className={styles.colTitle}>Legal & Comunitate</h2>
             <ul className={styles.linkList}>
               <li>
                 <a
@@ -88,41 +85,37 @@ export const Footer: React.FC = () => {
                 </a>
               </li>
               <li>
-                <a
-                  href="/transparency#api-docs"
-                  className={styles.link}
-                >
-                  Documentație API
-                </a>
+                <Link href="/terms" className={styles.link}>
+                  Termeni și Condiții
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className={styles.link}>
+                  Politica de Confidențialitate
+                </Link>
               </li>
               <li>
                 <a
-                  href="https://github.com"
+                  href="https://github.com/LICENSE"
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.link}
                 >
-                  Contribuie la proiect
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/issues"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.link}
-                >
-                  Raportează o problemă
+                  Licență MIT
                 </a>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom copyright row */}
+        {/* Disclaimer row & Copyright */}
         <div className={styles.bottomRow}>
-          <span>© 2025 FactCheck AI. Licențiat MIT.</span>
-          <span>Construit cu Next.js · Gemini AI · Supabase</span>
+          <div>
+            <span>© {currentYear} FactCheck AI. Proiect Open Source sub Licență MIT.</span>
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-gray-500)', marginTop: '0.25rem' }}>
+            ⚠️ Rapoartele sunt generate automat de AI pe baza surselor colectate și nu reprezintă o judecată editorială definitivă.
+          </div>
         </div>
       </div>
     </footer>

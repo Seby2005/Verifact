@@ -1,168 +1,212 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/Button';
+import { LayerStatus } from '@/types/verification';
 import styles from './ProgressTracker.module.css';
 
-export interface ProgressStep {
+export interface StepItem {
   id: string;
   label: string;
   icon: string;
-  estimatedDuration: number;
+  status: LayerStatus;
+  estimatedSec: number;
 }
 
 export interface ProgressTrackerProps {
-  steps?: ProgressStep[];
-  currentStepIndex?: number;
-  isComplete?: boolean;
-  onComplete?: () => void;
-  autoPlay?: boolean;
+  reportId?: string | null;
+  onComplete?: (reportId: string) => void;
+  onError?: (error: string) => void;
+  onRetry?: () => void;
 }
 
-const defaultSteps: ProgressStep[] = [
-  { id: '1', label: 'Analizez conținutul...', icon: '🔍', estimatedDuration: 2000 },
-  { id: '2', label: 'Caut în baze de fact-checking...', icon: '📚', estimatedDuration: 5000 },
-  { id: '3', label: 'Verific știrile convenționale...', icon: '📰', estimatedDuration: 5000 },
-  { id: '4', label: 'Consult surse oficiale...', icon: '🏛️', estimatedDuration: 5000 },
-  { id: '5', label: 'Verific declarații publice...', icon: '💬', estimatedDuration: 5000 },
-  { id: '6', label: 'Generez raportul cu AI...', icon: '🤖', estimatedDuration: 8000 },
-];
-
-const motivationalMessages = [
-  'Verificăm în baze de date internaționale...',
-  'Comparăm cu surse jurnalistice verificate...',
-  'Consultăm documente oficiale...',
-  'Aproape gata! AI-ul analizează rezultatele...',
+const defaultSteps: StepItem[] = [
+  { id: 'ocr_text', label: 'Analizez conținutul extras...', icon: '🔍', status: 'done', estimatedSec: 2 },
+  { id: 'layer1', label: 'Caut în baze de date de fact-checking...', icon: '📚', status: 'loading', estimatedSec: 5 },
+  { id: 'layer2', label: 'Caut în știri convenționale...', icon: '📰', status: 'pending', estimatedSec: 5 },
+  { id: 'layer3', label: 'Verific surse oficiale și guvernamentale...', icon: '🏛️', status: 'pending', estimatedSec: 5 },
+  { id: 'layer4', label: 'Verific declarații pe rețele sociale...', icon: '💬', estimatedSec: 5, status: 'pending' },
+  { id: 'analysis', label: 'Analizez cu AI (Gemini 2.0 Flash)...', icon: '🤖', estimatedSec: 8, status: 'pending' },
 ];
 
 export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
-  steps = defaultSteps,
-  currentStepIndex = 0,
-  isComplete = false,
+  reportId,
   onComplete,
-  autoPlay = false,
+  onError,
+  onRetry,
 }) => {
-  const [activeStep, setActiveStep] = useState<number>(currentStepIndex);
-  const [motivationalIdx, setMotivationalIdx] = useState<number>(0);
+  const router = useRouter();
+  const [steps, setSteps] = useState<StepItem[]>(defaultSteps);
+  const [isFinished, setIsFinished] = useState<boolean>(false);
+  const [hasError, setHasError] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
 
-  // Sync external prop if changed
-  useEffect(() => {
-    setActiveStep(currentStepIndex);
-  }, [currentStepIndex]);
+  // Polling mechanism if reportId is provided
+  const pollStatus = useCallback(async (): Promise<void> => {
+    if (!reportId) return;
 
-  // Handle autoPlay mode for demo/simulation
-  useEffect(() => {
-    if (!autoPlay || isComplete) return;
-
-    if (activeStep >= steps.length) {
-      onComplete?.();
-      return;
-    }
-
-    const currentStepConfig = steps[activeStep];
-    const timer = setTimeout(() => {
-      if (activeStep < steps.length - 1) {
-        setActiveStep((prev) => prev + 1);
-      } else {
-        onComplete?.();
+    try {
+      const response = await fetch(`/api/reports/${reportId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.report || data.id) {
+          // Report is ready
+          setSteps((prev) =>
+            prev.map((s) => ({ ...s, status: s.status === 'unavailable' ? 'unavailable' : 'done' }))
+          );
+          setIsFinished(true);
+          onComplete?.(reportId);
+        }
       }
-    }, currentStepConfig.estimatedDuration);
+    } catch {
+      // Ignore transient polling errors
+    }
+  }, [reportId, onComplete]);
 
-    return () => clearTimeout(timer);
-  }, [autoPlay, activeStep, steps, isComplete, onComplete]);
-
-  // Motivational quote rotator every 5s
+  // Status check loop with 45s max duration timeout
   useEffect(() => {
+    if (isFinished || hasError) return;
+
     const interval = setInterval(() => {
-      setMotivationalIdx((prev) => (prev + 1) % motivationalMessages.length);
-    }, 5000);
+      setElapsedSeconds((prev) => {
+        const next = prev + 1;
+        if (next >= 45) {
+          clearInterval(interval);
+          setHasError(true);
+          const err = 'Verificarea a depășit timpul maxim permis (45s). Te rugăm să reîncerci.';
+          setErrorMessage(err);
+          onError?.(err);
+        }
+        return next;
+      });
+
+      if (reportId) {
+        pollStatus();
+      }
+    }, 1500);
+
     return () => clearInterval(interval);
-  }, []);
+  }, [reportId, isFinished, hasError, pollStatus, onError]);
 
-  // Calculate remaining time estimation in seconds
-  const remainingTimeSeconds = Math.ceil(
+  // Calculate dynamic progress percentage
+  const completedCount = steps.filter((s) => s.status === 'done' || s.status === 'unavailable').length;
+  const progressPercentage = Math.min(Math.round((completedCount / steps.length) * 100), 100);
+
+  // Remaining time calculation
+  const remainingSec = Math.max(
+    0,
     steps
-      .slice(activeStep)
-      .reduce((acc, step) => acc + step.estimatedDuration, 0) / 1000
+      .filter((s) => s.status === 'pending' || s.status === 'loading')
+      .reduce((sum, s) => sum + s.estimatedSec, 0) - Math.floor(elapsedSeconds / 2)
   );
 
-  const progressPercentage = Math.min(
-    isComplete ? 100 : Math.round(((activeStep + 0.5) / steps.length) * 100),
-    100
-  );
+  const handleGoToReport = (): void => {
+    if (reportId) {
+      router.push(`/reports/${reportId}`);
+    }
+  };
 
   return (
     <div className={styles.container} aria-label="Progres verificare în timp real">
       <div className={styles.header}>
-        <h3 className={styles.title}>Verificăm pentru tine...</h3>
+        <h3 className={styles.title}>
+          {hasError ? 'A apărut o eroare la verificare' : isFinished ? '✓ Verificare finalizată!' : 'Verificăm în timp real...'}
+        </h3>
         <p className={styles.subtitle}>
-          {isComplete
-            ? '✓ Verificare finalizată!'
-            : steps[activeStep]?.label || 'Procesez conținutul...'}
+          {hasError
+            ? errorMessage
+            : isFinished
+            ? 'Raportul este gata. Se încarcă rezultatele...'
+            : `Timp scurs: ${elapsedSeconds}s · ~${remainingSec}s rămase`}
         </p>
       </div>
 
-      {/* Progress Bar */}
-      <div
-        className={styles.progressTrack}
-        role="progressbar"
-        aria-valuenow={progressPercentage}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div
-          className={styles.progressFill}
-          style={{ width: `${progressPercentage}%` }}
-        />
-      </div>
-
-      <div className={styles.timerRow}>
-        <span>
-          Pasul {Math.min(activeStep + 1, steps.length)} din {steps.length}
-        </span>
-        <span>
-          {isComplete
-            ? 'Gata!'
-            : `~${remainingTimeSeconds} secunde rămase`}
-        </span>
-      </div>
-
-      {/* Steps List */}
-      <div className={styles.stepsList}>
-        {steps.map((step, idx) => {
-          const isDone = idx < activeStep || isComplete;
-          const isCurrent = idx === activeStep && !isComplete;
-
-          return (
+      {!hasError && (
+        <>
+          <div
+            className={styles.progressTrack}
+            role="progressbar"
+            aria-valuenow={progressPercentage}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
             <div
-              key={step.id}
-              className={`${styles.stepItem} ${
-                isDone
-                  ? styles.completedStep
-                  : isCurrent
-                  ? styles.currentStep
-                  : styles.pendingStep
-              }`}
-            >
-              <div className={styles.stepIcon}>
-                {isDone ? (
-                  <span className={styles.checkIcon}>✓</span>
-                ) : isCurrent ? (
-                  <span className={styles.spinner} />
-                ) : (
-                  <span className={styles.pendingDot} />
-                )}
-              </div>
-              <span>{step.icon}</span>
-              <span>{step.label}</span>
-            </div>
-          );
-        })}
-      </div>
+              className={styles.progressFill}
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
 
-      {/* Motivational message rotator */}
-      <div className={styles.motivationalText}>
-        <span>💡 {motivationalMessages[motivationalIdx]}</span>
-      </div>
+          <div className={styles.timerRow}>
+            <span>
+              Progres: {completedCount} din {steps.length} pași finalizați
+            </span>
+            <span>{progressPercentage}%</span>
+          </div>
+
+          <div className={styles.stepsList}>
+            {steps.map((step) => {
+              const isDone = step.status === 'done';
+              const isLoading = step.status === 'loading';
+              const isUnavailable = step.status === 'unavailable';
+              const isStepErr = step.status === 'error';
+
+              return (
+                <div
+                  key={step.id}
+                  className={`${styles.stepItem} ${
+                    isDone
+                      ? styles.completedStep
+                      : isLoading
+                      ? styles.currentStep
+                      : isUnavailable
+                      ? styles.unavailableStep
+                      : isStepErr
+                      ? styles.errorStep
+                      : styles.pendingStep
+                  }`}
+                >
+                  <div className={styles.stepIcon}>
+                    {isDone ? (
+                      <span className={styles.checkIcon}>✓</span>
+                    ) : isUnavailable ? (
+                      <span className={styles.warnIcon}>⚠️</span>
+                    ) : isStepErr ? (
+                      <span className={styles.errorIcon}>✕</span>
+                    ) : isLoading ? (
+                      <span className={styles.spinner} />
+                    ) : (
+                      <span className={styles.pendingDot} />
+                    )}
+                  </div>
+                  <span>{step.icon}</span>
+                  <span className={styles.stepLabel}>
+                    {step.label}
+                    {isUnavailable && <em className={styles.unavailBadge}> (Indisponibil)</em>}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {isFinished && reportId && (
+        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+          <Button variant="primary" size="lg" onClick={handleGoToReport}>
+            Vezi raportul complet →
+          </Button>
+        </div>
+      )}
+
+      {hasError && (
+        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+          <Button variant="outline" size="md" onClick={onRetry}>
+            Reîncearcă verificarea
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

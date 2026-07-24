@@ -244,7 +244,7 @@ function calculateLayer1Score(results: FactCheckResult[]): number {
   if (totalRelevance === 0) return 0.5;
 
   const weightedScore = results.reduce(
-    (sum, r) => sum + r.ratingValue * r.relevanceScore,
+    (sum, r) => sum + (r.ratingValue ?? 0) * r.relevanceScore,
     0
   );
 
@@ -285,7 +285,9 @@ export async function runLayer1(
 
   return {
     status: 'success', // success even with 0 results (absence != error)
+    matches: unique.slice(0, 8),
     results: unique.slice(0, 8), // max 8 results
+    summary: `${unique.length} fact-checks found`,
     layerScore,
     processingTime: Date.now() - startTime,
   };

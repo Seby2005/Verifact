@@ -113,16 +113,17 @@ function deduplicateArticles(articles: NewsArticle[]): NewsArticle[] {
 
   // First pass: deduplicate by exact URL
   const byUrl = articles.filter(a => {
-    if (seenUrls.has(a.articleUrl)) return false;
-    seenUrls.add(a.articleUrl);
+    const url = a.articleUrl || a.url || '';
+    if (seenUrls.has(url)) return false;
+    seenUrls.add(url);
     return true;
   });
 
   // Second pass: keep only one per domain, preferring higher credibility
   for (const article of byUrl) {
-    const domain = extractDomain(article.articleUrl);
+    const domain = extractDomain(article.articleUrl || article.url || '');
     const existing = seenDomains.get(domain);
-    if (!existing || article.credibilityScore > existing.credibilityScore) {
+    if (!existing || (article.credibilityScore ?? 0) > (existing.credibilityScore ?? 0)) {
       seenDomains.set(domain, article);
     }
   }
@@ -259,7 +260,7 @@ export function calculateLayer2Score(articles: NewsArticle[]): number {
   let totalWeight = 0;
 
   for (const article of relevant) {
-    const weight = article.credibilityScore;
+    const weight = article.credibilityScore ?? 0.5;
     totalWeight += weight;
 
     if (article.sentiment === 'confirms') {
@@ -302,13 +303,15 @@ export async function runLayer2(
   const unique = deduplicateArticles(allArticles);
 
   // Sort by: relevance * credibility DESC
-  unique.sort((a, b) => b.credibilityScore - a.credibilityScore);
+  unique.sort((a, b) => (b.credibilityScore ?? 0) - (a.credibilityScore ?? 0));
 
   const layerScore = calculateLayer2Score(unique);
 
   return {
     status: 'success',
+    articles: unique.slice(0, 10),
     results: unique.slice(0, 10),
+    summary: `${unique.length} news articles found`,
     layerScore,
     processingTime: Date.now() - startTime,
     sourcesChecked: unique.length,

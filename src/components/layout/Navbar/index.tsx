@@ -18,6 +18,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [currentLang, setCurrentLang] = useState<'ro' | 'en'>('ro');
   const pathname = usePathname();
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
       setIsScrolled(window.scrollY > 10);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -50,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
   const navLinks = [
     { href: '/', label: 'Acasă' },
-    { href: '/reports', label: 'Rapoarte' },
+    { href: '/reports', label: 'Rapoarte Publice' },
     { href: '/transparency', label: 'Transparență' },
     { href: '/pricing', label: 'Prețuri' },
   ];
@@ -99,8 +100,21 @@ export const Navbar: React.FC<NavbarProps> = () => {
           })}
         </nav>
 
-        {/* Actions (Desktop) */}
+        {/* Right side Actions: Language Toggle + Auth */}
         <div className={styles.actions}>
+          {/* Language Selector Dropdown */}
+          <div className={styles.langSelector} aria-label="Selector de limbă">
+            <select
+              aria-label="Selectează limba interfeței"
+              value={currentLang}
+              onChange={(e) => setCurrentLang(e.target.value as 'ro' | 'en')}
+              className={styles.langSelect}
+            >
+              <option value="ro">🇷🇴 RO</option>
+              <option value="en">🇬🇧 EN</option>
+            </select>
+          </div>
+
           <Link href="/#verify-section">
             <Button variant="primary" size="sm">
               Verifică acum
@@ -141,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     </div>
                     <div className={styles.userEmail}>{user?.email}</div>
                     <div className={styles.userUsageBadge}>
-                      [{user?.tier?.toUpperCase()}] {user?.verificationsCount}/{user?.verificationsLimit} folosit
+                      [{user?.tier?.toUpperCase() || 'FREE'}] {user?.verificationsCount || 0}/{user?.verificationsLimit || 10} verificări
                     </div>
                   </div>
 
@@ -189,7 +203,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
         </button>
       </div>
 
-      {/* Mobile Dropdown & Overlay */}
+      {/* Mobile Drawer Navigation */}
       {isMobileOpen && (
         <>
           <div
@@ -216,6 +230,24 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 </Link>
               );
             })}
+
+            <div className={styles.mobileLangRow}>
+              <span>Limbă:</span>
+              <button
+                type="button"
+                className={`${styles.mobileLangBtn} ${currentLang === 'ro' ? styles.activeLangBtn : ''}`}
+                onClick={() => setCurrentLang('ro')}
+              >
+                🇷🇴 Română
+              </button>
+              <button
+                type="button"
+                className={`${styles.mobileLangBtn} ${currentLang === 'en' ? styles.activeLangBtn : ''}`}
+                onClick={() => setCurrentLang('en')}
+              >
+                🇬🇧 Engleză
+              </button>
+            </div>
 
             <div className={styles.mobileActions}>
               <Link href="/#verify-section" onClick={() => setIsMobileOpen(false)}>

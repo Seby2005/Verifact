@@ -1,0 +1,61 @@
+# =============================================================================
+# Verifact — Supabase CLI Configuration
+# =============================================================================
+# Docs: https://supabase.com/docs/guides/cli/config
+
+[project]
+id = "verifact"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth.external.google]
+enabled = false
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.github]
+enabled = false
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[functions]
+# Edge Functions configuration
+# Deploy: supabase functions deploy reset-monthly-verifications
+# Schedule: Use Supabase Dashboard > Database > Extensions > pg_cron
+# Cron expression: 0 2 * * * (daily at 2:00 AM UTC)

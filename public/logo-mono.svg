@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="240" height="60" fill="none">
+  <g transform="translate(8, 6)">
+    <path d="M24 4L4 12V26C4 38.3 12.5 49.5 24 52C35.5 49.5 44 38.3 44 26V12L24 4Z" fill="#FFFFFF" fill-opacity="0.15"/>
+    <path d="M24 6L7 13.5V26C7 36.8 14.3 46.7 24 49C33.7 46.7 41 36.8 41 26V13.5L24 6Z" fill="#FFFFFF" fill-opacity="0.2" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M16 26L21 31L32 19" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="64" y="38" font-family="'Inter', sans-serif" font-weight="800" font-size="26" fill="#FFFFFF" letter-spacing="-0.5">
+    Verifact
+  </text>
+</svg>

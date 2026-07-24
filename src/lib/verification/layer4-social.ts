@@ -174,8 +174,10 @@ function buildLayer4Result(
 ): Layer4Result {
   const layerScore = calculateLayer4Score(results);
   return {
-    status: results.length > 0 ? 'success' : 'success',
+    status: 'success',
+    posts: results.slice(0, 8),
     results: results.slice(0, 8),
+    summary: `${results.length} social media posts found`,
     layerScore,
     processingTime: Date.now() - startTime,
   };
