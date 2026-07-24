@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { SocialAuthButtons } from '@/components/auth/SocialAuthButtons';
+import { toUserFacingAuthMessage } from '@/lib/auth/auth-errors';
 import styles from '@/app/(auth)/register/Register.module.css';
 
 export function RegisterForm() {
@@ -67,16 +68,19 @@ export function RegisterForm() {
       });
 
       if (error) {
-        if (error.message.includes('User already registered')) {
-          setServerError('Există deja un cont înregistrat cu acest email.');
-        } else {
-          setServerError(error.message || 'A apărut o eroare la înregistrare.');
-        }
+        setServerError(toUserFacingAuthMessage(error, 'A apărut o eroare la înregistrare.'));
       } else {
         router.push(`/confirm?email=${encodeURIComponent(email.trim())}`);
       }
-    } catch {
-      setServerError('A apărut o eroare neașteptată. Încearcă din nou.');
+    } catch (err) {
+      // supabase-js normally returns network failures rather than throwing,
+      // but a CSP block on the very first request can surface here too.
+      setServerError(
+        toUserFacingAuthMessage(
+          err as { message?: string; name?: string },
+          'A apărut o eroare neașteptată. Încearcă din nou.'
+        )
+      );
     } finally {
       setIsLoading(false);
     }

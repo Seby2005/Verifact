@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { SocialAuthButtons } from '@/components/auth/SocialAuthButtons';
+import { toUserFacingAuthMessage } from '@/lib/auth/auth-errors';
 import styles from '@/app/(auth)/login/Login.module.css';
 
 export function LoginForm() {
@@ -63,23 +64,22 @@ export function LoginForm() {
       });
 
       if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          setServerError('Email sau parolă incorectă');
-        } else if (error.message.includes('Email not confirmed')) {
-          setServerError('Contul tău nu este confirmat. Verifică emailul.');
-        } else if (error.message.includes('Too many requests')) {
-          setServerError('Prea multe încercări. Încearcă din nou în 15 minute.');
-        } else {
-          setServerError('A apărut o eroare. Te rugăm să încerci din nou.');
-        }
+        // Shares the mapping with the register form so a network/CSP failure
+        // reads the same everywhere instead of surfacing "Failed to fetch".
+        setServerError(toUserFacingAuthMessage(error, 'A apărut o eroare. Te rugăm să încerci din nou.'));
         setIsShaking(true);
         setTimeout(() => setIsShaking(false), 500);
       } else {
         router.push(redirectTo);
         router.refresh();
       }
-    } catch {
-      setServerError('A apărut o eroare. Te rugăm să încerci din nou.');
+    } catch (err) {
+      setServerError(
+        toUserFacingAuthMessage(
+          err as { message?: string; name?: string },
+          'A apărut o eroare. Te rugăm să încerci din nou.'
+        )
+      );
     } finally {
       setIsLoading(false);
     }
