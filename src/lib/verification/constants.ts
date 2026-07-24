@@ -98,8 +98,11 @@ export const ROMANIAN_PUBLIC_FIGURES: string[] = [
 /**
  * Negative sentiment keywords (RO + EN) indicating the article contradicts a claim.
  */
+// Written with modern comma-below diacritics (ș/ț). Matching is done through
+// normalizeForMatching() in text-match.ts, so legacy cedilla spellings
+// (ş/ţ) and diacritic-free text match these too.
 export const CONTRADICTION_KEYWORDS_RO = [
-  'fals', 'falsă', 'fals,', 'dezminţit', 'dezminţire', 'dezminţeşte',
+  'fals', 'falsă', 'fals,', 'dezmințit', 'dezmințire', 'dezmințește',
   'incorect', 'incorectă', 'neadevărat', 'fake', 'fabricat', 'inventat',
   'manipulare', 'dezinformare', 'contrazis', 'infirmat', 'negat',
 ];

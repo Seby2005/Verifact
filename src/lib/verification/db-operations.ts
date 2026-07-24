@@ -22,8 +22,15 @@ export async function saveVerification(
     score: report.score,
     report_json: report as unknown as Record<string, unknown>,
     is_public: report.isPublic,
-    language: report.language || 'ro',
-    processing_time: report.processingTime,
+    // The verifications.language CHECK constraint only allows 'ro' or 'en';
+    // the API maps any unrecognised language to 'unknown', which would be
+    // rejected by the database.
+    language: report.language === 'en' ? 'en' : 'ro',
+    // Column is processing_time_ms — inserting `processing_time` made every
+    // insert fail with "Could not find the 'processing_time' column", so no
+    // report was ever persisted and /reports/{id} always 404'd.
+    processing_time_ms: report.processingTimeMs ?? report.processingTime ?? null,
+    status: 'completed',
   };
 
   const { error } = await (supabase.from('verifications') as unknown as {

@@ -6,6 +6,7 @@ import {
   CONFIRMATION_KEYWORDS_RO,
   CONFIRMATION_KEYWORDS_EN,
 } from './constants';
+import { containsAnyKeyword } from './text-match';
 
 // ─── Internal API types ───────────────────────────────────────
 
@@ -88,13 +89,13 @@ export function detectSentiment(
 
   if (relevance < 0.15) return 'unrelated';
 
-  // Check for contradiction keywords
+  // Check for contradiction keywords (diacritic-insensitive — see text-match.ts)
   const allContradictions = [...CONTRADICTION_KEYWORDS_RO, ...CONTRADICTION_KEYWORDS_EN];
-  const hasContradiction = allContradictions.some(kw => combinedText.includes(kw));
+  const hasContradiction = containsAnyKeyword(combinedText, allContradictions);
 
   // Check for confirmation keywords
   const allConfirmations = [...CONFIRMATION_KEYWORDS_RO, ...CONFIRMATION_KEYWORDS_EN];
-  const hasConfirmation = allConfirmations.some(kw => combinedText.includes(kw));
+  const hasConfirmation = containsAnyKeyword(combinedText, allConfirmations);
 
   if (hasContradiction && !hasConfirmation) return 'contradicts';
   if (hasConfirmation && !hasContradiction) return 'confirms';

@@ -19,11 +19,18 @@ function validateVerifyInput(body: unknown): { success: true; data: ValidatedInp
 
   const b = body as Record<string, unknown>;
 
-  if (typeof b.text !== 'string' || b.text.trim().length < 10) {
+  // The client (and the VerifyRequest type) sends `inputText`. `text` is kept
+  // as an accepted alias so direct API consumers written against the older
+  // field name keep working.
+  const rawText = typeof b.inputText === 'string' ? b.inputText
+    : typeof b.text === 'string' ? b.text
+    : null;
+
+  if (rawText === null || rawText.trim().length < 10) {
     return { success: false, error: 'Textul trebuie sa aiba minim 10 caractere' };
   }
 
-  if (b.text.length > 2000) {
+  if (rawText.length > 2000) {
     return { success: false, error: 'Textul nu poate depasi 2000 de caractere' };
   }
 
@@ -40,7 +47,7 @@ function validateVerifyInput(body: unknown): { success: true; data: ValidatedInp
   return {
     success: true,
     data: {
-      text: b.text.trim(),
+      text: rawText.trim(),
       language,
       isPublic: Boolean(b.isPublic),
       inputType,
@@ -125,7 +132,18 @@ export async function POST(request: Request): Promise<Response> {
       }
     }
 
-    return Response.json({ success: true, report }, { status: 200 });
+    // Shape must match VerifyAPIResponse — the client reads `reportId` to hand
+    // over to the progress tracker.
+    return Response.json(
+      {
+        success: true,
+        reportId: report.id,
+        verdict: report.verdict,
+        score: report.score,
+        report,
+      },
+      { status: 200 }
+    );
 
   } catch (error) {
     if (error instanceof Error && error.message === 'ALL_LAYERS_FAILED') {

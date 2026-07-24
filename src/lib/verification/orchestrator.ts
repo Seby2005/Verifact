@@ -26,13 +26,63 @@ async function withTimeout<T>(
   ms: number,
   layerName: string
 ): Promise<T> {
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(
       () => reject(new Error(`${layerName} timeout after ${ms}ms`)),
       ms
-    )
-  );
-  return Promise.race([promise, timeoutPromise]);
+    );
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    // Without this the pending timer keeps the event loop (and, on serverless,
+    // the whole invocation) alive for the full timeout even when the layer
+    // resolved in milliseconds.
+    if (timer) clearTimeout(timer);
+  }
+}
+
+/**
+ * Deterministic, source-derived analysis used when the AI provider is
+ * unavailable. The veracity score does not depend on the AI — it is computed
+ * from the four layers before the model is ever called — so an AI outage must
+ * degrade the narrative section, not fail the whole verification.
+ */
+function buildFallbackAnalysis(
+  language: VerificationInput['language'],
+  layers: {
+    layer1: Layer1Result;
+    layer2: Layer2Result;
+    layer3: Layer3Result;
+    layer4: Layer4Result;
+  },
+  finalScore: number
+): string {
+  const counts = {
+    factCheck: layers.layer1.results.length,
+    news: layers.layer2.results.length,
+    official: layers.layer3.results.length,
+    social: layers.layer4.results.length,
+  };
+
+  if (language === 'en') {
+    return [
+      '**Summary**',
+      '',
+      `The AI narrative analysis was unavailable for this verification, so this report contains only the evidence gathered from the sources. The veracity score of ${finalScore}/100 was computed directly from those sources and is unaffected.`,
+      '',
+      `Sources consulted: ${counts.factCheck} fact-checks, ${counts.news} news articles, ${counts.official} official documents, ${counts.social} public posts. Review the cited sources below for full context.`,
+    ].join('\n');
+  }
+
+  return [
+    '**Rezumat**',
+    '',
+    `Analiza narativă generată de AI nu a fost disponibilă pentru această verificare, așa că raportul conține doar dovezile colectate din surse. Scorul de veridicitate de ${finalScore}/100 a fost calculat direct din aceste surse și nu este afectat.`,
+    '',
+    `Surse consultate: ${counts.factCheck} fact-check-uri, ${counts.news} articole de presă, ${counts.official} documente oficiale, ${counts.social} postări publice. Consultați sursele citate mai jos pentru contextul complet.`,
+  ].join('\n');
 }
 
 /**
@@ -108,18 +158,32 @@ export async function verifyContent(
   // 5. Calculate score
   const scoreBreakdown = calculateScore({ layer1, layer2, layer3, layer4 });
 
-  // 6. Generate AI analysis with all results as context
-  const aiAnalysis = await generateAIAnalysis({
-    claim: input.text,
-    inputText: input.text,
-    language: input.language,
-    layers: { layer1, layer2, layer3, layer4 },
-    layer1,
-    layer2,
-    layer3,
-    layer4,
-    scoreBreakdown,
-  });
+  // 6. Generate AI analysis with all results as context.
+  //    A provider outage (quota, 5xx, timeout) must not discard four layers of
+  //    successful source gathering — fall back to a deterministic summary.
+  let aiAnalysis: string;
+  let aiAnalysisAvailable = true;
+  try {
+    aiAnalysis = await generateAIAnalysis({
+      claim: input.text,
+      inputText: input.text,
+      language: input.language,
+      layers: { layer1, layer2, layer3, layer4 },
+      layer1,
+      layer2,
+      layer3,
+      layer4,
+      scoreBreakdown,
+    });
+  } catch (error) {
+    console.error('[Orchestrator] AI analysis unavailable, using source-derived summary:', error);
+    aiAnalysisAvailable = false;
+    aiAnalysis = buildFallbackAnalysis(
+      input.language,
+      { layer1, layer2, layer3, layer4 },
+      scoreBreakdown.finalScore
+    );
+  }
 
   // 7. Build final report
   const report = buildReport({
@@ -134,12 +198,14 @@ export async function verifyContent(
     processingTime: Date.now() - startTime,
   });
 
-  // 8. Cache if we have solid results (at least 2 layers with actual data)
+  // 8. Cache if we have solid results (at least 2 layers with actual data).
+  //    A degraded report (no AI narrative) is never cached — otherwise a brief
+  //    provider outage would be served from cache for the full 7-day TTL.
   const layersWithData = [layer1, layer2, layer3, layer4].filter(
     l => l.status === 'success' && l.results.length > 0
   ).length;
 
-  if (layersWithData >= 2) {
+  if (layersWithData >= 2 && aiAnalysisAvailable) {
     void setCached(contentHash, report); // non-blocking
   }
 

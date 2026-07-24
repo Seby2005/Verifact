@@ -6,6 +6,7 @@ import {
   CONFIRMATION_KEYWORDS_RO,
   CONFIRMATION_KEYWORDS_EN,
 } from './constants';
+import { containsAnyKeyword } from './text-match';
 
 interface GoogleSearchItem {
   title: string;
@@ -94,8 +95,9 @@ function analyzeSupport(
   const allContradictions = [...CONTRADICTION_KEYWORDS_RO, ...CONTRADICTION_KEYWORDS_EN];
   const allConfirmations = [...CONFIRMATION_KEYWORDS_RO, ...CONFIRMATION_KEYWORDS_EN];
 
-  const contradicts = allContradictions.some(kw => snippetLower.includes(kw));
-  const confirms = allConfirmations.some(kw => snippetLower.includes(kw));
+  // Diacritic-insensitive — see text-match.ts
+  const contradicts = containsAnyKeyword(snippetLower, allContradictions);
+  const confirms = containsAnyKeyword(snippetLower, allConfirmations);
 
   if (contradicts && !confirms) return 'denies';
   if (confirms && !contradicts) return 'supports';
