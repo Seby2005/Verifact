@@ -24,7 +24,7 @@ before a packet was sent, and a CSP block surfaces to JavaScript as exactly
 `TypeError: Failed to fetch`. Reproduced in the browser console:
 
 ```js
-await fetch('https://iqszqrilxuqhcnwskxnj.supabase.co/auth/v1/health')  // ok 401
+await fetch('https://<your-project-ref>.supabase.co/auth/v1/health')  // ok 401
 await fetch('http://localhost:54321/auth/v1/health')  // TypeError: Failed to fetch
 await fetch('https://db.example.com/auth/v1/health')  // TypeError: Failed to fetch
 ```
