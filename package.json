@@ -4,6 +4,9 @@
   "private": true,
   "description": "Open-source AI fact-checking web application",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
