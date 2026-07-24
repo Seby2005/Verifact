@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -16,21 +16,39 @@ export interface VerifyFormProps {
   isLoading?: boolean;
 }
 
+type TabId = 'screenshot' | 'text' | 'url';
+
+const VALID_TABS: TabId[] = ['screenshot', 'text', 'url'];
+const DEFAULT_TAB: TabId = 'screenshot';
+
+function parseTab(value: string | null): TabId | null {
+  return VALID_TABS.includes(value as TabId) ? (value as TabId) : null;
+}
+
 export const VerifyForm: React.FC<VerifyFormProps> = ({
   onSubmit,
   isLoading = false,
 }) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  // Tab persistence via URL search param ?tab=screenshot|text|url
-  const initialTabParam = searchParams.get('tab');
-  const validTabs: Array<'screenshot' | 'text' | 'url'> = ['screenshot', 'text', 'url'];
-  const defaultTab = validTabs.includes(initialTabParam as 'screenshot' | 'text' | 'url')
-    ? (initialTabParam as 'screenshot' | 'text' | 'url')
-    : 'screenshot';
+  // Tab persistence via URL search param ?tab=screenshot|text|url.
+  //
+  // The `?tab=` value is deliberately NOT read during render. `useSearchParams()`
+  // on a statically prerendered route (`/` is one) makes Next.js bail out to
+  // client-side rendering for the whole Suspense boundary — the server then ships
+  // the fallback instead of this <form>, and hydration fails with
+  // "Expected server HTML to contain a matching <form> in <div>".
+  // Rendering a fixed default and applying the URL value after mount keeps the
+  // first server and client render identical, so the form is part of the SSR/SSG
+  // HTML and hydrates cleanly.
+  const [activeTab, setActiveTab] = useState<TabId>(DEFAULT_TAB);
 
-  const [activeTab, setActiveTab] = useState<'screenshot' | 'text' | 'url'>(defaultTab);
+  useEffect(() => {
+    const fromUrl = parseTab(new URLSearchParams(window.location.search).get('tab'));
+    if (fromUrl && fromUrl !== DEFAULT_TAB) {
+      setActiveTab(fromUrl);
+    }
+  }, []);
 
   // Input states
   const [screenshotText, setScreenshotText] = useState<string>('');
@@ -47,10 +65,10 @@ export const VerifyForm: React.FC<VerifyFormProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Sync tab with URL search params
-  const handleTabChange = (tab: 'screenshot' | 'text' | 'url'): void => {
+  const handleTabChange = (tab: TabId): void => {
     setActiveTab(tab);
     setErrorMessage(null);
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
     params.set('tab', tab);
     router.replace(`?${params.toString()}`, { scroll: false });
   };
