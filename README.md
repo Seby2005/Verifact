@@ -1,9 +1,9 @@
-# AI Fact-Checker
+# Verifact
 
 [![CI](https://github.com/Seby2005/fact-checker-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Seby2005/fact-checker-ai/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-Aplicație web open source de verificare a știrilor și conținutului de pe rețelele sociale, folosind inteligență artificială.
+Verifact — aplicație web open source de verificare a știrilor și conținutului de pe rețelele sociale, folosind inteligență artificială.
 
 ## Funcționalități
 

@@ -1,5 +1,5 @@
 {
-  "name": "fact-checker-ai",
+  "name": "verifact",
   "version": "0.1.0",
   "private": true,
   "description": "Open-source AI fact-checking web application",
