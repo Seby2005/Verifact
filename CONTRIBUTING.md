@@ -1,6 +1,6 @@
-# Contribuie la AI Fact-Checker
+# Contribuie la Verifact
 
-Mulțumim pentru interesul de a contribui la AI Fact-Checker! Acest ghid te va ajuta să începi.
+Mulțumim pentru interesul de a contribui la Verifact! Acest ghid te va ajuta să începi.
 
 ## Cod de Conduită
 
@@ -15,7 +15,7 @@ Acest proiect urmează un standard de conduită bazat pe respect și profesional
 
 ### Raportează un bug
 
-1. Verifică dacă bug-ul nu a fost deja raportat în [Issues](https://github.com/Seby2005/fact-checker-ai/issues)
+1. Verifică dacă bug-ul nu a fost deja raportat în [Issues](https://github.com/Seby2005/Verifact/issues)
 2. Dacă nu, creează un issue nou cu:
    - Titlu descriptiv
    - Pași pentru reproducere
@@ -37,11 +37,11 @@ Acest proiect urmează un standard de conduită bazat pe respect și profesional
 # 1. Fork repository-ul pe GitHub
 
 # 2. Clonează fork-ul tău
-git clone https://github.com/<username>/fact-checker-ai.git
-cd fact-checker-ai
+git clone https://github.com/<username>/Verifact.git
+cd Verifact
 
 # 3. Adaugă upstream remote
-git remote add upstream https://github.com/Seby2005/fact-checker-ai.git
+git remote add upstream https://github.com/Seby2005/Verifact.git
 
 # 4. Instalează dependențele
 npm install
@@ -146,6 +146,6 @@ src/
 
 ## Întrebări?
 
-Deschide un [issue](https://github.com/Seby2005/fact-checker-ai/issues) sau contactează-ne prin GitHub Discussions.
+Deschide un [issue](https://github.com/Seby2005/Verifact/issues) sau contactează-ne prin GitHub Discussions.
 
 Mulțumim! 🙏

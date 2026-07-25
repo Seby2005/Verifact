@@ -40,4 +40,4 @@ export const FOOTER_SECTIONS: ReadonlyArray<{ title: string; links: ReadonlyArra
   },
 ];
 
-export const REPO_URL = 'https://github.com/Seby2005/fact-checker-ai';
+export const REPO_URL = 'https://github.com/Seby2005/Verifact';
