@@ -99,7 +99,14 @@
   /* Transitions */
   --transition-fast: 150ms ease-in-out;
   --transition-normal: 250ms ease-in-out;
+
+  /* Layout */
+  --container-max-width: 1180px;
 }
+
+/* Breakpoints (reference — CSS custom properties can't be used inside
+   @media queries, so components repeat these literal values):
+   375px mobile · 768px tablet · 1024px laptop · 1440px desktop */
 
 /* Base Styles & Reset */
 *,
@@ -162,4 +169,15 @@ input, textarea, select {
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* App shell — header/main/footer stacked with footer pinned to viewport bottom */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-shell__main {
+  flex: 1;
 }

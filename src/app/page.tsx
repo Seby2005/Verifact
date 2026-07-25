@@ -9,7 +9,7 @@ export default function HomePage() {
   const [inputValue, setInputValue] = useState('');
 
   return (
-    <main className={styles.main}>
+    <div className={styles.main}>
       <div className={styles.container}>
         <header className={styles.header}>
           <h1 className={styles.title}>AI Fact-Checker</h1>
@@ -108,6 +108,6 @@ export default function HomePage() {
           </div>
         </Modal>
       </div>
-    </main>
+    </div>
   );
 }

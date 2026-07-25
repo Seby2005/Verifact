@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Source_Serif_4 } from 'next/font/google';
 
+import { Header, Footer } from '@/components/layout';
 import './globals.css';
 
 const inter = Inter({
@@ -30,7 +31,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ro" className={`${inter.variable} ${sourceSerif.variable}`}>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <div className="app-shell">
+          <Header />
+          <main className="app-shell__main">{children}</main>
+          <Footer />
+        </div>
+      </body>
     </html>
   );
 }
