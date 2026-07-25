@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Source_Serif_4 } from 'next/font/google';
 
 import './globals.css';
 
@@ -7,6 +7,13 @@ const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-inter',
+  display: 'swap',
+});
+
+const sourceSerif = Source_Serif_4({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+  variable: '--font-source-serif',
   display: 'swap',
 });
 
@@ -22,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ro" className={inter.variable}>
+    <html lang="ro" className={`${inter.variable} ${sourceSerif.variable}`}>
       <body className={inter.className}>{children}</body>
     </html>
   );

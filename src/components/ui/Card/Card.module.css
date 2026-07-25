@@ -24,13 +24,13 @@
 }
 
 .padding-sm {
-  padding: 0.75rem;
+  padding: var(--space-3);
 }
 
 .padding-md {
-  padding: 1.25rem;
+  padding: var(--space-5);
 }
 
 .padding-lg {
-  padding: 2rem;
+  padding: var(--space-8);
 }
