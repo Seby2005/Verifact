@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Button, Input, Tabs, Callout, type TabItem } from '@/components/ui';
+import React, { useEffect, useState } from 'react';
+import { Button, Input, Tabs, Callout, Modal, type TabItem } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
+import { TIER_CONFIG, type UsageLimitCheck } from '@/types/user';
 import styles from './AuthPanel.module.css';
 
 type Mode = 'login' | 'signup';
@@ -12,17 +13,59 @@ const MODES: ReadonlyArray<TabItem<Mode>> = [
   { id: 'signup', label: 'Creează cont' },
 ];
 
+const TIER_LABELS: Record<string, string> = {
+  free: 'Free',
+  pro: 'Pro',
+  business: 'Business',
+};
+
+const DELETE_CONFIRM_PHRASE = 'ȘTERGE';
+
 type Status =
   | { state: 'idle' }
   | { state: 'loading' }
   | { state: 'error'; message: string }
   | { state: 'success'; message: string };
 
+type Session = { email: string | null } | null | undefined; // undefined = still checking
+
 export const AuthPanel: React.FC = () => {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<Status>({ state: 'idle' });
+
+  const [session, setSession] = useState<Session>(undefined);
+  const [usage, setUsage] = useState<UsageLimitCheck | null>(null);
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteStatus, setDeleteStatus] = useState<Status>({ state: 'idle' });
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(({ data }) => {
+      setSession(data.user ? { email: data.user.email ?? null } : null);
+    });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession?.user ? { email: newSession.user.email ?? null } : null);
+    });
+
+    return () => subscription.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!session) {
+      setUsage(null);
+      return;
+    }
+    fetch('/api/user/usage')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setUsage(data?.usage ?? null))
+      .catch(() => setUsage(null));
+  }, [session]);
 
   const handleModeChange = (next: Mode) => {
     setMode(next);
@@ -63,6 +106,135 @@ export const AuthPanel: React.FC = () => {
       setStatus({ state: 'error', message });
     }
   };
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteOpen(false);
+    setDeleteConfirmText('');
+    setDeleteStatus({ state: 'idle' });
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteStatus({ state: 'loading' });
+    try {
+      const res = await fetch('/api/user/delete', { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || 'Ștergerea contului a eșuat.');
+      }
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Ștergerea contului a eșuat.';
+      setDeleteStatus({ state: 'error', message });
+    }
+  };
+
+  // Still checking whether there's an active session — avoid flashing the
+  // login form for a user who is actually already signed in.
+  if (session === undefined) {
+    return <section className={styles.panel} aria-labelledby="auth-heading" />;
+  }
+
+  if (session) {
+    const tierLabel = usage ? TIER_LABELS[usage.tier] ?? usage.tier : null;
+    const limit = usage ? usage.limit : TIER_CONFIG.free.monthlyLimit;
+
+    return (
+      <section className={styles.panel} aria-labelledby="auth-heading">
+        <h2 id="auth-heading" className={styles.srOnly}>
+          Contul tău
+        </h2>
+
+        <div className={styles.account}>
+          <div className={styles.accountRow}>
+            <span className={styles.accountLabel}>Email</span>
+            <span className={styles.accountValue}>{session.email}</span>
+          </div>
+          <div className={styles.accountRow}>
+            <span className={styles.accountLabel}>Plan</span>
+            <span className={styles.accountValue}>{tierLabel ?? '—'}</span>
+          </div>
+          <div className={styles.accountRow}>
+            <span className={styles.accountLabel}>Verificări luna asta</span>
+            <span className={styles.accountValue}>
+              {usage ? `${usage.current} din ${limit}` : '—'}
+            </span>
+          </div>
+        </div>
+
+        <div className={styles.accountActions}>
+          <Button type="button" variant="secondary" size="md" onClick={handleSignOut}>
+            Deconectare
+          </Button>
+        </div>
+
+        <div className={styles.dangerZone}>
+          <p className={styles.dangerLead}>
+            Ștergerea contului este definitivă: rapoartele tale private se
+            șterg pentru totdeauna, iar cele publicate rămân în baza publică,
+            anonimizate. Detalii în{' '}
+            <a href="/confidentialitate" className={styles.textLink}>
+              Politica de confidențialitate
+            </a>
+            .
+          </p>
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            onClick={() => setIsDeleteOpen(true)}
+          >
+            Șterge contul
+          </Button>
+        </div>
+
+        <Modal isOpen={isDeleteOpen} onClose={closeDeleteModal} title="Ștergi contul definitiv?">
+          <p className={styles.modalLead}>
+            Această acțiune nu poate fi anulată. Toate rapoartele tale private
+            vor fi șterse. Rapoartele publicate rămân, dar fără nicio legătură
+            cu contul tău.
+          </p>
+          <Input
+            label={`Scrie „${DELETE_CONFIRM_PHRASE}” ca să confirmi`}
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            autoComplete="off"
+            fullWidth
+          />
+          <div className={styles.modalActions}>
+            <Button type="button" variant="ghost" size="md" onClick={closeDeleteModal}>
+              Renunță
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="md"
+              disabled={deleteConfirmText.trim() !== DELETE_CONFIRM_PHRASE}
+              isLoading={deleteStatus.state === 'loading'}
+              onClick={handleDeleteAccount}
+            >
+              Șterge definitiv contul
+            </Button>
+          </div>
+          <div aria-live="polite">
+            {deleteStatus.state === 'error' ? (
+              <div className={styles.status}>
+                <Callout label="Nu a funcționat" tone="plain">
+                  {deleteStatus.message}
+                </Callout>
+              </div>
+            ) : null}
+          </div>
+        </Modal>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.panel} aria-labelledby="auth-heading">
