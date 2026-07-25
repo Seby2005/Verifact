@@ -70,6 +70,13 @@ web_modules/
 .env.*
 !.env.example
 
+# ad hoc local QA/debug scripts
+*.tmp.js
+*.tmp.mjs
+
+# local Claude Code session settings (machine-specific, not project config)
+.claude/settings.local.json
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
