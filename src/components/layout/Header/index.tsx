@@ -1,27 +1,41 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheckIcon } from '../../ui/icons/VerdictIcons';
+import { usePathname } from 'next/navigation';
+import { NAV_LINKS } from '../routes';
 import styles from './Header.module.css';
 
-const REPO_URL = 'https://github.com/Seby2005/fact-checker-ai';
-
 export const Header: React.FC = () => {
+  const pathname = usePathname();
+
   return (
     <header className={styles.header}>
-      <div className={styles.inner}>
-        <Link href="/" className={styles.brand}>
-          <ShieldCheckIcon size={22} className={styles.brandMark} />
-          <span className={styles.brandName}>AI Fact-Checker</span>
+      <div className={`container ${styles.inner}`}>
+        <Link href="/" className={styles.wordmark}>
+          Verifact
         </Link>
 
-        <a
-          href={REPO_URL}
-          target="_blank"
-          rel="noreferrer noopener"
-          className={styles.repoLink}
-        >
-          Open Source pe GitHub
-        </a>
+        <nav className={styles.nav} aria-label="Navigare principală">
+          {NAV_LINKS.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={[styles.navLink, isActive ? styles.navLinkActive : '']
+                  .filter(Boolean)
+                  .join(' ')}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+          <Link href="/cont" className={styles.accountLink}>
+            Cont
+          </Link>
+        </nav>
       </div>
     </header>
   );

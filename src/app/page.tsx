@@ -1,114 +1,119 @@
 import React from 'react';
-import { Button, Card, Badge, ShieldCheckIcon, CheckCircleIcon } from '@/components/ui';
+import Link from 'next/link';
+import { Callout } from '@/components/ui';
+import { VerifyTool, ReportView } from '@/components/verify';
+import type { VerificationReport } from '@/types/verification';
 import styles from './page.module.css';
+
+/**
+ * A fixed, clearly-labelled sample used to show what a finished report looks
+ * like. It is never presented as a live result — the real tool above returns
+ * whatever /api/verify returns, and nothing else.
+ */
+const SAMPLE_REPORT: VerificationReport = {
+  id: 'exemplu',
+  claim: 'Vaccinurile ARNm modifică ADN-ul uman.',
+  verdict: 'false',
+  score: 6,
+  summary:
+    'ARN-ul mesager din vaccin nu ajunge în nucleul celulei, unde se află ADN-ul, și se degradează în câteva zile după ce celula produce proteina spike. Nu există niciun mecanism cunoscut prin care acest proces să modifice genomul uman.',
+  sources: [
+    {
+      title: 'Understanding How COVID-19 Vaccines Work',
+      publisher: 'Centers for Disease Control and Prevention',
+      date: '2024-09-12',
+      url: 'https://www.cdc.gov/covid/vaccines/how-they-work.html',
+    },
+    {
+      title: 'mRNA vaccines — a new era in vaccinology',
+      publisher: 'Nature Reviews Drug Discovery',
+      date: '2018-01-12',
+      url: 'https://www.nature.com/articles/nrd.2017.243',
+    },
+    {
+      title: 'Fact check: mRNA vaccines do not alter human DNA',
+      publisher: 'Reuters',
+      date: '2021-05-21',
+      url: 'https://www.reuters.com/article/factcheck-dna-vaccine-idUSL2N2N918K',
+    },
+  ],
+  processingTime: 12.3,
+  createdAt: '2026-07-25T09:00:00.000Z',
+};
 
 const STEPS = [
   {
     number: '01',
     title: 'Trimiți afirmația',
-    text: 'Lipești un text, un link către un articol sau încarci un screenshot dintr-o postare pe rețele sociale.',
+    text: 'Text, link către un articol sau screenshot dintr-o postare. Nu ai nevoie de cont pentru o verificare.',
   },
   {
     number: '02',
-    title: 'Algoritmul verifică sursele',
-    text: 'Căutăm afirmația în baze de date de fact-checking, presă și surse oficiale — nu doar în cunoștințele modelului AI.',
+    title: 'Căutăm în surse, nu în memoria unui model',
+    text: 'Afirmația este căutată în baze de date de fact-checking, presă convențională, surse oficiale și declarații publice — patru straturi independente.',
   },
   {
     number: '03',
-    title: 'Primești un raport verificabil',
-    text: 'Vezi verdictul, nivelul de certitudine și sursele exacte pe care se bazează, ca să poți verifica singur concluzia.',
-  },
-];
-
-const TRUST_POINTS = [
-  {
-    title: 'Algoritm open source',
-    text: 'Fiecare pas al verificării este documentat public — nimic nu se întâmplă într-o cutie neagră.',
-  },
-  {
-    title: 'Surse citate explicit',
-    text: 'Nu primești doar un verdict, ci și linkurile către sursele pe care se bazează.',
-  },
-  {
-    title: 'Certitudine, nu absolutism',
-    text: 'Afișăm nivelul de încredere al fiecărui verdict — inclusiv atunci când informația este neclară.',
+    title: 'Primești un raport cu surse',
+    text: 'Verdict, scor de veridicitate și lista completă a surselor pe care se bazează concluzia, ca să o poți verifica singur.',
   },
 ];
 
 export default function HomePage() {
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div className={styles.heroText}>
-          <p className={styles.eyebrow}>Verificare independentă a informației</p>
-          <h1 className={styles.heroTitle}>
-            Combate dezinformarea cu surse, nu cu presupuneri.
-          </h1>
-          <p className={styles.heroSubtitle}>
-            AI Fact-Checker analizează afirmații și conținut din social media pe baza
-            unor surse publice verificabile, și explică transparent cum a ajuns la
-            fiecare concluzie.
-          </p>
-          <div className={styles.heroActions}>
-            <Button variant="primary" size="lg" href="#cum-functioneaza">
-              Vezi cum funcționează
-            </Button>
-            <a
-              className={styles.heroSecondaryLink}
-              href="https://github.com/Seby2005/fact-checker-ai"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              Proiect open source — contribuie pe GitHub
-            </a>
-          </div>
-        </div>
-
-        <Card variant="default" padding="lg" className={styles.heroCard}>
-          <p className={styles.heroCardLabel}>Exemplu de raport</p>
-          <p className={styles.heroCardClaim}>
-            &ldquo;Vaccinurile ARNm modifică ADN-ul uman.&rdquo;
-          </p>
-          <Badge variant="false">PROBABIL FALS · 6% certitudine</Badge>
-          <ul className={styles.heroCardSources}>
-            <li>
-              <CheckCircleIcon size={14} className={styles.heroCardSourceIcon} />
-              CDC — Understanding mRNA COVID-19 Vaccines
-            </li>
-            <li>
-              <CheckCircleIcon size={14} className={styles.heroCardSourceIcon} />
-              Nature — Genetics review, 2023
-            </li>
-          </ul>
-        </Card>
+      <section className={`container ${styles.hero}`}>
+        <p className="eyebrow">Verificare independentă, cu AI</p>
+        <h1 className={styles.heroTitle}>
+          Dezinformarea circulă mai repede decât dezmințirea.
+        </h1>
+        <p className={styles.heroLead}>
+          Verifact analizează afirmații, articole și postări din social media pe
+          baza surselor publice verificabile — și îți arată exact pe ce se
+          bazează fiecare concluzie.
+        </p>
       </section>
 
-      <section id="cum-functioneaza" className={styles.section}>
+      <section className={`container ${styles.toolSection}`}>
+        <VerifyTool />
+      </section>
+
+      <section className={`container ${styles.section}`}>
+        <p className="eyebrow">Exemplu</p>
+        <h2 className={styles.sectionTitle}>Cum arată un raport</h2>
+        <div className={styles.sampleWrap}>
+          <ReportView report={SAMPLE_REPORT} />
+        </div>
+      </section>
+
+      <section className={`container ${styles.section}`}>
         <h2 className={styles.sectionTitle}>Cum funcționează</h2>
-        <div className={styles.stepsGrid}>
+        <ol className={styles.steps}>
           {STEPS.map((step) => (
-            <Card key={step.number} variant="bordered" padding="lg" className={styles.stepCard}>
+            <li key={step.number} className={styles.step}>
               <span className={styles.stepNumber}>{step.number}</span>
               <h3 className={styles.stepTitle}>{step.title}</h3>
               <p className={styles.stepText}>{step.text}</p>
-            </Card>
+            </li>
           ))}
-        </div>
+        </ol>
       </section>
 
-      <section className={styles.section}>
-        <div className={styles.trustHeader}>
-          <ShieldCheckIcon size={28} className={styles.trustIcon} />
-          <h2 className={styles.sectionTitle}>De ce să ai încredere în raport</h2>
-        </div>
-        <div className={styles.trustGrid}>
-          {TRUST_POINTS.map((point) => (
-            <div key={point.title} className={styles.trustItem}>
-              <h3 className={styles.trustItemTitle}>{point.title}</h3>
-              <p className={styles.trustItemText}>{point.text}</p>
-            </div>
-          ))}
-        </div>
+      <section className={`container ${styles.section}`}>
+        <Callout label="Principiul de bază">
+          Un verdict fără surse este doar o altă opinie. De aceea fiecare raport
+          Verifact citează integral sursele pe care se sprijină, iar algoritmul
+          care le cântărește este public.
+        </Callout>
+        <p className={styles.calloutFollow}>
+          <Link href="/transparenta" className={styles.textLink}>
+            Vezi metodologia completă
+          </Link>
+          {' · '}
+          <Link href="/open-source" className={styles.textLink}>
+            Open source și confidențialitate
+          </Link>
+        </p>
       </section>
     </div>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import styles from './Card.module.css';
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'bordered' | 'flat';
+  variant?: 'default' | 'bordered' | 'ruled' | 'flat';
   padding?: 'none' | 'sm' | 'md' | 'lg';
   children: React.ReactNode;
 }

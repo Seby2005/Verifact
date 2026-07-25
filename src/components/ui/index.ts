@@ -1,13 +1,14 @@
 export { Button, type ButtonProps } from './Button';
 export { Input, type InputProps } from './Input';
+export { Textarea, type TextareaProps } from './Textarea';
 export { Card, type CardProps } from './Card';
-export { Badge, type BadgeProps, type VerdictVariant } from './Badge';
 export { Modal, type ModalProps } from './Modal';
+export { Tabs, type TabsProps, type TabItem } from './Tabs';
+export { Callout, type CalloutProps } from './Callout';
 export {
-  CheckCircleIcon,
-  AlertTriangleIcon,
-  HelpCircleIcon,
-  XCircleIcon,
-  ShieldCheckIcon,
-  type IconProps,
-} from './icons/VerdictIcons';
+  VerdictLabel,
+  verdictFromScore,
+  VERDICT_COPY,
+  type VerdictLabelProps,
+  type VerdictKind,
+} from './VerdictLabel';

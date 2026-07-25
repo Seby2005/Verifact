@@ -1,114 +1,102 @@
 /* =============================================================================
-   AI Fact-Checker — Core Design System & Tokens
+   Verifact — Design Tokens
+   -----------------------------------------------------------------------------
+   Editorial visual language: black on white, red used only as a punctuation
+   mark. Serif headlines against a clean sans for everything else. Rules
+   (1px lines) instead of shadows and rounded cards. See DESIGN.md.
    ============================================================================= */
 
 :root {
-  /* Color Palette */
-  --color-white: #ffffff;
-  --color-gray-50: #f8f9fa;
-  --color-gray-100: #e9ecef;
-  --color-gray-200: #dee2e6;
-  --color-gray-300: #ced4da;
-  --color-gray-400: #adb5bd;
-  --color-gray-500: #6c757d;
-  --color-gray-600: #495057;
-  --color-gray-700: #343a40;
-  --color-gray-800: #212529;
-  --color-gray-900: #0f172a;
+  /* ---- Color -------------------------------------------------------------
+     Near-monochrome by design. Red is the ONLY accent and is reserved for:
+     eyebrow labels, the active tab underline, callout bars, and "false"
+     verdicts. Nothing else gets color — no blues, no gradients, no tints. */
+  --color-paper: #ffffff;
+  --color-paper-shade: #f7f7f5;   /* faint warm off-white for banded sections */
+  --color-ink: #0a0a0a;           /* headings, primary buttons */
+  --color-ink-secondary: #3f3f3f; /* body copy */
+  --color-ink-muted: #5c5c5c;     /* captions, metadata — still AA on paper */
+  --color-accent: #dc2626;        /* the single accent */
+  --color-accent-dark: #b91c1c;   /* accent text on shaded backgrounds */
 
-  /* Primary Brand Color (Blue) */
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-light: #eff6ff;
-  --color-primary-focus: rgba(37, 99, 235, 0.25);
+  /* Rules. Strong rules delimit major sections; hairlines separate list rows. */
+  --color-rule: #0a0a0a;
+  --color-rule-hairline: #d8d8d4;
 
-  /* Verdict Colors */
-  --color-success: #16a34a;
-  --color-success-hover: #15803d;
-  --color-success-light: #f0fdf4;
+  /* ---- Typography --------------------------------------------------------
+     Two families, deliberately contrasting. Newsreader (serif) carries every
+     heading; IBM Plex Sans carries body, navigation, labels and UI chrome. */
+  --font-family-serif: var(--font-newsreader), Georgia, 'Times New Roman', serif;
+  --font-family-sans: var(--font-plex-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  --color-error: #dc2626;
-  --color-error-hover: #b91c1c;
-  --color-error-light: #fef2f2;
-
-  --color-warning: #d97706;
-  --color-warning-hover: #b45309;
-  --color-warning-light: #fffbeb;
-
-  --color-unclear: #ea580c;
-  --color-unclear-hover: #c2410c;
-  --color-unclear-light: #fff7ed;
-
-  /* Trust — dedicated to source/provenance signals, distinct from verdict colors */
-  --color-trust: #0f766e;
-  --color-trust-hover: #0e6259;
-  --color-trust-light: #f0fdfa;
-
-  /* Typography */
-  --font-family-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-family-serif: var(--font-source-serif), Georgia, 'Times New Roman', serif;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* Type scale — 6 steps, headings on the serif family for editorial contrast with sans body */
-  --font-size-display: 3rem;      /* 48px */
-  --line-height-display: 1.1;
-  --font-size-h1: 2.25rem;        /* 36px */
-  --line-height-h1: 1.2;
-  --font-size-h2: 1.75rem;        /* 28px */
-  --line-height-h2: 1.25;
-  --font-size-h3: 1.25rem;        /* 20px */
-  --line-height-h3: 1.35;
+  /* Type scale. Headline steps are serif; text steps are sans. */
+  --font-size-display: 4rem;      /* 64px — homepage headline */
+  --line-height-display: 1.04;
+  --font-size-h1: 2.75rem;        /* 44px — page titles */
+  --line-height-h1: 1.1;
+  --font-size-h2: 1.875rem;       /* 30px — section titles */
+  --line-height-h2: 1.2;
+  --font-size-h3: 1.25rem;        /* 20px — subsection / card titles */
+  --line-height-h3: 1.3;
+  --font-size-lead: 1.1875rem;    /* 19px — deck / standfirst under a headline */
+  --line-height-lead: 1.6;
   --font-size-body: 1rem;         /* 16px */
-  --line-height-body: 1.6;
+  --line-height-body: 1.65;
   --font-size-body-sm: 0.875rem;  /* 14px */
-  --line-height-body-sm: 1.55;
-  --font-size-caption: 0.75rem;   /* 12px */
+  --line-height-body-sm: 1.6;
+  --font-size-caption: 0.75rem;   /* 12px — eyebrows, metadata, labels */
   --line-height-caption: 1.4;
 
-  /* Spacing scale — multiples of a 4px base unit */
-  --space-1: 0.25rem;   /* 4px */
-  --space-2: 0.5rem;    /* 8px */
-  --space-3: 0.75rem;   /* 12px */
-  --space-4: 1rem;      /* 16px */
-  --space-5: 1.25rem;   /* 20px */
-  --space-6: 1.5rem;    /* 24px */
-  --space-8: 2rem;      /* 32px */
-  --space-10: 2.5rem;   /* 40px */
-  --space-12: 3rem;     /* 48px */
-  --space-16: 4rem;     /* 64px */
-  --space-20: 5rem;     /* 80px */
+  /* Letter-spacing for the uppercase label style used on eyebrows, nav,
+     buttons and verdict labels. */
+  --tracking-label: 0.1em;
+  --tracking-label-tight: 0.06em;
 
-  /* Borders & Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-full: 9999px;
+  /* ---- Spacing — 4px base ---------------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
 
-  --border-color: var(--color-gray-200);
-  --border-color-focus: var(--color-primary);
+  /* ---- Geometry ---------------------------------------------------------
+     Squared off. 2px is the maximum radius anywhere in the system; there is
+     no pill radius token because nothing in this design is pill-shaped. */
+  --radius-none: 0;
+  --radius-sm: 2px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-xl: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --border-width-hairline: 1px;
+  --border-width-rule: 1px;
+  --border-width-heavy: 2px;
 
-  /* Transitions */
-  --transition-fast: 150ms ease-in-out;
-  --transition-normal: 250ms ease-in-out;
+  /* ---- Motion -----------------------------------------------------------
+     Short and linear-ish. No spring, no bounce, no scale-on-hover. */
+  --transition-fast: 120ms ease;
+  --transition-normal: 200ms ease;
 
-  /* Layout */
-  --container-max-width: 1180px;
+  /* ---- Layout ------------------------------------------------------------ */
+  --container-max-width: 1140px;
+  --measure: 68ch;  /* comfortable reading width for long-form copy */
 }
 
-/* Breakpoints (reference — CSS custom properties can't be used inside
-   @media queries, so components repeat these literal values):
+/* Breakpoints used across the app (CSS variables can't be used inside media
+   queries, so components repeat these literals):
    375px mobile · 768px tablet · 1024px laptop · 1440px desktop */
 
-/* Base Styles & Reset */
+/* ---- Reset ---------------------------------------------------------------- */
+
 *,
 *::before,
 *::after {
@@ -122,16 +110,24 @@ body {
   max-width: 100vw;
   overflow-x: hidden;
   font-family: var(--font-family-sans);
-  background-color: var(--color-gray-50);
-  color: var(--color-gray-800);
-  line-height: 1.5;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  background-color: var(--color-paper);
+  color: var(--color-ink-secondary);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3 {
+/* ---- Base elements -------------------------------------------------------- */
+
+h1,
+h2,
+h3,
+h4 {
   font-family: var(--font-family-serif);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-gray-900);
+  color: var(--color-ink);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
 }
 
 h1 {
@@ -147,7 +143,11 @@ h2 {
 h3 {
   font-size: var(--font-size-h3);
   line-height: var(--line-height-h3);
-  font-weight: var(--font-weight-semibold);
+}
+
+p {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
 }
 
 a {
@@ -160,18 +160,30 @@ button {
   cursor: pointer;
   border: none;
   background: none;
+  color: inherit;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-ink);
+}
+
+ul,
+ol {
+  list-style: none;
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: var(--border-width-heavy) solid var(--color-accent);
   outline-offset: 2px;
 }
 
-/* App shell — header/main/footer stacked with footer pinned to viewport bottom */
+/* ---- Shared utility classes ----------------------------------------------- */
+
+/* App shell: header / main / footer with the footer pinned to the bottom. */
 .app-shell {
   display: flex;
   flex-direction: column;
@@ -180,4 +192,42 @@ input, textarea, select {
 
 .app-shell__main {
   flex: 1;
+}
+
+/* Standard horizontal container. */
+.container {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding-left: var(--space-5);
+  padding-right: var(--space-5);
+}
+
+/* The uppercase, letter-spaced label style. Used for eyebrows, nav links,
+   button text, verdict labels and metadata throughout. */
+.label-caps {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+/* Red eyebrow above a headline — one of the few places accent color appears. */
+.eyebrow {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--color-accent);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --font-size-display: 2.5rem;
+    --font-size-h1: 2rem;
+    --font-size-h2: 1.5rem;
+    --font-size-lead: 1.0625rem;
+  }
 }

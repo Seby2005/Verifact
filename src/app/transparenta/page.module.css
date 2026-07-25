@@ -1,0 +1,130 @@
+.sectionTitle {
+  font-size: var(--font-size-h2);
+  margin-bottom: var(--space-6);
+}
+
+.intro {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  color: var(--color-ink-secondary);
+  max-width: var(--measure);
+  margin-bottom: var(--space-8);
+}
+
+/* Layers -------------------------------------------------------------------- */
+
+.layers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-8);
+}
+
+.layer {
+  border-top: var(--border-width-heavy) solid var(--color-rule);
+  padding-top: var(--space-4);
+}
+
+.layerHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.layerNumber,
+.layerWeight {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-label-tight);
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.layerWeight {
+  text-transform: uppercase;
+}
+
+.layerTitle {
+  margin-bottom: var(--space-2);
+}
+
+.layerText {
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+}
+
+/* Score bands --------------------------------------------------------------- */
+
+.bands {
+  border-top: var(--border-width-heavy) solid var(--color-rule);
+}
+
+.band {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  padding: var(--space-5) 0;
+  border-bottom: var(--border-width-hairline) solid var(--color-rule-hairline);
+}
+
+.bandRange {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.bandBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.bandLabel {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--color-ink);
+}
+
+.bandText {
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+  max-width: var(--measure);
+}
+
+.follow {
+  margin-top: var(--space-6);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink-muted);
+}
+
+.textLink {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.textLink:hover {
+  color: var(--color-accent-dark);
+}
+
+@media (min-width: 768px) {
+  .layers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-8) var(--space-10);
+  }
+
+  .band {
+    grid-template-columns: 10rem minmax(0, 1fr);
+    gap: var(--space-8);
+    align-items: baseline;
+  }
+}

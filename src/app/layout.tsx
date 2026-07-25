@@ -1,27 +1,31 @@
 import type { Metadata } from 'next';
-import { Inter, Source_Serif_4 } from 'next/font/google';
+import { Newsreader, IBM_Plex_Sans } from 'next/font/google';
 
 import { Header, Footer } from '@/components/layout';
 import './globals.css';
 
-const inter = Inter({
-  subsets: ['latin'],
+const newsreader = Newsreader({
+  subsets: ['latin', 'latin-ext'],
   weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
+  style: ['normal', 'italic'],
+  variable: '--font-newsreader',
   display: 'swap',
 });
 
-const sourceSerif = Source_Serif_4({
-  subsets: ['latin'],
-  weight: ['600', '700'],
-  variable: '--font-source-serif',
+const plexSans = IBM_Plex_Sans({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600'],
+  variable: '--font-plex-sans',
   display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: 'AI Fact-Checker — Verifică știrile cu inteligență artificială',
+  title: {
+    default: 'Verifact — Verificare independentă a informației',
+    template: '%s — Verifact',
+  },
   description:
-    'Aplicație open source de verificare a știrilor și conținutului de pe rețelele sociale, folosind inteligență artificială. Upload screenshot sau text și primești un raport detaliat.',
+    'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile. Algoritm open source, surse citate integral, rapoarte private.',
 };
 
 export default function RootLayout({
@@ -30,8 +34,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ro" className={`${inter.variable} ${sourceSerif.variable}`}>
-      <body className={inter.className}>
+    <html lang="ro" className={`${newsreader.variable} ${plexSans.variable}`}>
+      <body>
         <div className="app-shell">
           <Header />
           <main className="app-shell__main">{children}</main>
