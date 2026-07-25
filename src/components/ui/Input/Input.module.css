@@ -9,50 +9,60 @@
 }
 
 .label {
-  font-size: var(--font-size-body-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-gray-700);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label-tight);
+  color: var(--color-ink);
 }
 
+/* Thin border, square corners, no shadow. */
 .input {
   width: 100%;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
   font-size: var(--font-size-body);
-  font-family: inherit;
-  color: var(--color-gray-800);
-  background-color: var(--color-white);
-  border: 1px solid var(--color-gray-300);
+  font-family: var(--font-family-sans);
+  color: var(--color-ink);
+  background-color: var(--color-paper);
+  border: var(--border-width-hairline) solid var(--color-rule-hairline);
   border-radius: var(--radius-sm);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast);
+}
+
+.input::placeholder {
+  color: var(--color-ink-muted);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-focus);
+  border-color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-ink);
 }
 
 .input:disabled {
-  background-color: var(--color-gray-100);
+  background-color: var(--color-paper-shade);
   cursor: not-allowed;
   opacity: 0.7;
 }
 
 .input.hasError {
-  border-color: var(--color-error);
+  border-color: var(--color-accent);
 }
 
 .input.hasError:focus {
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
 }
 
 .helperText {
   font-size: var(--font-size-caption);
-  color: var(--color-gray-500);
+  line-height: var(--line-height-caption);
+  color: var(--color-ink-muted);
 }
 
 .errorText {
   font-size: var(--font-size-caption);
-  color: var(--color-error);
+  line-height: var(--line-height-caption);
+  color: var(--color-accent-dark);
   font-weight: var(--font-weight-medium);
 }

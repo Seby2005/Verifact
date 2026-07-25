@@ -2,102 +2,108 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  font-family: inherit;
-  font-weight: var(--font-weight-medium);
+  gap: var(--space-2);
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
   border-radius: var(--radius-sm);
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  border: var(--border-width-hairline) solid transparent;
+  transition: background-color var(--transition-fast), color var(--transition-fast),
+    border-color var(--transition-fast);
   user-select: none;
-  position: relative;
   white-space: nowrap;
+  text-align: center;
 }
 
 .button:disabled {
-  opacity: 0.6;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 /* Sizes */
 .sm {
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-body-sm);
-  height: 32px;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-caption);
 }
 
 .md {
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--font-size-body);
-  height: 40px;
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--font-size-caption);
 }
 
 .lg {
-  padding: var(--space-3) var(--space-6);
-  font-size: var(--font-size-body);
-  height: 48px;
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--font-size-body-sm);
 }
 
-/* Full Width */
 .fullWidth {
   width: 100%;
 }
 
-/* Variants */
+/* Variants ---------------------------------------------------------------- */
+
+/* Primary: solid near-black. The single dominant action on a page. */
 .primary {
-  background-color: var(--color-primary);
-  color: var(--color-white);
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+  border-color: var(--color-ink);
 }
 
-.primary:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+.primary:hover:not(:disabled),
+.primary:focus-visible:not(:disabled) {
+  background-color: var(--color-ink-secondary);
+  border-color: var(--color-ink-secondary);
 }
 
+/* Secondary: outlined, for the lesser of two adjacent actions. */
 .secondary {
-  background-color: var(--color-gray-100);
-  color: var(--color-gray-700);
-  border: 1px solid var(--color-gray-200);
+  background-color: transparent;
+  color: var(--color-ink);
+  border-color: var(--color-ink);
 }
 
-.secondary:hover:not(:disabled) {
-  background-color: var(--color-gray-200);
+.secondary:hover:not(:disabled),
+.secondary:focus-visible:not(:disabled) {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
 }
 
-.danger {
-  background-color: var(--color-error);
-  color: var(--color-white);
-}
-
-.danger:hover:not(:disabled) {
-  background-color: var(--color-error-hover);
-}
-
+/* Ghost: text-only, for tertiary actions and dismissals. */
 .ghost {
   background-color: transparent;
-  color: var(--color-gray-700);
+  color: var(--color-ink-secondary);
 }
 
-.ghost:hover:not(:disabled) {
-  background-color: var(--color-gray-100);
+.ghost:hover:not(:disabled),
+.ghost:focus-visible:not(:disabled) {
+  color: var(--color-ink);
 }
 
-.outline {
-  background-color: transparent;
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary);
+/* Danger: the accent, reserved for destructive confirmation only. */
+.danger {
+  background-color: var(--color-accent);
+  color: var(--color-paper);
+  border-color: var(--color-accent);
 }
 
-.outline:hover:not(:disabled) {
-  background-color: var(--color-primary-light);
+.danger:hover:not(:disabled),
+.danger:focus-visible:not(:disabled) {
+  background-color: var(--color-accent-dark);
+  border-color: var(--color-accent-dark);
 }
 
-/* Loading Spinner */
+/* Loading ----------------------------------------------------------------- */
+
 .spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid currentColor;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid currentColor;
   border-bottom-color: transparent;
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+  animation: spin 0.7s linear infinite;
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .hiddenText {
@@ -107,11 +113,16 @@
 .text {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
 }
 
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
   }
 }

@@ -1,0 +1,100 @@
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-5);
+  border-bottom: var(--border-width-heavy) solid var(--color-rule);
+}
+
+.meta {
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+  text-align: right;
+}
+
+.sectionLabel {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--color-ink-muted);
+  margin-bottom: var(--space-3);
+}
+
+/* The claim under review, set in serif like a pull quote. */
+.claim {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-lead);
+  line-height: var(--line-height-lead);
+  color: var(--color-ink);
+  max-width: var(--measure);
+}
+
+.summary {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  color: var(--color-ink-secondary);
+  max-width: var(--measure);
+}
+
+/* Sources: a numbered, ruled list. No check icons, no colored bullets. */
+.sources {
+  border-top: var(--border-width-hairline) solid var(--color-rule-hairline);
+}
+
+.source {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: var(--border-width-hairline) solid var(--color-rule-hairline);
+}
+
+.sourceIndex {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  padding-top: 2px;
+  min-width: 1.5rem;
+}
+
+.sourceBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sourceTitle {
+  font-size: var(--font-size-body);
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--color-rule-hairline);
+}
+
+.sourceTitle:hover {
+  text-decoration-color: var(--color-ink);
+}
+
+.sourceMeta {
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+}
+
+@media (max-width: 480px) {
+  .meta {
+    text-align: left;
+  }
+}

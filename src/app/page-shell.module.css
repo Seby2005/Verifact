@@ -1,0 +1,91 @@
+/* Shared layout for the secondary (non-homepage) routes, so every page in the
+   site is built from the same measures and rules rather than ad-hoc values. */
+
+.page {
+  padding-top: var(--space-16);
+}
+
+.head {
+  padding-bottom: var(--space-8);
+  border-bottom: var(--border-width-heavy) solid var(--color-rule);
+}
+
+.title {
+  margin-top: var(--space-4);
+  max-width: 22ch;
+}
+
+.lead {
+  margin-top: var(--space-5);
+  font-size: var(--font-size-lead);
+  line-height: var(--line-height-lead);
+  color: var(--color-ink-secondary);
+  max-width: 60ch;
+}
+
+.body {
+  padding-top: var(--space-12);
+}
+
+/* A prose block with a comfortable measure for long-form copy. */
+.prose {
+  max-width: var(--measure);
+}
+
+.prose h2 {
+  margin-top: var(--space-12);
+  margin-bottom: var(--space-4);
+}
+
+.prose h2:first-child {
+  margin-top: 0;
+}
+
+.prose h3 {
+  margin-top: var(--space-8);
+  margin-bottom: var(--space-3);
+}
+
+.prose p {
+  margin-bottom: var(--space-4);
+  color: var(--color-ink-secondary);
+}
+
+.prose ul {
+  margin-bottom: var(--space-4);
+}
+
+.prose li {
+  position: relative;
+  padding-left: var(--space-5);
+  margin-bottom: var(--space-3);
+  color: var(--color-ink-secondary);
+}
+
+/* Plain typographic bullet — no icons, no colored dots. */
+.prose li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.65em;
+  width: 8px;
+  height: 1px;
+  background-color: var(--color-ink-muted);
+}
+
+.prose a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.prose a:hover {
+  color: var(--color-accent-dark);
+}
+
+.sectionRule {
+  margin-top: var(--space-12);
+  padding-top: var(--space-8);
+  border-top: var(--border-width-hairline) solid var(--color-rule-hairline);
+}

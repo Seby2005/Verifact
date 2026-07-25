@@ -94,7 +94,7 @@ export const Modal: React.FC<ModalProps> = ({
             onClick={onClose}
             aria-label="Închide dialogul"
           >
-            &times;
+            Închide
           </button>
         </div>
         <div className={styles.body}>{children}</div>
