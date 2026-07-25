@@ -10,6 +10,7 @@ const newsreader = Newsreader({
   style: ['normal', 'italic'],
   variable: '--font-newsreader',
   display: 'swap',
+  adjustFontFallback: false,
 });
 
 const plexSans = IBM_Plex_Sans({

@@ -31,20 +31,31 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
         </div>
         <p className={styles.meta}>
           {formatDate(report.createdAt)}
-          {typeof report.processingTime === 'number'
-            ? ` · analizat în ${report.processingTime.toFixed(1)}s`
+          {typeof report.processingTimeMs === 'number'
+            ? ` · analizat în ${(report.processingTimeMs / 1000).toFixed(1)}s`
+            : null}
+          {report.scoreBreakdown?.availableLayers !== undefined
+            ? ` · ${report.scoreBreakdown.availableLayers}/4 straturi cu dovezi`
             : null}
         </p>
       </header>
 
       <div>
         <p className={styles.sectionLabel}>Afirmația verificată</p>
-        <p className={styles.claim}>&ldquo;{report.claim}&rdquo;</p>
+        <p className={styles.claim}>&ldquo;{report.claim ?? report.inputText}&rdquo;</p>
       </div>
+
+      {report.aiAvailable === false ? (
+        <Callout label="Analiză parțială" tone="plain">
+          Analiza în limbaj natural nu a putut fi generată pentru acest raport.
+          Verdictul și sursele de mai jos provin din căutarea în surse și sunt
+          complete; lipsește doar explicația narativă.
+        </Callout>
+      ) : null}
 
       <div>
         <p className={styles.sectionLabel}>Rezumat</p>
-        <p className={styles.summary}>{report.summary}</p>
+        <p className={styles.summary}>{report.executiveSummary}</p>
       </div>
 
       <div>
