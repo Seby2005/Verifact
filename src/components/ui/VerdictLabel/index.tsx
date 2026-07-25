@@ -10,9 +10,19 @@ export type VerdictKind = 'true' | 'partial' | 'unclear' | 'false';
  */
 export const VERDICT_COPY: Record<VerdictKind, string> = {
   true: 'Probabil adevărat',
-  partial: 'Parțial adevărat / context lipsă',
-  unclear: 'Neclar / insuficient verificat',
+  partial: 'Parțial adevărat',
+  unclear: 'Neclar',
   false: 'Probabil fals',
+};
+
+/**
+ * The qualifier that the PRD attaches to the middle two bands. Kept out of the
+ * uppercase label and set in sentence case instead — all-caps costs legibility
+ * past a couple of words, so the label stays short and the nuance reads as text.
+ */
+export const VERDICT_NOTE: Partial<Record<VerdictKind, string>> = {
+  partial: 'Context lipsă',
+  unclear: 'Insuficient verificat',
 };
 
 export function verdictFromScore(score: number): VerdictKind {
@@ -47,6 +57,9 @@ export const VerdictLabel: React.FC<VerdictLabelProps> = ({
       >
         {VERDICT_COPY[kind]}
       </span>
+      {VERDICT_NOTE[kind] ? (
+        <span className={styles.note}>{VERDICT_NOTE[kind]}</span>
+      ) : null}
       {typeof score === 'number' ? (
         <span className={styles.score}>
           Scor de veridicitate: <span className={styles.scoreValue}>{score}%</span>

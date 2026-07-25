@@ -16,7 +16,7 @@ export default function OpenSourcePage() {
   return (
     <div className={`container ${shell.page}`}>
       <header className={shell.head}>
-        <p className="eyebrow">Open source și confidențialitate</p>
+        <p className="eyebrow">Cod și date</p>
         <h1 className={shell.title}>Codul e public. Datele tale nu.</h1>
         <p className={shell.lead}>
           Două promisiuni care merg împreună: oricine poate audita cum

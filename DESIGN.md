@@ -1,123 +1,131 @@
-# Design System — AI Fact-Checker
+# Design System — Verifact
 
-Single source of truth for the visual language of the app. Tokens live in
-[`src/app/globals.css`](src/app/globals.css); primitive components live in
-[`src/components/ui`](src/components/ui). A live reference of every component
-variant is at the `/design-system` route.
+Single source of truth for the visual language. Tokens live in
+[`src/app/globals.css`](src/app/globals.css); primitives in
+[`src/components/ui`](src/components/ui).
 
 ## Principles
 
-This is a fact-checking product — the UI's job is to earn trust, not to look
-like a generic AI-startup landing page. Concretely, that means:
+Verifact asks people to trust what it displays, so the interface is built to
+look like serious press rather than a software product. Four rules follow from
+that, and everything else is downstream of them:
 
-- Restrained color: one primary action color, semantic colors reserved for
-  verdicts, a dedicated color for source/provenance signals.
-- Editorial typography: a serif headline face paired with a sans body face,
-  not one font stretched across every size.
-- No decoration without purpose: no gradients, no blurred hero blobs, no
-  bouncy easing, no emoji standing in for iconography.
-- Sources and certainty are always visible, never buried behind a bare
-  verdict label.
+1. **Black on white.** Red is the only accent and it is rationed — an eyebrow
+   label, an active tab underline, a callout bar, a "false" verdict. Nothing
+   decorative gets color.
+2. **Serif headlines, sans everything else.** The contrast between the two
+   families *is* the hierarchy; size alone is not enough.
+3. **Rules, not elevation.** Sections are separated by 1px lines. There is no
+   shadow token — the only `box-shadow` in the system is an inset focus ring.
+4. **Squared off.** 2px is the maximum radius. There is no pill radius token
+   because nothing here is pill-shaped.
+
+### Explicitly rejected
+
+These were present in an earlier iteration and are gone deliberately. Do not
+reintroduce them: emoji used as iconography (a shield in the wordmark, green
+checks beside sources), colored rounded badges for verdicts or scores, a blue
+primary button, gradients, and a single sans font carrying every level of the
+hierarchy.
 
 ## Color
 
 | Token | Value | Use |
 |---|---|---|
-| `--color-primary` | `#2563eb` | Primary actions, links, focus ring |
-| `--color-trust` | `#0f766e` | Verified-source / provenance signals — deliberately distinct from the verdict palette so "this source is credible" is never confused with "this claim is true" |
-| `--color-success` | `#16a34a` | Verdict: adevărat |
-| `--color-error` | `#dc2626` | Verdict: fals |
-| `--color-warning` | `#d97706` | Verdict: parțial adevărat |
-| `--color-unclear` | `#ea580c` | Verdict: neclar |
-| `--color-gray-50 … 900` | `#f8f9fa … #0f172a` | Neutrals — text, borders, surfaces |
+| `--color-paper` | `#ffffff` | Page background |
+| `--color-paper-shade` | `#f7f7f5` | Faint banded sections |
+| `--color-ink` | `#0a0a0a` | Headings, primary button fill |
+| `--color-ink-secondary` | `#3f3f3f` | Body copy |
+| `--color-ink-muted` | `#5c5c5c` | Captions, metadata |
+| `--color-accent` | `#dc2626` | Eyebrows, active tab rule, callout bar, false verdicts |
+| `--color-accent-dark` | `#b91c1c` | Accent text needing more contrast; link hover |
+| `--color-rule` | `#0a0a0a` | Structural section rules |
+| `--color-rule-hairline` | `#d8d8d4` | Row separators, input borders |
 
-Each semantic color has a paired `-hover` and `-light` (tint, used as a
-badge/alert background) variant, e.g. `--color-success-hover`,
-`--color-success-light`.
+Every text/background pair in the system is at or above **4.5:1** (WCAG AA for
+normal text); the lowest is accent-on-paper at 4.83:1.
+
+Verdicts are **not** color-coded on a traffic-light scale. Only "probabil fals"
+takes the accent; the other three bands stay in ink. Restricting the accent is
+what gives it meaning.
 
 ## Typography
 
-Two font families, loaded via `next/font` in `src/app/layout.tsx`:
+Two families, loaded via `next/font` in `src/app/layout.tsx`:
 
-- `--font-family-sans` (Inter) — body copy, UI labels, buttons, inputs.
-- `--font-family-serif` (Source Serif 4) — `h1`/`h2`/`h3` headings by default
-  (see the base styles in `globals.css`), plus anywhere else editorial
-  emphasis is wanted (e.g. the hero's sample-claim text).
+- `--font-family-serif` → **Newsreader** — every `h1`–`h4`, plus quoted claims
+  and prices where editorial weight is wanted.
+- `--font-family-sans` → **IBM Plex Sans** — body copy, navigation, labels,
+  buttons, form fields.
 
-Six-step type scale, each with a matching line-height token:
-
-| Token | Size | Typical use |
+| Token | Size | Use |
 |---|---|---|
-| `--font-size-display` | 48px | Hero headline |
-| `--font-size-h1` | 36px | Page title |
-| `--font-size-h2` | 28px | Section title |
-| `--font-size-h3` | 20px | Card/subsection title |
-| `--font-size-body` | 16px | Default body text, inputs |
-| `--font-size-body-sm` | 14px | Secondary text, labels |
-| `--font-size-caption` | 12px | Helper text, timestamps, captions |
+| `--font-size-display` | 64px | Homepage headline |
+| `--font-size-h1` | 44px | Page titles |
+| `--font-size-h2` | 30px | Section titles |
+| `--font-size-h3` | 20px | Subsection titles |
+| `--font-size-lead` | 19px | Standfirst / deck |
+| `--font-size-body` | 16px | Body |
+| `--font-size-body-sm` | 14px | Secondary text |
+| `--font-size-caption` | 12px | Eyebrows, labels, metadata |
 
-Font weights: `--font-weight-normal` (400), `-medium` (500), `-semibold`
-(600), `-bold` (700).
+Sizes step down at the 640px breakpoint. Weights: 400 / 500 / 600 / 700.
+
+**The uppercase label style** (`--tracking-label`, 0.1em) is used for eyebrows,
+nav, buttons and verdict labels. Keep it under ~20 characters — all-caps costs
+legibility past a couple of words, which is why the PRD's longer verdict names
+are split into a short label plus a sentence-case qualifier (`VERDICT_NOTE`).
 
 ## Spacing
 
-4px-based scale — every padding/gap/margin in the design system should come
-from this list, not an arbitrary rem value:
-
-`--space-1` (4px) · `--space-2` (8px) · `--space-3` (12px) · `--space-4`
-(16px) · `--space-5` (20px) · `--space-6` (24px) · `--space-8` (32px) ·
-`--space-10` (40px) · `--space-12` (48px) · `--space-16` (64px) ·
-`--space-20` (80px)
+4px base: `--space-1` (4px) through `--space-24` (96px). Every padding, gap and
+margin comes from this scale.
 
 ## Layout
 
-- `--container-max-width` (1180px) — the max width for header/footer/page
-  content wrappers.
-- Verified breakpoints: **375px** (mobile), **768px** (tablet), **1024px**
-  (laptop), **1440px** (desktop). CSS custom properties can't be referenced
-  inside `@media` queries, so components repeat these as literal values.
-- The root layout renders an `.app-shell` (`Header` → `<main>` → `Footer`)
-  as a column flexbox with `min-height: 100vh`, so the footer pins to the
-  bottom on short pages instead of floating mid-viewport.
+- `--container-max-width` 1140px, applied via the global `.container` class.
+- `--measure` 68ch — the reading width for long-form prose.
+- Breakpoints: **375 / 768 / 1024 / 1440px**. CSS variables can't be used in
+  `@media` queries, so components repeat these literals.
+- Root layout renders `.app-shell` (Header → `<main>` → Footer) as a column
+  flexbox with `min-height: 100vh`.
 
-## Radius, shadow, motion
+## Components
 
-- Radius: `--radius-sm` (4px, inputs/buttons) · `--radius-md` (8px, cards) ·
-  `--radius-lg` (12px, modals) · `--radius-full` (pills/badges). No
-  uniform "everything is 16px" rounding — radius scales with how
-  prominent the element is.
-- Shadow: `--shadow-sm` through `--shadow-xl`, used sparingly (cards use
-  `sm`/`md`; modals use `xl`).
-- Motion: `--transition-fast` (150ms) / `--transition-normal` (250ms), both
-  `ease-in-out`. No spring/bounce easing anywhere.
+`src/components/ui`
 
-## Components (`src/components/ui`)
+| Component | Notes |
+|---|---|
+| `Button` | `primary` (solid ink) / `secondary` (outline) / `ghost` / `danger`. Uppercase, tracked, 2px radius. Renders an `<a>` when given `href`. |
+| `Input` / `Textarea` | Thin hairline border, square, no shadow. Label, helper and error text are part of the component. |
+| `Tabs` | Text tabs with a red active underline. Full WAI-ARIA tab pattern including arrow-key navigation. |
+| `Callout` | Editorial callout: thin red left bar, serif body (`quote`) or sans (`plain`). Not a tinted card. |
+| `VerdictLabel` | Verdict as a typographic label plus the score as plain text. No fill, no radius. `verdictFromScore` maps a score to a band per PRD §3.2. |
+| `Card` | `default` / `bordered` / `ruled` / `flat`. Delimited by rules; carries no shadow. |
+| `Modal` | ESC to close, click-outside to close, focus trapped and restored. |
 
-| Component | Variants | Notes |
-|---|---|---|
-| `Button` | `primary` / `secondary` / `danger` / `ghost` / `outline`, sizes `sm`/`md`/`lg` | Renders an `<a>` instead of a `<button>` when given an `href` prop, for link-styled-as-button CTAs |
-| `Input` | default / error / disabled | Label, helper text, and error text are all part of the component, not free-floating markup |
-| `Card` | `default` / `bordered` / `flat`, padding `none`/`sm`/`md`/`lg` | |
-| `Badge` | `true` / `false` / `partial` / `unclear` / `trust` / `primary` / `secondary` | Verdict and `trust` variants render a matching SVG icon automatically (see `icon` prop to opt out) |
-| `Modal` | — | ESC to close, click-outside to close, focus stays trapped to the dialog |
-| icons (`ui/icons/VerdictIcons.tsx`) | check-circle, x-circle, alert-triangle, help-circle, shield-check | Hand-drawn, stroke-based, single icon family — not a mixed stock icon set |
+`src/components/verify` — `VerifyTool` (the Text/Screenshot/URL tool) and
+`ReportView` (editorial report rendering).
+`src/components/auth` — `AuthPanel` (login/signup).
+`src/components/layout` — `Header`, `Footer`, and `routes.ts`, the single
+source of truth for navigation.
 
-`Header` and `Footer` (`src/components/layout`) compose these primitives and
-are not meant to be used outside the root layout.
+## Routes
 
-## What this pass did **not** touch
+`/` · `/rapoarte` · `/transparenta` · `/preturi` · `/cont` · `/misiune` ·
+`/open-source`
 
-Scoped deliberately to the design system, shell, and homepage. The
-following pages don't exist in the codebase yet and were **not**
-fabricated as part of this redesign — they still need real product
-requirements before they're built:
+`/transparenta` and `/open-source` are separate on purpose: the first answers
+"how was this verdict reached" (method, sources, score weighting), the second
+answers "who runs this and what happens to my data" (licence, auditability,
+privacy). Different readers, different questions — merging them buries both.
 
-- `/login`, `/signup` (auth currently has a known backend issue — tracked
-  separately)
-- The verification-flow screen (claim/screenshot input → AI analysis →
-  report)
-- `/mission`, `/open-source`, legal pages
+## Backend status
 
-When those are built, they should draw only from the tokens and
-components documented here — no new one-off colors, font sizes, or
-spacing values without adding them to this file first.
+The verification pipeline described in `docs/PRD.md` §3.2 does not exist yet.
+`/api/verify` validates input and returns **501 `not_implemented`** rather than
+a placeholder verdict — inventing a score would be indistinguishable from a
+real answer to a user, which is the exact failure this product exists to fight.
+The full tool UI is built and wired; `TODO(backend)` marks every integration
+point. The same applies to the reports list on `/rapoarte`, whose entries are
+labelled in the UI as illustrative examples.
