@@ -1,0 +1,207 @@
+.page {
+  background-color: var(--color-bg-primary);
+  padding: var(--space-12) var(--space-4) var(--space-16);
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* ── Hero ─────────────────────────────────────────────── */
+
+.hero {
+  margin-bottom: var(--space-16);
+}
+
+.eyebrow {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-blue-600);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-5);
+}
+
+.lead {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+/* ── Sections ─────────────────────────────────────────── */
+
+.section {
+  margin-bottom: var(--space-12);
+}
+
+.sectionAccent {
+  margin-bottom: var(--space-12);
+  padding: var(--space-8);
+  background-color: var(--color-blue-50);
+  border-left: 3px solid var(--color-blue-500);
+  border-radius: var(--radius-md);
+}
+
+.h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-5);
+}
+
+.p {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.p strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-4);
+}
+
+.list li {
+  position: relative;
+  padding-left: var(--space-6);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+.list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.65em;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-blue-500);
+}
+
+.list li strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ── Editorial placeholders awaiting the owner's copy ─── */
+
+.editorial {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-muted);
+  background-color: var(--color-yellow-50);
+  border: 1px dashed var(--color-yellow-500);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* ── Calls to action ──────────────────────────────────── */
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.primaryCta,
+.secondaryCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.primaryCta {
+  background-color: var(--color-blue-600);
+  color: var(--color-white);
+}
+
+.primaryCta:hover {
+  background-color: var(--color-blue-700);
+}
+
+.secondaryCta {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+.secondaryCta:hover {
+  border-color: var(--color-gray-400);
+}
+
+.primaryCta:focus-visible,
+.secondaryCta:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ── Closing ──────────────────────────────────────────── */
+
+.closing {
+  margin-top: var(--space-16);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--color-border-subtle);
+  text-align: center;
+}
+
+.closingText {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-5);
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+
+@media (min-width: 768px) {
+  .page {
+    padding: var(--space-16) var(--space-6) var(--space-20);
+  }
+}
+
+@media (max-width: 640px) {
+  .title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .lead,
+  .p,
+  .list li {
+    font-size: var(--font-size-base);
+  }
+
+  .sectionAccent {
+    padding: var(--space-5);
+  }
+
+  .ctaRow {
+    flex-direction: column;
+  }
+}

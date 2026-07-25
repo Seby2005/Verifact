@@ -59,6 +59,11 @@ export const Footer: React.FC = () => {
                   Transparență & Algoritm
                 </Link>
               </li>
+              <li>
+                <Link href="/mission" className={styles.link}>
+                  Misiunea noastră
+                </Link>
+              </li>
             </ul>
           </div>
 
