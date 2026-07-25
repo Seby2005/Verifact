@@ -13,7 +13,7 @@
 
 ## Task asociat
 
-<!-- Link la task-ul din TASKS.md, ex: S0-1, S1-2 -->
+<!-- Link la issue-ul asociat, dacă există -->
 
 ## Modificări făcute
 
