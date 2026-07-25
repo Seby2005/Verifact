@@ -31,6 +31,13 @@ export const FOOTER_SECTIONS: ReadonlyArray<{ title: string; links: ReadonlyArra
       { href: '/open-source', label: 'Open source și confidențialitate' },
     ],
   },
+  {
+    title: 'Legal',
+    links: [
+      { href: '/termeni', label: 'Termeni și condiții' },
+      { href: '/confidentialitate', label: 'Politica de confidențialitate' },
+    ],
+  },
 ];
 
 export const REPO_URL = 'https://github.com/Seby2005/fact-checker-ai';
