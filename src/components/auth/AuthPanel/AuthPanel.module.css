@@ -36,3 +36,77 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* Signed-in account view ---------------------------------------------------- */
+
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 30rem;
+}
+
+.accountRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-rule-hairline);
+}
+
+.accountLabel {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--color-ink-secondary);
+}
+
+.accountValue {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink);
+}
+
+.accountActions {
+  margin-top: var(--space-6);
+}
+
+.dangerZone {
+  margin-top: var(--space-12);
+  padding-top: var(--space-6);
+  border-top: var(--border-width-hairline) solid var(--color-rule-hairline);
+  max-width: 30rem;
+}
+
+.dangerLead {
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-ink-muted);
+}
+
+.textLink {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.textLink:hover {
+  color: var(--color-accent-dark);
+}
+
+.modalLead {
+  margin-bottom: var(--space-5);
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
