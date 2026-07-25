@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Newsreader, IBM_Plex_Sans } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 
 import { Header, Footer } from '@/components/layout';
 import './globals.css';
@@ -42,6 +43,7 @@ export default function RootLayout({
           <main className="app-shell__main">{children}</main>
           <Footer />
         </div>
+        <Analytics />
       </body>
     </html>
   );
