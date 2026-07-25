@@ -21,12 +21,13 @@ export default function HomePage() {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>1. Variante Verdict Badges</h2>
           <div className={styles.row}>
-            <Badge variant="true">✅ ADEVĂRAT (85-100%)</Badge>
-            <Badge variant="partial">⚠️ PARȚIAL ADEVĂRAT (60-84%)</Badge>
-            <Badge variant="unclear">🟠 NECLAR (40-59%)</Badge>
-            <Badge variant="false">❌ PROBABIL FALS (0-39%)</Badge>
-            <Badge variant="primary">INFO PRO</Badge>
-            <Badge variant="secondary">DRAFT</Badge>
+            <Badge variant="true">ADEVĂRAT (85-100%)</Badge>
+            <Badge variant="partial">PARȚIAL ADEVĂRAT (60-84%)</Badge>
+            <Badge variant="unclear">NECLAR (40-59%)</Badge>
+            <Badge variant="false">PROBABIL FALS (0-39%)</Badge>
+            <Badge variant="trust">SURSĂ VERIFICATĂ</Badge>
+            <Badge variant="primary" icon={false}>INFO PRO</Badge>
+            <Badge variant="secondary" icon={false}>DRAFT</Badge>
           </div>
         </section>
 
