@@ -9,6 +9,7 @@ export {
   VerdictLabel,
   verdictFromScore,
   VERDICT_COPY,
+  VERDICT_NOTE,
   type VerdictLabelProps,
   type VerdictKind,
 } from './VerdictLabel';
