@@ -2,7 +2,13 @@
 
 import React, { useRef, useState } from 'react';
 import { Button, Tabs, Textarea, Input, Callout, type TabItem } from '@/components/ui';
-import type { VerificationInputKind, VerificationReport, VerifyResponse } from '@/types/verification';
+import type { InputType, VerificationReport, VerifyAPIError } from '@/types/verification';
+
+type VerificationInputKind = InputType;
+
+type VerifyResponse =
+  | { success: true; report: VerificationReport }
+  | ({ success?: false } & VerifyAPIError);
 import { ReportView } from '../ReportView';
 import styles from './VerifyTool.module.css';
 
@@ -55,22 +61,47 @@ export const VerifyTool: React.FC = () => {
     setStatus({ state: 'loading' });
 
     try {
-      // TODO(backend): screenshot verification needs multipart upload + OCR
-      // once the pipeline exists; for now the filename is sent so the request
-      // shape and validation path are exercised end to end.
+      let claimText = text.trim();
+
+      // Screenshot: extract the text with OCR first, then verify that text.
+      if (kind === 'screenshot' && file) {
+        const ocrText = await runOcr(file);
+        if (!ocrText || ocrText.trim().length < 10) {
+          setStatus({
+            state: 'error',
+            message:
+              'Nu am putut extrage text lizibil din imagine. Încearcă un screenshot mai clar sau lipește textul manual.',
+          });
+          return;
+        }
+        claimText = ocrText.trim();
+      }
+
+      // URL: the server fetches the article and extracts its text.
+      if (kind === 'url') claimText = url.trim();
+
       const res = await fetch('/api/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, value: currentValue }),
+        body: JSON.stringify({
+          text: claimText,
+          url: kind === 'url' ? url.trim() : undefined,
+          inputType: kind,
+          language: 'ro',
+          isPublic: false,
+        }),
       });
+
       const data = (await res.json()) as VerifyResponse;
 
-      if (data.status === 'ok') {
+      if (res.ok && data.success && 'report' in data) {
         setStatus({ state: 'report', report: data.report });
-      } else if (data.status === 'not_implemented') {
-        setStatus({ state: 'unavailable', message: data.message });
       } else {
-        setStatus({ state: 'error', message: data.message });
+        const err = data as VerifyAPIError;
+        setStatus({
+          state: err.code === 'ALL_LAYERS_FAILED' ? 'unavailable' : 'error',
+          message: err.error || 'A apărut o eroare la verificare.',
+        });
       }
     } catch {
       setStatus({
@@ -79,6 +110,24 @@ export const VerifyTool: React.FC = () => {
       });
     }
   };
+
+  /** Sends the image to /api/ocr and returns the recognised text. */
+  async function runOcr(image: File): Promise<string> {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+      reader.onerror = () => reject(new Error('read failed'));
+      reader.readAsDataURL(image);
+    });
+
+    const res = await fetch('/api/ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64: base64, mimeType: image.type }),
+    });
+    const data = (await res.json()) as { success?: boolean; text?: string };
+    return data.text ?? '';
+  }
 
   return (
     <section className={styles.tool} aria-labelledby="verify-heading">

@@ -13,9 +13,18 @@ import styles from './page.module.css';
 const SAMPLE_REPORT: VerificationReport = {
   id: 'exemplu',
   claim: 'Vaccinurile ARNm modifică ADN-ul uman.',
+  inputText: 'Vaccinurile ARNm modifică ADN-ul uman.',
+  inputType: 'text',
+  language: 'ro',
   verdict: 'false',
   score: 6,
-  summary:
+  confidenceLevel: 'high',
+  scoreBreakdown: {
+    finalScore: 6,
+    availableLayers: 4,
+    weights: { factCheck: 0.35, news: 0.3, official: 0.25, social: 0.1 },
+  },
+  executiveSummary:
     'ARN-ul mesager din vaccin nu ajunge în nucleul celulei, unde se află ADN-ul, și se degradează în câteva zile după ce celula produce proteina spike. Nu există niciun mecanism cunoscut prin care acest proces să modifice genomul uman.',
   sources: [
     {
@@ -23,22 +32,37 @@ const SAMPLE_REPORT: VerificationReport = {
       publisher: 'Centers for Disease Control and Prevention',
       date: '2024-09-12',
       url: 'https://www.cdc.gov/covid/vaccines/how-they-work.html',
+      sourceType: 'official',
+      relevance: 0.98,
     },
     {
       title: 'mRNA vaccines — a new era in vaccinology',
       publisher: 'Nature Reviews Drug Discovery',
       date: '2018-01-12',
       url: 'https://www.nature.com/articles/nrd.2017.243',
+      sourceType: 'official',
+      relevance: 0.95,
     },
     {
       title: 'Fact check: mRNA vaccines do not alter human DNA',
       publisher: 'Reuters',
       date: '2021-05-21',
       url: 'https://www.reuters.com/article/factcheck-dna-vaccine-idUSL2N2N918K',
+      sourceType: 'fact_check',
+      relevance: 0.92,
     },
   ],
+  layers: {
+    layer1: { status: 'success', layerScore: 0, results: [] },
+    layer2: { status: 'success', layerScore: 0, results: [] },
+    layer3: { status: 'success', layerScore: 0, results: [] },
+    layer4: { status: 'success', layerScore: 0, results: [] },
+  },
   processingTime: 12.3,
+  processingTimeMs: 12300,
   createdAt: '2026-07-25T09:00:00.000Z',
+  isPublic: false,
+  fromCache: false,
 };
 
 const STEPS = [
