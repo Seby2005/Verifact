@@ -28,7 +28,7 @@ export const VerifyTool: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentValue = kind === 'text' ? text : kind === 'url' ? url : (file?.name ?? '');
-  const canSubmit = currentValue.trim().length > 0 && status.state !== 'loading';
+  const isEmpty = currentValue.trim().length === 0;
 
   const handleTabChange = (next: VerificationInputKind) => {
     setKind(next);
@@ -37,7 +37,20 @@ export const VerifyTool: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (status.state === 'loading') return;
+
+    // The button stays enabled when the field is empty — a greyed-out primary
+    // action reads as a broken page. Validate on submit and say what's missing.
+    if (isEmpty) {
+      setStatus({
+        state: 'error',
+        message:
+          kind === 'screenshot'
+            ? 'Alege o imagine înainte de a porni verificarea.'
+            : 'Introdu conținutul pe care vrei să îl verifici.',
+      });
+      return;
+    }
 
     setStatus({ state: 'loading' });
 
@@ -145,7 +158,7 @@ export const VerifyTool: React.FC = () => {
           ) : null}
 
           <div className={styles.actions}>
-            <Button type="submit" variant="primary" size="lg" disabled={!canSubmit} isLoading={status.state === 'loading'}>
+            <Button type="submit" variant="primary" size="lg" isLoading={status.state === 'loading'}>
               Verifică acum
             </Button>
             <span className={styles.actionHint}>

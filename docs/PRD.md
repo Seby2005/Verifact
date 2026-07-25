@@ -1,5 +1,5 @@
 # Product Requirements Document (PRD)
-# Aplicație Web AI Fact-Checker — [Nume TBD]
+# Aplicație Web Verifact
 
 **Versiune:** 0.1 — Draft inițial  
 **Data:** 2026-07-22  
