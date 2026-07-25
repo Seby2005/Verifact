@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './Badge.module.css';
 
-export type VerdictVariant = 'true' | 'false' | 'partial' | 'unclear' | 'primary' | 'secondary';
+export type VerdictVariant = 'true' | 'false' | 'partial' | 'unclear' | 'primary' | 'secondary' | 'trust';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: VerdictVariant;

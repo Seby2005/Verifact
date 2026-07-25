@@ -39,12 +39,47 @@
   --color-unclear-hover: #c2410c;
   --color-unclear-light: #fff7ed;
 
+  /* Trust — dedicated to source/provenance signals, distinct from verdict colors */
+  --color-trust: #0f766e;
+  --color-trust-hover: #0e6259;
+  --color-trust-light: #f0fdfa;
+
   /* Typography */
-  --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-family-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-family-serif: var(--font-source-serif), Georgia, 'Times New Roman', serif;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+
+  /* Type scale — 6 steps, headings on the serif family for editorial contrast with sans body */
+  --font-size-display: 3rem;      /* 48px */
+  --line-height-display: 1.1;
+  --font-size-h1: 2.25rem;        /* 36px */
+  --line-height-h1: 1.2;
+  --font-size-h2: 1.75rem;        /* 28px */
+  --line-height-h2: 1.25;
+  --font-size-h3: 1.25rem;        /* 20px */
+  --line-height-h3: 1.35;
+  --font-size-body: 1rem;         /* 16px */
+  --line-height-body: 1.6;
+  --font-size-body-sm: 0.875rem;  /* 14px */
+  --line-height-body-sm: 1.55;
+  --font-size-caption: 0.75rem;   /* 12px */
+  --line-height-caption: 1.4;
+
+  /* Spacing scale — multiples of a 4px base unit */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-20: 5rem;     /* 80px */
 
   /* Borders & Radius */
   --radius-sm: 4px;
@@ -84,6 +119,28 @@ body {
   color: var(--color-gray-800);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-family-serif);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  line-height: var(--line-height-h1);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-h2);
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+  line-height: var(--line-height-h3);
+  font-weight: var(--font-weight-semibold);
 }
 
 a {

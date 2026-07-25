@@ -1,7 +1,7 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--space-1);
   font-weight: var(--font-weight-semibold);
   border-radius: var(--radius-full);
   line-height: 1;
@@ -10,13 +10,13 @@
 
 /* Sizes */
 .sm {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-caption);
 }
 
 .md {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-body-sm);
 }
 
 /* Verdict Variants */
@@ -54,4 +54,10 @@
   background-color: var(--color-gray-100);
   color: var(--color-gray-700);
   border: 1px solid var(--color-gray-300);
+}
+
+.trust {
+  background-color: var(--color-trust-light);
+  color: var(--color-trust);
+  border: 1px solid var(--color-trust);
 }
