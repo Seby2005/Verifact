@@ -166,8 +166,6 @@ export const VerifyTool: React.FC = () => {
 
           {kind === 'screenshot' ? (
             <div className={styles.field}>
-              {/* TODO(backend): OCR extraction (Google Cloud Vision per PRD §3.2)
-                  is not wired up — the file is not uploaded anywhere yet. */}
               <label
                 className={styles.dropzone}
                 onDragOver={(e) => e.preventDefault()}
