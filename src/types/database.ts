@@ -178,6 +178,10 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: undefined;
       };
+      check_rate_limit: {
+        Args: { p_key: string; p_limit: number; p_window_ms: number };
+        Returns: { allowed: boolean; remaining: number; reset_at: string }[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
