@@ -15,14 +15,14 @@ export interface OCRSpaceResponse {
 }
 
 /**
- * Maps standard ISO language codes to OCR.space 3-letter codes.
+ * Maps standard ISO language codes to OCR.space 3-letter codes (e.g. 'ron' for Romanian).
  */
 function mapLanguageToOCRSpace(lang?: string): string {
-  if (!lang) return 'rum';
+  if (!lang) return 'ron';
   const clean = lang.toLowerCase().trim();
-  if (clean === 'ro' || clean === 'rum' || clean === 'romanian') return 'rum';
+  if (clean === 'ro' || clean === 'rum' || clean === 'ron' || clean === 'romanian') return 'ron';
   if (clean === 'en' || clean === 'eng' || clean === 'english') return 'eng';
-  return 'rum';
+  return 'ron';
 }
 
 /**
@@ -37,7 +37,7 @@ export async function processOCRSpace(
   apiKey?: string,
   language = 'ro'
 ): Promise<VisionOCRResult> {
-  const key = apiKey || process.env.OCR_SPACE_API_KEY || 'helloworld'; // 'helloworld' is OCR.space's free test key
+  const key = apiKey || process.env.OCR_SPACE_API_KEY || 'K84077616488957';
 
   // Ensure base64 string includes data URI prefix for OCR.space
   const base64WithPrefix = base64Image.startsWith('data:image/')
@@ -50,7 +50,6 @@ export async function processOCRSpace(
   formData.append('isOverlayRequired', 'false');
   formData.append('detectOrientation', 'true');
   formData.append('scale', 'true');
-  formData.append('OCREngine', '2'); // OCREngine 2 handles complex layouts better
 
   const response = await withCircuitBreaker('ocr-space', () =>
     fetchWithRetry(
