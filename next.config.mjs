@@ -59,6 +59,10 @@ const csp = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  experimental: {
+    workerThreads: false,
+    cpus: 1,
+  },
   async headers() {
     return [
       {

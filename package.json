@@ -15,12 +15,11 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:e2e": "playwright test",
-    "test:load": "node tests/load/verify-rate-limit.js",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@sentry/nextjs": "^10.68.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
     "@vercel/analytics": "^2.0.1",
@@ -29,13 +28,14 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.12.1",
-    "@playwright/test": "^1.62.0",
+    "@axe-core/playwright": "^4.9.0",
+    "@playwright/test": "^1.44.0",
+    "@types/estree": "^1.0.6",
     "@types/jest": "^30.0.0",
+    "@types/json-schema": "^7.0.15",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "autocannon": "^8.0.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.29",
     "identity-obj-proxy": "^3.0.0",
