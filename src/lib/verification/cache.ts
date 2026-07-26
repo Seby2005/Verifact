@@ -1,14 +1,21 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { VerificationReport } from '@/types/verification';
 import { CACHE_TTL_DAYS } from './constants';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Attempts to retrieve a cached verification report by content hash.
  * Returns null if not found or if the cache entry has expired.
+ *
+ * Uses the admin client deliberately: cached_results has no RLS policies
+ * (see supabase/migrations/006_rls_fixes.sql — it used to allow anyone to
+ * read the entire table directly via PostgREST, which this closed), and
+ * the cache is keyed by content hash and shared across every caller by
+ * design, so there's no per-request access check that makes sense here.
  */
 export async function getCached(hash: string): Promise<VerificationReport | null> {
   try {
-    const supabase = createClient();
+    const supabase = createAdminClient();
     const { data, error } = await supabase
       .from('cached_results')
       .select('result_json, expires_at')
@@ -45,7 +52,7 @@ export async function setCached(
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + CACHE_TTL_DAYS);
 
-    const supabase = createClient();
+    const supabase = createAdminClient();
     await supabase.from('cached_results').upsert(
       {
         content_hash: hash,
@@ -57,6 +64,6 @@ export async function setCached(
     );
   } catch (error) {
     // Cache write failure is non-fatal — log and continue
-    console.error('[Cache] Failed to write to cache:', error);
+    logger.error('Failed to write to cache', { service: 'cache', error });
   }
 }
