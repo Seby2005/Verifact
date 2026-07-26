@@ -213,6 +213,29 @@ ol {
   letter-spacing: var(--tracking-label);
 }
 
+/* Skip-to-content link: off-screen until keyboard-focused, then pinned to
+   the top so keyboard users can bypass the header nav without a screen
+   reader's landmark navigation (axe's "bypass blocks" check accepts the
+   header/nav/main landmark structure alone, but that's a screen-reader
+   feature — sighted keyboard users still tab through the full nav on every
+   page without this). */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--space-5);
+  z-index: 100;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border: var(--border-width-heavy) solid var(--color-accent);
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-semibold);
+}
+
+.skip-link:focus {
+  top: var(--space-3);
+}
+
 /* Red eyebrow above a headline — one of the few places accent color appears. */
 .eyebrow {
   font-family: var(--font-family-sans);
