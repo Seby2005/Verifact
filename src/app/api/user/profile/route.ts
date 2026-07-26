@@ -19,11 +19,13 @@ export async function GET() {
   return Response.json({ profile });
 }
 
+const USERNAME_PATTERN = /^[a-zA-Z0-9_.-]{3,30}$/;
+
 export async function PATCH(request: Request) {
   const user = await getAuthenticatedUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: { username?: string; avatarUrl?: string };
+  let body: { username?: string };
   try {
     body = await request.json();
   } catch {
@@ -34,10 +36,18 @@ export async function PATCH(request: Request) {
   const updates: Record<string, unknown> = {};
 
   if (typeof body.username === 'string') {
-    updates.username = body.username.trim();
+    const trimmed = body.username.trim();
+    if (!USERNAME_PATTERN.test(trimmed)) {
+      return Response.json(
+        { error: 'Numele de utilizator trebuie să aibă 3-30 de caractere (litere, cifre, _ . -).' },
+        { status: 400 }
+      );
+    }
+    updates.username = trimmed;
   }
-  if (typeof body.avatarUrl === 'string') {
-    updates.avatar_url = body.avatarUrl;
+
+  if (Object.keys(updates).length === 0) {
+    return Response.json({ error: 'No valid fields to update' }, { status: 400 });
   }
 
   const { data: profile, error } = await supabase

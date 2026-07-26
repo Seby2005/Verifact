@@ -11,8 +11,8 @@ const mockFrom = jest.fn((_table: string) => ({
   upsert: mockUpsert,
 }));
 
-jest.mock('@/lib/supabase/server', () => ({
-  createClient: () => ({ from: mockFrom }),
+jest.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({ from: mockFrom }),
 }));
 
 import { getCached, setCached } from '@/lib/verification/cache';
