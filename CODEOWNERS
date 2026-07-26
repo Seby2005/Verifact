@@ -1,0 +1,26 @@
+# CODEOWNERS
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Single-maintainer project today — everything defaults to @Seby2005.
+# The path-specific entries below exist so that changes to migrations,
+# security-relevant config, and CI stay visible even after this stops
+# being a one-person project; they're not implying a review team that
+# doesn't exist yet.
+
+* @Seby2005
+
+# Database schema changes are hard to undo once applied — every migration
+# gets a look regardless of who touches other parts of the same PR.
+/supabase/migrations/ @Seby2005
+
+# Security-relevant configuration.
+/next.config.mjs @Seby2005
+/.github/workflows/ @Seby2005
+/.github/dependabot.yml @Seby2005
+/src/lib/supabase/admin.ts @Seby2005
+/src/lib/auth/ @Seby2005
+
+# Architectural decisions and the disaster recovery plan should reflect
+# an actual decision, not slip in as a drive-by doc edit.
+/docs/adr/ @Seby2005
+/docs/DISASTER_RECOVERY.md @Seby2005
