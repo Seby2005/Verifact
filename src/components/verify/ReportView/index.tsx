@@ -1,6 +1,9 @@
+'use client';
+
 import React from 'react';
 import { VerdictLabel, Callout } from '@/components/ui';
 import type { VerificationReport } from '@/types/verification';
+import { useLanguage } from '@/i18n';
 import { DisputeButton } from './DisputeButton';
 import styles from './ReportView.module.css';
 
@@ -10,19 +13,22 @@ export interface ReportViewProps {
   eyebrow?: string;
 }
 
-const DATE_FORMAT = new Intl.DateTimeFormat('ro-RO', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
-
-function formatDate(iso?: string): string | null {
+function formatDate(iso?: string, locale: string = 'ro'): string | null {
   if (!iso) return null;
   const parsed = new Date(iso);
-  return Number.isNaN(parsed.getTime()) ? null : DATE_FORMAT.format(parsed);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  const dateStyle = new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'ro-RO', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  return dateStyle.format(parsed);
 }
 
 export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
+  const { locale, t } = useLanguage();
+
   return (
     <article className={styles.report}>
       <header className={styles.head}>
@@ -31,37 +37,35 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
           <VerdictLabel kind={report.verdict} score={report.score} />
         </div>
         <p className={styles.meta}>
-          {formatDate(report.createdAt)}
+          {formatDate(report.createdAt, locale)}
           {typeof report.processingTimeMs === 'number'
-            ? ` · analizat în ${(report.processingTimeMs / 1000).toFixed(1)}s`
+            ? ` · ${t('reportView.analyzedIn', { seconds: (report.processingTimeMs / 1000).toFixed(1) })}`
             : null}
           {report.scoreBreakdown?.availableLayers !== undefined
-            ? ` · ${report.scoreBreakdown.availableLayers}/4 straturi cu dovezi`
+            ? ` · ${t('reportView.layersWithEvidence', { count: report.scoreBreakdown.availableLayers })}`
             : null}
         </p>
       </header>
 
       <div>
-        <p className={styles.sectionLabel}>Afirmația verificată</p>
+        <p className={styles.sectionLabel}>{t('reportView.claimLabel')}</p>
         <p className={styles.claim}>&ldquo;{report.claim ?? report.inputText}&rdquo;</p>
       </div>
 
       {report.aiAvailable === false ? (
-        <Callout label="Analiză parțială" tone="plain">
-          Analiza în limbaj natural nu a putut fi generată pentru acest raport.
-          Verdictul și sursele de mai jos provin din căutarea în surse și sunt
-          complete; lipsește doar explicația narativă.
+        <Callout label={t('reportView.partialAnalysisLabel')} tone="plain">
+          {t('reportView.partialAnalysisText')}
         </Callout>
       ) : null}
 
       <div>
-        <p className={styles.sectionLabel}>Rezumat</p>
+        <p className={styles.sectionLabel}>{t('reportView.summaryLabel')}</p>
         <p className={styles.summary}>{report.executiveSummary}</p>
       </div>
 
       <div>
         <p className={styles.sectionLabel}>
-          Surse ({report.sources.length})
+          {t('reportView.sourcesLabel', { count: report.sources.length })}
         </p>
         <ol className={styles.sources}>
           {report.sources.map((source, index) => (
@@ -78,7 +82,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
                 </a>
                 <span className={styles.sourceMeta}>
                   {source.publisher}
-                  {formatDate(source.date) ? ` · ${formatDate(source.date)}` : null}
+                  {formatDate(source.date, locale) ? ` · ${formatDate(source.date, locale)}` : null}
                 </span>
               </span>
             </li>
@@ -87,9 +91,8 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
       </div>
 
       <div className={styles.footer}>
-        <Callout label="Disclaimer" tone="plain">
-          Raportul este generat automat și nu reprezintă o decizie editorială
-          finală. Citește sursele citate pentru contextul complet.
+        <Callout label={t('reportView.disclaimerLabel')} tone="plain">
+          {t('reportView.disclaimerText')}
         </Callout>
         <DisputeButton reportId={report.id} />
       </div>

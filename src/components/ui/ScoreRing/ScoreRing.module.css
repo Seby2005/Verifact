@@ -1,0 +1,67 @@
+.ring {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  display: block;
+}
+
+.track {
+  fill: none;
+  stroke: var(--color-line);
+  stroke-width: 7;
+}
+
+/* The value arc carries the verdict colour set on the ring container. */
+.value {
+  fill: none;
+  stroke: var(--vc, var(--color-ink));
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.true { --vc: var(--verdict-true); }
+.partial { --vc: var(--verdict-partial); }
+.unclear { --vc: var(--verdict-unclear); }
+.false { --vc: var(--verdict-false); }
+
+.num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.n {
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-bold);
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--vc, var(--color-ink));
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.pct {
+  font-family: var(--font-family-mono);
+  font-size: 0.9rem;
+  color: var(--color-ink-muted);
+  margin-left: 1px;
+  font-weight: var(--font-weight-normal);
+}
+
+.lab {
+  font-family: var(--font-family-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-muted);
+  margin-top: var(--space-1);
+}

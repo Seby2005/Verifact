@@ -4,20 +4,10 @@ import React, { useEffect, useState } from 'react';
 import { Button, Input, Tabs, Callout, Modal, type TabItem } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
 import { TIER_CONFIG, type UsageLimitCheck } from '@/types/user';
+import { useLanguage } from '@/i18n';
 import styles from './AuthPanel.module.css';
 
 type Mode = 'login' | 'signup';
-
-const MODES: ReadonlyArray<TabItem<Mode>> = [
-  { id: 'login', label: 'Intră în cont' },
-  { id: 'signup', label: 'Creează cont' },
-];
-
-const TIER_LABELS: Record<string, string> = {
-  free: 'Free',
-  pro: 'Pro',
-  business: 'Business',
-};
 
 const DELETE_CONFIRM_PHRASE = 'ȘTERGE';
 
@@ -30,6 +20,7 @@ type Status =
 type Session = { email: string | null } | null | undefined; // undefined = still checking
 
 export const AuthPanel: React.FC = () => {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,6 +32,11 @@ export const AuthPanel: React.FC = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteStatus, setDeleteStatus] = useState<Status>({ state: 'idle' });
+
+  const modes: ReadonlyArray<TabItem<Mode>> = [
+    { id: 'login', label: t('auth.tabs.login') },
+    { id: 'signup', label: t('auth.tabs.signup') },
+  ];
 
   useEffect(() => {
     const supabase = createClient();
@@ -86,8 +82,7 @@ export const AuthPanel: React.FC = () => {
         if (error) throw error;
         setStatus({
           state: 'success',
-          message:
-            'Contul a fost creat. Verifică-ți emailul pentru linkul de confirmare.',
+          message: t('auth.form.successSignup'),
         });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -95,14 +90,11 @@ export const AuthPanel: React.FC = () => {
           password,
         });
         if (error) throw error;
-        setStatus({ state: 'success', message: 'Autentificare reușită.' });
+        setStatus({ state: 'success', message: t('auth.form.successLogin') });
       }
     } catch (err) {
-      // Surfaces the real reason rather than a generic failure — the Supabase
-      // project credentials fall back to placeholders when env vars are unset,
-      // which is the most common cause of failure in local development.
       const message =
-        err instanceof Error ? err.message : 'A apărut o eroare la autentificare.';
+        err instanceof Error ? err.message : t('auth.form.errorGeneric');
       setStatus({ state: 'error', message });
     }
   };
@@ -124,63 +116,59 @@ export const AuthPanel: React.FC = () => {
       const res = await fetch('/api/user/delete', { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data?.error || 'Ștergerea contului a eșuat.');
+        throw new Error(data?.error || t('auth.deleteModal.errorGeneric'));
       }
       const supabase = createClient();
       await supabase.auth.signOut();
       window.location.href = '/';
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Ștergerea contului a eșuat.';
+      const message = err instanceof Error ? err.message : t('auth.deleteModal.errorGeneric');
       setDeleteStatus({ state: 'error', message });
     }
   };
 
-  // Still checking whether there's an active session — avoid flashing the
-  // login form for a user who is actually already signed in.
   if (session === undefined) {
     return <section className={styles.panel} aria-labelledby="auth-heading" />;
   }
 
   if (session) {
-    const tierLabel = usage ? TIER_LABELS[usage.tier] ?? usage.tier : null;
+    const tierLabel = usage ? t(`auth.tiers.${usage.tier}`) ?? usage.tier : null;
     const limit = usage ? usage.limit : TIER_CONFIG.free.monthlyLimit;
 
     return (
       <section className={styles.panel} aria-labelledby="auth-heading">
         <h2 id="auth-heading" className={styles.srOnly}>
-          Contul tău
+          {t('auth.session.heading')}
         </h2>
 
         <div className={styles.account}>
           <div className={styles.accountRow}>
-            <span className={styles.accountLabel}>Email</span>
+            <span className={styles.accountLabel}>{t('auth.session.email')}</span>
             <span className={styles.accountValue}>{session.email}</span>
           </div>
           <div className={styles.accountRow}>
-            <span className={styles.accountLabel}>Plan</span>
+            <span className={styles.accountLabel}>{t('auth.session.plan')}</span>
             <span className={styles.accountValue}>{tierLabel ?? '—'}</span>
           </div>
           <div className={styles.accountRow}>
-            <span className={styles.accountLabel}>Verificări luna asta</span>
+            <span className={styles.accountLabel}>{t('auth.session.verificationsThisMonth')}</span>
             <span className={styles.accountValue}>
-              {usage ? `${usage.current} din ${limit}` : '—'}
+              {usage ? t('auth.session.verificationsValue', { current: usage.current, limit }) : '—'}
             </span>
           </div>
         </div>
 
         <div className={styles.accountActions}>
           <Button type="button" variant="secondary" size="md" onClick={handleSignOut}>
-            Deconectare
+            {t('auth.session.signOut')}
           </Button>
         </div>
 
         <div className={styles.dangerZone}>
           <p className={styles.dangerLead}>
-            Ștergerea contului este definitivă: rapoartele tale private se
-            șterg pentru totdeauna, iar cele publicate rămân în baza publică,
-            anonimizate. Detalii în{' '}
+            {t('auth.session.dangerLead')}{' '}
             <a href="/confidentialitate" className={styles.textLink}>
-              Politica de confidențialitate
+              {t('footer.sections.legal.privacy')}
             </a>
             .
           </p>
@@ -190,18 +178,14 @@ export const AuthPanel: React.FC = () => {
             size="sm"
             onClick={() => setIsDeleteOpen(true)}
           >
-            Șterge contul
+            {t('auth.session.deleteBtn')}
           </Button>
         </div>
 
-        <Modal isOpen={isDeleteOpen} onClose={closeDeleteModal} title="Ștergi contul definitiv?">
-          <p className={styles.modalLead}>
-            Această acțiune nu poate fi anulată. Toate rapoartele tale private
-            vor fi șterse. Rapoartele publicate rămân, dar fără nicio legătură
-            cu contul tău.
-          </p>
+        <Modal isOpen={isDeleteOpen} onClose={closeDeleteModal} title={t('auth.deleteModal.title')}>
+          <p className={styles.modalLead}>{t('auth.deleteModal.lead')}</p>
           <Input
-            label={`Scrie „${DELETE_CONFIRM_PHRASE}” ca să confirmi`}
+            label={t('auth.deleteModal.confirmLabel', { phrase: DELETE_CONFIRM_PHRASE })}
             value={deleteConfirmText}
             onChange={(e) => setDeleteConfirmText(e.target.value)}
             autoComplete="off"
@@ -209,7 +193,7 @@ export const AuthPanel: React.FC = () => {
           />
           <div className={styles.modalActions}>
             <Button type="button" variant="ghost" size="md" onClick={closeDeleteModal}>
-              Renunță
+              {t('auth.deleteModal.cancelBtn')}
             </Button>
             <Button
               type="button"
@@ -219,13 +203,13 @@ export const AuthPanel: React.FC = () => {
               isLoading={deleteStatus.state === 'loading'}
               onClick={handleDeleteAccount}
             >
-              Șterge definitiv contul
+              {t('auth.deleteModal.confirmBtn')}
             </Button>
           </div>
           <div aria-live="polite">
             {deleteStatus.state === 'error' ? (
               <div className={styles.status}>
-                <Callout label="Nu a funcționat" tone="plain">
+                <Callout label={t('auth.deleteModal.errorLabel')} tone="plain">
                   {deleteStatus.message}
                 </Callout>
               </div>
@@ -239,10 +223,10 @@ export const AuthPanel: React.FC = () => {
   return (
     <section className={styles.panel} aria-labelledby="auth-heading">
       <h2 id="auth-heading" className={styles.srOnly}>
-        Autentificare
+        {t('auth.form.ariaLabel')}
       </h2>
 
-      <Tabs items={MODES} value={mode} onChange={handleModeChange} ariaLabel="Mod autentificare" />
+      <Tabs items={modes} value={mode} onChange={handleModeChange} ariaLabel={t('auth.tabs.ariaLabel')} />
 
       <form
         className={styles.form}
@@ -252,27 +236,27 @@ export const AuthPanel: React.FC = () => {
         aria-labelledby={`tab-${mode}`}
       >
         <Input
-          label="Email"
+          label={t('auth.form.emailLabel')}
           type="email"
           autoComplete="email"
           required
-          placeholder="nume@exemplu.ro"
+          placeholder={t('auth.form.emailPlaceholder')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           fullWidth
         />
 
         <Input
-          label="Parolă"
+          label={t('auth.form.passwordLabel')}
           type="password"
           autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
           required
           minLength={8}
-          placeholder="Minimum 8 caractere"
+          placeholder={t('auth.form.passwordPlaceholder')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           helperText={
-            mode === 'signup' ? 'Alege o parolă de cel puțin 8 caractere.' : undefined
+            mode === 'signup' ? t('auth.form.passwordHelperSignup') : undefined
           }
           fullWidth
         />
@@ -285,19 +269,16 @@ export const AuthPanel: React.FC = () => {
             fullWidth
             isLoading={status.state === 'loading'}
           >
-            {mode === 'signup' ? 'Creează cont' : 'Intră în cont'}
+            {mode === 'signup' ? t('auth.form.submitSignup') : t('auth.form.submitLogin')}
           </Button>
         </div>
 
-        <p className={styles.privacyNote}>
-          Totul este privat: rapoartele și istoricul tău nu sunt vizibile pentru
-          nimeni altcineva și nu sunt vândute mai departe.
-        </p>
+        <p className={styles.privacyNote}>{t('auth.form.privacyNote')}</p>
 
         <div aria-live="polite">
           {status.state === 'error' ? (
             <div className={styles.status}>
-              <Callout label="Nu a funcționat" tone="plain">
+              <Callout label={t('auth.form.errorLabel')} tone="plain">
                 {status.message}
               </Callout>
             </div>
@@ -305,7 +286,7 @@ export const AuthPanel: React.FC = () => {
 
           {status.state === 'success' ? (
             <div className={styles.status}>
-              <Callout label="Gata" tone="plain">
+              <Callout label={t('auth.form.successLabel')} tone="plain">
                 {status.message}
               </Callout>
             </div>

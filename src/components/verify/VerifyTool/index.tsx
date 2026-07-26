@@ -3,20 +3,15 @@
 import React, { useRef, useState } from 'react';
 import { Button, Tabs, Textarea, Input, Callout, type TabItem } from '@/components/ui';
 import type { InputType, VerificationReport, VerifyAPIError } from '@/types/verification';
+import { useLanguage } from '@/i18n';
+import { ReportView } from '../ReportView';
+import styles from './VerifyTool.module.css';
 
 type VerificationInputKind = InputType;
 
 type VerifyResponse =
   | { success: true; report: VerificationReport }
   | ({ success?: false } & VerifyAPIError);
-import { ReportView } from '../ReportView';
-import styles from './VerifyTool.module.css';
-
-const TABS: ReadonlyArray<TabItem<VerificationInputKind>> = [
-  { id: 'text', label: 'Text' },
-  { id: 'screenshot', label: 'Screenshot' },
-  { id: 'url', label: 'URL' },
-];
 
 type Status =
   | { state: 'idle' }
@@ -26,12 +21,19 @@ type Status =
   | { state: 'error'; message: string };
 
 export const VerifyTool: React.FC = () => {
+  const { locale, t } = useLanguage();
   const [kind, setKind] = useState<VerificationInputKind>('text');
   const [text, setText] = useState('');
   const [url, setUrl] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<Status>({ state: 'idle' });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const tabs: ReadonlyArray<TabItem<VerificationInputKind>> = [
+    { id: 'text', label: t('verifyTool.tabs.text') },
+    { id: 'screenshot', label: t('verifyTool.tabs.screenshot') },
+    { id: 'url', label: t('verifyTool.tabs.url') },
+  ];
 
   const currentValue = kind === 'text' ? text : kind === 'url' ? url : (file?.name ?? '');
   const isEmpty = currentValue.trim().length === 0;
@@ -45,15 +47,13 @@ export const VerifyTool: React.FC = () => {
     e.preventDefault();
     if (status.state === 'loading') return;
 
-    // The button stays enabled when the field is empty — a greyed-out primary
-    // action reads as a broken page. Validate on submit and say what's missing.
     if (isEmpty) {
       setStatus({
         state: 'error',
         message:
           kind === 'screenshot'
-            ? 'Alege o imagine înainte de a porni verificarea.'
-            : 'Introdu conținutul pe care vrei să îl verifici.',
+            ? t('verifyTool.errors.emptyImage')
+            : t('verifyTool.errors.emptyText'),
       });
       return;
     }
@@ -63,21 +63,18 @@ export const VerifyTool: React.FC = () => {
     try {
       let claimText = text.trim();
 
-      // Screenshot: extract the text with OCR first, then verify that text.
       if (kind === 'screenshot' && file) {
         const ocrText = await runOcr(file);
         if (!ocrText || ocrText.trim().length < 10) {
           setStatus({
             state: 'error',
-            message:
-              'Nu am putut extrage text lizibil din imagine. Încearcă un screenshot mai clar sau lipește textul manual.',
+            message: t('verifyTool.errors.ocrFailed'),
           });
           return;
         }
         claimText = ocrText.trim();
       }
 
-      // URL: the server fetches the article and extracts its text.
       if (kind === 'url') claimText = url.trim();
 
       const res = await fetch('/api/verify', {
@@ -87,7 +84,7 @@ export const VerifyTool: React.FC = () => {
           text: claimText,
           url: kind === 'url' ? url.trim() : undefined,
           inputType: kind,
-          language: 'ro',
+          language: locale,
           isPublic: false,
         }),
       });
@@ -100,18 +97,17 @@ export const VerifyTool: React.FC = () => {
         const err = data as VerifyAPIError;
         setStatus({
           state: err.code === 'ALL_LAYERS_FAILED' ? 'unavailable' : 'error',
-          message: err.error || 'A apărut o eroare la verificare.',
+          message: err.error || t('verifyTool.errors.generic'),
         });
       }
     } catch {
       setStatus({
         state: 'error',
-        message: 'Nu am putut contacta serverul. Verifică conexiunea și încearcă din nou.',
+        message: t('verifyTool.errors.network'),
       });
     }
   };
 
-  /** Sends the image to /api/ocr and returns the recognised text. */
   async function runOcr(image: File): Promise<string> {
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -132,16 +128,16 @@ export const VerifyTool: React.FC = () => {
   return (
     <section className={styles.tool} aria-labelledby="verify-heading">
       <h2 id="verify-heading" className="label-caps">
-        Verifică o afirmație
+        {t('verifyTool.heading')}
       </h2>
 
       <form onSubmit={handleSubmit}>
         <div className={styles.panel}>
           <Tabs
-            items={TABS}
+            items={tabs}
             value={kind}
             onChange={handleTabChange}
-            ariaLabel="Tip de conținut de verificat"
+            ariaLabel={t('verifyTool.ariaTabContent')}
           />
         </div>
 
@@ -154,11 +150,11 @@ export const VerifyTool: React.FC = () => {
           {kind === 'text' ? (
             <div className={styles.field}>
               <Textarea
-                label="Afirmația de verificat"
-                placeholder="Lipește aici textul sau afirmația pe care vrei să o verifici."
+                label={t('verifyTool.textarea.label')}
+                placeholder={t('verifyTool.textarea.placeholder')}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                helperText="Minimum 10 caractere. Funcționează cel mai bine cu o singură afirmație concretă."
+                helperText={t('verifyTool.textarea.helper')}
                 fullWidth
               />
             </div>
@@ -182,23 +178,27 @@ export const VerifyTool: React.FC = () => {
                   className={styles.fileInput}
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 />
-                <span className={styles.dropzoneTitle}>Alege o imagine sau trage-o aici</span>
-                <span className={styles.dropzoneHint}>PNG, JPG sau WebP — maximum 10 MB</span>
+                <span className={styles.dropzoneTitle}>{t('verifyTool.dropzone.title')}</span>
+                <span className={styles.dropzoneHint}>{t('verifyTool.dropzone.hint')}</span>
               </label>
-              {file ? <p className={styles.fileName}>Fișier selectat: {file.name}</p> : null}
+              {file ? (
+                <p className={styles.fileName}>
+                  {t('verifyTool.dropzone.fileSelected', { name: file.name })}
+                </p>
+              ) : null}
             </div>
           ) : null}
 
           {kind === 'url' ? (
             <div className={styles.field}>
               <Input
-                label="Link către articol sau postare"
+                label={t('verifyTool.urlInput.label')}
                 type="url"
                 inputMode="url"
-                placeholder="https://exemplu.ro/articol"
+                placeholder={t('verifyTool.urlInput.placeholder')}
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                helperText="Extragem textul articolului și verificăm afirmațiile principale."
+                helperText={t('verifyTool.urlInput.helper')}
                 fullWidth
               />
             </div>
@@ -206,23 +206,21 @@ export const VerifyTool: React.FC = () => {
 
           <div className={styles.actions}>
             <Button type="submit" variant="primary" size="lg" isLoading={status.state === 'loading'}>
-              Verifică acum
+              {t('verifyTool.actions.submit')}
             </Button>
-            <span className={styles.actionHint}>
-              Rapoartele tale rămân private până când alegi tu să le publici.
-            </span>
+            <span className={styles.actionHint}>{t('verifyTool.actions.privacyHint')}</span>
           </div>
         </div>
       </form>
 
       <div aria-live="polite">
         {status.state === 'loading' ? (
-          <p className={styles.pending}>Se verifică…</p>
+          <p className={styles.pending}>{t('verifyTool.actions.pending')}</p>
         ) : null}
 
         {status.state === 'unavailable' ? (
           <div className={styles.status}>
-            <Callout label="Momentan indisponibil" tone="plain">
+            <Callout label={t('verifyTool.errors.unavailableLabel')} tone="plain">
               {status.message}
             </Callout>
           </div>
@@ -230,7 +228,7 @@ export const VerifyTool: React.FC = () => {
 
         {status.state === 'error' ? (
           <div className={styles.status}>
-            <Callout label="Eroare" tone="plain">
+            <Callout label={t('verifyTool.errors.errorLabel')} tone="plain">
               {status.message}
             </Callout>
           </div>
