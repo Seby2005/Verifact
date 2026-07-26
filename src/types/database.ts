@@ -170,6 +170,14 @@ export interface Database {
         Args: { target_user_id: string };
         Returns: undefined;
       };
+      reserve_usage_slot: {
+        Args: Record<PropertyKey, never>;
+        Returns: { allowed: boolean; usage_limit: number; used: number }[];
+      };
+      release_usage_slot: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
