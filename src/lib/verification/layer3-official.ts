@@ -7,6 +7,7 @@ import {
   CONTRADICTION_KEYWORDS_EN,
   CONFIRMATION_KEYWORDS_RO,
   CONFIRMATION_KEYWORDS_EN,
+  DEBUNK_MARKERS,
 } from './constants';
 
 interface TavilyResult {
@@ -120,6 +121,14 @@ function analyzeSupport(
   inputText: string
 ): OfficialSource['supportsOrDenies'] {
   const snippetLower = snippet.toLowerCase();
+
+  // Checked first and wins outright — see DEBUNK_MARKERS's doc comment in
+  // constants.ts. This matters even more here than in layer2: "official"/
+  // "oficial" is itself a CONFIRMATION_KEYWORDS_* entry, and this layer's
+  // snippets come from official sources, where the word "official" shows up
+  // constantly as incidental framing ("oficial dezmintit" = "officially
+  // denied") rather than as a signal of support.
+  if (DEBUNK_MARKERS.some(kw => snippetLower.includes(kw))) return 'denies';
 
   const allContradictions = [...CONTRADICTION_KEYWORDS_RO, ...CONTRADICTION_KEYWORDS_EN];
   const allConfirmations = [...CONFIRMATION_KEYWORDS_RO, ...CONFIRMATION_KEYWORDS_EN];
