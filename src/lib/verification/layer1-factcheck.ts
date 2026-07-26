@@ -1,5 +1,6 @@
 import type { FactCheckResult, Language, Layer1Result } from '@/types/verification';
 import { fetchWithRetry } from '@/lib/utils/retry';
+import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 
 // ─── Internal Google API types ────────────────────────────────
 
@@ -303,15 +304,16 @@ async function fetchFactChecks(
     pageSize: '10',
   });
 
-  const response = await fetchWithRetry(
-    `https://factchecktools.googleapis.com/v1alpha1/claims:search?${params.toString()}`,
-    () => ({ signal: AbortSignal.timeout(8000) }),
-    { label: 'layer1-factcheck' }
+  const response = await withCircuitBreaker('google-fact-check', () =>
+    fetchWithRetry(
+      `https://factchecktools.googleapis.com/v1alpha1/claims:search?${params.toString()}`,
+      () => ({ signal: AbortSignal.timeout(8000) }),
+      { label: 'layer1-factcheck' }
+    ).then((res) => {
+      if (!res.ok) throw new Error(`Fact Check API error: ${res.status} ${res.statusText}`);
+      return res;
+    })
   );
-
-  if (!response.ok) {
-    throw new Error(`Fact Check API error: ${response.status} ${response.statusText}`);
-  }
 
   const data = await response.json() as GoogleFactCheckResponse;
 

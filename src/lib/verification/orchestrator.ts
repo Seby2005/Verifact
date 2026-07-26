@@ -99,7 +99,21 @@ export async function verifyContent(
 
   const startTime = Date.now();
 
-  // 2. Run all 4 layers in parallel with individual timeouts
+  // 2. Run all 4 layers in parallel with individual timeouts.
+  //
+  // Each layer's external calls (Fact Check API, NewsAPI, Tavily, Twitter,
+  // Vision, Gemini) go through a per-service circuit breaker
+  // (src/lib/utils/circuit-breaker.ts) before this point. After repeated
+  // consecutive failures for a given service, further calls to it fail
+  // immediately with CircuitOpenError for a cooldown window instead of
+  // waiting out a real network attempt — this needs no special handling
+  // here: a CircuitOpenError rejection is just another layer failure to
+  // the Promise.allSettled/makeUnavailableLayerN fallback below, exactly
+  // like a timeout or a real fetch failure already was. Layers with an
+  // internal fallback source (layer2's NewsAPI+Tavily, layer4's
+  // Twitter+Tavily) instead absorb a single source's CircuitOpenError the
+  // same way they already absorbed that source failing outright, and
+  // still report success from whichever source is still healthy.
   const [l1Result, l2Result, l3Result, l4Result] = await Promise.allSettled([
     withTimeout(runLayer1(input.text, input.language), LAYER_TIMEOUT_MS, 'layer1'),
     withTimeout(runLayer2(input.text, input.language), LAYER_TIMEOUT_MS, 'layer2'),
