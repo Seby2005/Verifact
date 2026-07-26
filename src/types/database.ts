@@ -43,6 +43,7 @@ export interface Verification {
   processing_time_ms: number | null;
   status: VerificationStatus;
   error_message: string | null;
+  disputed: boolean;
   created_at: string;
 }
 
@@ -112,9 +113,10 @@ export interface Database {
       };
       verifications: {
         Row: Verification;
-        Insert: Omit<Verification, 'id' | 'created_at'> & {
+        Insert: Omit<Verification, 'id' | 'created_at' | 'disputed'> & {
           id?: string;
           created_at?: string;
+          disputed?: boolean;
         };
         Update: Partial<Verification>;
       };

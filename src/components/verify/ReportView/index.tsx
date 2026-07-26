@@ -1,6 +1,7 @@
 import React from 'react';
 import { VerdictLabel, Callout } from '@/components/ui';
 import type { VerificationReport } from '@/types/verification';
+import { DisputeButton } from './DisputeButton';
 import styles from './ReportView.module.css';
 
 export interface ReportViewProps {
@@ -85,10 +86,13 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
         </ol>
       </div>
 
-      <Callout label="Disclaimer" tone="plain">
-        Raportul este generat automat și nu reprezintă o decizie editorială
-        finală. Citește sursele citate pentru contextul complet.
-      </Callout>
+      <div className={styles.footer}>
+        <Callout label="Disclaimer" tone="plain">
+          Raportul este generat automat și nu reprezintă o decizie editorială
+          finală. Citește sursele citate pentru contextul complet.
+        </Callout>
+        <DisputeButton reportId={report.id} />
+      </div>
     </article>
   );
 };
