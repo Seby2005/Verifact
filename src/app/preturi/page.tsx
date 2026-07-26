@@ -1,81 +1,74 @@
+'use client';
+
 import React from 'react';
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button, Callout } from '@/components/ui';
+import { useLanguage } from '@/i18n';
 import shell from '../page-shell.module.css';
 import styles from './page.module.css';
 
-export const metadata: Metadata = {
-  title: 'Prețuri',
-  description:
-    'Verifact este gratuit pentru uz personal. Planuri Pro și Business pentru jurnaliști, redacții și organizații.',
-};
-
-/** Tiers as defined in docs/PRD.md §3.4. */
-const PLANS = [
-  {
-    name: 'Free',
-    price: 'Gratuit',
-    cadence: null,
-    forWho: 'Pentru oricine vrea să verifice ce vede în feed.',
-    checks: '10 verificări pe lună',
-    features: [
-      'Raport standard cu surse citate',
-      'Verificare din text, screenshot sau URL',
-      'Istoric personal al verificărilor',
-      'Partajare publică a unui raport, dacă alegi tu',
-    ],
-    cta: 'Începe gratuit',
-    highlight: false,
-  },
-  {
-    name: 'Pro',
-    price: '€7,99',
-    cadence: 'pe lună',
-    forWho: 'Pentru jurnaliști, cercetători și profesori.',
-    checks: '200 de verificări pe lună',
-    features: [
-      'Tot ce include planul Free',
-      'Raport detaliat pe straturi de verificare',
-      'Export PDF pentru citare',
-      'Cheie API personală',
-    ],
-    cta: 'Alege Pro',
-    highlight: true,
-  },
-  {
-    name: 'Business',
-    price: '€49',
-    cadence: 'pe lună',
-    forWho: 'Pentru redacții, ONG-uri și platforme.',
-    checks: '2000 de verificări pe lună',
-    features: [
-      'Tot ce include planul Pro',
-      'Acces API complet și webhook-uri',
-      'Dashboard de analytics pentru echipă',
-      'Suport prioritar',
-    ],
-    cta: 'Contactează-ne',
-    highlight: false,
-  },
-];
-
 export default function PreturiPage() {
+  const { t } = useLanguage();
+
+  const plans = [
+    {
+      name: 'Free',
+      price: t('preturiPage.plans.0.price'),
+      cadence: null,
+      forWho: t('preturiPage.plans.0.forWho'),
+      checks: t('preturiPage.plans.0.checks'),
+      features: [
+        t('preturiPage.plans.0.features.0'),
+        t('preturiPage.plans.0.features.1'),
+        t('preturiPage.plans.0.features.2'),
+        t('preturiPage.plans.0.features.3'),
+      ],
+      cta: t('preturiPage.plans.0.cta'),
+      highlight: false,
+    },
+    {
+      name: 'Pro',
+      price: '€7,99',
+      cadence: t('preturiPage.plans.1.cadence'),
+      forWho: t('preturiPage.plans.1.forWho'),
+      checks: t('preturiPage.plans.1.checks'),
+      features: [
+        t('preturiPage.plans.1.features.0'),
+        t('preturiPage.plans.1.features.1'),
+        t('preturiPage.plans.1.features.2'),
+        t('preturiPage.plans.1.features.3'),
+      ],
+      cta: t('preturiPage.plans.1.cta'),
+      highlight: true,
+    },
+    {
+      name: 'Business',
+      price: '€49',
+      cadence: t('preturiPage.plans.2.cadence'),
+      forWho: t('preturiPage.plans.2.forWho'),
+      checks: t('preturiPage.plans.2.checks'),
+      features: [
+        t('preturiPage.plans.2.features.0'),
+        t('preturiPage.plans.2.features.1'),
+        t('preturiPage.plans.2.features.2'),
+        t('preturiPage.plans.2.features.3'),
+      ],
+      cta: t('preturiPage.plans.2.cta'),
+      highlight: false,
+    },
+  ];
+
   return (
     <div className={`container ${shell.page}`}>
       <header className={shell.head}>
-        <p className="eyebrow">Prețuri</p>
-        <h1 className={shell.title}>Gratuit pentru cetățeni. Plătit doar la volum.</h1>
-        <p className={shell.lead}>
-          Verificarea informației nu ar trebui să fie un privilegiu. Planul
-          gratuit acoperă nevoia unui utilizator obișnuit; plătesc doar cei care
-          verifică la scară profesională.
-        </p>
+        <p className="eyebrow">{t('preturiPage.eyebrow')}</p>
+        <h1 className={shell.title}>{t('preturiPage.title')}</h1>
+        <p className={shell.lead}>{t('preturiPage.lead')}</p>
       </header>
 
       <div className={shell.body}>
         <div className={styles.grid}>
-          {PLANS.map((plan) => (
+          {plans.map((plan) => (
             <section
               key={plan.name}
               className={[styles.plan, plan.highlight ? styles.planHighlight : '']
@@ -115,17 +108,15 @@ export default function PreturiPage() {
         </div>
 
         <div className={shell.sectionRule}>
-          <Callout label="Fără costuri ascunse">
-            Planul gratuit nu se transformă în plată automat și nu îți cere card
-            la înregistrare. Dacă depășești limita lunară, verificările se
-            opresc până în luna următoare — nu te taxăm surpriză.
+          <Callout label={t('preturiPage.callout.label')}>
+            {t('preturiPage.callout.text')}
           </Callout>
           <p className={styles.footnote}>
-            Prețurile nu includ TVA. Ai nevoie de altceva?{' '}
+            {t('preturiPage.footnote.text')}
             <Link href="/cont" className={styles.textLink}>
-              Creează un cont
-            </Link>{' '}
-            și scrie-ne.
+              {t('preturiPage.footnote.linkText')}
+            </Link>
+            {t('preturiPage.footnote.suffix')}
           </p>
         </div>
       </div>

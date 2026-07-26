@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button, Modal, Textarea, Input, Callout } from '@/components/ui';
+import { useLanguage } from '@/i18n';
 import styles from './ReportView.module.css';
 
 export interface DisputeButtonProps {
@@ -14,6 +15,7 @@ const MAX_REASON_LENGTH = 2000;
 type SubmitState = 'idle' | 'submitting' | 'success' | 'error';
 
 export const DisputeButton: React.FC<DisputeButtonProps> = ({ reportId }) => {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [email, setEmail] = useState('');
@@ -22,7 +24,6 @@ export const DisputeButton: React.FC<DisputeButtonProps> = ({ reportId }) => {
 
   const close = () => {
     setIsOpen(false);
-    // Reset after the close animation-free unmount so a re-open starts fresh.
     setReason('');
     setEmail('');
     setState('idle');
@@ -35,7 +36,7 @@ export const DisputeButton: React.FC<DisputeButtonProps> = ({ reportId }) => {
 
     if (trimmedReason.length < MIN_REASON_LENGTH) {
       setState('error');
-      setErrorMessage(`Descrie eroarea în cel puțin ${MIN_REASON_LENGTH} caractere.`);
+      setErrorMessage(t('dispute.reasonMinError'));
       return;
     }
 
@@ -56,33 +57,32 @@ export const DisputeButton: React.FC<DisputeButtonProps> = ({ reportId }) => {
 
       if (!res.ok || !data.success) {
         setState('error');
-        setErrorMessage(data.error || 'A apărut o eroare. Te rugăm să încerci din nou.');
+        setErrorMessage(data.error || t('dispute.errorGeneric'));
         return;
       }
 
       setState('success');
     } catch {
       setState('error');
-      setErrorMessage('Nu am putut contacta serverul. Verifică conexiunea și încearcă din nou.');
+      setErrorMessage(t('dispute.errorNetwork'));
     }
   };
 
   return (
     <>
       <Button type="button" variant="ghost" size="sm" onClick={() => setIsOpen(true)}>
-        Raportează eroare
+        {t('dispute.reportErrorBtn')}
       </Button>
 
-      <Modal isOpen={isOpen} onClose={close} title="Raportează o eroare">
+      <Modal isOpen={isOpen} onClose={close} title={t('dispute.modalTitle')}>
         {state === 'success' ? (
-          <Callout label="Trimis" tone="plain">
-            Mulțumim. Contestația a fost înregistrată și raportul a fost marcat pentru
-            reverificare.
+          <Callout label={t('dispute.sentLabel')} tone="plain">
+            {t('dispute.sentText')}
           </Callout>
         ) : (
           <form onSubmit={handleSubmit} className={styles.disputeForm}>
             <Textarea
-              label="Ce e greșit în acest raport?"
+              label={t('dispute.reasonLabel')}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               minLength={MIN_REASON_LENGTH}
@@ -90,26 +90,23 @@ export const DisputeButton: React.FC<DisputeButtonProps> = ({ reportId }) => {
               rows={4}
               required
               fullWidth
-              helperText={`Minimum ${MIN_REASON_LENGTH} caractere.`}
+              helperText={t('dispute.reasonHelper')}
               error={state === 'error' ? errorMessage : undefined}
               disabled={state === 'submitting'}
             />
             <Input
-              label="Email (opțional)"
+              label={t('dispute.emailLabel')}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="nume@exemplu.ro"
-              helperText="Doar dacă vrei să te contactăm în legătură cu această contestație."
+              placeholder={t('dispute.emailPlaceholder')}
+              helperText={t('dispute.emailHelper')}
               fullWidth
               disabled={state === 'submitting'}
             />
-            {/* TODO_LEGAL_COPY: placeholder for the legal disclaimer that
-                should appear next to the dispute submit button — out of
-                scope for this change, legal content is handled separately. */}
             <p className={styles.disputeLegalPlaceholder}>TODO_LEGAL_COPY</p>
             <Button type="submit" variant="primary" isLoading={state === 'submitting'} fullWidth>
-              Trimite contestația
+              {t('dispute.submitBtn')}
             </Button>
           </form>
         )}

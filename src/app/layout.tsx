@@ -28,7 +28,12 @@ export const metadata: Metadata = {
   },
   description:
     'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile. Algoritm open source, surse citate integral, rapoarte private.',
+  other: {
+    google: 'notranslate',
+  },
 };
+
+import { LanguageProvider } from '@/i18n';
 
 export default function RootLayout({
   children,
@@ -36,20 +41,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ro" className={`${newsreader.variable} ${plexSans.variable}`}>
+    <html lang="ro" translate="no" className={`${newsreader.variable} ${plexSans.variable}`}>
+      <head>
+        <meta name="google" content="notranslate" />
+      </head>
       <body>
-        <a href="#main-content" className="skip-link">
-          Sari la conținut
-        </a>
-        <div className="app-shell">
-          <Header />
-          <main id="main-content" className="app-shell__main" tabIndex={-1}>
-            {children}
-          </main>
-          <Footer />
-        </div>
-        <Analytics />
+        <LanguageProvider>
+          <a href="#main-content" className="skip-link">
+            Sari la conținut
+          </a>
+          <div className="app-shell">
+            <Header />
+            <main id="main-content" className="app-shell__main" tabIndex={-1}>
+              {children}
+            </main>
+            <Footer />
+          </div>
+          <Analytics />
+        </LanguageProvider>
       </body>
     </html>
   );
 }
+

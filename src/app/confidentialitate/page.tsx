@@ -1,186 +1,168 @@
+'use client';
+
 import React from 'react';
-import type { Metadata } from 'next';
 import Link from 'next/link';
+import { useLanguage } from '@/i18n';
 import shell from '../page-shell.module.css';
 
-export const metadata: Metadata = {
-  title: 'Politica de confidențialitate',
-  description:
-    'Ce date colectează Verifact, de ce, cui le trimite și cum îți poți exercita drepturile GDPR.',
-};
-
 export default function ConfidentialitatePage() {
+  const { t } = useLanguage();
+
+  const sec2AccountList = [
+    t('confidentialitatePage.sec2AccountList.0'),
+    t('confidentialitatePage.sec2AccountList.1'),
+    t('confidentialitatePage.sec2AccountList.2'),
+  ];
+
+  const sec2ContentList = [
+    t('confidentialitatePage.sec2ContentList.0'),
+    t('confidentialitatePage.sec2ContentList.1'),
+    t('confidentialitatePage.sec2ContentList.2'),
+  ];
+
+  const sec2TechList = [
+    t('confidentialitatePage.sec2TechList.0'),
+    t('confidentialitatePage.sec2TechList.1'),
+  ];
+
+  const sec3List = [
+    t('confidentialitatePage.sec3List.0'),
+    t('confidentialitatePage.sec3List.1'),
+    t('confidentialitatePage.sec3List.2'),
+  ];
+
+  const sec4Vendors = [
+    { name: 'Supabase', desc: t('confidentialitatePage.sec4Vendors.0.desc') },
+    { name: 'Google Cloud Vision', desc: t('confidentialitatePage.sec4Vendors.1.desc') },
+    { name: 'Google Gemini', desc: t('confidentialitatePage.sec4Vendors.2.desc') },
+    { name: 'Google Fact Check Tools / Custom Search', desc: t('confidentialitatePage.sec4Vendors.3.desc') },
+    { name: 'Tavily', desc: t('confidentialitatePage.sec4Vendors.4.desc') },
+    { name: 'Vercel', desc: t('confidentialitatePage.sec4Vendors.5.desc') },
+  ];
+
+  const sec5List = [
+    t('confidentialitatePage.sec5List.0'),
+    t('confidentialitatePage.sec5List.1'),
+    t('confidentialitatePage.sec5List.2'),
+  ];
+
+  const sec7List = [
+    t('confidentialitatePage.sec7List.0'),
+    t('confidentialitatePage.sec7List.1'),
+    t('confidentialitatePage.sec7List.2'),
+    t('confidentialitatePage.sec7List.3'),
+  ];
+
+  const sec9List = [
+    t('confidentialitatePage.sec9List.0'),
+    t('confidentialitatePage.sec9List.1'),
+    t('confidentialitatePage.sec9List.2'),
+    t('confidentialitatePage.sec9List.3'),
+  ];
+
   return (
     <div className={`container ${shell.page}`}>
       <header className={shell.head}>
-        <p className="eyebrow">Legal</p>
-        <h1 className={shell.title}>Politica de confidențialitate</h1>
+        <p className="eyebrow">{t('confidentialitatePage.eyebrow')}</p>
+        <h1 className={shell.title}>{t('confidentialitatePage.title')}</h1>
         <p className={shell.lead}>
-          Ultima actualizare: 26 iulie 2026. Versiunea pe scurt e pe pagina{' '}
+          {t('confidentialitatePage.leadPrefix')}
           <Link href="/open-source" className={shell.textLink}>
-            Open source și confidențialitate
+            {t('confidentialitatePage.shortVersionLink')}
           </Link>
-          . Aici e versiunea completă, conform GDPR.
+          {t('confidentialitatePage.leadSuffix')}
         </p>
       </header>
 
       <div className={shell.body}>
         <div className={shell.prose}>
-          <h2>1. Operatorul de date</h2>
+          <h2>{t('confidentialitatePage.sec1Title')}</h2>
           <p>
-            Datele tale sunt operate de Sebi Iancu, persoană fizică,
-            dezvoltatorul și administratorul proiectului Verifact. Pentru
-            orice solicitare legată de datele tale, scrie la{' '}
+            {t('confidentialitatePage.sec1Text')}
             <a href="mailto:sebi.iancu23@gmail.com" className={shell.textLink}>
               sebi.iancu23@gmail.com
             </a>
             .
           </p>
 
-          <h2>2. Ce date colectăm</h2>
-          <h3>Cont</h3>
+          <h2>{t('confidentialitatePage.sec2Title')}</h2>
+          <h3>{t('confidentialitatePage.sec2AccountTitle')}</h3>
           <ul>
-            <li>Adresă de email și parolă (stocată criptat de Supabase Auth, nu o vedem niciodată în clar).</li>
-            <li>Un nume de utilizator opțional.</li>
-            <li>Nivelul de plan (free / pro / business).</li>
+            {sec2AccountList.map((item, idx) => (
+              <li key={idx}>{item}</li>
+            ))}
           </ul>
-          <h3>Conținut trimis spre verificare</h3>
+          <h3>{t('confidentialitatePage.sec2ContentTitle')}</h3>
           <ul>
-            <li>Textul, linkul sau imaginea pe care le trimiți.</li>
-            <li>
-              Pentru screenshot-uri: imaginea e trimisă către Google Cloud
-              Vision pentru extragerea textului (OCR) și nu este păstrată
-              după aceea — reținem doar textul extras.
-            </li>
-            <li>
-              Istoricul verificărilor tale (dacă ești autentificat): raportul
-              generat, scorul, verdictul.
-            </li>
+            {sec2ContentList.map((item, idx) => (
+              <li key={idx}>{item}</li>
+            ))}
           </ul>
-          <h3>Date tehnice</h3>
+          <h3>{t('confidentialitatePage.sec2TechTitle')}</h3>
           <ul>
-            <li>
-              Adresa IP, folosită temporar pentru limitarea numărului de
-              cereri (rate limiting) și prevenirea abuzului.
-            </li>
-            <li>
-              Statistici de trafic agregate prin Vercel Analytics — un
-              serviciu fără cookie-uri, care nu identifică vizitatorii
-              individual și nu urmărește pe niciun alt site.
-            </li>
+            {sec2TechList.map((item, idx) => (
+              <li key={idx}>{item}</li>
+            ))}
           </ul>
-          <p>
-            Nu colectăm date printr-un login social (Google/GitHub) — doar
-            email și parolă.
-          </p>
+          <p>{t('confidentialitatePage.sec2SocialNote')}</p>
 
-          <h2>3. De ce colectăm aceste date</h2>
+          <h2>{t('confidentialitatePage.sec3Title')}</h2>
           <ul>
-            <li>
-              <strong>Executarea contractului:</strong> ca să creăm și
-              administrăm contul tău și să generăm raportul cerut.
-            </li>
-            <li>
-              <strong>Consimțământul tău:</strong> ca să afișăm un raport
-              public, dar numai dacă apeși explicit butonul de publicare.
-            </li>
-            <li>
-              <strong>Interesul nostru legitim:</strong> pentru cache-uirea
-              rezultatelor (ca să nu replătim aceleași apeluri API), pentru
-              securitate și pentru statisticile de trafic agregate.
-            </li>
+            {sec3List.map((item, idx) => (
+              <li key={idx}>{item}</li>
+            ))}
           </ul>
 
-          <h2>4. Cui trimitem datele</h2>
-          <p>
-            Ca să funcționeze verificarea, anumite date ajung la furnizori
-            terți, strict pentru scopul descris:
-          </p>
+          <h2>{t('confidentialitatePage.sec4Title')}</h2>
+          <p>{t('confidentialitatePage.sec4Intro')}</p>
           <ul>
-            <li><strong>Supabase</strong> — baza de date și autentificarea.</li>
-            <li><strong>Google Cloud Vision</strong> — extragerea textului din screenshot-uri.</li>
-            <li><strong>Google Gemini</strong> — sinteza raportului AI.</li>
-            <li><strong>Google Fact Check Tools / Custom Search</strong> — căutarea în surse oficiale.</li>
-            <li><strong>Tavily</strong> — căutarea de articole de presă pe web.</li>
-            <li><strong>Vercel</strong> — găzduirea aplicației și statisticile de trafic agregate.</li>
+            {sec4Vendors.map((vendor) => (
+              <li key={vendor.name}>
+                <strong>{vendor.name}</strong> — {vendor.desc}
+              </li>
+            ))}
           </ul>
-          <p>
-            Toți au sediul sau infrastructură inclusiv în SUA; transferurile
-            se bazează pe Clauzele Contractuale Standard ale UE sau pe
-            EU-US Data Privacy Framework. Niciunul nu primește mai multe date
-            decât are nevoie ca să presteze serviciul respectiv — de exemplu,
-            Tavily primește doar cuvintele cheie extrase din afirmație, nu
-            contul tău.
-          </p>
+          <p>{t('confidentialitatePage.sec4Outro')}</p>
 
-          <h2>5. Cât păstrăm datele</h2>
+          <h2>{t('confidentialitatePage.sec5Title')}</h2>
           <ul>
-            <li>Datele de cont — cât timp ai un cont activ.</li>
-            <li>Verificările private — până le ștergi tu sau îți ștergi contul.</li>
-            <li>
-              Verificările publicate — dacă îți ștergi contul, raportul
-              rămâne în baza publică dar e anonimizat definitiv (legătura cu
-              contul tău e eliminată la nivel de bază de date, nu doar
-              ascunsă).
-            </li>
+            {sec5List.map((item, idx) => (
+              <li key={idx}>{item}</li>
+            ))}
           </ul>
 
-          <h2>6. Ștergerea contului</h2>
-          <p>
-            Poți cere ștergerea definitivă a contului și a datelor asociate
-            oricând, scriindu-ne la adresa de mai sus — ștergem imediat ce
-            confirmăm identitatea solicitării. Rapoartele tale private se
-            șterg definitiv; cele pe care le-ai publicat explicit rămân în
-            baza publică, dar anonimizate. Lucrăm la un buton de auto-ștergere
-            direct din cont, ca acest pas să nu mai necesite un email.
-          </p>
+          <h2>{t('confidentialitatePage.sec6Title')}</h2>
+          <p>{t('confidentialitatePage.sec6Text')}</p>
 
-          <h2>7. Drepturile tale GDPR</h2>
-          <p>Ai dreptul să:</p>
+          <h2>{t('confidentialitatePage.sec7Title')}</h2>
+          <p>{t('confidentialitatePage.sec7Intro')}</p>
           <ul>
-            <li>afli ce date avem despre tine și să primești o copie;</li>
-            <li>ceri corectarea datelor greșite;</li>
-            <li>ceri ștergerea datelor tale (vezi punctul 6);</li>
-            <li>te opui prelucrării bazate pe interes legitim;</li>
+            {sec7List.map((item, idx) => (
+              <li key={idx}>{item}</li>
+            ))}
             <li>
-              depui o plângere la Autoritatea Națională de Supraveghere a
-              Prelucrării Datelor cu Caracter Personal (ANSPDCP) —{' '}
+              {t('confidentialitatePage.sec7List.4')}{' '}
               <a href="https://www.dataprotection.ro" target="_blank" rel="noreferrer noopener" className={shell.textLink}>
                 dataprotection.ro
               </a>
               .
             </li>
           </ul>
-          <p>Pentru oricare dintre ele, scrie-ne — răspundem în maximum o lună.</p>
+          <p>{t('confidentialitatePage.sec7Outro')}</p>
 
-          <h2>8. Cookie-uri</h2>
-          <p>
-            Folosim un singur cookie de sesiune, strict necesar, care te ține
-            autentificat (gestionat de Supabase). Nu necesită consimțământ,
-            conform Directivei ePrivacy, fiindcă e indispensabil funcționării
-            serviciului pe care îl ceri direct.
-          </p>
-          <p>
-            Vercel Analytics nu folosește cookie-uri și nu construiește un
-            profil al tău — de asta nu afișăm un banner de cookie-uri. Dacă
-            adăugăm vreodată un instrument care ar necesita consimțământ, vom
-            adăuga și bannerul corespunzător.
-          </p>
+          <h2>{t('confidentialitatePage.sec8Title')}</h2>
+          <p>{t('confidentialitatePage.sec8Text1')}</p>
+          <p>{t('confidentialitatePage.sec8Text2')}</p>
 
-          <h2>9. Securitate</h2>
+          <h2>{t('confidentialitatePage.sec9Title')}</h2>
           <ul>
-            <li>Tot traficul este criptat prin HTTPS/TLS.</li>
-            <li>Parolele sunt hash-uite de Supabase Auth, nu le vedem niciodată în clar.</li>
-            <li>Row Level Security (RLS) în baza de date, ca fiecare utilizator să vadă doar ce e al lui.</li>
-            <li>Imaginile trimise pentru OCR sunt procesate în memorie, niciodată salvate pe disc.</li>
+            {sec9List.map((item, idx) => (
+              <li key={idx}>{item}</li>
+            ))}
           </ul>
 
-          <h2>10. Modificări</h2>
-          <p>
-            Putem actualiza această politică; data de sus arată ultima
-            revizuire. Dacă schimbăm ceva semnificativ, te anunțăm prin email
-            sau printr-un mesaj vizibil în aplicație.
-          </p>
+          <h2>{t('confidentialitatePage.sec10Title')}</h2>
+          <p>{t('confidentialitatePage.sec10Text')}</p>
         </div>
       </div>
     </div>

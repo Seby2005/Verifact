@@ -1,13 +1,11 @@
+'use client';
+
 import React from 'react';
+import { useLanguage } from '@/i18n';
 import styles from './VerdictLabel.module.css';
 
 export type VerdictKind = 'true' | 'partial' | 'unclear' | 'false';
 
-/**
- * Display-only mapping of a veracity score to its verdict band. Mirrors the
- * bands defined in docs/PRD.md §3.2 — this does not compute or influence the
- * score itself, it only decides how an already-computed score is labelled.
- */
 export const VERDICT_COPY: Record<VerdictKind, string> = {
   true: 'Probabil adevărat',
   partial: 'Parțial adevărat',
@@ -15,11 +13,6 @@ export const VERDICT_COPY: Record<VerdictKind, string> = {
   false: 'Probabil fals',
 };
 
-/**
- * The qualifier that the PRD attaches to the middle two bands. Kept out of the
- * uppercase label and set in sentence case instead — all-caps costs legibility
- * past a couple of words, so the label stays short and the nuance reads as text.
- */
 export const VERDICT_NOTE: Partial<Record<VerdictKind, string>> = {
   partial: 'Context lipsă',
   unclear: 'Insuficient verificat',
@@ -31,6 +24,7 @@ export function verdictFromScore(score: number): VerdictKind {
   if (score >= 40) return 'unclear';
   return 'false';
 }
+
 
 export interface VerdictLabelProps {
   kind: VerdictKind;
@@ -44,9 +38,14 @@ export const VerdictLabel: React.FC<VerdictLabelProps> = ({
   score,
   layout = 'stacked',
 }) => {
+  const { t } = useLanguage();
+
   const classNames = [styles.verdict, layout === 'inline' ? styles.inline : '']
     .filter(Boolean)
     .join(' ');
+
+  const labelText = t(`verdict.copy.${kind}`);
+  const noteText = kind === 'partial' || kind === 'unclear' ? t(`verdict.note.${kind}`) : null;
 
   return (
     <div className={classNames}>
@@ -55,14 +54,13 @@ export const VerdictLabel: React.FC<VerdictLabelProps> = ({
           .filter(Boolean)
           .join(' ')}
       >
-        {VERDICT_COPY[kind]}
+        {labelText}
       </span>
-      {VERDICT_NOTE[kind] ? (
-        <span className={styles.note}>{VERDICT_NOTE[kind]}</span>
-      ) : null}
+      {noteText ? <span className={styles.note}>{noteText}</span> : null}
       {typeof score === 'number' ? (
         <span className={styles.score}>
-          Scor de veridicitate: <span className={styles.scoreValue}>{score}%</span>
+          {t('verdict.scoreLabel')}
+          <span className={styles.scoreValue}>{score}%</span>
         </span>
       ) : null}
     </div>

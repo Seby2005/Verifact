@@ -1,10 +1,41 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
-import { FOOTER_SECTIONS, REPO_URL } from '../routes';
+import { REPO_URL } from '../routes';
+import { useLanguage } from '@/i18n';
 import styles from './Footer.module.css';
 
 export const Footer: React.FC = () => {
+  const { t } = useLanguage();
   const year = new Date().getFullYear();
+
+  const sections = [
+    {
+      title: t('footer.sections.product.title'),
+      links: [
+        { href: '/', label: t('footer.sections.product.verify') },
+        { href: '/rapoarte', label: t('footer.sections.product.reports') },
+        { href: '/preturi', label: t('footer.sections.product.pricing') },
+        { href: '/cont', label: t('footer.sections.product.account') },
+      ],
+    },
+    {
+      title: t('footer.sections.project.title'),
+      links: [
+        { href: '/misiune', label: t('footer.sections.project.mission') },
+        { href: '/transparenta', label: t('footer.sections.project.transparency') },
+        { href: '/open-source', label: t('footer.sections.project.openSource') },
+      ],
+    },
+    {
+      title: t('footer.sections.legal.title'),
+      links: [
+        { href: '/termeni', label: t('footer.sections.legal.terms') },
+        { href: '/confidentialitate', label: t('footer.sections.legal.privacy') },
+      ],
+    },
+  ];
 
   return (
     <footer className={styles.footer}>
@@ -12,18 +43,11 @@ export const Footer: React.FC = () => {
         <div className={styles.top}>
           <div className={styles.brandBlock}>
             <p className={styles.wordmark}>Verifact</p>
-            {/* The privacy promise is repeated here, on /cont and on
-                /open-source — the three places a user decides whether to
-                trust us with something. */}
-            <p className={styles.privacy}>
-              Totul este privat. Rapoartele tale, istoricul tău și contul tău
-              rămân ale tale — nu vindem date și nu publicăm nimic fără să ceri
-              tu asta explicit.
-            </p>
+            <p className={styles.privacy}>{t('footer.privacy')}</p>
           </div>
 
           <div className={styles.columns}>
-            {FOOTER_SECTIONS.map((section) => (
+            {sections.map((section) => (
               <nav key={section.title} className={styles.column} aria-label={section.title}>
                 <p className={styles.columnTitle}>{section.title}</p>
                 <ul className={styles.columnList}>
@@ -41,14 +65,14 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className={styles.bottom}>
-          <p className={styles.copyright}>&copy; {year} Verifact. Licență MIT.</p>
+          <p className={styles.copyright}>{t('footer.copyright', { year })}</p>
           <a
             href={REPO_URL}
             target="_blank"
             rel="noreferrer noopener"
             className={styles.link}
           >
-            Cod sursă pe GitHub
+            {t('footer.repoLink')}
           </a>
         </div>
       </div>

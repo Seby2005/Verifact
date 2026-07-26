@@ -1,57 +1,49 @@
+'use client';
+
 import React from 'react';
-import type { Metadata } from 'next';
 import { AuthPanel } from '@/components/auth';
+import { useLanguage } from '@/i18n';
 import shell from '../page-shell.module.css';
 import styles from './page.module.css';
 
-export const metadata: Metadata = {
-  title: 'Cont',
-  description:
-    'Creează un cont Verifact sau autentifică-te. Rapoartele și istoricul tău rămân private.',
-};
-
 export default function ContPage() {
+  const { t } = useLanguage();
+
   return (
     <div className={`container ${shell.page}`}>
       <header className={shell.head}>
-        <p className="eyebrow">Cont</p>
-        <h1 className={shell.title}>Intră în cont sau creează unul</h1>
-        <p className={shell.lead}>
-          Ai nevoie de cont doar dacă vrei să îți păstrezi istoricul
-          verificărilor. O verificare simplă funcționează și fără.
-        </p>
+        <p className="eyebrow">{t('contPage.eyebrow')}</p>
+        <h1 className={shell.title}>{t('contPage.title')}</h1>
+        <p className={shell.lead}>{t('contPage.lead')}</p>
       </header>
 
       <div className={`${shell.body} ${styles.layout}`}>
         <AuthPanel />
 
         <aside className={styles.aside}>
-          <h2 className={styles.asideTitle}>Ce se întâmplă cu datele tale</h2>
+          <h2 className={styles.asideTitle}>{t('contPage.aside.title')}</h2>
           <ul className={styles.asideList}>
             <li className={styles.asideItem}>
-              <strong className={styles.asideStrong}>Totul este privat.</strong> Rapoartele
-              tale, istoricul tău și contul tău rămân ale tale. Un raport devine
-              public doar dacă apeși tu butonul de publicare.
+              <strong className={styles.asideStrong}>{t('contPage.aside.bullet1Strong')}</strong>
+              {t('contPage.aside.bullet1Text')}
             </li>
             <li className={styles.asideItem}>
-              <strong className={styles.asideStrong}>Nu vindem date.</strong> Nu
-              există brokeri de date, profilare publicitară sau tracker-e
-              terțe în Verifact.
+              <strong className={styles.asideStrong}>{t('contPage.aside.bullet2Strong')}</strong>
+              {t('contPage.aside.bullet2Text')}
             </li>
             <li className={styles.asideItem}>
-              <strong className={styles.asideStrong}>Screenshot-urile nu se
-              păstrează.</strong> Imaginile încărcate sunt folosite pentru
-              extragerea textului și apoi șterse, nu arhivate.
+              <strong className={styles.asideStrong}>{t('contPage.aside.bullet3Strong')}</strong>
+              {t('contPage.aside.bullet3Text')}
             </li>
             <li className={styles.asideItem}>
-              <strong className={styles.asideStrong}>Poți pleca oricând.</strong> Ștergerea
-              contului îți șterge și rapoartele, definitiv.
+              <strong className={styles.asideStrong}>{t('contPage.aside.bullet4Strong')}</strong>
+              {t('contPage.aside.bullet4Text')}
             </li>
           </ul>
           <p className={styles.asideNote}>
-            Detaliile complete sunt pe pagina{' '}
+            {t('contPage.aside.noteText')}
             <a href="/open-source" className={styles.textLink}>
-              Open source și confidențialitate
+              {t('contPage.aside.noteLink')}
             </a>
             .
           </p>
