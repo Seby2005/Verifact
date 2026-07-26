@@ -67,21 +67,12 @@ export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> 
   };
 }
 
-export async function incrementUsageCount(userId: string): Promise<void> {
-  const supabase = createServerClient();
-  const { error } = await supabase.rpc('increment_verifications_count' as never, { user_id: userId } as never);
-  if (error) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('verifications_count')
-      .eq('id', userId)
-      .single();
-    const profile = data as ProfileRecord | null;
-    if (profile) {
-      await supabase
-        .from('profiles')
-        .update({ verifications_count: (profile.verifications_count || 0) + 1 } as never)
-        .eq('id', userId);
-    }
-  }
-}
+// Note: incrementing usage lives in src/lib/verification/db-operations.ts
+// (reserveUsageSlot/releaseUsageSlot), which does the check-and-increment
+// atomically via the reserve_usage_slot Postgres RPC. This module is
+// read-only (used by GET /api/user/usage to display current usage) and
+// intentionally does not write to verifications_count — a previous version
+// of this function did, via a non-atomic select-then-update calling an RPC
+// that was never defined in any migration, which was both dead code and,
+// had anything called it, subject to the same race this file's sibling now
+// closes.

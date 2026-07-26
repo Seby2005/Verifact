@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { verifyContent } from '@/lib/verification/orchestrator';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
-import { saveVerification, checkUsageLimit, incrementUsageCount } from '@/lib/verification/db-operations';
+import { saveVerification, reserveUsageSlot, releaseUsageSlot } from '@/lib/verification/db-operations';
+import { checkAnonymousLimit } from '@/lib/usage/anonymous-limit';
 import type { Language, InputType, VerifyAPIError } from '@/types/verification';
 import { extractArticleText, isValidHttpUrl, UrlExtractionError } from '@/lib/verification/url-extract';
 
@@ -108,16 +109,42 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json(err, { status: 429 });
   }
 
-  // 3. Auth check and usage limits
+  // 3. Auth check and usage limits.
+  // Authenticated: atomically reserve a monthly usage slot (see
+  // db-operations.ts) — this checks the limit and consumes the slot in one
+  // Postgres statement, closing the race where two concurrent requests could
+  // both read "under limit" before either write landed. The slot is released
+  // below if the request doesn't end up producing a saved report.
+  // Anonymous: best-effort cap by IP+User-Agent hash. Not fully atomic (see
+  // anonymous-limit.ts for its documented limitations), but the anonymous
+  // cap is low (3 / 30 days) and isn't the billing-relevant limit, so the
+  // remaining race window is an accepted tradeoff rather than one worth a
+  // second RPC.
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  let usageReserved = false;
+  let anonymousHash: string | undefined;
+
   if (user) {
-    const limitCheck = await checkUsageLimit(user.id, supabase);
-    if (!limitCheck.allowed) {
+    const reservation = await reserveUsageSlot(supabase);
+    if (!reservation.allowed) {
       const err: VerifyAPIError = {
         success: false,
-        error: `Ai atins limita de ${limitCheck.limit} verificari pentru aceasta luna. Upgradeaza la Pro pentru mai multe.`,
+        error: `Ai atins limita de ${reservation.limit} verificari pentru aceasta luna. Upgradeaza la Pro pentru mai multe.`,
+        code: 'USAGE_LIMIT',
+      };
+      return Response.json(err, { status: 403 });
+    }
+    usageReserved = true;
+  } else {
+    const userAgent = request.headers.get('user-agent') ?? 'unknown';
+    const anonymousCheck = await checkAnonymousLimit(ip, userAgent);
+    anonymousHash = anonymousCheck.hash;
+    if (!anonymousCheck.allowed) {
+      const err: VerifyAPIError = {
+        success: false,
+        error: `Ai atins limita de ${anonymousCheck.limit} verificari gratuite. Creeaza un cont pentru mai multe.`,
         code: 'USAGE_LIMIT',
       };
       return Response.json(err, { status: 403 });
@@ -154,17 +181,30 @@ export async function POST(request: Request): Promise<Response> {
       userId: user?.id ?? undefined,
     });
 
-    // 5. Save to Supabase (non-blocking for cache hits)
-    if (!report.fromCache) {
-      await saveVerification(report, supabase);
-      if (user) {
-        await incrementUsageCount(user.id, supabase);
-      }
+    // 5. Save to Supabase. A cache hit did no new work, so any reserved slot
+    //    is released instead of charging the user's monthly quota.
+    if (report.fromCache) {
+      if (usageReserved) await releaseUsageSlot(supabase);
+      return Response.json({ success: true, report }, { status: 200 });
+    }
+
+    const saved = await saveVerification(report, supabase, anonymousHash);
+    if (!saved && usageReserved) {
+      // The verification ran (and cost real API calls) but the record
+      // didn't persist — release the reservation so the user isn't charged
+      // for a report that won't show up in their history.
+      await releaseUsageSlot(supabase);
     }
 
     return Response.json({ success: true, report }, { status: 200 });
 
   } catch (error) {
+    // The reservation was consumed for a verification that never completed
+    // — release it rather than charging the user's quota for nothing.
+    if (usageReserved) {
+      await releaseUsageSlot(supabase);
+    }
+
     if (error instanceof Error && error.message === 'ALL_LAYERS_FAILED') {
       const err: VerifyAPIError = {
         success: false,
