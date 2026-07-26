@@ -1,5 +1,6 @@
 import type { OfficialSource, Language, Layer3Result } from '@/types/verification';
 import { OFFICIAL_DOMAINS } from './constants';
+import { fetchWithRetry } from '@/lib/utils/retry';
 import {
   CONTRADICTION_KEYWORDS_RO,
   CONTRADICTION_KEYWORDS_EN,
@@ -208,18 +209,22 @@ export async function runLayer3(
 
   const searchQuery = buildOfficialSearchQuery(text, language);
 
-  const response = await fetch('https://api.tavily.com/search', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      api_key: apiKey,
-      query: searchQuery,
-      max_results: 8,
-      search_depth: 'basic',
-      include_domains: INCLUDE_DOMAINS,
+  const response = await fetchWithRetry(
+    'https://api.tavily.com/search',
+    () => ({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: searchQuery,
+        max_results: 8,
+        search_depth: 'basic',
+        include_domains: INCLUDE_DOMAINS,
+      }),
+      signal: AbortSignal.timeout(8000),
     }),
-    signal: AbortSignal.timeout(8000),
-  });
+    { label: 'layer3-official' }
+  );
 
   if (!response.ok) {
     throw new Error(`Official Search API error: ${response.status} ${response.statusText}`);

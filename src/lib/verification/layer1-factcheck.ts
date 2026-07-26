@@ -1,4 +1,5 @@
 import type { FactCheckResult, Language, Layer1Result } from '@/types/verification';
+import { fetchWithRetry } from '@/lib/utils/retry';
 
 // ─── Internal Google API types ────────────────────────────────
 
@@ -302,9 +303,10 @@ async function fetchFactChecks(
     pageSize: '10',
   });
 
-  const response = await fetch(
+  const response = await fetchWithRetry(
     `https://factchecktools.googleapis.com/v1alpha1/claims:search?${params.toString()}`,
-    { signal: AbortSignal.timeout(8000) }
+    () => ({ signal: AbortSignal.timeout(8000) }),
+    { label: 'layer1-factcheck' }
   );
 
   if (!response.ok) {

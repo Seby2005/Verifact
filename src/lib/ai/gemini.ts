@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { AIAnalysisContext } from '@/types/verification';
 import { buildAnalysisPrompt } from './prompts';
+import { withRetry as sharedWithRetry } from '@/lib/utils/retry';
 
 /**
  * Creates the Gemini AI client.
@@ -30,31 +31,16 @@ export function isNonRetryableQuotaError(message: string): boolean {
 }
 
 /**
- * Retries transient failures (429/503) with exponential backoff. Gives up
+ * Retries transient failures (429/500/503/timeout/ECONNRESET) with
+ * exponential backoff, via the shared src/lib/utils/retry.ts. Gives up
  * immediately on hard quota/billing errors, which no amount of waiting fixes.
  */
-async function withRetry<T>(fn: () => Promise<T>, label: string, attempts = 3): Promise<T> {
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt < attempts; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-      const message = error instanceof Error ? error.message : String(error);
-      const transient = /\b(429|503|500|timeout|ETIMEDOUT|ECONNRESET)\b/i.test(message);
-
-      if (!transient || isNonRetryableQuotaError(message) || attempt === attempts - 1) {
-        throw error;
-      }
-
-      const delay = 500 * 2 ** attempt; // 500ms, 1s
-      console.warn(`[Gemini] ${label} attempt ${attempt + 1} failed (${message.slice(0, 80)}), retrying in ${delay}ms`);
-      await new Promise((r) => setTimeout(r, delay));
-    }
-  }
-
-  throw lastError;
+function withRetry<T>(fn: () => Promise<T>, label: string, attempts = 3): Promise<T> {
+  return sharedWithRetry(fn, {
+    attempts,
+    label: `Gemini ${label}`,
+    isRetryable: (_error, message) => !isNonRetryableQuotaError(message),
+  });
 }
 
 /**

@@ -1,3 +1,5 @@
+import { fetchWithRetry } from '@/lib/utils/retry';
+
 export interface VisionOCRResult {
   text: string;
   confidence: number;
@@ -19,54 +21,52 @@ export async function processImageOCR(
     };
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  // Each retry attempt gets its own fresh AbortSignal.timeout(...) (built
+  // inside the thunk) rather than sharing one AbortController across
+  // attempts — a single-use signal that already fired would make every
+  // retry after the first fail instantly.
+  const response = await fetchWithRetry(
+    `https://vision.googleapis.com/v1/images:annotate?key=${key}`,
+    () => ({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(10000),
+      body: JSON.stringify({
+        requests: [
+          {
+            image: { content: base64Image },
+            features: [{ type: 'TEXT_DETECTION' }],
+          },
+        ],
+      }),
+    }),
+    { label: 'vision-ocr' }
+  );
 
-  try {
-    const response = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          requests: [
-            {
-              image: { content: base64Image },
-              features: [{ type: 'TEXT_DETECTION' }],
-            },
-          ],
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Google Vision API HTTP error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const annotations = data.responses?.[0]?.textAnnotations;
-
-    if (!annotations || annotations.length === 0) {
-      throw new Error('NO_TEXT_FOUND');
-    }
-
-    // First annotation contains the entire extracted text block
-    const fullText = annotations[0].description || '';
-    const cleanText = fullText.replace(/\n{3,}/g, '\n\n').trim();
-
-    if (!cleanText) {
-      throw new Error('NO_TEXT_FOUND');
-    }
-
-    const detectedLang = annotations[0].locale || 'ro';
-
-    return {
-      text: cleanText,
-      confidence: 0.9,
-      language: detectedLang,
-    };
-  } finally {
-    clearTimeout(timeoutId);
+  if (!response.ok) {
+    throw new Error(`Google Vision API HTTP error: ${response.status}`);
   }
+
+  const data = await response.json();
+  const annotations = data.responses?.[0]?.textAnnotations;
+
+  if (!annotations || annotations.length === 0) {
+    throw new Error('NO_TEXT_FOUND');
+  }
+
+  // First annotation contains the entire extracted text block
+  const fullText = annotations[0].description || '';
+  const cleanText = fullText.replace(/\n{3,}/g, '\n\n').trim();
+
+  if (!cleanText) {
+    throw new Error('NO_TEXT_FOUND');
+  }
+
+  const detectedLang = annotations[0].locale || 'ro';
+
+  return {
+    text: cleanText,
+    confidence: 0.9,
+    language: detectedLang,
+  };
 }

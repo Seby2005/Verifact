@@ -1,5 +1,6 @@
 import type { SocialMediaPost, Language, Layer4Result } from '@/types/verification';
 import { ROMANIAN_PUBLIC_FIGURES } from './constants';
+import { fetchWithRetry } from '@/lib/utils/retry';
 
 interface TwitterSearchResponse {
   data?: Array<{
@@ -67,12 +68,13 @@ async function searchTwitter(
     max_results: '10',
   });
 
-  const response = await fetch(
+  const response = await fetchWithRetry(
     `https://api.twitter.com/2/tweets/search/recent?${params.toString()}`,
-    {
+    () => ({
       headers: { Authorization: `Bearer ${bearerToken}` },
       signal: AbortSignal.timeout(8000),
-    }
+    }),
+    { label: 'layer4-twitter' }
   );
 
   if (!response.ok) throw new Error(`Twitter API error: ${response.status}`);
@@ -116,20 +118,24 @@ async function searchSocialViaTavily(
   const entityQuery = namedEntities.slice(0, 2).join(' ');
   const searchQuery = entityQuery || text.slice(0, 200);
 
-  const response = await fetch('https://api.tavily.com/search', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      query: searchQuery,
-      search_depth: 'basic',
-      max_results: 8,
-      include_domains: ['twitter.com', 'x.com', 'facebook.com', 'youtube.com'],
+  const response = await fetchWithRetry(
+    'https://api.tavily.com/search',
+    () => ({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        query: searchQuery,
+        search_depth: 'basic',
+        max_results: 8,
+        include_domains: ['twitter.com', 'x.com', 'facebook.com', 'youtube.com'],
+      }),
+      signal: AbortSignal.timeout(8000),
     }),
-    signal: AbortSignal.timeout(8000),
-  });
+    { label: 'layer4-tavily' }
+  );
 
   if (!response.ok) return [];
 

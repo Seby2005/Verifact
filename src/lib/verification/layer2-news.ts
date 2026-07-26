@@ -6,6 +6,7 @@ import {
   CONFIRMATION_KEYWORDS_RO,
   CONFIRMATION_KEYWORDS_EN,
 } from './constants';
+import { fetchWithRetry } from '@/lib/utils/retry';
 
 // ─── Internal API types ───────────────────────────────────────
 
@@ -164,9 +165,10 @@ async function fetchFromNewsAPI(
     apiKey,
   });
 
-  const response = await fetch(
+  const response = await fetchWithRetry(
     `https://newsapi.org/v2/everything?${params.toString()}`,
-    { signal: AbortSignal.timeout(8000) }
+    () => ({ signal: AbortSignal.timeout(8000) }),
+    { label: 'layer2-newsapi' }
   );
 
   if (!response.ok) return [];
@@ -208,20 +210,24 @@ async function fetchFromTavily(text: string): Promise<NewsArticle[]> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) return []; // Gracefully degrade if not configured
 
-  const response = await fetch('https://api.tavily.com/search', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      query: text.slice(0, 400),
-      search_depth: 'basic',
-      topic: 'news',
-      max_results: 10,
+  const response = await fetchWithRetry(
+    'https://api.tavily.com/search',
+    () => ({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        query: text.slice(0, 400),
+        search_depth: 'basic',
+        topic: 'news',
+        max_results: 10,
+      }),
+      signal: AbortSignal.timeout(8000),
     }),
-    signal: AbortSignal.timeout(8000),
-  });
+    { label: 'layer2-tavily' }
+  );
 
   if (!response.ok) return [];
 
