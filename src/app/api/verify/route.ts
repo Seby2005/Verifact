@@ -99,7 +99,7 @@ export async function POST(request: Request): Promise<Response> {
     request.headers.get('x-real-ip') ??
     'unknown';
 
-  const rateLimitResult = checkRateLimit(`verify:${ip}`, 10, 60 * 1000);
+  const rateLimitResult = await checkRateLimit(`verify:${ip}`, 10, 60 * 1000);
   if (!rateLimitResult.success) {
     const err: VerifyAPIError = {
       success: false,
