@@ -156,9 +156,28 @@ export const en: Translations = {
     emailPlaceholder: 'name@example.com',
     emailHelper: 'Only if you would like us to contact you regarding this dispute.',
     submitBtn: 'Submit dispute',
+    legalNote: 'Error reports are reviewed confidentially to maintain accuracy.',
     errorGeneric: 'An error occurred. Please try again.',
     errorNetwork: 'Could not reach the server. Please check your connection and try again.',
   },
+  rapoartePage: {
+    metadata: {
+      title: 'Published Reports',
+      description: 'Reports published by the Verifact community and your verification history.',
+    },
+    eyebrow: 'Reports',
+    title: 'Published Verifications',
+    lead: 'Reports appear here only if their author explicitly chooses to publish them. Your verifications remain private by default.',
+    calloutTitle: 'Public Feed in Development',
+    calloutText: 'Below is the layout of the public feed, with illustrative sample verifications.',
+    listAriaLabel: 'Sample published reports',
+    sourcesCount: '{count} sources cited',
+    yourHistoryTitle: 'Your History',
+    yourHistoryText: 'If you have an account, your verifications are automatically saved and visible only to you. You can delete any report at any time.',
+    loginBtn: 'Log in',
+    verifyLink: 'Verify a claim',
+  },
+
   auth: {
     tabs: {
       login: 'Sign in',

@@ -154,9 +154,28 @@ export const ro = {
     emailPlaceholder: 'nume@exemplu.ro',
     emailHelper: 'Doar dacă vrei să te contactăm în legătură cu această contestație.',
     submitBtn: 'Trimite contestația',
+    legalNote: 'Raportările de erori sunt analizate în mod confidențial pentru menținerea acurateței.',
     errorGeneric: 'A apărut o eroare. Te rugăm să încerci din nou.',
     errorNetwork: 'Nu am putut contacta serverul. Verifică conexiunea și încearcă din nou.',
   },
+  rapoartePage: {
+    metadata: {
+      title: 'Rapoarte publicate',
+      description: 'Rapoartele publicate de comunitatea Verifact și istoricul verificărilor tale.',
+    },
+    eyebrow: 'Rapoarte',
+    title: 'Verificări publicate',
+    lead: 'Rapoartele apar aici doar dacă autorul lor alege să le publice. Verificările tale rămân private în mod implicit.',
+    calloutTitle: 'Feed public în dezvoltare',
+    calloutText: 'Mai jos este structura pe care o va avea lista, cu exemple ilustrative de verificări.',
+    listAriaLabel: 'Exemple de rapoarte publicate',
+    sourcesCount: '{count} surse citate',
+    yourHistoryTitle: 'Istoricul tău',
+    yourHistoryText: 'Dacă ai un cont, verificările tale se salvează automat și le vezi doar tu. Poți șterge oricare dintre ele, oricând.',
+    loginBtn: 'Intră în cont',
+    verifyLink: 'Verifică o afirmație',
+  },
+
   auth: {
     tabs: {
       login: 'Intră în cont',

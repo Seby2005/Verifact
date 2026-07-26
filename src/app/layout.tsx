@@ -28,6 +28,20 @@ export const metadata: Metadata = {
   },
   description:
     'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile. Algoritm open source, surse citate integral, rapoarte private.',
+  openGraph: {
+    title: 'Verifact — Verificare independentă a informației',
+    description:
+      'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile.',
+    siteName: 'Verifact',
+    locale: 'ro_RO',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Verifact — Verificare independentă a informației',
+    description:
+      'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile.',
+  },
   other: {
     google: 'notranslate',
   },

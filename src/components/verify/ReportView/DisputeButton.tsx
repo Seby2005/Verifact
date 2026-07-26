@@ -104,7 +104,7 @@ export const DisputeButton: React.FC<DisputeButtonProps> = ({ reportId }) => {
               fullWidth
               disabled={state === 'submitting'}
             />
-            <p className={styles.disputeLegalPlaceholder}>TODO_LEGAL_COPY</p>
+            <p className={styles.disputeLegalPlaceholder}>{t('dispute.legalNote')}</p>
             <Button type="submit" variant="primary" isLoading={state === 'submitting'} fullWidth>
               {t('dispute.submitBtn')}
             </Button>

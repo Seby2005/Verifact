@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import type { User } from '@supabase/supabase-js';
 import { DELETE } from '@/app/api/user/delete/route';
 import { getAuthenticatedUser } from '@/lib/supabase/auth-helpers';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -30,7 +31,7 @@ describe('DELETE /api/user/delete', () => {
   });
 
   it('should return 429 if rate limit is exceeded', async () => {
-    mockGetAuthenticatedUser.mockResolvedValue({ id: 'user-123', email: 'test@example.com' } as any);
+    mockGetAuthenticatedUser.mockResolvedValue({ id: 'user-123', email: 'test@example.com' } as unknown as User);
     mockCheckRateLimit.mockResolvedValue({ success: false, remaining: 0, reset: Date.now() + 3600000 });
 
     const req = new NextRequest('http://localhost:3000/api/user/delete', { method: 'DELETE' });
@@ -42,7 +43,7 @@ describe('DELETE /api/user/delete', () => {
   });
 
   it('should return 500 with Romanian error message if Supabase deleteUser fails', async () => {
-    mockGetAuthenticatedUser.mockResolvedValue({ id: 'user-123', email: 'test@example.com' } as any);
+    mockGetAuthenticatedUser.mockResolvedValue({ id: 'user-123', email: 'test@example.com' } as unknown as User);
 
     const mockAdminDeleteUser = jest.fn().mockResolvedValue({ error: new Error('Supabase Auth error') });
     const mockFrom = jest.fn().mockReturnValue({
@@ -61,7 +62,7 @@ describe('DELETE /api/user/delete', () => {
       auth: { admin: { deleteUser: mockAdminDeleteUser } },
       from: mockFrom,
       storage: { from: mockStorageFrom },
-    } as any);
+    } as unknown as ReturnType<typeof createAdminClient>);
 
     const req = new NextRequest('http://localhost:3000/api/user/delete', { method: 'DELETE' });
     const res = await DELETE(req);
@@ -72,7 +73,7 @@ describe('DELETE /api/user/delete', () => {
   });
 
   it('should return 200 on successful account deletion', async () => {
-    mockGetAuthenticatedUser.mockResolvedValue({ id: 'user-123', email: 'test@example.com' } as any);
+    mockGetAuthenticatedUser.mockResolvedValue({ id: 'user-123', email: 'test@example.com' } as unknown as User);
 
     const mockAdminDeleteUser = jest.fn().mockResolvedValue({ error: null });
     const mockFrom = jest.fn().mockReturnValue({
@@ -91,7 +92,7 @@ describe('DELETE /api/user/delete', () => {
       auth: { admin: { deleteUser: mockAdminDeleteUser } },
       from: mockFrom,
       storage: { from: mockStorageFrom },
-    } as any);
+    } as unknown as ReturnType<typeof createAdminClient>);
 
     const req = new NextRequest('http://localhost:3000/api/user/delete', { method: 'DELETE' });
     const res = await DELETE(req);

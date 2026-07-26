@@ -176,6 +176,7 @@ export const VerifyTool: React.FC = () => {
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
                   className={styles.fileInput}
+                  aria-label={t('verifyTool.dropzone.title')}
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 />
                 <span className={styles.dropzoneTitle}>{t('verifyTool.dropzone.title')}</span>
