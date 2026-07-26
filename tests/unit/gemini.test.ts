@@ -18,6 +18,18 @@ jest.mock('@google/generative-ai', () => {
 describe('gemini AI module', () => {
   const originalEnv = process.env;
 
+  const mockContext: AIAnalysisContext = {
+    claim: 'Test claim',
+    inputText: 'Test claim text',
+    language: 'ro',
+    layers: {
+      layer1: { status: 'skipped', results: [], layerScore: 0.5, processingTime: 0 },
+      layer2: { status: 'skipped', results: [], layerScore: 0.5, processingTime: 0, sourcesChecked: 0 },
+      layer3: { status: 'skipped', results: [], layerScore: 0.5, processingTime: 0 },
+      layer4: { status: 'skipped', results: [], layerScore: 0.5, processingTime: 0 },
+    },
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     process.env = { ...originalEnv, GEMINI_API_KEY: 'test-api-key' };
@@ -47,11 +59,6 @@ describe('gemini AI module', () => {
   });
 
   describe('generateAIAssessment', () => {
-    const mockContext: AIAnalysisContext = {
-      claim: 'Test claim',
-      inputText: 'Test claim text',
-    };
-
     it('returns fallback assessment when API fails or throws', async () => {
       const result = await generateAIAssessment(mockContext);
       expect(result).toBeDefined();
@@ -61,11 +68,6 @@ describe('gemini AI module', () => {
   });
 
   describe('generateAIAnalysis', () => {
-    const mockContext: AIAnalysisContext = {
-      claim: 'Test claim',
-      inputText: 'Test claim text',
-    };
-
     it('throws error when GEMINI_API_KEY is missing', async () => {
       delete process.env.GEMINI_API_KEY;
       await expect(generateAIAnalysis(mockContext)).rejects.toThrow('GEMINI_API_KEY is not configured');
