@@ -27,13 +27,22 @@ const connectSrc = [
   .filter(Boolean)
   .join(' ');
 
+// next dev's Fast Refresh / HMR runtime evaluates module code via eval(),
+// which a CSP without 'unsafe-eval' blocks outright — not a slow-down, a
+// hard failure: React never hydrates, every button silently falls back to
+// native (non-JS) form behavior, and the page looks fine while being
+// completely dead to clicks. `next build` output doesn't use eval(), so
+// production keeps the tighter policy; only the dev server gets the
+// looser one, scoped by NODE_ENV rather than hand-toggled.
+const isDev = process.env.NODE_ENV !== 'production';
+
 const csp = [
   "default-src 'self'",
   // Next.js's App Router hydration payload ships as inline <script> tags
   // (no nonce plumbing set up yet) — 'unsafe-inline' is required for the
   // app to boot, not an oversight. Tightening this to a nonce-based policy
   // is tracked as follow-up work, not part of this pass.
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
