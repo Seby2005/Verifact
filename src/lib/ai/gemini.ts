@@ -3,6 +3,7 @@ import type { AIAnalysisContext } from '@/types/verification';
 import { buildAnalysisPrompt } from './prompts';
 import { withRetry as sharedWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Creates the Gemini AI client.
@@ -77,9 +78,12 @@ function validateAIOutput(output: string, context: AIAnalysisContext): void {
     );
 
     if (!isValid) {
-      console.error(`[Gemini] Potential hallucinated URL detected: ${url}`);
-      // Log but don't throw — we still want to return the analysis
-      // The prompt instructs Gemini not to include URLs, so this is extra safety
+      // Log but don't throw — we still want to return the analysis.
+      // The prompt instructs Gemini not to include URLs, so this is extra safety.
+      logger.warn('Potential hallucinated URL detected in AI analysis', {
+        service: 'gemini',
+        url,
+      });
     }
   }
 }
@@ -193,7 +197,7 @@ REGULI:
     const parsed = parseAssessment(result.response.text() ?? '');
     return parsed ?? ASSESSMENT_FALLBACK;
   } catch (error) {
-    console.error('[Gemini] assessment failed:', error instanceof Error ? error.message : error);
+    logger.error('AI assessment failed, using fallback', { service: 'gemini', error });
     return ASSESSMENT_FALLBACK;
   }
 }

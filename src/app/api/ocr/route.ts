@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
 import { processImageOCR } from '@/lib/ocr/vision';
 import { CircuitOpenError } from '@/lib/utils/circuit-breaker';
+import { logger } from '@/lib/utils/logger';
 
 interface OCRRequest {
   image: string;
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.error('OCR processing error encountered');
+    logger.error('Unexpected error in /api/ocr', { service: 'api/ocr', error });
 
     return NextResponse.json(
       {

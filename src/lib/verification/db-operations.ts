@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { VerificationReport } from '@/types/verification';
 import type { Database } from '@/types/database';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Saves a verification report to the Supabase 'verifications' table.
@@ -32,7 +33,12 @@ export async function saveVerification(
   }).insert(insertData);
 
   if (error) {
-    console.error('[DB] Failed to save verification:', error.message);
+    logger.error('Failed to save verification', {
+      service: 'db-operations',
+      operation: 'saveVerification',
+      reportId: report.id,
+      error: error.message,
+    });
     return false;
   }
 
@@ -76,7 +82,11 @@ export async function reserveUsageSlot(
   };
 
   if (error) {
-    console.error('[DB] reserve_usage_slot failed:', error.message);
+    logger.error('reserve_usage_slot RPC failed, failing open', {
+      service: 'db-operations',
+      operation: 'reserveUsageSlot',
+      error: error.message,
+    });
     // Fail open (mirrors the previous behaviour when the profile lookup
     // errored) rather than blocking every verification on an RPC hiccup.
     return { allowed: true, limit: 10, used: 0 };
@@ -99,6 +109,10 @@ export async function releaseUsageSlot(
 ): Promise<void> {
   const { error } = await supabase.rpc('release_usage_slot');
   if (error) {
-    console.error('[DB] release_usage_slot failed:', error.message);
+    logger.error('release_usage_slot RPC failed', {
+      service: 'db-operations',
+      operation: 'releaseUsageSlot',
+      error: error.message,
+    });
   }
 }
