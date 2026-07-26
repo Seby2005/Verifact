@@ -1,6 +1,7 @@
 import type { OfficialSource, Language, Layer3Result } from '@/types/verification';
 import { OFFICIAL_DOMAINS } from './constants';
 import { fetchWithRetry } from '@/lib/utils/retry';
+import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import {
   CONTRADICTION_KEYWORDS_RO,
   CONTRADICTION_KEYWORDS_EN,
@@ -209,26 +210,30 @@ export async function runLayer3(
 
   const searchQuery = buildOfficialSearchQuery(text, language);
 
-  const response = await fetchWithRetry(
-    'https://api.tavily.com/search',
-    () => ({
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: apiKey,
-        query: searchQuery,
-        max_results: 8,
-        search_depth: 'basic',
-        include_domains: INCLUDE_DOMAINS,
+  // Shared 'tavily' breaker name with layer2/layer4: it's the same external
+  // account, so an outage discovered via one layer should stop the others
+  // from independently re-discovering it too.
+  const response = await withCircuitBreaker('tavily', () =>
+    fetchWithRetry(
+      'https://api.tavily.com/search',
+      () => ({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: apiKey,
+          query: searchQuery,
+          max_results: 8,
+          search_depth: 'basic',
+          include_domains: INCLUDE_DOMAINS,
+        }),
+        signal: AbortSignal.timeout(8000),
       }),
-      signal: AbortSignal.timeout(8000),
-    }),
-    { label: 'layer3-official' }
+      { label: 'layer3-official' }
+    ).then((res) => {
+      if (!res.ok) throw new Error(`Official Search API error: ${res.status} ${res.statusText}`);
+      return res;
+    })
   );
-
-  if (!response.ok) {
-    throw new Error(`Official Search API error: ${response.status} ${response.statusText}`);
-  }
 
   const data = (await response.json()) as TavilyResponse;
   const items = data.results ?? [];

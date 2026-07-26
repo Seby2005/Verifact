@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { AIAnalysisContext } from '@/types/verification';
 import { buildAnalysisPrompt } from './prompts';
 import { withRetry as sharedWithRetry } from '@/lib/utils/retry';
+import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 
 /**
  * Creates the Gemini AI client.
@@ -34,13 +35,20 @@ export function isNonRetryableQuotaError(message: string): boolean {
  * Retries transient failures (429/500/503/timeout/ECONNRESET) with
  * exponential backoff, via the shared src/lib/utils/retry.ts. Gives up
  * immediately on hard quota/billing errors, which no amount of waiting fixes.
+ *
+ * Also runs through the shared 'gemini' circuit breaker: after repeated
+ * failures (quota exhaustion included — retrying that is pointless, but so
+ * is calling the API again next request only to fail the same way) further
+ * calls fail fast for a cooldown instead of round-tripping to Gemini.
  */
 function withRetry<T>(fn: () => Promise<T>, label: string, attempts = 3): Promise<T> {
-  return sharedWithRetry(fn, {
-    attempts,
-    label: `Gemini ${label}`,
-    isRetryable: (_error, message) => !isNonRetryableQuotaError(message),
-  });
+  return withCircuitBreaker('gemini', () =>
+    sharedWithRetry(fn, {
+      attempts,
+      label: `Gemini ${label}`,
+      isRetryable: (_error, message) => !isNonRetryableQuotaError(message),
+    })
+  );
 }
 
 /**

@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '@/lib/utils/retry';
+import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 
 export interface VisionOCRResult {
   text: string;
@@ -25,27 +26,32 @@ export async function processImageOCR(
   // inside the thunk) rather than sharing one AbortController across
   // attempts — a single-use signal that already fired would make every
   // retry after the first fail instantly.
-  const response = await fetchWithRetry(
-    `https://vision.googleapis.com/v1/images:annotate?key=${key}`,
-    () => ({
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(10000),
-      body: JSON.stringify({
-        requests: [
-          {
-            image: { content: base64Image },
-            features: [{ type: 'TEXT_DETECTION' }],
-          },
-        ],
+  //
+  // Only the fetch + HTTP-status check runs through the circuit breaker —
+  // NO_TEXT_FOUND below is a legitimate "this image has no text" outcome,
+  // not a Vision API failure, and must not count against the breaker.
+  const response = await withCircuitBreaker('vision', () =>
+    fetchWithRetry(
+      `https://vision.googleapis.com/v1/images:annotate?key=${key}`,
+      () => ({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(10000),
+        body: JSON.stringify({
+          requests: [
+            {
+              image: { content: base64Image },
+              features: [{ type: 'TEXT_DETECTION' }],
+            },
+          ],
+        }),
       }),
-    }),
-    { label: 'vision-ocr' }
+      { label: 'vision-ocr' }
+    ).then((res) => {
+      if (!res.ok) throw new Error(`Google Vision API HTTP error: ${res.status}`);
+      return res;
+    })
   );
-
-  if (!response.ok) {
-    throw new Error(`Google Vision API HTTP error: ${response.status}`);
-  }
 
   const data = await response.json();
   const annotations = data.responses?.[0]?.textAnnotations;

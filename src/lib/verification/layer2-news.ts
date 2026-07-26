@@ -7,6 +7,7 @@ import {
   CONFIRMATION_KEYWORDS_EN,
 } from './constants';
 import { fetchWithRetry } from '@/lib/utils/retry';
+import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 
 // ─── Internal API types ───────────────────────────────────────
 
@@ -165,13 +166,24 @@ async function fetchFromNewsAPI(
     apiKey,
   });
 
-  const response = await fetchWithRetry(
-    `https://newsapi.org/v2/everything?${params.toString()}`,
-    () => ({ signal: AbortSignal.timeout(8000) }),
-    { label: 'layer2-newsapi' }
-  );
-
-  if (!response.ok) return [];
+  let response: Response;
+  try {
+    response = await withCircuitBreaker('newsapi', () =>
+      fetchWithRetry(
+        `https://newsapi.org/v2/everything?${params.toString()}`,
+        () => ({ signal: AbortSignal.timeout(8000) }),
+        { label: 'layer2-newsapi' }
+      ).then((res) => {
+        if (!res.ok) throw new Error(`NewsAPI error: ${res.status} ${res.statusText}`);
+        return res;
+      })
+    );
+  } catch {
+    // Circuit open, or the request/retries failed — same graceful
+    // degradation as any other NewsAPI failure: this source contributes
+    // nothing, Tavily (fetchFromTavily) may still find something.
+    return [];
+  }
 
   const data = await response.json() as NewsAPIResponse;
   if (data.status !== 'ok' || !data.articles?.length) return [];
@@ -210,26 +222,34 @@ async function fetchFromTavily(text: string): Promise<NewsArticle[]> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) return []; // Gracefully degrade if not configured
 
-  const response = await fetchWithRetry(
-    'https://api.tavily.com/search',
-    () => ({
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        query: text.slice(0, 400),
-        search_depth: 'basic',
-        topic: 'news',
-        max_results: 10,
-      }),
-      signal: AbortSignal.timeout(8000),
-    }),
-    { label: 'layer2-tavily' }
-  );
-
-  if (!response.ok) return [];
+  let response: Response;
+  try {
+    response = await withCircuitBreaker('tavily', () =>
+      fetchWithRetry(
+        'https://api.tavily.com/search',
+        () => ({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            query: text.slice(0, 400),
+            search_depth: 'basic',
+            topic: 'news',
+            max_results: 10,
+          }),
+          signal: AbortSignal.timeout(8000),
+        }),
+        { label: 'layer2-tavily' }
+      ).then((res) => {
+        if (!res.ok) throw new Error(`Tavily error: ${res.status} ${res.statusText}`);
+        return res;
+      })
+    );
+  } catch {
+    return [];
+  }
 
   const data = await response.json() as TavilySearchResponse;
   if (!data.results?.length) return [];

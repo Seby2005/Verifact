@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
 import { processImageOCR } from '@/lib/ocr/vision';
+import { CircuitOpenError } from '@/lib/utils/circuit-breaker';
 
 interface OCRRequest {
   image: string;
@@ -103,6 +104,17 @@ export async function POST(req: NextRequest) {
           code: 'API_ERROR',
         },
         { status: 504 }
+      );
+    }
+
+    if (error instanceof CircuitOpenError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Serviciul de extragere text este temporar indisponibil. Te rugăm să încerci din nou peste câteva minute.',
+          code: 'SERVICE_UNAVAILABLE',
+        },
+        { status: 503 }
       );
     }
 

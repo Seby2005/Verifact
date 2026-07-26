@@ -1,6 +1,7 @@
 import type { SocialMediaPost, Language, Layer4Result } from '@/types/verification';
 import { ROMANIAN_PUBLIC_FIGURES } from './constants';
 import { fetchWithRetry } from '@/lib/utils/retry';
+import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 
 interface TwitterSearchResponse {
   data?: Array<{
@@ -68,16 +69,22 @@ async function searchTwitter(
     max_results: '10',
   });
 
-  const response = await fetchWithRetry(
-    `https://api.twitter.com/2/tweets/search/recent?${params.toString()}`,
-    () => ({
-      headers: { Authorization: `Bearer ${bearerToken}` },
-      signal: AbortSignal.timeout(8000),
-    }),
-    { label: 'layer4-twitter' }
+  // Any throw here (including CircuitOpenError once open) is caught by
+  // runLayer4's caller, which falls through to the Tavily fallback — see
+  // below and the try/catch around this call in runLayer4().
+  const response = await withCircuitBreaker('twitter', () =>
+    fetchWithRetry(
+      `https://api.twitter.com/2/tweets/search/recent?${params.toString()}`,
+      () => ({
+        headers: { Authorization: `Bearer ${bearerToken}` },
+        signal: AbortSignal.timeout(8000),
+      }),
+      { label: 'layer4-twitter' }
+    ).then((res) => {
+      if (!res.ok) throw new Error(`Twitter API error: ${res.status}`);
+      return res;
+    })
   );
-
-  if (!response.ok) throw new Error(`Twitter API error: ${response.status}`);
 
   const data = await response.json() as TwitterSearchResponse;
   const tweets = data.data ?? [];
@@ -118,26 +125,34 @@ async function searchSocialViaTavily(
   const entityQuery = namedEntities.slice(0, 2).join(' ');
   const searchQuery = entityQuery || text.slice(0, 200);
 
-  const response = await fetchWithRetry(
-    'https://api.tavily.com/search',
-    () => ({
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        query: searchQuery,
-        search_depth: 'basic',
-        max_results: 8,
-        include_domains: ['twitter.com', 'x.com', 'facebook.com', 'youtube.com'],
-      }),
-      signal: AbortSignal.timeout(8000),
-    }),
-    { label: 'layer4-tavily' }
-  );
-
-  if (!response.ok) return [];
+  let response: Response;
+  try {
+    response = await withCircuitBreaker('tavily', () =>
+      fetchWithRetry(
+        'https://api.tavily.com/search',
+        () => ({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            query: searchQuery,
+            search_depth: 'basic',
+            max_results: 8,
+            include_domains: ['twitter.com', 'x.com', 'facebook.com', 'youtube.com'],
+          }),
+          signal: AbortSignal.timeout(8000),
+        }),
+        { label: 'layer4-tavily' }
+      ).then((res) => {
+        if (!res.ok) throw new Error(`Tavily error: ${res.status} ${res.statusText}`);
+        return res;
+      })
+    );
+  } catch {
+    return [];
+  }
 
   const data = await response.json() as TavilySearchResponse;
   const items = data.results ?? [];
