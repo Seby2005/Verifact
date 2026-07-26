@@ -5,6 +5,7 @@ import { saveVerification, reserveUsageSlot, releaseUsageSlot } from '@/lib/veri
 import { checkAnonymousLimit } from '@/lib/usage/anonymous-limit';
 import type { Language, InputType, VerifyAPIError } from '@/types/verification';
 import { extractArticleText, isValidHttpUrl, UrlExtractionError } from '@/lib/verification/url-extract';
+import { logger } from '@/lib/utils/logger';
 
 const MAX_TEXT_LENGTH = 2000;
 
@@ -214,7 +215,7 @@ export async function POST(request: Request): Promise<Response> {
       return Response.json(err, { status: 503 });
     }
 
-    console.error('[/api/verify] Unexpected error:', error);
+    logger.error('Unexpected error in /api/verify', { service: 'api/verify', error });
     const err: VerifyAPIError = {
       success: false,
       error: 'A aparut o eroare interna. Te rugam sa incerci din nou.',

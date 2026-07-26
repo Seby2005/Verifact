@@ -15,6 +15,7 @@ import { buildReport } from './report-builder';
 import { generateAIAnalysis, generateAIAssessment } from '@/lib/ai/gemini';
 import { getCached, setCached } from './cache';
 import { createContentHash } from '@/lib/utils/hash';
+import { logger } from '@/lib/utils/logger';
 
 const LAYER_TIMEOUT_MS = 10_000; // 10 seconds per layer
 
@@ -193,8 +194,10 @@ export async function verifyContent(
     aiAnalysis = await generateAIAnalysis({ ...aiContext, scoreBreakdown });
   } catch (error) {
     aiAvailable = false;
-    const message = error instanceof Error ? error.message : String(error);
-    console.error('[orchestrator] AI analysis unavailable:', message.slice(0, 200));
+    logger.error('AI analysis unavailable, falling back to a factual summary', {
+      service: 'orchestrator',
+      error,
+    });
     aiAnalysis = buildFallbackSummary({ layer1, layer2, layer3, layer4 }, scoreBreakdown.finalScore);
   }
 
