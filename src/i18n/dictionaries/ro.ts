@@ -212,6 +212,10 @@ export const ro = {
       passwordHelperSignup: 'Alege o parolă de cel puțin 8 caractere.',
       submitLogin: 'Intră în cont',
       submitSignup: 'Creează cont',
+      socialGoogle: 'Conectează-te cu Google',
+      socialFacebook: 'Conectează-te cu Facebook',
+      socialGithub: 'Conectează-te cu GitHub',
+      orDivider: 'sau cu email și parolă',
       privacyNote:
         'Totul este privat: rapoartele și istoricul tău nu sunt vizibile pentru nimeni altcineva și nu sunt vândute mai departe.',
       successSignup:

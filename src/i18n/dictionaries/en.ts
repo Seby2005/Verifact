@@ -214,6 +214,10 @@ export const en: Translations = {
       passwordHelperSignup: 'Choose a password with at least 8 characters.',
       submitLogin: 'Sign in',
       submitSignup: 'Create account',
+      socialGoogle: 'Continue with Google',
+      socialFacebook: 'Continue with Facebook',
+      socialGithub: 'Continue with GitHub',
+      orDivider: 'or use email and password',
       privacyNote:
         'Everything is private: your reports and history are not visible to anyone else and are never sold.',
       successSignup:
