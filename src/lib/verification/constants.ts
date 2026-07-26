@@ -123,6 +123,26 @@ export const CONFIRMATION_KEYWORDS_EN = [
 ];
 
 /**
+ * Debunk-framing phrases, checked before the contradiction/confirmation
+ * keyword lists above and winning outright when present. A sentence
+ * headlined "no evidence that 5G spreads COVID" is *about* the claim, so it
+ * matches on relevance, and it is likely to also contain a generic
+ * confirmation-adjacent word ("official", "oficial" — both in
+ * CONFIRMATION_KEYWORDS_* — show up constantly in official denial
+ * statements, e.g. "oficial dezmintit"), which without this check reads as
+ * support instead of a debunk and inverts the verdict on exactly the
+ * well-known disinformation this product exists to catch.
+ */
+export const DEBUNK_MARKERS = [
+  'fals', 'falsă', 'falsa', 'dezinformare', 'dezmințit', 'dezmintit', 'dezmințire',
+  'mit', 'mitul', 'nu există dovezi', 'nu exista dovezi', 'fără dovezi', 'fara dovezi',
+  'teorie a conspirației', 'teoria conspirației', 'conspirație', 'conspiratie',
+  'debunk', 'debunked', 'myth', 'hoax', 'no evidence', 'without evidence',
+  'baseless', 'unfounded', 'misinformation', 'disinformation', 'conspiracy theory',
+  'fact check', 'fact-check', 'falsely', 'false claim', 'not true',
+];
+
+/**
  * Layer weights for the scoring algorithm.
  */
 export const LAYER_WEIGHTS = {

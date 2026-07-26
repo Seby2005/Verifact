@@ -48,19 +48,30 @@ function buildFallbackSummary(
 
 /**
  * Wraps a promise with a timeout. Rejects with a descriptive error on timeout.
+ *
+ * Clears the timer once either side of the race settles — without this, a
+ * layer that resolves in 50ms still leaves its 10-second timer scheduled
+ * (Promise.race doesn't cancel the loser), which does nothing functionally
+ * wrong but needlessly holds the timer queue open until it eventually fires.
  */
 async function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
   layerName: string
 ): Promise<T> {
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(
       () => reject(new Error(`${layerName} timeout after ${ms}ms`)),
       ms
-    )
-  );
-  return Promise.race([promise, timeoutPromise]);
+    );
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeoutId!);
+  }
 }
 
 /**

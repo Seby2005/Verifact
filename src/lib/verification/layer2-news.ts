@@ -5,6 +5,7 @@ import {
   CONTRADICTION_KEYWORDS_EN,
   CONFIRMATION_KEYWORDS_RO,
   CONFIRMATION_KEYWORDS_EN,
+  DEBUNK_MARKERS,
 } from './constants';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
@@ -90,20 +91,8 @@ export function detectSentiment(
 
   if (relevance < 0.15) return 'unrelated';
 
-  // Debunk framing is checked first and wins outright. An article headlined
-  // "no evidence that 5G spreads COVID" is *about* the claim, so it matched on
-  // relevance, and it contains enough topic words to trip the confirmation
-  // keywords — which previously made coverage debunking a claim read as
-  // support for it, inverting the verdict on exactly the well-known
-  // disinformation this product exists to catch.
-  const DEBUNK_MARKERS = [
-    'fals', 'falsă', 'falsa', 'dezinformare', 'dezmințit', 'dezmintit', 'dezmințire',
-    'mit', 'mitul', 'nu există dovezi', 'nu exista dovezi', 'fără dovezi', 'fara dovezi',
-    'teorie a conspirației', 'teoria conspirației', 'conspirație', 'conspiratie',
-    'debunk', 'debunked', 'myth', 'hoax', 'no evidence', 'without evidence',
-    'baseless', 'unfounded', 'misinformation', 'disinformation', 'conspiracy theory',
-    'fact check', 'fact-check', 'falsely', 'false claim', 'not true',
-  ];
+  // Debunk framing is checked first and wins outright — see DEBUNK_MARKERS's
+  // doc comment in constants.ts for why.
   if (DEBUNK_MARKERS.some(kw => combinedText.includes(kw))) return 'contradicts';
 
   // Check for contradiction keywords

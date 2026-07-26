@@ -285,7 +285,8 @@ export function buildFactCheckQuery(text: string, translate: boolean): string {
 
 async function fetchFactChecks(
   text: string,
-  lang: string
+  lang: string,
+  translate: boolean
 ): Promise<FactCheckResult[]> {
   const apiKey = process.env.GOOGLE_FACT_CHECK_API_KEY;
   if (!apiKey) {
@@ -294,7 +295,7 @@ async function fetchFactChecks(
 
   // Keywords, not the raw sentence: the API keyword-matches, and a full
   // sentence reliably returned zero results.
-  const query = buildFactCheckQuery(text, lang === 'en');
+  const query = buildFactCheckQuery(text, translate);
   if (!query) return [];
 
   const params = new URLSearchParams({
@@ -369,15 +370,22 @@ export async function runLayer1(
 ): Promise<Layer1Result> {
   const startTime = Date.now();
 
-  // Primary search in original language
-  const primaryResults = await fetchFactChecks(text, language === 'unknown' ? 'ro' : language);
+  // Primary search in the claim's own language — never translated: the text
+  // is already in this language, so running it through the Romanian→English
+  // lexicon (meant for the secondary search below) would strip everything
+  // that isn't a recognised international token and starve the query. This
+  // previously happened for every English-language claim: language === 'en'
+  // was (wrongly) used as the signal to translate, so an English primary
+  // search searched with an all-but-empty query almost every time.
+  const primaryResults = await fetchFactChecks(text, language === 'unknown' ? 'ro' : language, false);
 
   // Secondary search against the English corpus, which is where most
-  // fact-checks of internationally-circulating claims live.
+  // fact-checks of internationally-circulating claims live. Only reached
+  // for non-English input, so translation is correct here.
   let allResults = primaryResults;
   if (primaryResults.length < 3 && language !== 'en') {
     try {
-      const enResults = await fetchFactChecks(text, 'en');
+      const enResults = await fetchFactChecks(text, 'en', true);
       allResults = [...primaryResults, ...enResults];
     } catch {
       // English search failed, continue with primary results only

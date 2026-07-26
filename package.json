@@ -15,6 +15,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:load": "node tests/load/verify-rate-limit.js",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -27,10 +29,12 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "autocannon": "^8.0.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.29",
     "identity-obj-proxy": "^3.0.0",
