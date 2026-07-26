@@ -93,8 +93,34 @@
   color: var(--color-ink-muted);
 }
 
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.disputeForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.disputeLegalPlaceholder {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+  font-style: italic;
+}
+
 @media (max-width: 480px) {
   .meta {
     text-align: left;
+  }
+
+  .footer {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
