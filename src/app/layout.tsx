@@ -38,9 +38,14 @@ export default function RootLayout({
   return (
     <html lang="ro" className={`${newsreader.variable} ${plexSans.variable}`}>
       <body>
+        <a href="#main-content" className="skip-link">
+          Sari la conținut
+        </a>
         <div className="app-shell">
           <Header />
-          <main className="app-shell__main">{children}</main>
+          <main id="main-content" className="app-shell__main" tabIndex={-1}>
+            {children}
+          </main>
           <Footer />
         </div>
         <Analytics />
