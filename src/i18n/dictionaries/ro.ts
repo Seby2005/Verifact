@@ -103,6 +103,14 @@ export const ro = {
     },
   },
   verifyTool: {
+    layers: {
+      ariaLabel: 'Straturile de surse consultate',
+      searching: 'se caută…',
+      found: '{count} rezultate',
+      foundOne: '1 rezultat',
+      empty: 'fără rezultate',
+      unavailable: 'indisponibil',
+    },
     heading: 'Verifică o afirmație',
     ariaTabContent: 'Tip de conținut de verificat',
     tabs: {
