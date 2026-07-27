@@ -44,6 +44,24 @@
   white-space: nowrap;
 }
 
+/* The visible text stays compact; the *target* is expanded with a transparent
+   pseudo-element so WCAG 2.2 SC 2.5.8 is met without moving any type or
+   pushing the active underline away from the word it belongs to. */
+.navLink::before,
+.accountLink::before {
+  content: '';
+  position: absolute;
+  inset: -8px -6px;
+}
+
+/* Touch and stylus get the full 44px; a mouse does not need it. */
+@media (pointer: coarse) {
+  .navLink::before,
+  .accountLink::before {
+    inset: -11px -9px;
+  }
+}
+
 .navLink:hover,
 .accountLink:hover {
   color: var(--color-ink);
@@ -92,6 +110,14 @@
   color: var(--color-ink);
   border-color: var(--color-ink);
   background-color: var(--color-paper-shade);
+}
+
+@media (pointer: coarse) {
+  .langToggle {
+    min-height: 44px;
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
 }
 
 @media (max-width: 768px) {

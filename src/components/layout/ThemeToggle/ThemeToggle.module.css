@@ -33,3 +33,11 @@
   height: 15px;
   display: block;
 }
+
+/* Touch and stylus get a full 44px target; the icon itself stays the same. */
+@media (pointer: coarse) {
+  .toggle {
+    width: 44px;
+    height: 44px;
+  }
+}
