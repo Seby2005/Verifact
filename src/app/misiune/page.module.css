@@ -5,55 +5,61 @@
 .valuesTitle {
   font-size: var(--font-size-h2);
   margin-bottom: var(--space-8);
+  text-align: center;
 }
 
 .values {
-  border-top: var(--border-width-heavy) solid var(--color-rule);
+  border-top: var(--border-width-hairline) solid var(--color-line);
+  max-width: var(--measure);
+  margin: 0 auto;
 }
 
 .value {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-2);
-  padding: var(--space-5) 0;
-  border-bottom: var(--border-width-hairline) solid var(--color-rule-hairline);
+  padding: var(--space-6) 0;
+  border-bottom: var(--border-width-hairline) solid var(--color-line);
 }
 
 .valueTitle {
-  font-family: var(--font-family-sans);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: var(--tracking-label);
-  color: var(--color-ink);
+  color: var(--color-ink-muted);
 }
 
 .valueText {
   font-size: var(--font-size-body);
   line-height: var(--line-height-body);
   color: var(--color-ink-secondary);
-  max-width: var(--measure);
 }
 
 .follow {
-  margin-top: var(--space-8);
+  margin-top: var(--space-10);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-body-sm);
   color: var(--color-ink-muted);
+  text-align: center;
 }
 
 .textLink {
   color: var(--color-ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  border-bottom: var(--border-width-hairline) solid var(--color-line-strong);
+  padding-bottom: 2px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .textLink:hover {
-  color: var(--color-accent-dark);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 @media (min-width: 768px) {
   .value {
-    grid-template-columns: 14rem minmax(0, 1fr);
+    grid-template-columns: 12rem minmax(0, 1fr);
     gap: var(--space-8);
     align-items: baseline;
   }

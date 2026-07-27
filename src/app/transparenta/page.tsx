@@ -37,24 +37,30 @@ export default function TransparentaPage() {
     },
   ];
 
+  // `kind` maps each band to its verdict colour, so this table doubles as the
+  // legend for the one colour the product uses.
   const bands = [
     {
       range: '85–100%',
+      kind: 'true' as const,
       label: t('transparentaPage.bands.0.label'),
       text: t('transparentaPage.bands.0.text'),
     },
     {
       range: '60–84%',
+      kind: 'partial' as const,
       label: t('transparentaPage.bands.1.label'),
       text: t('transparentaPage.bands.1.text'),
     },
     {
       range: '40–59%',
+      kind: 'unclear' as const,
       label: t('transparentaPage.bands.2.label'),
       text: t('transparentaPage.bands.2.text'),
     },
     {
       range: '0–39%',
+      kind: 'false' as const,
       label: t('transparentaPage.bands.3.label'),
       text: t('transparentaPage.bands.3.text'),
     },
@@ -102,7 +108,9 @@ export default function TransparentaPage() {
               <div key={band.range} className={styles.band}>
                 <dt className={styles.bandRange}>{band.range}</dt>
                 <dd className={styles.bandBody}>
-                  <span className={styles.bandLabel}>{band.label}</span>
+                  <span className={`${styles.bandLabel} ${styles[band.kind]}`}>
+                    {band.label}
+                  </span>
                   <span className={styles.bandText}>{band.text}</span>
                 </dd>
               </div>

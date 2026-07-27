@@ -1,13 +1,16 @@
 .layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-12);
+  gap: var(--space-10);
   align-items: start;
 }
 
+/* The reassurance column sits in a soft, recessed panel beside the form. */
 .aside {
-  border-top: var(--border-width-hairline) solid var(--color-rule-hairline);
-  padding-top: var(--space-5);
+  background-color: var(--color-paper-shade);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
 }
 
 .asideTitle {
@@ -36,7 +39,7 @@
   top: 0.7em;
   width: 8px;
   height: 1px;
-  background-color: var(--color-ink-muted);
+  background-color: var(--color-line-strong);
 }
 
 .asideStrong {
@@ -47,24 +50,28 @@
 .asideNote {
   margin-top: var(--space-6);
   padding-top: var(--space-4);
-  border-top: var(--border-width-hairline) solid var(--color-rule-hairline);
+  border-top: var(--border-width-hairline) solid var(--color-line);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
+  line-height: 1.5;
   color: var(--color-ink-muted);
 }
 
 .textLink {
   color: var(--color-ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  border-bottom: var(--border-width-hairline) solid var(--color-line-strong);
+  padding-bottom: 2px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .textLink:hover {
-  color: var(--color-accent-dark);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 @media (min-width: 900px) {
   .layout {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    gap: var(--space-16);
+    gap: var(--space-12);
   }
 }

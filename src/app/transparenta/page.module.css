@@ -16,12 +16,14 @@
 .layers {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-8);
+  gap: var(--space-5);
 }
 
 .layer {
-  border-top: var(--border-width-heavy) solid var(--color-rule);
-  padding-top: var(--space-4);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6);
 }
 
 .layerHead {
@@ -34,9 +36,9 @@
 
 .layerNumber,
 .layerWeight {
-  font-family: var(--font-family-sans);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   letter-spacing: var(--tracking-label-tight);
   color: var(--color-ink-muted);
   font-variant-numeric: tabular-nums;
@@ -56,10 +58,12 @@
   color: var(--color-ink-secondary);
 }
 
-/* Score bands --------------------------------------------------------------- */
+/* Score bands ---------------------------------------------------------------
+   This is the legend for the product's only colour. Each band label is set in
+   its own verdict hue so the scale is legible at a glance. */
 
 .bands {
-  border-top: var(--border-width-heavy) solid var(--color-rule);
+  border-top: var(--border-width-hairline) solid var(--color-line);
 }
 
 .band {
@@ -67,14 +71,14 @@
   grid-template-columns: 1fr;
   gap: var(--space-2);
   padding: var(--space-5) 0;
-  border-bottom: var(--border-width-hairline) solid var(--color-rule-hairline);
+  border-bottom: var(--border-width-hairline) solid var(--color-line);
 }
 
 .bandRange {
-  font-family: var(--font-family-sans);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-body-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-ink);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-ink-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -86,12 +90,16 @@
 
 .bandLabel {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-  color: var(--color-ink);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.01em;
+  color: var(--vc, var(--color-ink));
 }
+
+.true { --vc: var(--verdict-true); }
+.partial { --vc: var(--verdict-partial); }
+.unclear { --vc: var(--verdict-unclear); }
+.false { --vc: var(--verdict-false); }
 
 .bandText {
   font-size: var(--font-size-body-sm);
@@ -101,29 +109,32 @@
 }
 
 .follow {
-  margin-top: var(--space-6);
+  margin-top: var(--space-8);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-body-sm);
   color: var(--color-ink-muted);
 }
 
 .textLink {
   color: var(--color-ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  border-bottom: var(--border-width-hairline) solid var(--color-line-strong);
+  padding-bottom: 2px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .textLink:hover {
-  color: var(--color-accent-dark);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 @media (min-width: 768px) {
   .layers {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-8) var(--space-10);
+    gap: var(--space-5);
   }
 
   .band {
-    grid-template-columns: 10rem minmax(0, 1fr);
+    grid-template-columns: 8rem minmax(0, 1fr);
     gap: var(--space-8);
     align-items: baseline;
   }
