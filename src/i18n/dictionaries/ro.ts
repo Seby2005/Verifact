@@ -349,19 +349,18 @@ export const ro = {
       'Oferim fiecărui cetățean acces instant la adevăr, prin inteligență artificială transparentă și surse verificabile.',
     problemTitle: 'Problema',
     problemText1:
-      'Trăim într-o epocă în care dezinformarea circulă mai rapid decât adevărul. O știre falsă ajunge la milioane de oameni în ore, în timp ce dezminținile apar zile mai târziu, dacă apar.',
+      'O știre falsă ajunge la milioane de oameni în câteva ore. Dezmințirea vine zile mai târziu — dacă vine.',
     problemText2:
-      'Verifact rezolvă această problemă oferind verificare instantă, transparentă și accesibilă oricui — gratuit pentru uz personal.',
+      'Verifact face verificarea instantă, transparentă și gratuită pentru uz personal.',
     romaniaTitle: 'De ce România, întâi',
     romaniaBullets: [
-      'Dezinformarea este o problemă acută în spațiul digital românesc.',
-      'Nu există un instrument nativ, în limba română, de fact-checking automat.',
-      'Alegeri frecvente și un climat politic polarizat înseamnă cerere mare pentru verificare independentă.',
-      'Jurnalismul independent este în creștere — G4Media, PressOne, Recorder și alții sunt parteneri naturali, nu concurenți.',
+      'Nu există un instrument automat de fact-checking nativ în limba română.',
+      'Cererea de verificare independentă este mare și în creștere.',
+      'Jurnalismul independent — G4Media, PressOne, Recorder — sunt parteneri naturali, nu concurenți.',
     ],
     notTitle: 'Ce nu suntem',
     notText:
-      'Nu suntem un arbitru al adevărului și nu înlocuim redacțiile. Un raport generat automat este un punct de plecare cu surse, nu o decizie editorială finală. De aceea fiecare verdict vine cu scorul lui de certitudine și cu sursele la vedere — ca să poți verifica singur concluzia, inclusiv împotriva noastră.',
+      'Nu suntem un arbitru al adevărului și nu înlocuim redacțiile. Un raport automat e un punct de plecare cu surse, nu o decizie editorială. De aceea fiecare verdict vine cu scorul și sursele la vedere — ca să poți verifica concluzia singur, inclusiv împotriva noastră.',
     valuesTitle: 'Valorile după care lucrăm',
     values: [
       {
@@ -399,7 +398,7 @@ export const ro = {
     eyebrow: 'Transparență',
     title: 'Cum ajungem la un verdict',
     lead:
-      'Un verdict fără metodă este o opinie cu autoritate împrumutată. Mai jos e exact ce consultăm, cum cântărim și unde ne oprim.',
+      'Un verdict fără metodă e o opinie cu autoritate împrumutată. Mai jos: ce consultăm, cum cântărim, unde ne oprim.',
     layersTitle: 'Cele patru straturi de surse',
     layersWeight: 'Pondere {weight}',
     layers: [
@@ -408,33 +407,33 @@ export const ro = {
         title: 'Fact-check-uri existente',
         weight: '35%',
         text:
-          'Căutăm afirmația în baze de date de fact-checking deja publicate, prin Google Fact Check Tools. Dacă o organizație de profil a verificat deja afirmația, asta cântărește cel mai mult.',
+          'Căutăm afirmația în baze de fact-checking publicate. Dacă o organizație de profil a verificat-o deja, asta cântărește cel mai mult.',
       },
       {
         number: '02',
         title: 'Presă convențională',
         weight: '30%',
         text:
-          'Verificăm cum a fost relatat subiectul în publicații de știri cu istoric editorial, pentru context și pentru relatări contradictorii.',
+          'Cum a fost relatat subiectul în publicații cu istoric editorial — pentru context și relatări contradictorii.',
       },
       {
         number: '03',
         title: 'Surse oficiale',
         weight: '25%',
         text:
-          'Consultăm site-uri instituționale — .gov.ro, .europa.eu, OMS, ONU și alte instituții publice relevante pentru subiect.',
+          'Site-uri instituționale — .gov.ro, .europa.eu, OMS, ONU și alte instituții publice relevante.',
       },
       {
         number: '04',
         title: 'Analiză contextuală AI',
         weight: '10%',
         text:
-          'Un model AI sintetizează straturile anterioare și semnalează contextul lipsă. Ponderea este mică intenționat: modelul explică, nu decide.',
+          'Un model AI sintetizează straturile de mai sus și semnalează contextul lipsă. Ponderea e mică intenționat: modelul explică, nu decide.',
       },
     ],
     scoreTitle: 'Ce înseamnă scorul',
     scoreIntro:
-      'Scorul final este media ponderată a celor patru straturi. Banda în care cade determină eticheta verdictului — nimic altceva.',
+      'Scorul final e media ponderată a celor patru straturi. Banda în care cade determină verdictul — nimic altceva.',
     bands: [
       {
         range: '85–100%',
@@ -459,10 +458,10 @@ export const ro = {
     ],
     limitsTitle: 'Limitele metodei',
     limitsList: [
-      'Verificăm afirmații factuale, nu opinii, predicții sau judecăți de valoare. O afirmație de tipul „politica X este greșită” nu poate primi un scor.',
-      'Calitatea raportului depinde de ce există public. Pentru subiecte foarte recente sau foarte de nișă, sursele pot lipsi — caz în care verdictul rămâne „neclar”, nu „fals”.',
-      'Un scor mare nu este o garanție. Este o măsură a cât de mult se susține afirmația în sursele consultate la momentul verificării.',
-      'Nu detectăm satira sau ironia în mod fiabil. O afirmație preluată dintr-un context satiric poate fi evaluată literal.',
+      'Verificăm fapte, nu opinii, predicții sau judecăți de valoare. „X este greșit” nu poate primi un scor.',
+      'Dacă sursele publice lipsesc — subiect recent sau de nișă — verdictul rămâne „neclar”, nu „fals”.',
+      'Un scor mare nu e o garanție, ci o măsură a cât se susține afirmația în sursele de la momentul verificării.',
+      'Nu detectăm satira fiabil. O afirmație dintr-un context satiric poate fi evaluată literal.',
     ],
     calloutLabel: 'Statusul implementării',
     calloutText:
@@ -484,19 +483,19 @@ export const ro = {
     jumpOpenSource: 'Open source',
     jumpPrivacy: 'Confidențialitate',
     part1Eyebrow: 'Partea I',
-    part1Title: 'De ce codul este deschis',
+    part1Title: 'De ce codul e deschis',
     part1Intro:
-      'Un instrument care îți spune ce este adevărat și ce nu are o putere considerabilă. Singurul mod onest de a deține acea putere este să lași pe oricine să verifice cum o folosești.',
+      'Un instrument care îți spune ce e adevărat are o putere considerabilă. Singurul mod onest de a o deține e să lași pe oricine să verifice cum o folosești.',
     auditTitle: 'Ce poți verifica singur',
     auditList: [
-      'Ce surse sunt consultate și în ce ordine — nu doar rezultatul, ci interogările din spate.',
-      'Cum se calculează scorul de veridicitate, cu ponderile exacte ale fiecărui strat.',
-      'Ce prompt-uri primește modelul AI și unde poate influența verdictul, respectiv unde nu poate.',
-      'Istoricul modificărilor: orice schimbare de metodologie e vizibilă în istoricul repository-ului.',
+      'Ce surse sunt consultate și în ce ordine — inclusiv interogările din spate.',
+      'Cum se calculează scorul, cu ponderile exacte ale fiecărui strat.',
+      'Ce prompt-uri primește modelul AI și unde poate — sau nu poate — influența verdictul.',
+      'Orice schimbare de metodologie, vizibilă în istoricul repository-ului.',
     ],
     licenseTitle: 'Licență și contribuții',
     licenseText:
-      'Verifact este publicat sub licență MIT. Poți folosi codul, îl poți modifica și îl poți rula pe infrastructura ta, inclusiv comercial. Contribuțiile sunt binevenite — mai ales rapoartele despre verdicte greșite, care sunt cel mai util tip de feedback.',
+      'Verifact e publicat sub licență MIT: poți folosi, modifica și rula codul pe infrastructura ta, inclusiv comercial. Contribuțiile sunt binevenite — mai ales semnalările de verdicte greșite.',
     seeCodeBtn: 'Vezi codul pe GitHub',
     methodologyLink: 'Metodologia de verificare',
     part2Eyebrow: 'Partea II',
@@ -517,10 +516,10 @@ export const ro = {
     },
     notDoTitle: 'Ce nu facem',
     notDoBullets: [
-      'Nu vindem și nu închiriem date către nimeni.',
-      'Nu folosim tracker-e publicitare terțe și nu construim profiluri de utilizator pentru publicitate.',
+      'Nu vindem și nu închiriem date.',
+      'Nu folosim tracker-e publicitare și nu construim profiluri de utilizator.',
       'Nu publicăm verificările tale și nu le arătăm altor utilizatori.',
-      'Nu păstrăm permanent screenshot-urile încărcate: imaginea este folosită pentru extragerea textului, apoi ștearsă.',
+      'Nu păstrăm screenshot-urile: imaginea e folosită pentru extragerea textului, apoi ștearsă.',
     ],
     controlTitle: 'Controlul tău',
     controlBullets: [

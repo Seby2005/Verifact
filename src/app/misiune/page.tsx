@@ -14,7 +14,6 @@ export default function MisiunePage() {
     t('misiunePage.romaniaBullets.0'),
     t('misiunePage.romaniaBullets.1'),
     t('misiunePage.romaniaBullets.2'),
-    t('misiunePage.romaniaBullets.3'),
   ];
 
   const values = [

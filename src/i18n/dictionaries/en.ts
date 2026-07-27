@@ -351,19 +351,18 @@ export const en: Translations = {
       'We give every citizen instant access to truth, through transparent artificial intelligence and verifiable sources.',
     problemTitle: 'The Problem',
     problemText1:
-      'We live in an era where misinformation travels faster than the truth. A false story reaches millions in hours, while debunks appear days later, if at all.',
+      'A false story reaches millions within hours. The correction arrives days later — if at all.',
     problemText2:
-      'Verifact solves this problem by offering instant, transparent, and accessible verification to everyone — free for personal use.',
+      'Verifact makes verification instant, transparent, and free for personal use.',
     romaniaTitle: 'Why Romania First',
     romaniaBullets: [
-      'Disinformation is an acute challenge in the Romanian digital space.',
       'There is no native automated fact-checking tool in the Romanian language.',
-      'Frequent elections and a polarized political climate create high demand for independent verification.',
-      'Independent journalism is growing — G4Media, PressOne, Recorder, and others are natural partners, not competitors.',
+      'Demand for independent verification is high and growing.',
+      'Independent journalism — G4Media, PressOne, Recorder — are natural partners, not competitors.',
     ],
     notTitle: 'What We Are Not',
     notText:
-      'We are not an arbiter of truth and do not replace editorial newsrooms. An automatically generated report is a starting point backed by sources, not a final editorial judgment. That is why every verdict includes its certainty score and visible sources — so you can verify the conclusion yourself, even against us.',
+      'We are not an arbiter of truth and we do not replace newsrooms. An automated report is a starting point backed by sources, not an editorial judgment. That is why every verdict shows its score and its sources — so you can check the conclusion yourself, including against us.',
     valuesTitle: 'Our Values',
     values: [
       {
@@ -401,7 +400,7 @@ export const en: Translations = {
     eyebrow: 'Transparency',
     title: 'How we reach a verdict',
     lead:
-      'A verdict without methodology is an opinion with borrowed authority. Below is exactly what we consult, how we weight evidence, and where we draw the line.',
+      'A verdict without methodology is an opinion with borrowed authority. Below: what we consult, how we weight it, where we stop.',
     layersTitle: 'The Four Source Layers',
     layersWeight: 'Weight {weight}',
     layers: [
@@ -410,33 +409,33 @@ export const en: Translations = {
         title: 'Existing Fact-Checks',
         weight: '35%',
         text:
-          'We search the claim in published fact-checking databases via Google Fact Check Tools. If a recognized fact-checking organization has verified the claim, it carries the highest weight.',
+          'We search the claim in published fact-checking databases. If a recognized organization has already verified it, that carries the most weight.',
       },
       {
         number: '02',
         title: 'Conventional News',
         weight: '30%',
         text:
-          'We check how the topic was reported across established news outlets for context and contradictory reporting.',
+          'How the topic was reported across outlets with an editorial record — for context and contradictions.',
       },
       {
         number: '03',
         title: 'Official Sources',
         weight: '25%',
         text:
-          'We consult institutional sites — .gov.ro, .europa.eu, WHO, UN, and other public bodies relevant to the subject.',
+          'Institutional sites — .gov.ro, .europa.eu, WHO, UN, and other relevant public bodies.',
       },
       {
         number: '04',
         title: 'AI Contextual Analysis',
         weight: '10%',
         text:
-          'An AI model synthesizes previous layers and flags missing context. Its weight is intentionally small: the model explains, it does not decide.',
+          'An AI model synthesizes the layers above and flags missing context. Its weight is intentionally small: the model explains, it does not decide.',
       },
     ],
     scoreTitle: 'What the Score Means',
     scoreIntro:
-      'The final score is a weighted average across all four layers. The band it falls into determines the verdict label — nothing else.',
+      'The final score is a weighted average of the four layers. The band it falls into determines the verdict — nothing else.',
     bands: [
       {
         range: '85–100%',
@@ -461,10 +460,10 @@ export const en: Translations = {
     ],
     limitsTitle: 'Methodological Limitations',
     limitsList: [
-      'We verify factual claims, not opinions, predictions, or value judgments. A statement like "Policy X is wrong" cannot receive a score.',
-      'Report quality depends on public evidence. For very recent or niche topics, sources may be absent — in which case the verdict remains "unclear", not "false".',
-      'A high score is not a guarantee. It measures how strongly the claim is supported in consulted sources at the time of verification.',
-      'We do not reliably detect satire or irony. A statement taken from a satirical context may be evaluated literally.',
+      'We verify facts, not opinions, predictions, or value judgments. "X is wrong" cannot receive a score.',
+      'If public sources are missing — a recent or niche topic — the verdict stays "unclear", not "false".',
+      'A high score is not a guarantee, but a measure of how well the claim held up in the sources at the time.',
+      'We do not detect satire reliably. A claim from a satirical context may be read literally.',
     ],
     calloutLabel: 'Implementation Status',
     calloutText:
@@ -488,17 +487,17 @@ export const en: Translations = {
     part1Eyebrow: 'Part I',
     part1Title: 'Why the code is open',
     part1Intro:
-      'A tool that tells you what is true and what is not wields considerable power. The only honest way to hold that power is to let anyone inspect how it is used.',
+      'A tool that tells you what is true wields considerable power. The only honest way to hold it is to let anyone inspect how it is used.',
     auditTitle: 'What you can verify yourself',
     auditList: [
-      'Which sources are queried and in what order — not just results, but underlying queries.',
-      'How the credibility score is calculated, with exact layer weights.',
-      'What prompts the AI model receives, where it can influence the verdict, and where it cannot.',
-      'Change history: every methodology update is transparently visible in repository commits.',
+      'Which sources are queried and in what order — including the underlying queries.',
+      'How the score is calculated, with exact layer weights.',
+      'What prompts the AI model receives, and where it can — or cannot — influence the verdict.',
+      'Every methodology change, visible in the repository history.',
     ],
     licenseTitle: 'License & Contributions',
     licenseText:
-      'Verifact is published under the MIT license. You can use, modify, and run the code on your own infrastructure, including commercially. Contributions are welcome — especially reports of incorrect verdicts, which are the most valuable feedback.',
+      'Verifact is published under the MIT license: use, modify, and run the code on your own infrastructure, including commercially. Contributions are welcome — especially reports of incorrect verdicts.',
     seeCodeBtn: 'View code on GitHub',
     methodologyLink: 'Verification methodology',
     part2Eyebrow: 'Part II',
@@ -519,10 +518,10 @@ export const en: Translations = {
     },
     notDoTitle: 'What we do not do',
     notDoBullets: [
-      'We never sell or rent data to anyone.',
-      'We do not use third-party advertising trackers or build advertising user profiles.',
-      'We do not publish your verifications or reveal them to other users.',
-      'We do not keep uploaded screenshots: images are processed for OCR text extraction and then deleted.',
+      'We never sell or rent data.',
+      'We use no advertising trackers and build no user profiles.',
+      'We do not publish your verifications or show them to other users.',
+      'We do not keep screenshots: the image is used to extract text, then deleted.',
     ],
     controlTitle: 'Your control',
     controlBullets: [
