@@ -1,24 +1,26 @@
-/* Containers in this system are delimited by rules, not by elevation. There
-   is no shadow token in use here and the radius stays at 2px maximum. */
+/* Cards are soft, quiet surfaces delimited by a hairline — a gentle radius,
+   no heavy shadow. */
 
 .card {
-  background-color: var(--color-paper);
-  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
 }
 
 /* Variants */
 .default {
-  border: var(--border-width-hairline) solid var(--color-rule-hairline);
+  border: var(--border-width-hairline) solid var(--color-line);
 }
 
 .bordered {
-  border: var(--border-width-hairline) solid var(--color-rule);
+  border: var(--border-width-hairline) solid var(--color-line-strong);
 }
 
-/* Ruled: a single strong rule on top, the most editorial of the three —
-   used for grouped list items and step sequences. */
+/* Ruled: a single strong top rule, square — for grouped list items and step
+   sequences that read as a ledger rather than a card. */
 .ruled {
-  border-top: var(--border-width-heavy) solid var(--color-rule);
+  border-top: var(--border-width-heavy) solid var(--color-ink);
+  border-radius: var(--radius-none);
+  background-color: transparent;
 }
 
 .flat {
@@ -31,11 +33,11 @@
 }
 
 .padding-sm {
-  padding: var(--space-3);
+  padding: var(--space-4);
 }
 
 .padding-md {
-  padding: var(--space-5);
+  padding: var(--space-6);
 }
 
 .padding-lg {

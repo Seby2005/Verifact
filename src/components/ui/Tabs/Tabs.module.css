@@ -1,17 +1,17 @@
+/* Segmented text tabs: sentence-case, an ink underline marks the active one.
+   Monochrome chrome — colour is reserved for verdicts, never navigation. */
 .tablist {
   display: flex;
-  gap: var(--space-8);
-  border-bottom: var(--border-width-hairline) solid var(--color-rule-hairline);
+  gap: var(--space-6);
+  border-bottom: var(--border-width-hairline) solid var(--color-line);
 }
 
 .tab {
   position: relative;
   padding: var(--space-3) 0;
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-body-sm);
   font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
   color: var(--color-ink-muted);
   background: none;
   border: none;
@@ -22,16 +22,16 @@
   color: var(--color-ink);
 }
 
-/* The active tab is marked by a red rule that sits on top of the tablist's
-   hairline — the accent's main structural job in this design. */
 .tab::after {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
   bottom: -1px;
-  height: var(--border-width-heavy);
+  height: 2px;
+  border-radius: 2px 2px 0 0;
   background-color: transparent;
+  transition: background-color var(--transition-fast);
 }
 
 .tabActive {
@@ -39,7 +39,7 @@
 }
 
 .tabActive::after {
-  background-color: var(--color-accent);
+  background-color: var(--color-ink);
 }
 
 @media (max-width: 480px) {

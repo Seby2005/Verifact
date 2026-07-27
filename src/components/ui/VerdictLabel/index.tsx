@@ -40,7 +40,9 @@ export const VerdictLabel: React.FC<VerdictLabelProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  const classNames = [styles.verdict, layout === 'inline' ? styles.inline : '']
+  // The band class sets the semantic verdict colour that the label and the
+  // score both inherit — the one place colour appears in this design.
+  const classNames = [styles.verdict, styles[kind], layout === 'inline' ? styles.inline : '']
     .filter(Boolean)
     .join(' ');
 
@@ -49,13 +51,7 @@ export const VerdictLabel: React.FC<VerdictLabelProps> = ({
 
   return (
     <div className={classNames}>
-      <span
-        className={[styles.label, kind === 'false' ? styles.labelFalse : '']
-          .filter(Boolean)
-          .join(' ')}
-      >
-        {labelText}
-      </span>
+      <span className={styles.label}>{labelText}</span>
       {noteText ? <span className={styles.note}>{noteText}</span> : null}
       {typeof score === 'number' ? (
         <span className={styles.score}>
