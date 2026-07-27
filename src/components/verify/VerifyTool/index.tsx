@@ -20,7 +20,16 @@ type Status =
   | { state: 'unavailable'; message: string }
   | { state: 'error'; message: string };
 
-export const VerifyTool: React.FC = () => {
+export interface VerifyToolProps {
+  /**
+   * Sample claims offered as one-tap chips under the text field. They exist to
+   * give a first-time visitor something to run without composing a claim, so
+   * they must stay politically neutral — settled science and folklore only.
+   */
+  examples?: ReadonlyArray<string>;
+}
+
+export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
   const { locale, t } = useLanguage();
   const [kind, setKind] = useState<VerificationInputKind>('text');
   const [text, setText] = useState('');
@@ -157,6 +166,25 @@ export const VerifyTool: React.FC = () => {
                 helperText={t('verifyTool.textarea.helper')}
                 fullWidth
               />
+
+              {examples && examples.length > 0 ? (
+                <div className={styles.examples}>
+                  <span className={styles.examplesLabel}>{t('home.try.label')}</span>
+                  {examples.map((example) => (
+                    <button
+                      key={example}
+                      type="button"
+                      className={styles.chip}
+                      onClick={() => {
+                        setText(example);
+                        setStatus({ state: 'idle' });
+                      }}
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
 
