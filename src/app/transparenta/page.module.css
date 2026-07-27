@@ -49,6 +49,7 @@
 }
 
 .layerTitle {
+  margin-top: var(--space-4);
   margin-bottom: var(--space-2);
 }
 

@@ -1,8 +1,7 @@
+/* The panel carries no frame of its own: on /cont it is one half of a single
+   split card, and the page owns that card's border and radius. */
 .panel {
-  background-color: var(--color-surface);
-  border: var(--border-width-hairline) solid var(--color-line);
-  border-radius: var(--radius-lg);
-  padding: var(--space-6);
+  min-width: 0;
 }
 
 .form {

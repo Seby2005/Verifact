@@ -35,7 +35,12 @@ export const Reveal: React.FC<RevealProps> = ({
       return;
     }
     const el = ref.current;
-    if (!el) return;
+    // Content must never depend on the observer to become visible: if it is
+    // missing, show everything rather than leaving the page blank.
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setShown(true);
+      return;
+    }
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {

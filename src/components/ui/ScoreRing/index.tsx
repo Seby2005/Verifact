@@ -43,7 +43,8 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
       return;
     }
     const el = wrapRef.current;
-    if (!el) {
+    // The score must be readable even if the observer never runs.
+    if (!el || typeof IntersectionObserver === 'undefined') {
       setProg(target);
       return;
     }

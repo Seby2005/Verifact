@@ -17,37 +17,57 @@ export default function ContPage() {
         <p className={shell.lead}>{t('contPage.lead')}</p>
       </header>
 
-      <div className={`${shell.body} ${styles.layout}`}>
-        <AuthPanel />
+      <div className={shell.body}>
+        <div className={styles.layout}>
+          <div className={styles.formSide}>
+            <AuthPanel />
+          </div>
 
-        <aside className={styles.aside}>
-          <h2 className={styles.asideTitle}>{t('contPage.aside.title')}</h2>
-          <ul className={styles.asideList}>
-            <li className={styles.asideItem}>
-              <strong className={styles.asideStrong}>{t('contPage.aside.bullet1Strong')}</strong>
-              {t('contPage.aside.bullet1Text')}
-            </li>
-            <li className={styles.asideItem}>
-              <strong className={styles.asideStrong}>{t('contPage.aside.bullet2Strong')}</strong>
-              {t('contPage.aside.bullet2Text')}
-            </li>
-            <li className={styles.asideItem}>
-              <strong className={styles.asideStrong}>{t('contPage.aside.bullet3Strong')}</strong>
-              {t('contPage.aside.bullet3Text')}
-            </li>
-            <li className={styles.asideItem}>
-              <strong className={styles.asideStrong}>{t('contPage.aside.bullet4Strong')}</strong>
-              {t('contPage.aside.bullet4Text')}
-            </li>
-          </ul>
-          <p className={styles.asideNote}>
-            {t('contPage.aside.noteText')}
-            <a href="/open-source" className={styles.textLink}>
-              {t('contPage.aside.noteLink')}
-            </a>
-            .
-          </p>
-        </aside>
+          <aside className={styles.aside}>
+            <h2 className={styles.asideTitle}>{t('contPage.aside.title')}</h2>
+            <ul className={styles.asideList}>
+              <li className={styles.asideItem}>
+                <span>
+                  <strong className={styles.asideStrong}>
+                    {t('contPage.aside.bullet1Strong')}
+                  </strong>
+                  {t('contPage.aside.bullet1Text')}
+                </span>
+              </li>
+              <li className={styles.asideItem}>
+                <span>
+                  <strong className={styles.asideStrong}>
+                    {t('contPage.aside.bullet2Strong')}
+                  </strong>
+                  {t('contPage.aside.bullet2Text')}
+                </span>
+              </li>
+              <li className={styles.asideItem}>
+                <span>
+                  <strong className={styles.asideStrong}>
+                    {t('contPage.aside.bullet3Strong')}
+                  </strong>
+                  {t('contPage.aside.bullet3Text')}
+                </span>
+              </li>
+              <li className={styles.asideItem}>
+                <span>
+                  <strong className={styles.asideStrong}>
+                    {t('contPage.aside.bullet4Strong')}
+                  </strong>
+                  {t('contPage.aside.bullet4Text')}
+                </span>
+              </li>
+            </ul>
+            <p className={styles.asideNote}>
+              {t('contPage.aside.noteText')}
+              <a href="/open-source" className={styles.textLink}>
+                {t('contPage.aside.noteLink')}
+              </a>
+              .
+            </p>
+          </aside>
+        </div>
       </div>
     </div>
   );
