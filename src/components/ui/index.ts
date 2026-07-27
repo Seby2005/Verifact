@@ -5,6 +5,7 @@ export { Card, type CardProps } from './Card';
 export { Modal, type ModalProps } from './Modal';
 export { Tabs, type TabsProps, type TabItem } from './Tabs';
 export { Callout, type CalloutProps } from './Callout';
+export { ScoreRing, type ScoreRingProps } from './ScoreRing';
 export {
   VerdictLabel,
   verdictFromScore,

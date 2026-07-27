@@ -5,36 +5,40 @@
   gap: var(--space-2);
   font-family: var(--font-family-sans);
   font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-  border-radius: var(--radius-sm);
+  letter-spacing: 0.005em;
+  border-radius: var(--radius-md);
   border: var(--border-width-hairline) solid transparent;
   transition: background-color var(--transition-fast), color var(--transition-fast),
-    border-color var(--transition-fast);
+    border-color var(--transition-fast), transform var(--transition-fast);
   user-select: none;
   white-space: nowrap;
   text-align: center;
+  line-height: 1.2;
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .button:disabled {
-  opacity: 0.45;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* Sizes */
 .sm {
   padding: var(--space-2) var(--space-4);
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-body-sm);
 }
 
 .md {
-  padding: var(--space-3) var(--space-6);
-  font-size: var(--font-size-caption);
+  padding: 0.6875rem var(--space-5);
+  font-size: var(--font-size-body-sm);
 }
 
 .lg {
-  padding: var(--space-4) var(--space-8);
-  font-size: var(--font-size-body-sm);
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--font-size-body);
 }
 
 .fullWidth {
@@ -43,7 +47,7 @@
 
 /* Variants ---------------------------------------------------------------- */
 
-/* Primary: solid near-black. The single dominant action on a page. */
+/* Primary: solid ink. The single dominant action on a page. */
 .primary {
   background-color: var(--color-ink);
   color: var(--color-paper);
@@ -52,21 +56,21 @@
 
 .primary:hover:not(:disabled),
 .primary:focus-visible:not(:disabled) {
-  background-color: var(--color-ink-secondary);
-  border-color: var(--color-ink-secondary);
+  background-color: #000;
+  border-color: #000;
 }
 
 /* Secondary: outlined, for the lesser of two adjacent actions. */
 .secondary {
-  background-color: transparent;
+  background-color: var(--color-surface);
   color: var(--color-ink);
-  border-color: var(--color-ink);
+  border-color: var(--color-line-strong);
 }
 
 .secondary:hover:not(:disabled),
 .secondary:focus-visible:not(:disabled) {
-  background-color: var(--color-ink);
-  color: var(--color-paper);
+  border-color: var(--color-ink);
+  background-color: var(--color-paper-shade);
 }
 
 /* Ghost: text-only, for tertiary actions and dismissals. */
@@ -78,26 +82,27 @@
 .ghost:hover:not(:disabled),
 .ghost:focus-visible:not(:disabled) {
   color: var(--color-ink);
+  background-color: var(--color-paper-shade);
 }
 
-/* Danger: the accent, reserved for destructive confirmation only. */
+/* Danger: the false-verdict rose, reserved for destructive confirmation. */
 .danger {
-  background-color: var(--color-accent);
+  background-color: var(--verdict-false);
   color: var(--color-paper);
-  border-color: var(--color-accent);
+  border-color: var(--verdict-false);
 }
 
 .danger:hover:not(:disabled),
 .danger:focus-visible:not(:disabled) {
-  background-color: var(--color-accent-dark);
-  border-color: var(--color-accent-dark);
+  background-color: #8f2f2e;
+  border-color: #8f2f2e;
 }
 
 /* Loading ----------------------------------------------------------------- */
 
 .spinner {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   border: 1.5px solid currentColor;
   border-bottom-color: transparent;
   border-radius: 50%;

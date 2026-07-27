@@ -1,23 +1,32 @@
 import type { Metadata } from 'next';
-import { Newsreader, IBM_Plex_Sans } from 'next/font/google';
+import { Fraunces, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 
 import { Header, Footer } from '@/components/layout';
 import './globals.css';
 
-const newsreader = Newsreader({
+// Sans — carries the interface and the headlines.
+const hanken = Hanken_Grotesk({
   subsets: ['latin', 'latin-ext'],
   weight: ['400', '500', '600', '700'],
-  style: ['normal', 'italic'],
-  variable: '--font-newsreader',
+  variable: '--font-hanken',
   display: 'swap',
-  adjustFontFallback: false,
 });
 
-const plexSans = IBM_Plex_Sans({
-  subsets: ['latin', 'latin-ext'],
+// Serif accent — the claim under review, pull-quotes, editorial emphasis.
+const fraunces = Fraunces({
+  subsets: ['latin'],
   weight: ['400', '500', '600'],
-  variable: '--font-plex-sans',
+  style: ['normal', 'italic'],
+  variable: '--font-fraunces',
+  display: 'swap',
+});
+
+// Mono — scores, timestamps, data labels ("instrument" figures).
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500'],
+  variable: '--font-jetbrains',
   display: 'swap',
 });
 
@@ -55,7 +64,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ro" translate="no" className={`${newsreader.variable} ${plexSans.variable}`}>
+    <html
+      lang="ro"
+      translate="no"
+      className={`${hanken.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}
+    >
       <head>
         <meta name="google" content="notranslate" />
       </head>

@@ -1,7 +1,6 @@
-/* Verdict presentation. Explicitly NOT a pill/badge: no background fill, no
-   full radius, no traffic-light palette. The verdict reads as a typographic
-   label the way a standfirst does in print, and the confidence score is set
-   as plain text beside it rather than as a colored chip. */
+/* Verdict presentation. The verdict and its score carry the ONE colour in the
+   system — a muted, editorial semantic hue per band (never a neon pill). The
+   band class sets a local --vc that both the label and the score inherit. */
 
 .verdict {
   display: flex;
@@ -9,40 +8,38 @@
   gap: var(--space-2);
 }
 
+.true { --vc: var(--verdict-true); }
+.partial { --vc: var(--verdict-partial); }
+.unclear { --vc: var(--verdict-unclear); }
+.false { --vc: var(--verdict-false); }
+
 .label {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-  color: var(--color-ink);
+  font-size: 1.0625rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--vc, var(--color-ink));
 }
 
-/* Red is reserved for the one verdict that warns the reader off a claim.
-   Every other verdict stays in ink — the palette carries meaning precisely
-   because the accent is rationed. */
-.labelFalse {
-  color: var(--color-accent);
-}
-
-/* Sentence-case qualifier under the label — not uppercase, for legibility. */
+/* Sentence-case qualifier under the label — for the middle two bands. */
 .note {
   font-family: var(--font-family-sans);
   font-size: var(--font-size-body-sm);
   line-height: var(--line-height-body-sm);
-  color: var(--color-ink);
+  color: var(--color-ink-secondary);
 }
 
 .score {
-  font-family: var(--font-family-sans);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-body-sm);
-  line-height: var(--line-height-body-sm);
   color: var(--color-ink-muted);
+  letter-spacing: 0.01em;
 }
 
 .scoreValue {
-  color: var(--color-ink);
-  font-weight: var(--font-weight-semibold);
+  color: var(--vc, var(--color-ink));
+  font-weight: var(--font-weight-medium);
   font-variant-numeric: tabular-nums;
 }
 
@@ -51,4 +48,5 @@
   flex-direction: row;
   align-items: baseline;
   gap: var(--space-3);
+  flex-wrap: wrap;
 }
