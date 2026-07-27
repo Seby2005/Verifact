@@ -53,14 +53,27 @@ export const en: Translations = {
   },
   home: {
     hero: {
-      eyebrow: 'Independent verification powered by AI',
-      title: 'Disinformation travels faster than debunking.',
+      eyebrow: 'Independent verification · public sources',
+      title: 'True or false?',
+      titleAccent: 'Check the sources.',
       lead:
-        'Verifact analyzes claims, articles, and social media posts against verifiable public sources — and shows you exactly what every conclusion is based on.',
+        'Paste a claim — get a verdict, a score, and the sources behind it.',
+    },
+    try: {
+      label: 'Try',
+      example1: 'Lightning never strikes the same place twice',
+      example2: 'We only use 10% of our brain',
+      example3: 'The Great Wall of China is visible from space',
+    },
+    trust: {
+      line: 'A verdict without sources is just another opinion.',
     },
     sample: {
-      eyebrow: 'Example',
-      title: 'What a report looks like',
+      eyebrow: 'What an answer looks like',
+      title: 'The verdict, not a wall of text.',
+      scoreCaption: 'score',
+      meta: '4/4 evidence layers · 12.3 s',
+      sourcesLabel: 'The sources behind it',
       claim: 'mRNA vaccines alter human DNA.',
       summary:
         'Messenger RNA from the vaccine does not enter the cell nucleus where DNA is located, and degrades within days after producing the spike protein. There is no known mechanism by which this process could modify the human genome.',

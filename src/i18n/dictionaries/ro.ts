@@ -51,14 +51,27 @@ export const ro = {
   },
   home: {
     hero: {
-      eyebrow: 'Verificare independentă, cu AI',
-      title: 'Dezinformarea circulă mai repede decât dezmințirea.',
+      eyebrow: 'Verificare independentă · surse publice',
+      title: 'Adevărat sau fals?',
+      titleAccent: 'Verifică pe surse.',
       lead:
-        'Verifact analizează afirmații, articole și postări din social media pe baza surselor publice verificabile — și îți arată exact pe ce se bazează fiecare concluzie.',
+        'Lipești o afirmație — primești un verdict, un scor și sursele pe care se sprijină.',
+    },
+    try: {
+      label: 'Încearcă',
+      example1: 'Fulgerul nu lovește de două ori în același loc',
+      example2: 'Folosim doar 10% din creier',
+      example3: 'Zidul Chinezesc se vede din spațiu cu ochiul liber',
+    },
+    trust: {
+      line: 'Un verdict fără surse e doar o altă opinie.',
     },
     sample: {
-      eyebrow: 'Exemplu',
-      title: 'Cum arată un raport',
+      eyebrow: 'Așa arată un răspuns',
+      title: 'Verdictul, nu o pagină de text.',
+      scoreCaption: 'scor',
+      meta: '4/4 straturi cu dovezi · 12,3 s',
+      sourcesLabel: 'Sursele pe care se sprijină',
       claim: 'Vaccinurile ARNm modifică ADN-ul uman.',
       summary:
         'ARN-ul mesager din vaccin nu ajunge în nucleul celulei, unde se află ADN-ul, și se degradează în câteva zile după ce celula produce proteina spike. Nu există niciun mecanism cunoscut prin care acest proces să modifice genomul uman.',

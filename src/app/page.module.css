@@ -3,50 +3,181 @@
   flex-direction: column;
 }
 
-/* Hero ---------------------------------------------------------------------- */
+/* Stage — headline and tool share the first viewport ------------------------ */
 
-.hero {
+.stage {
   padding-top: var(--space-16);
-  padding-bottom: var(--space-10);
+  padding-bottom: var(--space-20);
+  text-align: center;
 }
 
-.heroTitle {
+.stageEyebrow {
+  display: block;
+  margin-bottom: var(--space-5);
+}
+
+.stageTitle {
   font-size: var(--font-size-display);
   line-height: var(--line-height-display);
-  max-width: 18ch;
-  margin-top: var(--space-4);
-  margin-bottom: var(--space-6);
+  max-width: 16ch;
+  margin: 0 auto;
 }
 
-.heroLead {
+/* The one serif moment on the page — the turn from question to instruction. */
+.stageTitleAccent {
+  font-family: var(--font-family-serif);
+  font-style: italic;
+  font-weight: var(--font-weight-normal);
+  letter-spacing: -0.015em;
+}
+
+.stageLead {
   font-size: var(--font-size-lead);
   line-height: var(--line-height-lead);
+  color: var(--color-ink-muted);
+  max-width: 46ch;
+  margin: var(--space-5) auto 0;
+}
+
+.stageTool {
+  margin-top: var(--space-8);
+  text-align: left;
+}
+
+/* Specimen ------------------------------------------------------------------ */
+
+.specimen {
+  padding-bottom: var(--space-20);
+}
+
+.centered {
+  display: block;
+  text-align: center;
+}
+
+.specimenTitle {
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-h2);
+  text-align: center;
+  margin-top: var(--space-2);
+}
+
+.card {
+  margin-top: var(--space-8);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+}
+
+.claim {
+  font-family: var(--font-family-serif);
+  font-size: 1.375rem;
+  line-height: 1.4;
+  color: var(--color-ink);
+  text-align: center;
+  max-width: 32ch;
+  margin: 0 auto;
+}
+
+.verdictRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+  margin: var(--space-8) 0 0;
+}
+
+/* The verdict word carries the same band colour as the ring beside it. */
+.verdictWord {
+  font-family: var(--font-family-sans);
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--vc, var(--color-ink));
+}
+
+.true { --vc: var(--verdict-true); }
+.partial { --vc: var(--verdict-partial); }
+.unclear { --vc: var(--verdict-unclear); }
+.false { --vc: var(--verdict-false); }
+
+.verdictMeta {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+  margin-top: var(--space-2);
+}
+
+.summary {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
   color: var(--color-ink-secondary);
-  max-width: 56ch;
+  text-align: center;
+  max-width: 54ch;
+  margin: var(--space-6) auto 0;
 }
 
-/* Sections ------------------------------------------------------------------ */
-
-.toolSection {
-  padding-bottom: var(--space-16);
-}
-
-.section {
-  padding-top: var(--space-16);
-  padding-bottom: var(--space-4);
-}
-
-.sectionTitle {
-  margin-top: var(--space-3);
-  margin-bottom: var(--space-8);
-}
-
-.sampleWrap {
-  border-top: var(--border-width-hairline) solid var(--color-rule-hairline);
+.sources {
+  margin-top: var(--space-8);
   padding-top: var(--space-6);
+  border-top: var(--border-width-hairline) solid var(--color-line);
 }
 
-/* Steps --------------------------------------------------------------------- */
+.sourcesLabel {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--color-ink-muted);
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
+.source {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.source:hover {
+  background-color: var(--color-paper-shade);
+}
+
+.sourceIndex {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+  flex-shrink: 0;
+}
+
+.sourceTitle {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink);
+  flex: 1;
+  min-width: 0;
+}
+
+.sourceMeta {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+  flex-shrink: 0;
+}
+
+/* How it works — three beats on a band ------------------------------------- */
+
+.how {
+  background-color: var(--color-paper-shade);
+  border-top: var(--border-width-hairline) solid var(--color-line);
+  border-bottom: var(--border-width-hairline) solid var(--color-line);
+  padding: var(--space-16) 0;
+}
 
 .steps {
   display: grid;
@@ -55,49 +186,62 @@
 }
 
 .step {
-  border-top: var(--border-width-heavy) solid var(--color-rule);
-  padding-top: var(--space-4);
+  text-align: center;
 }
 
 .stepNumber {
-  display: block;
-  font-family: var(--font-family-sans);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--tracking-label);
   color: var(--color-ink-muted);
-  font-variant-numeric: tabular-nums;
-  margin-bottom: var(--space-3);
+  letter-spacing: var(--tracking-label);
 }
 
 .stepTitle {
-  margin-bottom: var(--space-2);
+  font-size: var(--font-size-h3);
+  margin-top: var(--space-2);
+  max-width: 24ch;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.stepText {
-  font-size: var(--font-size-body-sm);
-  line-height: var(--line-height-body-sm);
-  color: var(--color-ink-secondary);
+/* Trust line ---------------------------------------------------------------- */
+
+.trust {
+  padding-top: var(--space-20);
+  padding-bottom: var(--space-8);
+  text-align: center;
 }
 
-/* Closing callout ----------------------------------------------------------- */
+.trustLine {
+  font-family: var(--font-family-serif);
+  font-size: clamp(1.375rem, 1.1rem + 1.3vw, 1.875rem);
+  line-height: 1.35;
+  color: var(--color-ink);
+  max-width: 26ch;
+  margin: 0 auto;
+}
 
-.calloutFollow {
-  margin-top: var(--space-5);
-  padding-left: var(--space-5);
+.trustLinks {
+  margin-top: var(--space-6);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-body-sm);
   color: var(--color-ink-muted);
+}
+
+.trustDot {
+  margin: 0 var(--space-3);
 }
 
 .textLink {
   color: var(--color-ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1px;
+  border-bottom: var(--border-width-hairline) solid var(--color-line-strong);
+  padding-bottom: 2px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .textLink:hover {
-  color: var(--color-accent-dark);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 @media (min-width: 768px) {
@@ -107,8 +251,27 @@
   }
 }
 
-@media (min-width: 1024px) {
-  .hero {
-    padding-top: var(--space-20);
+@media (max-width: 640px) {
+  .stage {
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-16);
+  }
+
+  .card {
+    padding: var(--space-5);
+  }
+
+  .verdictRow {
+    gap: var(--space-5);
+  }
+
+  .source {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .sourceMeta {
+    width: 100%;
+    padding-left: calc(var(--space-4) + 1.5rem);
   }
 }
