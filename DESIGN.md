@@ -1,4 +1,4 @@
-# Design System — Verifact
+# Design System — Verifact („Prim-plan")
 
 Single source of truth for the visual language. Tokens live in
 [`src/app/globals.css`](src/app/globals.css); primitives in
@@ -6,89 +6,96 @@ Single source of truth for the visual language. Tokens live in
 
 ## Principles
 
-Verifact asks people to trust what it displays, so the interface is built to
-look like serious press rather than a software product. Four rules follow from
-that, and everything else is downstream of them:
+Verifact asks people to trust what it displays, and it asks them to do one
+thing: check a claim. The design follows from those two facts.
 
-1. **Black on white.** Red is the only accent and it is rationed — an eyebrow
-   label, an active tab underline, a callout bar, a "false" verdict. Nothing
-   decorative gets color.
-2. **Serif headlines, sans everything else.** The contrast between the two
-   families *is* the hierarchy; size alone is not enough.
-3. **Rules, not elevation.** Sections are separated by 1px lines. There is no
-   shadow token — the only `box-shadow` in the system is an inset focus ring.
-4. **Squared off.** 2px is the maximum radius. There is no pill radius token
-   because nothing here is pill-shaped.
+1. **One action per screen.** The home page puts the headline and the
+   verification tool in the first viewport. Everything else is below it.
+2. **Prose is a cost.** A visitor who meets a wall of text leaves before
+   reaching the tool. Copy is cut to a lead, three step titles and one closing
+   line; structure and motion carry the rest.
+3. **Colour means one thing: the verdict.** Chrome is monochrome. The only
+   hues in the product are the four semantic verdict colours, so colour is
+   never decorative — where you see it, it is telling you something.
+4. **Soft, not squishy.** Rounded but restrained geometry (8–16px), hairline
+   rules, one focus ring. No heavy shadows, no elevation theatre.
+5. **Motion reveals, never performs.** Sections fade up as they enter view and
+   the score counts to its value. Nothing bounces, and every effect is skipped
+   under `prefers-reduced-motion`.
 
 ### Explicitly rejected
 
-These were present in an earlier iteration and are gone deliberately. Do not
-reintroduce them: emoji used as iconography (a shield in the wordmark, green
-checks beside sources), colored rounded badges for verdicts or scores, a blue
-primary button, gradients, and a single sans font carrying every level of the
-hierarchy.
+Do not reintroduce: emoji used as iconography, gradients, generic AI-startup
+blue/violet, colour-coded traffic-light pills for verdicts, bouncy or springy
+easing, or a verdict rendered as a filled badge.
 
-## Color
+## Colour
 
 | Token | Value | Use |
 |---|---|---|
-| `--color-paper` | `#ffffff` | Page background |
-| `--color-paper-shade` | `#f7f7f5` | Faint banded sections |
-| `--color-ink` | `#0a0a0a` | Headings, primary button fill |
-| `--color-ink-secondary` | `#3f3f3f` | Body copy |
-| `--color-ink-muted` | `#5c5c5c` | Captions, metadata |
-| `--color-accent` | `#dc2626` | Eyebrows, active tab rule, callout bar, false verdicts |
-| `--color-accent-dark` | `#b91c1c` | Accent text needing more contrast; link hover |
-| `--color-rule` | `#0a0a0a` | Structural section rules |
-| `--color-rule-hairline` | `#d8d8d4` | Row separators, input borders |
+| `--color-paper` | `#fbfbf9` | Page background |
+| `--color-paper-shade` | `#f3f2ec` | Banded sections, hover fills |
+| `--color-surface` | `#ffffff` | Raised surfaces: the tool, cards, inputs |
+| `--color-ink` | `#16181c` | Headings, primary button fill |
+| `--color-ink-secondary` | `#3f424a` | Body copy |
+| `--color-ink-muted` | `#62646c` | Captions, metadata |
+| `--color-line` | `#e6e5df` | Hairline separators |
+| `--color-line-strong` | `#d3d2cb` | Resting field borders |
+| `--color-accent` | `#1a6b54` | Focus rings, link hover — chrome, used sparingly |
 
-Every text/background pair in the system is at or above **4.5:1** (WCAG AA for
-normal text); the lowest is accent-on-paper at 4.83:1.
+### The verdict scale
 
-Verdicts are **not** color-coded on a traffic-light scale. Only "probabil fals"
-takes the accent; the other three bands stay in ink. Restricting the accent is
-what gives it meaning.
+The meaningful colour of the product. Muted and editorial, never neon.
+
+| Token | Value | Band |
+|---|---|---|
+| `--verdict-true` | `#1a6b54` | Probabil adevărat (teal) |
+| `--verdict-partial` | `#986516` | Parțial adevărat (ochre) |
+| `--verdict-unclear` | `#4d5866` | Neclar (slate) |
+| `--verdict-false` | `#a63a39` | Probabil fals (deep rose) |
+
+`VerdictLabel` and `ScoreRing` set a local `--vc` from the band class, so the
+verdict word, the score and the ring arc always agree. Every text/background
+pair is at or above **4.5:1** (WCAG AA); the tightest is `--color-ink-muted`
+on `--color-paper-shade` at 5.26:1.
 
 ## Typography
 
-Two families, loaded via `next/font` in `src/app/layout.tsx`:
+Three families, loaded via `next/font` in `src/app/layout.tsx`:
 
-- `--font-family-serif` → **Newsreader** — every `h1`–`h4`, plus quoted claims
-  and prices where editorial weight is wanted.
-- `--font-family-sans` → **IBM Plex Sans** — body copy, navigation, labels,
-  buttons, form fields.
+- `--font-family-sans` → **Hanken Grotesk** — interface, body, and every
+  heading. It carries the page.
+- `--font-family-serif` → **Fraunces** — the serif accent, used only for the
+  claim under review, pull-quotes, the wordmark and the closing line.
+- `--font-family-mono` → **JetBrains Mono** — scores, timestamps, eyebrows and
+  data labels. The "instrument" voice.
 
-| Token | Size | Use |
-|---|---|---|
-| `--font-size-display` | 64px | Homepage headline |
-| `--font-size-h1` | 44px | Page titles |
-| `--font-size-h2` | 30px | Section titles |
-| `--font-size-h3` | 20px | Subsection titles |
-| `--font-size-lead` | 19px | Standfirst / deck |
-| `--font-size-body` | 16px | Body |
-| `--font-size-body-sm` | 14px | Secondary text |
-| `--font-size-caption` | 12px | Eyebrows, labels, metadata |
+The type scale is fluid (`clamp()`), so steps stay proportional from 375 to
+1440 without breakpoint jumps. Display runs 36→60px, h1 32→44px, h2 24→32px.
 
-Sizes step down at the 640px breakpoint. Weights: 400 / 500 / 600 / 700.
+Headings are sans and tightly tracked (`--tracking-display`, -0.025em). The
+mono eyebrow (`.eyebrow`) is the uppercase tracked label style; it replaced the
+old all-caps sans eyebrow.
 
-**The uppercase label style** (`--tracking-label`, 0.1em) is used for eyebrows,
-nav, buttons and verdict labels. Keep it under ~20 characters — all-caps costs
-legibility past a couple of words, which is why the PRD's longer verdict names
-are split into a short label plus a sentence-case qualifier (`VERDICT_NOTE`).
+## Spacing, geometry, motion
 
-## Spacing
+4px base: `--space-1` (4px) through `--space-24` (96px).
 
-4px base: `--space-1` (4px) through `--space-24` (96px). Every padding, gap and
-margin comes from this scale.
+Radii: `--radius-sm` 8px, `--radius-md` 12px (buttons, fields),
+`--radius-lg` 16px (cards, the tool), `--radius-pill` for chips and the
+language toggle only.
+
+Motion: `--transition-fast` 140ms, `--transition-normal` 240ms with
+`--ease-out`. `Reveal` and `ScoreRing` both check `prefers-reduced-motion` and
+render their final state immediately when it is set.
 
 ## Layout
 
-- `--container-max-width` 1140px, applied via the global `.container` class.
-- `--measure` 68ch — the reading width for long-form prose.
-- Breakpoints: **375 / 768 / 1024 / 1440px**. CSS variables can't be used in
-  `@media` queries, so components repeat these literals.
-- Root layout renders `.app-shell` (Header → `<main>` → Footer) as a column
-  flexbox with `min-height: 100vh`.
+- `--container-max-width` 1180px (`.container`).
+- `--container-narrow` 940px (`.container-narrow`) — the home page and other
+  focus surfaces. Narrower measure keeps the tool central.
+- `--measure` 66ch for long-form prose.
+- Breakpoints: **375 / 768 / 1024 / 1440px**.
 
 ## Components
 
@@ -96,36 +103,40 @@ margin comes from this scale.
 
 | Component | Notes |
 |---|---|
-| `Button` | `primary` (solid ink) / `secondary` (outline) / `ghost` / `danger`. Uppercase, tracked, 2px radius. Renders an `<a>` when given `href`. |
-| `Input` / `Textarea` | Thin hairline border, square, no shadow. Label, helper and error text are part of the component. |
-| `Tabs` | Text tabs with a red active underline. Full WAI-ARIA tab pattern including arrow-key navigation. |
-| `Callout` | Editorial callout: thin red left bar, serif body (`quote`) or sans (`plain`). Not a tinted card. |
-| `VerdictLabel` | Verdict as a typographic label plus the score as plain text. No fill, no radius. `verdictFromScore` maps a score to a band per PRD §3.2. |
-| `Card` | `default` / `bordered` / `ruled` / `flat`. Delimited by rules; carries no shadow. |
+| `Button` | `primary` (solid ink) / `secondary` / `ghost` / `danger` (verdict rose). Sentence case, 12px radius, 1px press. |
+| `Input` / `Textarea` | Soft field on `--color-surface`, ring on focus. Errors use the rose. |
+| `Tabs` | Sentence-case text tabs, ink underline on the active one. Full WAI-ARIA pattern with arrow-key navigation. |
+| `Callout` | A filled, rounded aside on `--color-paper-shade`. Serif (`quote`) or sans (`plain`). |
+| `VerdictLabel` | Verdict word plus score as text, coloured by band. No fill, no pill. |
+| `ScoreRing` | The score as a thin ring in the band colour; counts up when scrolled into view. |
+| `Reveal` | Fades and lifts children on first scroll into view. Content is always in the DOM — only the transition is gated. |
+| `Card` | `default` / `bordered` / `ruled` / `flat`. 16px radius, hairline border, no shadow. |
 | `Modal` | ESC to close, click-outside to close, focus trapped and restored. |
 
-`src/components/verify` — `VerifyTool` (the Text/Screenshot/URL tool) and
-`ReportView` (editorial report rendering).
-`src/components/auth` — `AuthPanel` (login/signup).
-`src/components/layout` — `Header`, `Footer`, and `routes.ts`, the single
-source of truth for navigation.
+`src/components/verify` — `VerifyTool` (Text/Screenshot/URL, plus optional
+one-tap example chips) and `ReportView`.
+`src/components/layout` — `Header` (sticky, blurred), `Footer`, and
+`routes.ts`, the single source of truth for navigation.
+
+### Example claims must stay neutral
+
+The chips under the text field exist so a first-time visitor can run a check
+without composing one. They are settled science and folklore only — never
+elections, parties, or anyone currently in office. A demo claim that reads as
+politically aligned costs the product its credibility.
+
+## Internationalisation
+
+All user-facing copy comes from `src/i18n/dictionaries/{ro,en}.ts` via
+`useLanguage().t()`. Never hard-code a visible string in a component; add a key
+to both dictionaries instead.
 
 ## Routes
 
 `/` · `/rapoarte` · `/transparenta` · `/preturi` · `/cont` · `/misiune` ·
-`/open-source`
+`/open-source` · `/termeni` · `/confidentialitate`
 
 `/transparenta` and `/open-source` are separate on purpose: the first answers
 "how was this verdict reached" (method, sources, score weighting), the second
 answers "who runs this and what happens to my data" (licence, auditability,
-privacy). Different readers, different questions — merging them buries both.
-
-## Backend status
-
-The verification pipeline described in `docs/PRD.md` §3.2 does not exist yet.
-`/api/verify` validates input and returns **501 `not_implemented`** rather than
-a placeholder verdict — inventing a score would be indistinguishable from a
-real answer to a user, which is the exact failure this product exists to fight.
-The full tool UI is built and wired; `TODO(backend)` marks every integration
-point. The same applies to the reports list on `/rapoarte`, whose entries are
-labelled in the UI as illustrative examples.
+privacy).
