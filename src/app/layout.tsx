@@ -13,10 +13,14 @@ const hanken = Hanken_Grotesk({
   display: 'swap',
 });
 
-// Serif accent — the claim under review, pull-quotes, editorial emphasis.
+// Serif accent — the claim under review, pull-quotes, the wordmark.
+// Only the two weights the design actually uses: 400 for quoted text and the
+// italic hero accent, 700 for the wordmark. 500 and 600 were being downloaded
+// and never referenced, and 700 was referenced without being downloaded, which
+// left the wordmark faux-bolded by the browser on every page.
 const fraunces = Fraunces({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '700'],
   style: ['normal', 'italic'],
   variable: '--font-fraunces',
   display: 'swap',
