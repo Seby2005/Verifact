@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Callout } from '@/components/ui';
+import { Callout, WeightBar } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import shell from '../page-shell.module.css';
 import styles from './page.module.css';
@@ -85,7 +85,7 @@ export default function TransparentaPage() {
         <section>
           <h2 className={styles.sectionTitle}>{t('transparentaPage.layersTitle')}</h2>
           <ol className={styles.layers}>
-            {layers.map((layer) => (
+            {layers.map((layer, index) => (
               <li key={layer.number} className={styles.layer}>
                 <div className={styles.layerHead}>
                   <span className={styles.layerNumber}>{layer.number}</span>
@@ -93,6 +93,9 @@ export default function TransparentaPage() {
                     {t('transparentaPage.layersWeight', { weight: layer.weight })}
                   </span>
                 </div>
+                {/* The bar restates the weight beside it, so the four layers
+                    are comparable at a glance. */}
+                <WeightBar value={parseInt(layer.weight, 10)} delay={index * 110} />
                 <h3 className={styles.layerTitle}>{layer.title}</h3>
                 <p className={styles.layerText}>{layer.text}</p>
               </li>

@@ -1,45 +1,67 @@
+/* A single split card: the form on one side, the promises that answer "why
+   would I sign up" on the other. This is the page where someone decides to
+   give us something, so the reassurance sits beside the fields, not below. */
 .layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-10);
-  align-items: start;
-}
-
-/* The reassurance column sits in a soft, recessed panel beside the form. */
-.aside {
-  background-color: var(--color-paper-shade);
+  align-items: stretch;
+  background-color: var(--color-surface);
   border: var(--border-width-hairline) solid var(--color-line);
   border-radius: var(--radius-lg);
-  padding: var(--space-6);
+  overflow: hidden;
+}
+
+.formSide {
+  padding: clamp(var(--space-5), 3vw, var(--space-8));
+  min-width: 0;
+}
+
+.aside {
+  padding: clamp(var(--space-5), 3vw, var(--space-8));
+  background-color: var(--color-paper-shade);
+  border-top: var(--border-width-hairline) solid var(--color-line);
 }
 
 .asideTitle {
-  font-size: var(--font-size-h3);
-  margin-bottom: var(--space-5);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--color-ink-muted);
+  margin-bottom: var(--space-4);
 }
 
+/* Promises are numbered, because they read as a list of commitments. */
 .asideList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  counter-reset: promise;
 }
 
 .asideItem {
-  position: relative;
-  padding-left: var(--space-5);
+  counter-increment: promise;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: var(--border-width-hairline) solid var(--color-line);
   font-size: var(--font-size-body-sm);
   line-height: var(--line-height-body-sm);
   color: var(--color-ink-secondary);
 }
 
+.asideItem:last-child {
+  border-bottom: 0;
+}
+
 .asideItem::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.7em;
-  width: 8px;
-  height: 1px;
-  background-color: var(--color-line-strong);
+  content: counter(promise, decimal-leading-zero);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  color: var(--verdict-true);
+  padding-top: 2px;
+  font-variant-numeric: tabular-nums;
 }
 
 .asideStrong {
@@ -48,7 +70,7 @@
 }
 
 .asideNote {
-  margin-top: var(--space-6);
+  margin-top: var(--space-5);
   padding-top: var(--space-4);
   border-top: var(--border-width-hairline) solid var(--color-line);
   font-family: var(--font-family-mono);
@@ -60,7 +82,7 @@
 .textLink {
   color: var(--color-ink);
   border-bottom: var(--border-width-hairline) solid var(--color-line-strong);
-  padding-bottom: 2px;
+  padding-bottom: 1px;
   transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
@@ -71,7 +93,11 @@
 
 @media (min-width: 900px) {
   .layout {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    gap: var(--space-12);
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  }
+
+  .aside {
+    border-top: 0;
+    border-left: var(--border-width-hairline) solid var(--color-line);
   }
 }

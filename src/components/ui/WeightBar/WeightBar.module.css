@@ -1,0 +1,27 @@
+.track {
+  display: block;
+  height: 5px;
+  background-color: var(--color-paper-shade);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* Scaled rather than widened: animating width would relayout the row on every
+   frame, while a transform stays on the compositor. */
+.fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-ink);
+  border-radius: 3px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
+}
