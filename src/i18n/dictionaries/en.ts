@@ -10,6 +10,10 @@ export const en: Translations = {
       ariaNav: 'Main navigation',
       toggleLangAria: 'Switch language to Romanian',
     },
+    theme: {
+      toDark: 'Switch to dark theme',
+      toLight: 'Switch to light theme',
+    },
   },
   verdict: {
     copy: {

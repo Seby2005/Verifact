@@ -30,6 +30,12 @@
   --color-accent: #1a6b54;
   --color-accent-dark: #155a47;
 
+  /* Interaction shifts. These move *away* from the page ground, which means
+     they invert between themes — hence tokens rather than literals. */
+  --color-ink-hover: #000000;      /* solid-ink button, hover */
+  --color-danger-hover: #8f2f2e;   /* destructive button, hover */
+  --color-overlay: rgba(22, 24, 28, 0.5);
+
   /* ---- Semantic verdict scale -------------------------------------------
      The meaningful colour of the product. Muted and editorial — never neon,
      never a traffic light. Applied ONLY to verdicts and scores. */
@@ -116,6 +122,49 @@
   --container-max-width: 1180px;
   --container-narrow: 940px;   /* focus surfaces: home, article bodies */
   --measure: 66ch;
+
+  color-scheme: light;
+}
+
+/* ---- Dark theme -----------------------------------------------------------
+   A considered dark ground, not an inversion: paper becomes a near-black with
+   the same faint warmth, and raised surfaces get *lighter* rather than darker.
+   The verdict hues are lifted until each one clears AA on all three grounds —
+   the meaning of the scale has to survive the theme, not just the look.
+
+   The theme is always an explicit attribute: a blocking script in <head>
+   resolves the stored choice (or the system preference) before first paint, so
+   there is exactly one dark block here and never a flash of the wrong theme. */
+:root[data-theme='dark'] {
+  --color-paper: #15161a;
+  --color-paper-shade: #1c1e23;
+  --color-surface: #1b1d21;      /* raised surfaces lift toward the light */
+  --color-ink: #f2f2ef;
+  --color-ink-secondary: #c4c6cb;
+  --color-ink-muted: #93969d;
+
+  --color-line: #2a2d33;
+  --color-line-strong: #3a3e45;
+
+  --color-accent: #4ea88a;
+  --color-accent-dark: #6cbfa2;  /* hover lifts instead of deepening */
+
+  /* Inverted: a solid-ink button is light here, so its hover brightens. */
+  --color-ink-hover: #ffffff;
+  --color-danger-hover: #eda4a1;
+  --color-overlay: rgba(0, 0, 0, 0.66);
+
+  --verdict-true: #4ea88a;
+  --verdict-partial: #d09a3c;
+  --verdict-unclear: #99a3b0;
+  --verdict-false: #e08582;
+
+  --color-rule: #f2f2ef;
+  --color-rule-hairline: #2a2d33;
+
+  --focus-ring: 0 0 0 4px color-mix(in srgb, var(--color-ink) 16%, transparent);
+
+  color-scheme: dark;
 }
 
 /* Breakpoints used across the app (CSS variables can't live inside media

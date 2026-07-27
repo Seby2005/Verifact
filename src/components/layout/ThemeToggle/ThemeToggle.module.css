@@ -1,0 +1,35 @@
+/* Sits beside the language toggle and shares its shape, so the two read as
+   one pair of preferences rather than two unrelated controls. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: var(--border-width-hairline) solid var(--color-line-strong);
+  border-radius: var(--radius-pill);
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast),
+    background-color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.toggle:hover:not(:disabled) {
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+  background-color: var(--color-paper-shade);
+}
+
+/* Inert until the effect has read the resolved theme. */
+.toggle:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.icon {
+  width: 15px;
+  height: 15px;
+  display: block;
+}

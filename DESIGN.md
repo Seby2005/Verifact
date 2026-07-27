@@ -43,6 +43,36 @@ easing, or a verdict rendered as a filled badge.
 | `--color-line-strong` | `#d3d2cb` | Resting field borders |
 | `--color-accent` | `#1a6b54` | Focus rings, link hover — chrome, used sparingly |
 
+### Dark theme
+
+The dark ground is a considered palette, not an inversion: paper becomes a
+near-black with the same faint warmth, and **raised surfaces get lighter**
+rather than darker. The verdict hues are lifted until each clears AA on all
+three dark grounds — the meaning of the scale has to survive the theme.
+
+| Token | Light | Dark |
+|---|---|---|
+| `--color-paper` | `#fbfbf9` | `#15161a` |
+| `--color-paper-shade` | `#f3f2ec` | `#1c1e23` |
+| `--color-surface` | `#ffffff` | `#1b1d21` |
+| `--color-ink` | `#16181c` | `#f2f2ef` |
+| `--verdict-true` | `#1a6b54` | `#4ea88a` |
+| `--verdict-partial` | `#986516` | `#d09a3c` |
+| `--verdict-unclear` | `#4d5866` | `#99a3b0` |
+| `--verdict-false` | `#a63a39` | `#e08582` |
+
+The theme is **always an explicit `data-theme` attribute**, resolved by a
+blocking script in `<head>` before first paint (`ThemeToggle/theme-script.ts`).
+That is why there is exactly one dark block in `globals.css` and no flash of
+the wrong theme. A visitor who has not chosen follows the system preference,
+including when it changes mid-session; choosing once ends that, because an
+explicit choice should not be overridden by the OS.
+
+**Anything that shifts on interaction must be a token**, because those shifts
+invert between themes: a solid-ink button darkens on hover in light and
+*brightens* in dark. Hence `--color-ink-hover`, `--color-danger-hover` and
+`--color-overlay`. No component stylesheet may hard-code a colour.
+
 ### The verdict scale
 
 The meaningful colour of the product. Muted and editorial, never neon.

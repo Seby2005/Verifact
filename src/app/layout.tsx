@@ -57,6 +57,7 @@ export const metadata: Metadata = {
 };
 
 import { LanguageProvider } from '@/i18n';
+import { THEME_SCRIPT } from '@/components/layout/ThemeToggle/theme-script';
 
 export default function RootLayout({
   children,
@@ -71,6 +72,10 @@ export default function RootLayout({
     >
       <head>
         <meta name="google" content="notranslate" />
+        {/* Resolves the theme before first paint, so the page never flashes
+            the wrong one. Runs ahead of hydration and is deliberately tiny;
+            THEME_SCRIPT is a constant string, never user input. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body>
         <LanguageProvider>

@@ -56,8 +56,8 @@
 
 .primary:hover:not(:disabled),
 .primary:focus-visible:not(:disabled) {
-  background-color: #000;
-  border-color: #000;
+  background-color: var(--color-ink-hover);
+  border-color: var(--color-ink-hover);
 }
 
 /* Secondary: outlined, for the lesser of two adjacent actions. */
@@ -94,8 +94,8 @@
 
 .danger:hover:not(:disabled),
 .danger:focus-visible:not(:disabled) {
-  background-color: #8f2f2e;
-  border-color: #8f2f2e;
+  background-color: var(--color-danger-hover);
+  border-color: var(--color-danger-hover);
 }
 
 /* Loading ----------------------------------------------------------------- */
