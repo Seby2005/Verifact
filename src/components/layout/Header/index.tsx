@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/i18n';
+import { ThemeToggle } from '../ThemeToggle';
 import styles from './Header.module.css';
 
 const NAV_ITEMS = [
@@ -54,6 +55,7 @@ export const Header: React.FC = () => {
           >
             {locale === 'ro' ? 'RO | EN' : 'EN | RO'}
           </button>
+          <ThemeToggle />
         </nav>
       </div>
     </header>

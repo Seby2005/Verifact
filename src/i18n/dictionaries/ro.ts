@@ -8,6 +8,10 @@ export const ro = {
       ariaNav: 'Navigare principală',
       toggleLangAria: 'Schimbă limba în engleză',
     },
+    theme: {
+      toDark: 'Comută pe tema întunecată',
+      toLight: 'Comută pe tema luminoasă',
+    },
   },
   verdict: {
     copy: {
