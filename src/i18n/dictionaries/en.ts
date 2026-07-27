@@ -105,6 +105,14 @@ export const en: Translations = {
     },
   },
   verifyTool: {
+    layers: {
+      ariaLabel: 'Evidence layers consulted',
+      searching: 'searching…',
+      found: '{count} results',
+      foundOne: '1 result',
+      empty: 'no results',
+      unavailable: 'unavailable',
+    },
     heading: 'Verify a claim',
     ariaTabContent: 'Content type to verify',
     tabs: {

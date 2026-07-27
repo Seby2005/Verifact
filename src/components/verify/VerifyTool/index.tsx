@@ -5,6 +5,8 @@ import { Button, Tabs, Textarea, Input, Callout, type TabItem } from '@/componen
 import type { InputType, VerificationReport, VerifyAPIError } from '@/types/verification';
 import { useLanguage } from '@/i18n';
 import { ReportView } from '../ReportView';
+import { LayerProgress } from '../LayerProgress';
+import { useTypedPlaceholder } from './useTypedPlaceholder';
 import styles from './VerifyTool.module.css';
 
 type VerificationInputKind = InputType;
@@ -46,6 +48,12 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
 
   const currentValue = kind === 'text' ? text : kind === 'url' ? url : (file?.name ?? '');
   const isEmpty = currentValue.trim().length === 0;
+
+  // The placeholder demonstrates the tool until the visitor takes over.
+  const demo = useTypedPlaceholder(
+    examples ?? [],
+    Boolean(examples?.length) && kind === 'text' && text.length === 0,
+  );
 
   const handleTabChange = (next: VerificationInputKind) => {
     setKind(next);
@@ -160,9 +168,13 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
             <div className={styles.field}>
               <Textarea
                 label={t('verifyTool.textarea.label')}
-                placeholder={t('verifyTool.textarea.placeholder')}
+                placeholder={demo.text || t('verifyTool.textarea.placeholder')}
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => {
+                  demo.stop();
+                  setText(e.target.value);
+                }}
+                onFocus={demo.stop}
                 helperText={t('verifyTool.textarea.helper')}
                 fullWidth
               />
@@ -176,6 +188,7 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
                       type="button"
                       className={styles.chip}
                       onClick={() => {
+                        demo.stop();
                         setText(example);
                         setStatus({ state: 'idle' });
                       }}
@@ -243,8 +256,13 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
       </form>
 
       <div aria-live="polite">
+        {/* The wait is the one moment the method is visible, so it shows the
+            four layers being searched rather than a bare spinner. */}
         {status.state === 'loading' ? (
-          <p className={styles.pending}>{t('verifyTool.actions.pending')}</p>
+          <div className={styles.progress}>
+            <p className={styles.pending}>{t('verifyTool.actions.pending')}</p>
+            <LayerProgress phase="searching" />
+          </div>
         ) : null}
 
         {status.state === 'unavailable' ? (
@@ -265,6 +283,11 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
 
         {status.state === 'report' ? (
           <div className={styles.status}>
+            {/* Each layer now reports what it actually returned, including the
+                ones that found nothing or failed. */}
+            <div className={styles.resolvedLayers}>
+              <LayerProgress phase="resolved" report={status.report} />
+            </div>
             <ReportView report={status.report} />
           </div>
         ) : null}
