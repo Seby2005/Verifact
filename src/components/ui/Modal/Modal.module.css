@@ -1,7 +1,9 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(10, 10, 10, 0.55);
+  background-color: rgba(22, 24, 28, 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11,15 +13,16 @@
 }
 
 .content {
-  background-color: var(--color-paper);
-  border: var(--border-width-hairline) solid var(--color-rule);
-  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-lg);
   width: 100%;
   max-width: 560px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: rise var(--transition-normal);
 }
 
 .header {
@@ -27,37 +30,38 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-5);
-  border-bottom: var(--border-width-hairline) solid var(--color-rule-hairline);
+  padding: var(--space-5) var(--space-6);
+  border-bottom: var(--border-width-hairline) solid var(--color-line);
 }
 
 .title {
-  font-family: var(--font-family-serif);
+  font-family: var(--font-family-sans);
   font-size: var(--font-size-h3);
   line-height: var(--line-height-h3);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.01em;
   color: var(--color-ink);
 }
 
 .closeButton {
-  font-family: var(--font-family-sans);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-label);
   color: var(--color-ink-muted);
   padding: var(--space-2);
   border-radius: var(--radius-sm);
-  transition: color var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
   flex-shrink: 0;
 }
 
 .closeButton:hover {
   color: var(--color-ink);
+  background-color: var(--color-paper-shade);
 }
 
 .body {
-  padding: var(--space-5);
+  padding: var(--space-6);
   overflow-y: auto;
 }
 
@@ -70,8 +74,20 @@
   }
 }
 
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .overlay {
+  .overlay,
+  .content {
     animation: none;
   }
 }

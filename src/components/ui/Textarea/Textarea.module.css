@@ -1,7 +1,7 @@
 /* Inherits border/focus/error styling from Input.module.css; this file only
    carries what differs for a multi-line field. */
 .textarea {
-  min-height: 160px;
+  min-height: 120px;
   resize: vertical;
   line-height: var(--line-height-body);
 }

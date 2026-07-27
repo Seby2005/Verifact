@@ -1,13 +1,15 @@
 .panel {
-  border-top: var(--border-width-heavy) solid var(--color-rule);
-  padding-top: var(--space-6);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
 }
 
 .form {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  padding-top: var(--space-8);
+  padding-top: var(--space-6);
   max-width: 30rem;
 }
 
@@ -17,7 +19,7 @@
 
 .privacyNote {
   font-size: var(--font-size-caption);
-  line-height: var(--line-height-caption);
+  line-height: 1.5;
   color: var(--color-ink-muted);
 }
 
@@ -52,16 +54,16 @@
   justify-content: space-between;
   gap: var(--space-4);
   padding-bottom: var(--space-3);
-  border-bottom: var(--border-width-hairline) solid var(--color-rule-hairline);
+  border-bottom: var(--border-width-hairline) solid var(--color-line);
 }
 
 .accountLabel {
-  font-family: var(--font-family-sans);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: var(--tracking-label);
-  color: var(--color-ink-secondary);
+  color: var(--color-ink-muted);
 }
 
 .accountValue {
@@ -76,25 +78,27 @@
 .dangerZone {
   margin-top: var(--space-12);
   padding-top: var(--space-6);
-  border-top: var(--border-width-hairline) solid var(--color-rule-hairline);
+  border-top: var(--border-width-hairline) solid var(--color-line);
   max-width: 30rem;
 }
 
 .dangerLead {
   margin-bottom: var(--space-4);
   font-size: var(--font-size-caption);
-  line-height: var(--line-height-caption);
+  line-height: 1.5;
   color: var(--color-ink-muted);
 }
 
 .textLink {
   color: var(--color-ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  border-bottom: var(--border-width-hairline) solid var(--color-line-strong);
+  padding-bottom: 2px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .textLink:hover {
-  color: var(--color-accent-dark);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .modalLead {
@@ -111,7 +115,9 @@
   margin-top: var(--space-6);
 }
 
-/* Social Authentication ---------------------------------------------------- */
+/* Social authentication ------------------------------------------------------
+   The provider marks are the only third-party artwork in the product; the
+   buttons around them stay in the system's own geometry. */
 
 .socialButtons {
   display: flex;
@@ -133,20 +139,15 @@
   font-weight: var(--font-weight-medium);
   color: var(--color-ink);
   background-color: var(--color-surface);
-  border: var(--border-width-standard) solid var(--color-rule-hairline);
-  border-radius: var(--border-radius-button, 4px);
+  border: var(--border-width-hairline) solid var(--color-line-strong);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .socialButton:hover {
-  background-color: var(--color-surface-hover, #f8f9fa);
-  border-color: var(--color-rule);
-}
-
-.socialButton:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+  background-color: var(--color-paper-shade);
+  border-color: var(--color-ink);
 }
 
 .socialIcon {
@@ -161,9 +162,9 @@
   gap: var(--space-4);
   margin-top: var(--space-6);
   max-width: 30rem;
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
   color: var(--color-ink-muted);
-  text-transform: lowercase;
 }
 
 .socialDivider::before,
@@ -171,6 +172,5 @@
   content: '';
   flex: 1;
   height: 1px;
-  background-color: var(--color-rule-hairline);
+  background-color: var(--color-line);
 }
-

@@ -1,27 +1,31 @@
 .jump {
   display: flex;
-  gap: var(--space-8);
-  padding-top: var(--space-5);
-  border-bottom: var(--border-width-hairline) solid var(--color-rule-hairline);
+  justify-content: center;
+  gap: var(--space-6);
+  padding-top: var(--space-6);
+  flex-wrap: wrap;
 }
 
+/* Jump links read as quiet pills, the same control family as the chips. */
 .jumpLink {
-  padding-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-4);
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-secondary);
-  transition: color var(--transition-fast);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line-strong);
+  border-radius: var(--radius-pill);
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .jumpLink:hover {
   color: var(--color-ink);
+  border-color: var(--color-ink);
 }
 
 .section {
-  scroll-margin-top: var(--space-8);
+  scroll-margin-top: var(--space-16);
 }
 
 .sectionTitle {
@@ -33,26 +37,30 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-5);
   margin-top: var(--space-8);
 }
 
 .note {
   margin-top: var(--space-8);
-  padding-top: var(--space-5);
-  border-top: var(--border-width-hairline) solid var(--color-rule-hairline);
+  padding: var(--space-5) var(--space-6);
+  background-color: var(--color-paper-shade);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-body-sm);
   line-height: var(--line-height-body-sm);
-  color: var(--color-ink-muted);
+  color: var(--color-ink-secondary);
   max-width: var(--measure);
 }
 
 .textLink {
   color: var(--color-ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  border-bottom: var(--border-width-hairline) solid var(--color-line-strong);
+  padding-bottom: 2px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .textLink:hover {
-  color: var(--color-accent-dark);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }

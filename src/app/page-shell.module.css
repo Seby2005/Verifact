@@ -1,26 +1,31 @@
 /* Shared layout for the secondary (non-homepage) routes, so every page in the
-   site is built from the same measures and rules rather than ad-hoc values. */
+   site is built from the same measures and rules rather than ad-hoc values.
+   Prim-plan: a centred page head, then content at a comfortable measure. */
 
 .page {
   padding-top: var(--space-16);
 }
 
+/* Centred page head — the same shape as the home stage, one step quieter. */
 .head {
-  padding-bottom: var(--space-8);
-  border-bottom: var(--border-width-heavy) solid var(--color-rule);
+  text-align: center;
+  padding-bottom: var(--space-10);
+  border-bottom: var(--border-width-hairline) solid var(--color-line);
 }
 
 .title {
   margin-top: var(--space-4);
+  margin-left: auto;
+  margin-right: auto;
   max-width: 22ch;
 }
 
 .lead {
-  margin-top: var(--space-5);
+  margin: var(--space-5) auto 0;
   font-size: var(--font-size-lead);
   line-height: var(--line-height-lead);
-  color: var(--color-ink-secondary);
-  max-width: 60ch;
+  color: var(--color-ink-muted);
+  max-width: 56ch;
 }
 
 .body {
@@ -30,6 +35,8 @@
 /* A prose block with a comfortable measure for long-form copy. */
 .prose {
   max-width: var(--measure);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .prose h2 {
@@ -62,15 +69,15 @@
   color: var(--color-ink-secondary);
 }
 
-/* Plain typographic bullet — no icons, no colored dots. */
+/* Plain typographic bullet — no icons, no coloured dots. */
 .prose li::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 0.65em;
+  top: 0.7em;
   width: 8px;
   height: 1px;
-  background-color: var(--color-ink-muted);
+  background-color: var(--color-line-strong);
 }
 
 .prose a {
@@ -78,14 +85,23 @@
   text-decoration: underline;
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
+  text-decoration-color: var(--color-line-strong);
+  transition: color var(--transition-fast), text-decoration-color var(--transition-fast);
 }
 
 .prose a:hover {
-  color: var(--color-accent-dark);
+  color: var(--color-accent);
+  text-decoration-color: var(--color-accent);
 }
 
 .sectionRule {
   margin-top: var(--space-12);
-  padding-top: var(--space-8);
-  border-top: var(--border-width-hairline) solid var(--color-rule-hairline);
+  padding-top: var(--space-10);
+  border-top: var(--border-width-hairline) solid var(--color-line);
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding-top: var(--space-12);
+  }
 }
