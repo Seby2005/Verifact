@@ -346,7 +346,7 @@ async function fetchFactChecks(
  *   - If no fact-checks found: 0.5 (neutral — absence of evidence is not evidence of falsity)
  *   - Otherwise: weighted average of ratingValue, weighted by relevanceScore
  */
-function calculateLayer1Score(results: FactCheckResult[]): number {
+export function calculateLayer1Score(results: FactCheckResult[]): number {
   if (results.length === 0) return 0.5;
 
   const totalRelevance = results.reduce((sum, r) => sum + r.relevanceScore, 0);

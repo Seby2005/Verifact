@@ -29,8 +29,10 @@ describe('calculateScore', () => {
       ai: { score: 10, confidence: 0.9 },
     });
 
-    // (0.1*0.35 + 0.2*0.30 + 0.15*0.25 + 0.6*0.10 + 0.1*0.10) / 1.10 * 100 ≈ 18.4
-    expect(result.finalScore).toBe(18);
+    // layer3 (2 results) and layer4 (1) fall short of CORROBORATION_TARGET, so
+    // the part of their weight they have not earned abstains at 0.5:
+    // (0.1*0.35 + 0.2*0.30 + 0.15*0.167 + 0.6*0.033 + 0.1*0.10 + 0.5*0.15) / 1.10 * 100 ≈ 20.5
+    expect(result.finalScore).toBe(20);
     expect(result.availableLayers).toBe(4);
     expect(result.adjustedForAvailability).toBe(false);
     expect(scoreToVerdict(result.finalScore)).toBe('false');
@@ -75,8 +77,9 @@ describe('calculateScore', () => {
       ai: { score: 50, confidence: 0.1 }, // excluded (low confidence)
     });
 
-    // (0.9*0.35 + 1.0*0.25) / 0.60 * 100 ≈ 94.2
-    expect(result.finalScore).toBe(94);
+    // layer3 has 2 of the 3 results needed for full weight, so a third of its
+    // 0.25 abstains: (0.9*0.35 + 1.0*0.167 + 0.5*0.083) / 0.60 * 100 ≈ 87.2
+    expect(result.finalScore).toBe(87);
     expect(result.availableLayers).toBe(2);
     expect(result.adjustedForAvailability).toBe(true);
     expect(scoreToVerdict(result.finalScore)).toBe('true');
@@ -109,6 +112,100 @@ describe('calculateScore', () => {
 
     expect(result.finalScore).toBe(50);
     expect(result.availableLayers).toBe(0);
+  });
+
+  describe('thin evidence', () => {
+    it('does not let a single source outvote everything else', () => {
+      // The reported case: "Apa pură fierbe la 100°C" came back "Probabil
+      // fals" at 29 because one unrelated EU regulation was the only thing
+      // layer3 found, and redistribution handed it 71% of the decision.
+      const result = calculateScore({
+        layer1: NEUTRAL_L1,
+        layer2: NEUTRAL_L2,
+        layer3: layer3(0, 1),
+        layer4: NEUTRAL_L4,
+        ai: { score: 100, confidence: 0.9 },
+      });
+
+      expect(result.finalScore).toBe(52);
+      expect(scoreToVerdict(result.finalScore)).toBe('unclear');
+    });
+
+    it('gives the same layer its full say once it is corroborated', () => {
+      const result = calculateScore({
+        layer1: NEUTRAL_L1,
+        layer2: NEUTRAL_L2,
+        layer3: layer3(0, 3),
+        layer4: NEUTRAL_L4,
+        ai: { score: 100, confidence: 0.9 },
+      });
+
+      // 0*0.25 + 1.0*0.10, over 0.35 — nothing abstains any more.
+      expect(result.finalScore).toBe(29);
+      expect(scoreToVerdict(result.finalScore)).toBe('false');
+    });
+
+    it('scales between the two as corroboration builds', () => {
+      const oneSource = calculateScore({
+        layer1: NEUTRAL_L1, layer2: NEUTRAL_L2, layer3: layer3(0, 1), layer4: NEUTRAL_L4,
+        ai: { score: 100, confidence: 0.9 },
+      }).finalScore;
+      const twoSources = calculateScore({
+        layer1: NEUTRAL_L1, layer2: NEUTRAL_L2, layer3: layer3(0, 2), layer4: NEUTRAL_L4,
+        ai: { score: 100, confidence: 0.9 },
+      }).finalScore;
+
+      expect(twoSources).toBeLessThan(oneSource);
+    });
+  });
+
+  describe('when no search layer found evidence', () => {
+    const NOTHING_FOUND = {
+      layer1: layer1(0.5, 0, 'unavailable'),
+      layer2: layer2(0.5, 0, 'unavailable'),
+      layer3: layer3(0.5, 0, 'unavailable'),
+      layer4: layer4(0.5, 0, 'unavailable'),
+    };
+
+    it('never reaches a "true" verdict on the AI assessment alone', () => {
+      const result = calculateScore({ ...NOTHING_FOUND, ai: { score: 100, confidence: 0.95 } });
+
+      expect(result.finalScore).toBe(84);
+      expect(scoreToVerdict(result.finalScore)).toBe('partial');
+      expect(result.availableLayers).toBe(0);
+    });
+
+    it('never reaches a "false" verdict on the AI assessment alone', () => {
+      const result = calculateScore({ ...NOTHING_FOUND, ai: { score: 0, confidence: 0.95 } });
+
+      expect(result.finalScore).toBe(40);
+      expect(scoreToVerdict(result.finalScore)).toBe('unclear');
+    });
+
+    it('leaves an assessment inside the band untouched', () => {
+      const result = calculateScore({ ...NOTHING_FOUND, ai: { score: 62, confidence: 0.8 } });
+
+      expect(result.finalScore).toBe(62);
+    });
+
+    it('still reports low confidence, since nothing corroborates the score', () => {
+      const result = calculateScore({ ...NOTHING_FOUND, ai: { score: 100, confidence: 0.95 } });
+
+      expect(scoreToConfidence(result.availableLayers)).toBe('low');
+    });
+  });
+
+  it('does not cap the score when a search layer did find evidence', () => {
+    const result = calculateScore({
+      layer1: layer1(1, 3),
+      layer2: NEUTRAL_L2,
+      layer3: NEUTRAL_L3,
+      layer4: NEUTRAL_L4,
+      ai: { score: 100, confidence: 0.9 },
+    });
+
+    expect(result.finalScore).toBe(100);
+    expect(scoreToVerdict(result.finalScore)).toBe('true');
   });
 
   it('clamps the final score into the 0-100 range', () => {

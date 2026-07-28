@@ -2,6 +2,7 @@ import type { SocialMediaPost, Language, Layer4Result } from '@/types/verificati
 import { ROMANIAN_PUBLIC_FIGURES } from './constants';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
+import { isRelevantToClaim } from './relevance';
 
 interface TwitterSearchResponse {
   data?: Array<{
@@ -191,20 +192,31 @@ function extractSocialAuthor(title: string): string {
 
 function buildLayer4Result(
   results: SocialMediaPost[],
-  startTime: number
+  startTime: number,
+  claim: string
 ): Layer4Result {
-  const layerScore = calculateLayer4Score(results);
+  // Both search paths query by named entity alone, so a claim about Trump
+  // returns whatever that account posted this week. Posts that only share the
+  // entity with the claim are not evidence about the claim, and were being
+  // listed as declarations backing it. Filtering can legitimately empty this
+  // layer, which scores a neutral 0.5 — the honest result when nothing on
+  // topic was said publicly.
+  const relevant = results.filter(p =>
+    isRelevantToClaim(claim, `${p.author} ${p.content}`)
+  );
+
+  const layerScore = calculateLayer4Score(relevant);
   return {
     status: 'success',
-    posts: results.slice(0, 8),
-    results: results.slice(0, 8),
-    summary: `${results.length} social media posts found`,
+    posts: relevant.slice(0, 8),
+    results: relevant.slice(0, 8),
+    summary: `${relevant.length} social media posts found`,
     layerScore,
     processingTime: Date.now() - startTime,
   };
 }
 
-function calculateLayer4Score(posts: SocialMediaPost[]): number {
+export function calculateLayer4Score(posts: SocialMediaPost[]): number {
   if (posts.length === 0) return 0.5; // neutral
 
   // Weight verified accounts more
@@ -248,7 +260,7 @@ export async function runLayer4(
   if (process.env.TWITTER_BEARER_TOKEN) {
     try {
       const results = await searchTwitter(text, namedEntities);
-      return buildLayer4Result(results, startTime);
+      return buildLayer4Result(results, startTime, text);
     } catch {
       // Twitter API failed, fall through to Google Search
     }
@@ -257,7 +269,7 @@ export async function runLayer4(
   // Fallback: Tavily search restricted to social platform domains
   try {
     const results = await searchSocialViaTavily(text, namedEntities);
-    return buildLayer4Result(results, startTime);
+    return buildLayer4Result(results, startTime, text);
   } catch (error) {
     return {
       status: 'unavailable',

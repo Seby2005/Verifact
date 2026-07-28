@@ -15,15 +15,14 @@ export interface OCRSpaceResponse {
 }
 
 /**
- * Maps standard ISO language codes to OCR.space 3-letter codes (e.g. 'ron' for Romanian).
+ * OCR.space ships no Romanian model. Asking for 'ron' doesn't degrade the
+ * result, it fails the whole parse with "Language not supported"
+ * (OCRExitCode 3) — which is why this provider silently never worked for the
+ * app's primary language. 'eng' does read Romanian text, but flattens the
+ * diacritics to their base letters (ă→a, ș→s, ț→t), so OCR.space is a
+ * degraded stand-in for Vision rather than an equal alternative to it.
  */
-function mapLanguageToOCRSpace(lang?: string): string {
-  if (!lang) return 'ron';
-  const clean = lang.toLowerCase().trim();
-  if (clean === 'ro' || clean === 'rum' || clean === 'ron' || clean === 'romanian') return 'ron';
-  if (clean === 'en' || clean === 'eng' || clean === 'english') return 'eng';
-  return 'ron';
-}
+const ENGINE_LANGUAGE = 'eng';
 
 /**
  * Processes an image using OCR.space free/pro API.
@@ -37,7 +36,11 @@ export async function processOCRSpace(
   apiKey?: string,
   language = 'ro'
 ): Promise<VisionOCRResult> {
-  const key = apiKey || process.env.OCR_SPACE_API_KEY || 'K84077616488957';
+  const key = apiKey || process.env.OCR_SPACE_API_KEY;
+
+  if (!key) {
+    throw new Error('OCR_SPACE_API_KEY is not configured');
+  }
 
   // Ensure base64 string includes data URI prefix for OCR.space
   const base64WithPrefix = base64Image.startsWith('data:image/')
@@ -46,7 +49,7 @@ export async function processOCRSpace(
 
   const formData = new URLSearchParams();
   formData.append('base64Image', base64WithPrefix);
-  formData.append('language', mapLanguageToOCRSpace(language));
+  formData.append('language', ENGINE_LANGUAGE);
   formData.append('isOverlayRequired', 'false');
   formData.append('detectOrientation', 'true');
   formData.append('scale', 'true');

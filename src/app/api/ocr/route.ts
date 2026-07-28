@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
-import { processImageOCR } from '@/lib/ocr/vision';
+import { processOCR } from '@/lib/ocr';
 import { CircuitOpenError } from '@/lib/utils/circuit-breaker';
 import { logger } from '@/lib/utils/logger';
-
-interface OCRRequest {
-  image: string;
-  mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
-}
+import type { OcrRequest } from '@/types/verification';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,11 +27,11 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Parse request body
-    const body: OCRRequest = await req.json();
-    const { image, mimeType } = body;
+    const body: OcrRequest = await req.json();
+    const { imageBase64, mimeType } = body;
 
     // 3. Input validation
-    if (!image || typeof image !== 'string') {
+    if (!imageBase64 || typeof imageBase64 !== 'string') {
       return NextResponse.json(
         {
           success: false,
@@ -59,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check size limit (10MB)
-    const imageBuffer = Buffer.from(image, 'base64');
+    const imageBuffer = Buffer.from(imageBase64, 'base64');
     if (imageBuffer.byteLength > 10 * 1024 * 1024) {
       return NextResponse.json(
         {
@@ -72,7 +68,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Process OCR
-    const ocrResult = await processImageOCR(image);
+    const ocrResult = await processOCR(imageBase64);
 
     const processingTime = Date.now() - startTime;
 

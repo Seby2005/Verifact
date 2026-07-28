@@ -153,6 +153,136 @@ REGULI:
   }
 }
 
+export interface SourceCandidate {
+  id: string;
+  title: string;
+  snippet: string;
+  /**
+   * Where the document lives. Carries most of the signal when the title does
+   * not: search engines return PDFs titled "MINUTA" or "pdf", and the path
+   * (".../minuta-sedintei/2019/...") is what reveals it is a 2019 meeting
+   * record rather than anything about the claim.
+   */
+  source?: string;
+}
+
+/**
+ * Asks the model which candidate sources actually concern the claim.
+ *
+ * Returns the ids to keep, or null when the judgement could not be obtained —
+ * callers treat null as "keep everything" rather than dropping evidence
+ * because a model call failed.
+ *
+ * This is deliberately a separate prompt from the assessment and the prose
+ * analysis: it is a triage question ("is this document about the claim?"),
+ * not a judgement about whether the claim is true, and mixing the two made
+ * the model reason about truth when all that was needed was topicality.
+ */
+export async function filterRelevantSourcesWithOpenRouter(
+  claim: string,
+  candidates: SourceCandidate[],
+  apiKey?: string,
+  modelName?: string
+): Promise<string[] | null> {
+  const key = apiKey || process.env.OPENROUTER_API_KEY;
+  if (!key || candidates.length === 0) return null;
+
+  const model = modelName || DEFAULT_MODEL;
+
+  // Short extracts on purpose: a full snippet per candidate pushed the prompt
+  // large enough that the call timed out on a ~18-source report — which fails
+  // open, so the whole step silently did nothing.
+  //
+  // The origin is listed alongside because the title often carries nothing at
+  // all. Search engines return PDFs titled "MINUTA" or literally "pdf", and
+  // the model was left judging those on a spliced extract alone; measured
+  // across repeated runs it kept an unrelated 2019 meeting minute about a
+  // third of the time. With the path visible it dropped it every time.
+  const list = candidates
+    .map(c => {
+      const origin = c.source ? `\n  sursa: ${c.source}` : '';
+      return `- id: ${c.id}${origin}\n  titlu: ${c.title}\n  extras: ${c.snippet.slice(0, 160)}`;
+    })
+    .join('\n');
+
+  const prompt = `Ești un asistent care triază surse pentru un raport de fact-checking.
+
+AFIRMAȚIA DE VERIFICAT:
+<claim>
+${claim}
+</claim>
+
+SURSE CANDIDATE:
+${list}
+
+SARCINA: Decide care surse se referă efectiv la afirmația de mai sus.
+
+REGULI:
+1. Păstrează o sursă dacă discută subiectul afirmației, indiferent dacă o confirmă sau o infirmă. O sursă care demontează afirmația ESTE relevantă.
+2. Elimină sursele care doar menționează aceleași persoane, locuri sau organizații, dar tratează un subiect diferit. Un articol despre Donald Trump nu este relevant pentru afirmația "Donald Trump a murit" decât dacă vorbește despre moartea lui.
+3. Extrasele sunt fragmente lipite din document, nu propoziții continue. Cuvinte din afirmație apărute în fragmente diferite NU înseamnă că documentul tratează afirmația.
+4. Nu evalua dacă afirmația este adevărată. Decide doar dacă sursa este pe subiect.
+5. Dacă ești nesigur, păstreaz-o — dar o coincidență de cuvinte nu înseamnă nesiguranță, înseamnă că sursa nu e pe subiect.
+
+Întoarce EXCLUSIV un obiect JSON:
+{"relevant": ["id1", "id2"]}`;
+
+  try {
+    const data = await withRetry<{ choices?: Array<{ message?: { content?: string } }> }>(
+      () => ({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
+          'X-Title': 'Verifact AI Fact-Checker',
+        },
+        signal: AbortSignal.timeout(25000),
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0,
+          // The reply itself is a short id list, but reasoning models spend
+          // completion tokens thinking before they emit it — measured at ~520
+          // for a 16-source list. Too low a cap truncates the response before
+          // the JSON arrives, which parses as nothing and fails open.
+          max_tokens: 2000,
+          response_format: { type: 'json_object' },
+        }),
+      }),
+      'source-filter'
+    );
+
+    const content = data.choices?.[0]?.message?.content ?? '';
+    const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const braced = content.match(/\{[\s\S]*\}/);
+
+    for (const candidateJson of [fenced?.[1], braced?.[0], content]) {
+      if (!candidateJson) continue;
+      try {
+        const parsed = JSON.parse(candidateJson.trim()) as { relevant?: unknown };
+        if (Array.isArray(parsed.relevant)) {
+          return parsed.relevant.filter((id): id is string => typeof id === 'string');
+        }
+      } catch {
+        // try next candidate
+      }
+    }
+
+    logger.warn('OpenRouter source filter returned an unparseable response', {
+      service: 'openrouter',
+      operation: 'filterRelevantSources',
+    });
+    return null;
+  } catch (error) {
+    logger.error('OpenRouter source filter failed, keeping all sources', {
+      service: 'openrouter',
+      error,
+    });
+    return null;
+  }
+}
+
 /**
  * Generates natural language prose report using OpenRouter API.
  */

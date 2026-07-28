@@ -195,6 +195,14 @@ export interface CombinedSource {
   sourceType: 'fact_check' | 'official' | 'news' | 'social';
   supports?: boolean | null;
   relevance: number;
+  /**
+   * The passage the search actually matched on. Shown under the source so a
+   * reader can see what the citation rests on — a government PDF cited for
+   * "Nicușor Dan a murit" turned out to be a meeting minute listing an
+   * attendee by that name next to an unrelated remark, which is obvious from
+   * the excerpt and invisible from the title alone.
+   */
+  excerpt?: string;
 }
 
 export interface VerificationReport {

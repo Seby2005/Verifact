@@ -8,6 +8,8 @@ describe('OCR.space Integration', () => {
   beforeEach(() => {
     jest.resetModules();
     process.env = { ...originalEnv };
+    // The provider no longer carries a hardcoded key to fall back on.
+    process.env.OCR_SPACE_API_KEY = 'test-ocr-key';
     resetAllCircuits();
     global.fetch = jest.fn();
   });

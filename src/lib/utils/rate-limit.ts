@@ -35,7 +35,12 @@ export async function checkRateLimit(
     // (rather than just its result) is needed here because check_rate_limit
     // takes real arguments, so the generic mismatch surfaces at the call's
     // argument position, not only in the return type.
-    const rpc = supabase.rpc as unknown as (
+    // .bind() is load-bearing, not stylistic: supabase-js's rpc() reads
+    // this.rest internally, so detaching the method from the client makes
+    // every call throw "Cannot read properties of undefined (reading 'rest')"
+    // — which the catch below swallowed into a permanent fail-open, i.e. no
+    // rate limiting at all.
+    const rpc = supabase.rpc.bind(supabase) as unknown as (
       fn: 'check_rate_limit',
       args: { p_key: string; p_limit: number; p_window_ms: number }
     ) => Promise<{

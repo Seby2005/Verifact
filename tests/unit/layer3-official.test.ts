@@ -35,9 +35,9 @@ describe('runLayer3', () => {
       jsonResponse({
         results: [
           {
-            title: 'WHO statement on the claim',
+            title: 'WHO statement on the claim under review',
             url: 'https://who.int/news/statement',
-            content: 'Oficial confirmat: this is an official confirmation of the claim by WHO.',
+            content: 'Oficial confirmat: this is an official confirmation of the claim under review by WHO.',
             published_date: '2024-01-01',
           },
         ],
@@ -59,9 +59,9 @@ describe('runLayer3', () => {
       jsonResponse({
         results: [
           {
-            title: 'Official denial',
+            title: 'Official denial of the claim text',
             url: 'https://gov.ro/comunicat',
-            content: 'Este fals si dezmintit oficial: aceasta afirmatie nu este adevarata.',
+            content: 'Este fals si dezmintit oficial: aceasta afirmatie (claim text) nu este adevarata.',
           },
         ],
       })
@@ -94,15 +94,17 @@ describe('runLayer3', () => {
   it('caps results at 6', async () => {
     process.env.TAVILY_API_KEY = 'test-key';
     const results = Array.from({ length: 10 }, (_, i) => ({
-      title: `Doc ${i}`,
+      title: `Doc ${i} despre claim`,
       url: `https://gov.ro/doc-${i}`,
-      content: 'Some neutral content about the topic.',
+      content: 'Some neutral content about the topic of this claim.',
     }));
     global.fetch = jest.fn().mockResolvedValue(jsonResponse({ results }));
 
     const result = await runLayer3('claim', 'ro');
 
-    expect(result.results.length).toBeLessThanOrEqual(6);
+    // All ten are on topic, so this exercises the cap rather than passing
+    // because the relevance filter emptied the list.
+    expect(result.results).toHaveLength(6);
   });
 
   it('resolves an unlisted gov.ro subdomain to the parent domain\'s organization', async () => {
@@ -110,7 +112,7 @@ describe('runLayer3', () => {
     global.fetch = jest.fn().mockResolvedValue(
       jsonResponse({
         results: [
-          { title: 'Doc', url: 'https://subdomain.gov.ro/doc', content: 'Neutral content here.' },
+          { title: 'Doc despre claim', url: 'https://subdomain.gov.ro/doc', content: 'Neutral content here about the claim.' },
         ],
       })
     );

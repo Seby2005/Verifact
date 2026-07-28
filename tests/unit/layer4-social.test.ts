@@ -102,7 +102,11 @@ describe('runLayer4', () => {
     process.env.TWITTER_BEARER_TOKEN = 'twitter-token';
     global.fetch = jest.fn().mockResolvedValue(
       jsonResponse({
-        data: [{ id: 't1', text: 'A repost about someone else', created_at: '2024-01-01', author_id: 'u1' }],
+        // On topic, but posted by a third party: isOriginalSource keys off the
+        // author's name, not the text, so this still exercises the
+        // verified-but-not-original branch. The text has to reference the
+        // claim or the relevance filter drops it before scoring.
+        data: [{ id: 't1', text: 'Klaus Iohannis a declarat ceva astazi, relateaza presa', created_at: '2024-01-01', author_id: 'u1' }],
         includes: {
           users: [{ id: 'u1', name: 'A Random Verified Journalist', username: 'journo', verified: true }],
         },
