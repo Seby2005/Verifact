@@ -1,6 +1,10 @@
 import type { Translations } from './ro';
 
 export const en: Translations = {
+  common: {
+    close: 'Close',
+    closeAria: 'Close dialog',
+  },
   header: {
     nav: {
       reports: 'Reports',
@@ -116,6 +120,8 @@ export const en: Translations = {
       foundOne: '1 result',
       empty: 'no results',
       unavailable: 'unavailable',
+      notApplicable: 'not applicable',
+      aiScored: 'assessed {score}/100',
     },
     heading: 'Verify a claim',
     ariaTabContent: 'Content type to verify',
@@ -167,6 +173,22 @@ export const en: Translations = {
     disclaimerLabel: 'Disclaimer',
     disclaimerText:
       'This report is generated automatically and does not constitute a final editorial decision. Read cited sources for full context.',
+    downloadBtn: 'Download PDF',
+    printId: 'Report ID',
+  },
+  cite: {
+    button: 'Copy citation',
+    copiedShort: 'Copied',
+    copied: 'Citation copied to clipboard',
+    failed: 'Could not copy the citation. Select the text manually.',
+    heading: 'Verifact — independent information verification',
+    claimLabel: 'Claim',
+    verdictLabel: 'Verdict',
+    scoreLabel: 'credibility score',
+    layersLabel: 'Evidence layers',
+    sourcesLabel: 'Sources consulted',
+    reportLabel: 'Report',
+    accessed: 'accessed',
   },
   dispute: {
     reportErrorBtn: 'Report error',
@@ -268,6 +290,11 @@ export const en: Translations = {
     title: 'Sign in or create an account',
     lead:
       'You only need an account if you want to save your verification history. A simple claim check works without one.',
+    oauthError: {
+      label: 'Sign-in error',
+      message:
+        'Signing in with that social network failed. Please try again, or use your email and password.',
+    },
     aside: {
       title: 'What happens to your data',
       bullet1Strong: 'Everything is private.',
@@ -439,15 +466,22 @@ export const en: Translations = {
       },
       {
         number: '04',
+        title: 'Social Media & Public Statements',
+        weight: '10%',
+        text:
+          'We check whether a statement attributed to someone was actually made. This applies only to claims naming a public figure; otherwise the layer is skipped.',
+      },
+      {
+        number: '05',
         title: 'AI Contextual Analysis',
         weight: '10%',
         text:
-          'An AI model synthesizes the layers above and flags missing context. Its weight is intentionally small: the model explains, it does not decide.',
+          'An AI model assesses the claim against the evidence above and flags missing context. Its nominal weight is small, but when the searches find nothing their weight is redistributed and the AI assessment counts for far more — up to carrying the score on its own.',
       },
     ],
     scoreTitle: 'What the Score Means',
     scoreIntro:
-      'The final score is a weighted average of the four layers. The band it falls into determines the verdict — nothing else.',
+      'The final score is a weighted average of the five layers. The band it falls into determines the verdict — nothing else.',
     bands: [
       {
         range: '85–100%',

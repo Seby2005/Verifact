@@ -4,7 +4,9 @@ import React from 'react';
 import { VerdictLabel, Callout } from '@/components/ui';
 import type { VerificationReport } from '@/types/verification';
 import { useLanguage } from '@/i18n';
+import { CiteButton } from './CiteButton';
 import { DisputeButton } from './DisputeButton';
+import { DownloadButton } from './DownloadButton';
 import styles from './ReportView.module.css';
 
 export interface ReportViewProps {
@@ -30,7 +32,16 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
   const { locale, t } = useLanguage();
 
   return (
-    <article className={styles.report}>
+    <article className={styles.report} data-print-root>
+      {/* The site header does not print, so the sheet carries its own
+          provenance: who produced it and which report it is. */}
+      <div className={styles.printHeader}>
+        <span className={styles.printBrand}>Verifact</span>
+        <span className={styles.printId}>
+          {t('reportView.printId')}: {report.id}
+        </span>
+      </div>
+
       <header className={styles.head}>
         <div>
           {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
@@ -94,7 +105,11 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
         <Callout label={t('reportView.disclaimerLabel')} tone="plain">
           {t('reportView.disclaimerText')}
         </Callout>
-        <DisputeButton reportId={report.id} />
+        <div className={styles.footerActions} data-print-hide>
+          <CiteButton report={report} />
+          <DownloadButton />
+          <DisputeButton reportId={report.id} />
+        </div>
       </div>
     </article>
   );

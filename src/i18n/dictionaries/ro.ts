@@ -1,4 +1,9 @@
 export const ro = {
+  /** Shared chrome that belongs to no single page — keep this list short. */
+  common: {
+    close: 'Închide',
+    closeAria: 'Închide dialogul',
+  },
   header: {
     nav: {
       reports: 'Rapoarte',
@@ -114,6 +119,8 @@ export const ro = {
       foundOne: '1 rezultat',
       empty: 'fără rezultate',
       unavailable: 'indisponibil',
+      notApplicable: 'nu se aplică',
+      aiScored: 'evaluat {score}/100',
     },
     heading: 'Verifică o afirmație',
     ariaTabContent: 'Tip de conținut de verificat',
@@ -165,6 +172,23 @@ export const ro = {
     disclaimerLabel: 'Disclaimer',
     disclaimerText:
       'Raportul este generat automat și nu reprezintă o decizie editorială finală. Citește sursele citate pentru contextul complet.',
+    downloadBtn: 'Descarcă PDF',
+    /** Shown only on the printed page, which loses the site header. */
+    printId: 'ID raport',
+  },
+  cite: {
+    button: 'Copiază citarea',
+    copiedShort: 'Copiat',
+    copied: 'Citare copiată în clipboard',
+    failed: 'Nu am putut copia citarea. Selectează textul manual.',
+    heading: 'Verifact — verificare independentă a informației',
+    claimLabel: 'Afirmație',
+    verdictLabel: 'Verdict',
+    scoreLabel: 'scor de veridicitate',
+    layersLabel: 'Straturi cu dovezi',
+    sourcesLabel: 'Surse consultate',
+    reportLabel: 'Raport',
+    accessed: 'accesat',
   },
   dispute: {
     reportErrorBtn: 'Raportează eroare',
@@ -266,6 +290,11 @@ export const ro = {
     title: 'Intră în cont sau creează unul',
     lead:
       'Ai nevoie de cont doar dacă vrei să îți păstrezi istoricul verificărilor. O verificare simplă funcționează și fără.',
+    oauthError: {
+      label: 'Eroare autentificare',
+      message:
+        'Autentificarea cu rețeaua socială a eșuat. Încearcă din nou sau folosește email și parolă.',
+    },
     aside: {
       title: 'Ce se întâmplă cu datele tale',
       bullet1Strong: 'Totul este privat.',
@@ -437,15 +466,22 @@ export const ro = {
       },
       {
         number: '04',
+        title: 'Rețele sociale și declarații publice',
+        weight: '10%',
+        text:
+          'Verificăm dacă o declarație atribuită cuiva a fost făcută cu adevărat. Se aplică doar afirmațiilor care numesc o persoană publică; altfel stratul e sărit.',
+      },
+      {
+        number: '05',
         title: 'Analiză contextuală AI',
         weight: '10%',
         text:
-          'Un model AI sintetizează straturile de mai sus și semnalează contextul lipsă. Ponderea e mică intenționat: modelul explică, nu decide.',
+          'Un model AI evaluează afirmația față de dovezile de mai sus și semnalează contextul lipsă. Ponderea nominală e mică, dar când căutările nu găsesc nimic, ponderile lor se redistribuie și evaluarea AI ajunge să cântărească mult mai mult — până la a purta singură scorul.',
       },
     ],
     scoreTitle: 'Ce înseamnă scorul',
     scoreIntro:
-      'Scorul final e media ponderată a celor patru straturi. Banda în care cade determină verdictul — nimic altceva.',
+      'Scorul final e media ponderată a celor cinci straturi. Banda în care cade determină verdictul — nimic altceva.',
     bands: [
       {
         range: '85–100%',

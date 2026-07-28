@@ -8,6 +8,7 @@ export { Callout, type CalloutProps } from './Callout';
 export { ScoreRing, type ScoreRingProps } from './ScoreRing';
 export { Reveal, type RevealProps } from './Reveal';
 export { WeightBar, type WeightBarProps } from './WeightBar';
+export { ToastProvider, useToast, type Toast, type ToastTone } from './Toast';
 export {
   VerdictLabel,
   verdictFromScore,

@@ -1,0 +1,78 @@
+/* Anchored to the bottom centre, above everything but the modal overlay.
+   Pointer-events are off so a toast can never intercept a click. */
+.region {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-6);
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+  width: max-content;
+  max-width: calc(100vw - var(--space-8));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--font-size-body-sm);
+  line-height: 1.4;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
+  animation: rise 280ms var(--ease-out) both;
+}
+
+/* The dot reuses the verdict scale, so colour means the same thing here as it
+   does on a report: this is the only colour a toast carries. */
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.success .dot {
+  background-color: var(--verdict-true);
+}
+
+.error .dot {
+  background-color: var(--verdict-false);
+}
+
+.message {
+  min-width: 0;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .region {
+    left: var(--space-4);
+    right: var(--space-4);
+    transform: none;
+    width: auto;
+    max-width: none;
+  }
+}

@@ -1,13 +1,17 @@
 'use client';
 
 import React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AuthPanel } from '@/components/auth';
+import { Callout } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import shell from '../page-shell.module.css';
 import styles from './page.module.css';
 
 export default function ContPage() {
   const { t } = useLanguage();
+  const searchParams = useSearchParams();
+  const oauthError = searchParams.get('error') === 'oauth_failed';
 
   return (
     <div className={`container ${shell.page}`}>
@@ -20,6 +24,11 @@ export default function ContPage() {
       <div className={shell.body}>
         <div className={styles.layout}>
           <div className={styles.formSide}>
+            {oauthError && (
+              <Callout label={t('contPage.oauthError.label')} tone="plain">
+                {t('contPage.oauthError.message')}
+              </Callout>
+            )}
             <AuthPanel />
           </div>
 
