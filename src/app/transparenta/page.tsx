@@ -37,8 +37,6 @@ export default function TransparentaPage() {
     },
   ];
 
-  // `kind` maps each band to its verdict colour, so this table doubles as the
-  // legend for the one colour the product uses.
   const bands = [
     {
       range: '85–100%',
@@ -93,8 +91,6 @@ export default function TransparentaPage() {
                     {t('transparentaPage.layersWeight', { weight: layer.weight })}
                   </span>
                 </div>
-                {/* The bar restates the weight beside it, so the four layers
-                    are comparable at a glance. */}
                 <WeightBar value={parseInt(layer.weight, 10)} delay={index * 110} />
                 <h3 className={styles.layerTitle}>{layer.title}</h3>
                 <p className={styles.layerText}>{layer.text}</p>
@@ -123,7 +119,6 @@ export default function TransparentaPage() {
 
         <section className={shell.sectionRule}>
           <h2 className={styles.sectionTitle}>{t('transparentaPage.limitsTitle')}</h2>
-          {/* Headings stay scannable; the detail is there for whoever wants it. */}
           <div className={styles.limits}>
             {limits.map((item) => (
               <Disclosure key={item.title} summary={item.title}>

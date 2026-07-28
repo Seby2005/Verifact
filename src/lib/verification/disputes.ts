@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createContentHash } from '@/lib/utils/hash';
+import { logger } from '@/lib/utils/logger';
 
 export interface FileDisputeParams {
   verificationId: string;
@@ -66,7 +67,7 @@ export async function fileDispute(
   const { error: insertError } = await supabase.from('disputes').insert(insertData as never);
 
   if (insertError) {
-    console.error('[disputes] Failed to record dispute:', insertError.message);
+    logger.error('Failed to record dispute', { service: 'Disputes', error: insertError.message });
     return {
       success: false,
       status: 500,
@@ -94,7 +95,7 @@ async function flagAndInvalidate(verification: VerificationForDispute): Promise<
     .eq('id', verification.id);
 
   if (flagError) {
-    console.error('[disputes] Failed to flag verification as disputed:', flagError.message);
+    logger.error('Failed to flag verification as disputed', { service: 'Disputes', error: flagError.message });
   }
 
   const contentHash = createContentHash(verification.input_text, verification.language);
@@ -118,6 +119,6 @@ async function flagAndInvalidate(verification: VerificationForDispute): Promise<
     .eq('content_hash', contentHash);
 
   if (cacheError) {
-    console.error('[disputes] Failed to invalidate cache entry:', cacheError.message);
+    logger.error('Failed to invalidate cache entry', { service: 'Disputes', error: cacheError.message });
   }
 }

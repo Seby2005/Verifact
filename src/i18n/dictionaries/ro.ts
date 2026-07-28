@@ -602,7 +602,7 @@ export const ro = {
     },
     eyebrow: 'Legal',
     title: 'Politica de confidențialitate',
-    leadPrefix: 'Ultima actualizare: 26 iulie 2026. Versiunea pe scurt e pe pagina ',
+    leadPrefix: 'Ultima actualizare: 28 iulie 2026. Versiunea pe scurt e pe pagina ',
     shortVersionLink: 'Open source și confidențialitate',
     leadSuffix: '. Aici e versiunea completă, conform GDPR.',
     sec1Title: '1. Operatorul de date',
@@ -688,7 +688,7 @@ export const ro = {
     },
     eyebrow: 'Legal',
     title: 'Termeni și condiții',
-    lead: 'Ultima actualizare: 26 iulie 2026. Prin folosirea Verifact ești de acord cu termenii de mai jos.',
+    lead: 'Ultima actualizare: 28 iulie 2026. Prin folosirea Verifact ești de acord cu termenii de mai jos.',
     intro:
       'Verifact este operat de Sebi Iancu, persoană fizică, ca proiect open-source („Noi”, „Operatorul”). Acești termeni guvernează accesarea și folosirea aplicației web Verifact („Serviciul”). Dacă nu ești de acord cu ei, te rugăm să nu folosești Serviciul.',
     sec1Title: '1. Ce este Serviciul',

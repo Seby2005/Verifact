@@ -1,4 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 
 export interface RateLimitResult {
   success: boolean;
@@ -55,7 +56,7 @@ export async function checkRateLimit(
     });
 
     if (error) {
-      console.error('[RateLimit] check_rate_limit failed:', error.message);
+      logger.error('check_rate_limit failed', { service: 'RateLimit', error: error.message });
       // Fail open — a rate-limiter outage should not take the API down with it.
       return { success: true, remaining: limit, reset: Date.now() + windowMs };
     }
@@ -71,7 +72,7 @@ export async function checkRateLimit(
       reset: new Date(row.reset_at).getTime(),
     };
   } catch (error) {
-    console.error('[RateLimit] unexpected error:', error instanceof Error ? error.message : error);
+    logger.error('unexpected error', { service: 'RateLimit', error: error instanceof Error ? error.message : String(error) });
     return { success: true, remaining: limit, reset: Date.now() + windowMs };
   }
 }

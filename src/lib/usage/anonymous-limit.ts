@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Maximum number of verifications allowed for anonymous users
@@ -80,7 +81,7 @@ export async function checkAnonymousLimit(
     .gte('created_at', windowStart.toISOString());
 
   if (error) {
-    console.error('Failed to check anonymous verification limit:', error.message);
+    logger.error('Failed to check anonymous verification limit', { service: 'AnonymousLimit', error: error.message });
     // Fail open: allow the verification but log the error.
     // In production, you may want to fail closed instead.
     return {

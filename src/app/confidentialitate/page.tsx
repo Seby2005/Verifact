@@ -79,8 +79,8 @@ export default function ConfidentialitatePage() {
           <h2>{t('confidentialitatePage.sec1Title')}</h2>
           <p>
             {t('confidentialitatePage.sec1Text')}
-            <a href="mailto:sebi.iancu23@gmail.com" className={shell.textLink}>
-              sebi.iancu23@gmail.com
+            <a href="mailto:verifactro@gmail.com" className={shell.textLink}>
+              verifactro@gmail.com
             </a>
             .
           </p>
