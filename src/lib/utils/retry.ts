@@ -1,3 +1,5 @@
+import { logger } from '@/lib/utils/logger';
+
 /**
  * Shared retry-with-backoff utility, extracted from the pattern originally
  * written for src/lib/ai/gemini.ts so the same transient-failure handling
@@ -75,7 +77,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
       }
 
       const delay = baseDelayMs * 2 ** attempt;
-      console.warn(`[Retry] ${label} attempt ${attempt + 1} failed (${message.slice(0, 80)}), retrying in ${delay}ms`);
+      logger.warn(`[Retry] ${label} attempt ${attempt + 1} failed (${message.slice(0, 80)}), retrying in ${delay}ms`, { service: 'Retry', label, attempt: attempt + 1, delay });
       await new Promise((r) => setTimeout(r, delay));
     }
   }
@@ -120,16 +122,18 @@ export async function fetchWithRetry(
       if (response.ok || !isRetryableStatus(response.status) || isLastAttempt) {
         return response;
       }
-      console.warn(
-        `[Retry] ${label} attempt ${attempt + 1} got HTTP ${response.status}, retrying in ${baseDelayMs * 2 ** attempt}ms`
+      logger.warn(
+        `[Retry] ${label} attempt ${attempt + 1} got HTTP ${response.status}, retrying in ${baseDelayMs * 2 ** attempt}ms`,
+        { service: 'Retry', label, attempt: attempt + 1, status: response.status }
       );
     } catch (error) {
       lastNetworkError = error;
       if (!isTransientError(error) || isLastAttempt) {
         throw error;
       }
-      console.warn(
-        `[Retry] ${label} attempt ${attempt + 1} failed (${describeError(error).slice(0, 80)}), retrying in ${baseDelayMs * 2 ** attempt}ms`
+      logger.warn(
+        `[Retry] ${label} attempt ${attempt + 1} failed (${describeError(error).slice(0, 80)}), retrying in ${baseDelayMs * 2 ** attempt}ms`,
+        { service: 'Retry', label, attempt: attempt + 1, error: describeError(error) }
       );
     }
 

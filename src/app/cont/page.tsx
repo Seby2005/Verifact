@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AuthPanel } from '@/components/auth';
 import { Callout } from '@/components/ui';
@@ -8,7 +8,7 @@ import { useLanguage } from '@/i18n';
 import shell from '../page-shell.module.css';
 import styles from './page.module.css';
 
-export default function ContPage() {
+function ContContent() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const oauthError = searchParams.get('error') === 'oauth_failed';
@@ -79,5 +79,13 @@ export default function ContPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ContPage() {
+  return (
+    <Suspense fallback={null}>
+      <ContContent />
+    </Suspense>
   );
 }

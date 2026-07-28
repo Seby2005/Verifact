@@ -1,5 +1,6 @@
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logger } from '@/lib/utils/logger';
 import type { User } from '@supabase/supabase-js';
 import type { UserRole } from '@/types/database';
 
@@ -103,6 +104,6 @@ export async function logAdminAction(params: LogAdminActionParams): Promise<void
   }).insert(insertData);
 
   if (error) {
-    console.error('[Audit] Failed to log admin action:', error.message);
+    logger.error('Failed to log admin action', { service: 'Audit', error: error.message });
   }
 }

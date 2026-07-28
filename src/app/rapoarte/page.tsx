@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import RapoarteClient from './RapoarteClient';
 
 export const metadata: Metadata = {
-  title: 'Rapoarte publicate',
+  title: 'Rapoarte Publicate | Verifact',
   description:
     'Rapoartele publicate de comunitatea Verifact și istoricul verificărilor tale.',
   openGraph: {
-    title: 'Rapoarte publicate — Verifact',
+    title: 'Rapoarte Publicate — Verifact',
     description:
       'Rapoartele publicate de comunitatea Verifact și istoricul verificărilor tale.',
     siteName: 'Verifact',
@@ -17,5 +17,9 @@ export const metadata: Metadata = {
 };
 
 export default function RapoartePage() {
-  return <RapoarteClient />;
+  return (
+    <Suspense fallback={null}>
+      <RapoarteClient />
+    </Suspense>
+  );
 }

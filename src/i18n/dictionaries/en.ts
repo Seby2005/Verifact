@@ -602,7 +602,7 @@ export const en: Translations = {
     },
     eyebrow: 'Legal',
     title: 'Privacy Policy',
-    leadPrefix: 'Last updated: July 26, 2026. The summary version is on the ',
+    leadPrefix: 'Last updated: July 28, 2026. The summary version is on the ',
     shortVersionLink: 'Open Source & Privacy page',
     leadSuffix: '. Below is the complete GDPR-compliant policy.',
     sec1Title: '1. Data Controller',
@@ -688,7 +688,7 @@ export const en: Translations = {
     },
     eyebrow: 'Legal',
     title: 'Terms of Service',
-    lead: 'Last updated: July 26, 2026. By using Verifact, you agree to the terms below.',
+    lead: 'Last updated: July 28, 2026. By using Verifact, you agree to the terms below.',
     intro:
       'Verifact is operated by Sebi Iancu, individual developer, as an open-source project ("We", "Operator"). These terms govern your access to and use of the Verifact web application ("Service"). If you disagree with them, please do not use the Service.',
     sec1Title: '1. What the Service Is',
