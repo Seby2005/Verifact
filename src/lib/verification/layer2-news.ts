@@ -9,6 +9,8 @@ import {
 } from './constants';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
+import { isRelevantToClaim } from './relevance';
+import { matchesAnyPhrase } from './keyword-match';
 
 // ─── Internal API types ───────────────────────────────────────
 
@@ -80,28 +82,31 @@ export function detectSentiment(
   inputText: string,
   _credibilityScore: number
 ): NewsArticle['sentiment'] {
-  // First check relevance — if very different content, mark as unrelated
+  // First check relevance — if very different content, mark as unrelated.
+  //
+  // The previous inline test kept anything scoring >= 0.15 on
+  // matched-words / input-words, using substring matching. For a short claim
+  // that threshold is unreachable: "Donald Trump is dead" has three
+  // significant words, so a single incidental mention of Trump scores 0.33 and
+  // passed — which is how Venezuela earthquake coverage ended up cited as
+  // evidence. See relevance.ts for the replacement's thresholds.
+  // Kept lowercased: the keyword checks below match against lowercase
+  // constants. tokenize() lowercases independently, so this is fine to reuse.
   const combinedText = `${title} ${snippet}`.toLowerCase();
-  const inputLower = inputText.toLowerCase();
 
-  // Extract significant words from input (min 4 chars)
-  const inputWords = inputLower.split(/\s+/).filter(w => w.length >= 4);
-  const matchCount = inputWords.filter(w => combinedText.includes(w)).length;
-  const relevance = inputWords.length > 0 ? matchCount / inputWords.length : 0;
-
-  if (relevance < 0.15) return 'unrelated';
+  if (!isRelevantToClaim(inputText, combinedText)) return 'unrelated';
 
   // Debunk framing is checked first and wins outright — see DEBUNK_MARKERS's
   // doc comment in constants.ts for why.
-  if (DEBUNK_MARKERS.some(kw => combinedText.includes(kw))) return 'contradicts';
+  if (matchesAnyPhrase(combinedText, DEBUNK_MARKERS)) return 'contradicts';
 
   // Check for contradiction keywords
   const allContradictions = [...CONTRADICTION_KEYWORDS_RO, ...CONTRADICTION_KEYWORDS_EN];
-  const hasContradiction = allContradictions.some(kw => combinedText.includes(kw));
+  const hasContradiction = matchesAnyPhrase(combinedText, allContradictions);
 
   // Check for confirmation keywords
   const allConfirmations = [...CONFIRMATION_KEYWORDS_RO, ...CONFIRMATION_KEYWORDS_EN];
-  const hasConfirmation = allConfirmations.some(kw => combinedText.includes(kw));
+  const hasConfirmation = matchesAnyPhrase(combinedText, allConfirmations);
 
   if (hasContradiction && !hasConfirmation) return 'contradicts';
   if (hasConfirmation && !hasContradiction) return 'confirms';
@@ -322,18 +327,26 @@ export async function runLayer2(
   // Deduplicate
   const unique = deduplicateArticles(allArticles);
 
-  // Sort by: relevance * credibility DESC
-  unique.sort((a, b) => (b.credibilityScore ?? 0) - (a.credibilityScore ?? 0));
+  // Drop articles that are not about the claim before they reach the report.
+  // calculateLayer2Score already ignored them, but the returned list did not,
+  // so an off-topic article from a high-credibility domain was still shown to
+  // the reader as a source — sorted to the top, since the sort below is on
+  // credibility alone.
+  const relevant = unique.filter(a => a.sentiment !== 'unrelated');
 
-  const layerScore = calculateLayer2Score(unique);
+  // Sort by: relevance * credibility DESC
+  relevant.sort((a, b) => (b.credibilityScore ?? 0) - (a.credibilityScore ?? 0));
+
+  const layerScore = calculateLayer2Score(relevant);
 
   return {
     status: 'success',
-    articles: unique.slice(0, 10),
-    results: unique.slice(0, 10),
-    summary: `${unique.length} news articles found`,
+    articles: relevant.slice(0, 10),
+    results: relevant.slice(0, 10),
+    summary: `${relevant.length} news articles found`,
     layerScore,
     processingTime: Date.now() - startTime,
+    // Counts everything examined, including what the relevance filter removed.
     sourcesChecked: unique.length,
   };
 }

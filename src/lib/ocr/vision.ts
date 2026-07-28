@@ -7,6 +7,12 @@ export interface VisionOCRResult {
   language: string;
 }
 
+/**
+ * Runs Google Cloud Vision TEXT_DETECTION over an image.
+ *
+ * @param base64Image - Base64 encoded image string (with or without data URI prefix)
+ * @param apiKey - Optional Vision API key (defaults to process.env.GOOGLE_CLOUD_API_KEY)
+ */
 export async function processImageOCR(
   base64Image: string,
   apiKey?: string
@@ -21,6 +27,13 @@ export async function processImageOCR(
       language: 'ro',
     };
   }
+
+  // Vision wants raw base64 — a data URI prefix fails to decode server-side
+  // and comes back as zero annotations, i.e. indistinguishable from a blank
+  // image. Strip it here so either form works; ocr-space.ts normalises the
+  // other way because its API wants the prefix, which lets the dispatcher in
+  // ./index.ts hand the same string to whichever provider it picks.
+  const content = base64Image.replace(/^data:image\/[a-z+.-]+;base64,/i, '');
 
   // Each retry attempt gets its own fresh AbortSignal.timeout(...) (built
   // inside the thunk) rather than sharing one AbortController across
@@ -40,7 +53,7 @@ export async function processImageOCR(
         body: JSON.stringify({
           requests: [
             {
-              image: { content: base64Image },
+              image: { content },
               features: [{ type: 'TEXT_DETECTION' }],
             },
           ],

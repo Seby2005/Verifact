@@ -25,7 +25,7 @@ export async function saveVerification(
     report_json: report as unknown as Record<string, unknown>,
     is_public: report.isPublic,
     language: report.language || 'ro',
-    processing_time: report.processingTime,
+    processing_time_ms: report.processingTime,
   };
 
   const { error } = await (supabase.from('verifications') as unknown as {

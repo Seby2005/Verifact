@@ -20,7 +20,13 @@ describe('checkUsageLimit', () => {
   });
 
   it('returns a default free-tier allowance when no profile row exists', async () => {
-    mockSingle.mockResolvedValue({ data: null, error: { message: 'not found' } });
+    // PGRST116 is what PostgREST actually returns for .single() with no rows.
+    // The code matters now: checkUsageLimit treats any other error as a failed
+    // read and throws, rather than reporting it as zero usage.
+    mockSingle.mockResolvedValue({
+      data: null,
+      error: { message: 'not found', code: 'PGRST116' },
+    });
 
     const result = await checkUsageLimit('missing-user');
 

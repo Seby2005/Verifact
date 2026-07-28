@@ -62,6 +62,17 @@ describe('processImageOCR', () => {
     );
   });
 
+  it('strips a data URI prefix before sending the image to Vision', async () => {
+    global.fetch = jest.fn().mockResolvedValue(
+      jsonResponse({ responses: [{ textAnnotations: [{ description: 'text', locale: 'ro' }] }] })
+    );
+
+    await processImageOCR('data:image/png;base64,base64data', 'test-key');
+
+    const [, init] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(JSON.parse(init.body).requests[0].image.content).toBe('base64data');
+  });
+
   it('collapses runs of 3+ newlines down to 2', async () => {
     global.fetch = jest.fn().mockResolvedValue(
       jsonResponse({

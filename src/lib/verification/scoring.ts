@@ -16,6 +16,36 @@ const WEIGHTS = {
 } as const;
 
 /**
+ * The score at which each verdict label starts. Declared once because the
+ * no-evidence cap below is defined in terms of these bands — if the cut points
+ * were repeated in both places, moving one would silently break the other.
+ */
+const VERDICT_THRESHOLD = {
+  true: 85,
+  partial: 60,
+  unclear: 40,
+} as const;
+
+/**
+ * How many results a layer needs before its weight counts in full.
+ *
+ * A layer that found one document is not as sure as a layer that found five,
+ * but the average used to treat them identically. With the other layers empty
+ * and their weight redistributed, a single source could end up carrying most
+ * of the verdict: "Apa pură fierbe la 100°C" came back "Probabil fals" at 29
+ * because one unrelated EU regulation, scored 0, held 71% of the decision.
+ *
+ * Below this bar a layer keeps its direction but speaks quieter, and the
+ * weight it has not earned votes neutral instead of being handed to whichever
+ * component happens to be present.
+ */
+const CORROBORATION_TARGET = 3;
+
+function corroboration(layer: { results?: unknown[] }): number {
+  return Math.min(1, (layer.results?.length ?? 0) / CORROBORATION_TARGET);
+}
+
+/**
  * A layer that ran successfully but found nothing returns layerScore 0.5. Left
  * in the weighted average that neutral vote pulls every hard-to-search claim to
  * exactly 50 ("unclear") — which is what the algorithm used to do to claims as
@@ -80,10 +110,16 @@ export function calculateScore(layers: {
   const searchLayersWithEvidence =
     Number(available.layer1) + Number(available.layer2) + Number(available.layer3) + Number(available.layer4);
 
-  // Calculate the sum of weights for available layers
-  const totalAvailableWeight = (Object.keys(available) as Array<keyof typeof available>)
-    .filter(key => available[key])
-    .reduce((sum, key) => sum + WEIGHTS[key], 0);
+  const availableKeys = (Object.keys(available) as Array<keyof typeof available>)
+    .filter(key => available[key]);
+
+  // The AI is not a search layer — it has nothing to corroborate against, so
+  // it keeps its full weight.
+  const effectiveWeight = (key: keyof typeof available): number =>
+    key === 'ai' ? WEIGHTS.ai : WEIGHTS[key] * corroboration(layers[key]);
+
+  const totalAvailableWeight = availableKeys.reduce((sum, key) => sum + WEIGHTS[key], 0);
+  const earnedWeight = availableKeys.reduce((sum, key) => sum + effectiveWeight(key), 0);
 
   let rawScore: number;
 
@@ -91,17 +127,30 @@ export function calculateScore(layers: {
     // Nothing found anywhere and no usable AI assessment.
     rawScore = 0.5;
   } else if (searchLayersWithEvidence === 0 && available.ai) {
-    rawScore = aiScore01;
+    // The model's own judgement, with nothing found anywhere to corroborate
+    // it. It still sets the direction, but it must not reach a verdict that
+    // reads as verified: "Probabil adevărat · 100%" printed above an empty
+    // source list is the exact kind of confident, unsourced claim this tool
+    // exists to distrust — and "Probabil fals" on no evidence is the same
+    // overreach pointed the other way. Capping just inside the outer bands
+    // leaves 'unclear' and 'partial' reachable and rules out both definitive
+    // labels, without flattening every unsearchable claim back to 50.
+    const floor = VERDICT_THRESHOLD.unclear / 100;
+    const ceiling = (VERDICT_THRESHOLD.true - 1) / 100;
+    rawScore = Math.min(ceiling, Math.max(floor, aiScore01));
   } else {
     // Weighted average over the components that carry evidence, with the
     // weights of the empty ones redistributed proportionally.
-    rawScore = (Object.keys(available) as Array<keyof typeof available>)
-      .filter((key) => available[key])
-      .reduce((sum, key) => {
-        const normalizedWeight = WEIGHTS[key] / totalAvailableWeight;
-        const layerScore = key === 'ai' ? aiScore01 : layers[key].layerScore;
-        return sum + layerScore * normalizedWeight;
-      }, 0);
+    const weighted = availableKeys.reduce((sum, key) => {
+      const layerScore = key === 'ai' ? aiScore01 : layers[key].layerScore;
+      return sum + layerScore * effectiveWeight(key);
+    }, 0);
+
+    // Weight a thinly-sourced layer did not earn abstains rather than being
+    // handed to the components that happen to be present. Once every layer
+    // clears CORROBORATION_TARGET this term is zero and the result is the
+    // plain weighted average again.
+    rawScore = (weighted + 0.5 * (totalAvailableWeight - earnedWeight)) / totalAvailableWeight;
   }
 
   const finalScore = Math.round(Math.max(0, Math.min(100, rawScore * 100)));
@@ -135,9 +184,9 @@ export function calculateScore(layers: {
  * Converts a numeric score to a verdict label.
  */
 export function scoreToVerdict(score: number): Verdict {
-  if (score >= 85) return 'true';
-  if (score >= 60) return 'partial';
-  if (score >= 40) return 'unclear';
+  if (score >= VERDICT_THRESHOLD.true) return 'true';
+  if (score >= VERDICT_THRESHOLD.partial) return 'partial';
+  if (score >= VERDICT_THRESHOLD.unclear) return 'unclear';
   return 'false';
 }
 

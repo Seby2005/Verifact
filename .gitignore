@@ -154,3 +154,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Reference repositories (for local knowledge, not project dependencies)
+.andrej-karpathy-skills/

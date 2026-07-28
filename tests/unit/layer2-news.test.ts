@@ -145,8 +145,8 @@ describe('runLayer2', () => {
             status: 'ok',
             articles: [
               {
-                title: 'Reuters headline about the claim',
-                description: 'A neutral description of the claim with enough overlap.',
+                title: 'Reuters headline about the claim being verified',
+                description: 'A neutral description of the claim verified today, with enough overlap.',
                 url: 'https://reuters.com/article-1',
                 urlToImage: null,
                 publishedAt: '2024-01-01',
@@ -160,9 +160,9 @@ describe('runLayer2', () => {
         jsonResponse({
           results: [
             {
-              title: 'G4Media coverage of the same claim',
+              title: 'G4Media coverage of the same claim being verified',
               url: 'https://g4media.ro/article-1',
-              content: 'A neutral summary covering the same claim in Romanian press.',
+              content: 'A neutral summary covering the same claim, verified today, in Romanian press.',
               score: 0.8,
             },
           ],
@@ -189,9 +189,9 @@ describe('runLayer2', () => {
         jsonResponse({
           results: [
             {
-              title: 'Coverage from Tavily only',
+              title: 'Coverage of the claim from Tavily only',
               url: 'https://example.com/only-tavily',
-              content: 'Tavily still found something even though NewsAPI failed.',
+              content: 'Tavily still found coverage of this claim even though NewsAPI failed.',
               score: 0.7,
             },
           ],

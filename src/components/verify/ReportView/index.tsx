@@ -105,6 +105,12 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
                   {source.publisher}
                   {formatDate(source.date, locale) ? ` · ${formatDate(source.date, locale)}` : null}
                 </span>
+                {/* The passage the search matched on. Without it a citation is
+                    just a title, and a document that only shares a few words
+                    with the claim looks identical to one that addresses it. */}
+                {source.excerpt ? (
+                  <q className={styles.sourceExcerpt}>{source.excerpt.slice(0, 300)}</q>
+                ) : null}
               </span>
             </li>
           ))}

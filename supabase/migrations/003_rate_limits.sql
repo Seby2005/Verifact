@@ -63,9 +63,14 @@ BEGIN
   VALUES (p_key, 0, v_now + v_window, v_now)
   ON CONFLICT (key) DO NOTHING;
 
-  SELECT count, reset_at INTO v_count, v_reset
+  -- Columns are table-qualified throughout this function because the
+  -- RETURNS TABLE(...) signature declares an OUT parameter named reset_at,
+  -- which an unqualified reference collides with ("column reference
+  -- \"reset_at\" is ambiguous"). Renaming the OUT column would be the other
+  -- fix, but it is the wire contract the caller reads (row.reset_at).
+  SELECT rate_limits.count, rate_limits.reset_at INTO v_count, v_reset
     FROM public.rate_limits
-    WHERE key = p_key
+    WHERE rate_limits.key = p_key
     FOR UPDATE;
 
   IF v_now > v_reset THEN
@@ -74,12 +79,14 @@ BEGIN
   END IF;
 
   IF v_count >= p_limit THEN
-    UPDATE public.rate_limits SET reset_at = v_reset, updated_at = v_now WHERE key = p_key;
+    UPDATE public.rate_limits
+      SET reset_at = v_reset, updated_at = v_now
+      WHERE rate_limits.key = p_key;
     -- Opportunistic cleanup of long-expired keys so the table doesn't grow
     -- unbounded. Runs probabilistically instead of on a schedule so this
     -- doesn't depend on pg_cron (not available on every Supabase plan).
     IF random() < 0.01 THEN
-      DELETE FROM public.rate_limits WHERE reset_at < v_now - INTERVAL '1 day';
+      DELETE FROM public.rate_limits WHERE rate_limits.reset_at < v_now - INTERVAL '1 day';
     END IF;
     RETURN QUERY SELECT FALSE, 0, v_reset;
     RETURN;
@@ -89,10 +96,10 @@ BEGIN
 
   UPDATE public.rate_limits
     SET count = v_count, reset_at = v_reset, updated_at = v_now
-    WHERE key = p_key;
+    WHERE rate_limits.key = p_key;
 
   IF random() < 0.01 THEN
-    DELETE FROM public.rate_limits WHERE reset_at < v_now - INTERVAL '1 day';
+    DELETE FROM public.rate_limits WHERE rate_limits.reset_at < v_now - INTERVAL '1 day';
   END IF;
 
   RETURN QUERY SELECT TRUE, (p_limit - v_count), v_reset;

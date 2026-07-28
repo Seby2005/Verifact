@@ -12,7 +12,8 @@ import { runLayer3 } from './layer3-official';
 import { runLayer4 } from './layer4-social';
 import { calculateScore } from './scoring';
 import { buildReport } from './report-builder';
-import { generateAIAnalysis, generateAIAssessment } from '@/lib/ai/gemini';
+import { generateAIAnalysis, generateAIAssessment } from '@/lib/ai';
+import { applyAISourceFilter } from './ai-source-filter';
 import { getCached, setCached } from './cache';
 import { createContentHash } from '@/lib/utils/hash';
 import { logger } from '@/lib/utils/logger';
@@ -134,30 +135,42 @@ export async function verifyContent(
   ]);
 
   // 3. Extract results with graceful fallback for failed layers
-  const layer1 = l1Result.status === 'fulfilled'
+  const rawLayer1 = l1Result.status === 'fulfilled'
     ? l1Result.value
     : makeUnavailableLayer1(String((l1Result as PromiseRejectedResult).reason));
 
-  const layer2 = l2Result.status === 'fulfilled'
+  const rawLayer2 = l2Result.status === 'fulfilled'
     ? l2Result.value
     : makeUnavailableLayer2(String((l2Result as PromiseRejectedResult).reason));
 
-  const layer3 = l3Result.status === 'fulfilled'
+  const rawLayer3 = l3Result.status === 'fulfilled'
     ? l3Result.value
     : makeUnavailableLayer3(String((l3Result as PromiseRejectedResult).reason));
 
-  const layer4 = l4Result.status === 'fulfilled'
+  const rawLayer4 = l4Result.status === 'fulfilled'
     ? l4Result.value
     : makeUnavailableLayer4(String((l4Result as PromiseRejectedResult).reason));
 
-  // 4. Check if at least one layer succeeded
-  const successfulLayers = [layer1, layer2, layer3, layer4].filter(
+  // 4. Check if at least one layer succeeded.
+  //    Deliberately before the relevance pass below: if every layer failed
+  //    there is nothing to triage, and spending a model call to find that out
+  //    would be waste.
+  const successfulLayers = [rawLayer1, rawLayer2, rawLayer3, rawLayer4].filter(
     l => l.status === 'success' || l.status === 'skipped'
   ).length;
 
   if (successfulLayers === 0) {
     throw new Error('ALL_LAYERS_FAILED');
   }
+
+  // 4b. Drop sources that are not about the claim, before they reach either
+  //     the score or the reader. The per-layer keyword filter cannot separate
+  //     "article naming this person" from "article about what the claim says
+  //     happened to them" — see ai-source-filter.ts. Fails open.
+  const { layer1, layer2, layer3, layer4 } = await applyAISourceFilter(
+    { layer1: rawLayer1, layer2: rawLayer2, layer3: rawLayer3, layer4: rawLayer4 },
+    input.text
+  );
 
   // 5. Ask the model to assess the claim against the evidence. This runs BEFORE
   //    scoring because its judgement is one of the weighted inputs — without it

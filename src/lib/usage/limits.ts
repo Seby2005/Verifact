@@ -1,4 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import { TIER_CONFIG } from '@/types/user';
 import type { UsageLimitCheck, UserTier } from '@/types/user';
 
@@ -18,11 +19,26 @@ function getFirstOfNextMonth(): string {
 export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> {
   const supabase = createServerClient();
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select('tier, verifications_count, verifications_reset')
     .eq('id', userId)
     .single();
+
+  // PGRST116 is .single()'s "no rows matched", handled as a missing profile
+  // below. Any other error means the read itself failed (RLS, connectivity,
+  // schema), and must not be reported as "0 used" — that renders as a
+  // confident, wrong quota in the account panel and hides the real fault.
+  // Throwing surfaces it as a 500 the panel shows as "—" instead.
+  if (error && error.code !== 'PGRST116') {
+    logger.error('Failed to read profile for usage check', {
+      service: 'usage/limits',
+      operation: 'checkUsageLimit',
+      error: error.message,
+      code: error.code,
+    });
+    throw new Error(`Usage lookup failed: ${error.message}`);
+  }
 
   const profile = data as ProfileRecord | null;
   const today = new Date().toISOString().split('T')[0];

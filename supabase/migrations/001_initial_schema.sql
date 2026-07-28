@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS public.verifications (
   report_json JSONB NOT NULL,
   is_public BOOLEAN DEFAULT FALSE NOT NULL,
   language TEXT DEFAULT 'ro' CHECK (language IN ('ro', 'en')),
-  processing_time INTEGER,
+  processing_time_ms INTEGER,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 

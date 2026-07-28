@@ -6,24 +6,36 @@ import type {
 import { scoreToVerdict, scoreToConfidence } from './scoring';
 
 /**
- * Extracts a 1-2 sentence executive summary from the full AI analysis.
- * Looks for the **Rezumat** / **Summary** section.
+ * Extracts a 1-2 sentence executive summary from the full AI analysis, which
+ * is the line the report leads with.
+ *
+ * Emphasis is flattened before matching rather than pattern-matched around.
+ * The previous version searched for a literal `**Rezumat**` and captured up to
+ * the next asterisk, which broke in two ways seen in production: a summary
+ * containing inline bold was truncated mid-sentence, and a section the model
+ * opened with an italic line — what it writes when the layers found no
+ * evidence — captured nothing, so the report rendered a blank summary.
+ * Removing the emphasis first retires that whole class of failure instead of
+ * adding one more pattern per shape.
  */
 export function extractExecutiveSummary(aiAnalysis: string): string {
-  // Try to find bolded summary section
-  const rezumatMatch = aiAnalysis.match(
-    /\*\*Rezumat\*\*[\s\S]*?(?:\n+)([^\*]+?)(?:\n\n|\*\*|$)/
-  );
-  if (rezumatMatch?.[1]) return rezumatMatch[1].trim();
+  const plain = aiAnalysis.replace(/\*+/g, '');
 
-  const summaryMatch = aiAnalysis.match(
-    /\*\*Summary\*\*[\s\S]*?(?:\n+)([^\*]+?)(?:\n\n|\*\*|$)/
+  // The paragraph following the heading: consecutive non-blank lines. The
+  // newline is optional because the model writes the summary on the heading's
+  // own line about as often as beneath it, and requiring one left the label
+  // "Rezumat:" sitting inside the summary the report displays. Anchoring to a
+  // line start keeps the word from matching mid-sentence in the prose.
+  const section = plain.match(
+    /(?:^|\n)[ \t]*(?:Rezumat|Summary)[ \t]*:?[ \t]*\n*[ \t]*([^\n]+(?:\n(?!\s*\n)[^\n]+)*)/i
   );
-  if (summaryMatch?.[1]) return summaryMatch[1].trim();
 
-  // Fallback: first 2 sentences
-  const sentences = aiAnalysis
-    .replace(/\*\*/g, '')
+  // A capture too short to be a sentence means the heading was empty and we
+  // caught the next heading instead — worth less than the fallback below.
+  const summary = section?.[1]?.trim();
+  if (summary && summary.length >= 25) return summary;
+
+  const sentences = plain
     .split(/(?<=[.!?])\s+/)
     .filter(s => s.trim().length > 10);
 
@@ -74,6 +86,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
           a.sentiment === 'confirms' ? true
           : a.sentiment === 'contradicts' ? false
           : null,
+        excerpt: a.snippet,
       });
     }
   }
@@ -94,6 +107,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
           o.supportsOrDenies === 'supports' ? true
           : o.supportsOrDenies === 'denies' ? false
           : null,
+        excerpt: o.relevantQuote ?? o.snippet,
       });
     }
   }
@@ -112,6 +126,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
         sourceType: 'social',
         relevance: p.isOriginalSource ? 0.8 : 0.4,
         supports: null, // Social media posts are informational, not verdicts
+        excerpt: text,
       });
     }
   }

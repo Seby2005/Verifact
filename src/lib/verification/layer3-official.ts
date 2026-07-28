@@ -9,6 +9,8 @@ import {
   CONFIRMATION_KEYWORDS_EN,
   DEBUNK_MARKERS,
 } from './constants';
+import { isRelevantToClaim } from './relevance';
+import { matchesAnyPhrase } from './keyword-match';
 
 interface TavilyResult {
   title: string;
@@ -114,12 +116,14 @@ function classifyOrganization(url: string): OfficialSource['organizationType'] {
 }
 
 /**
- * Analyzes whether a snippet supports or denies a claim.
+ * Reads which way a snippet points: does it back the claim, push against it,
+ * or say nothing either way?
+ *
+ * Takes only the snippet — whether the document is about the claim at all is
+ * isRelevantToClaim's job, and conflating the two is what this function used
+ * to get wrong.
  */
-function analyzeSupport(
-  snippet: string,
-  inputText: string
-): OfficialSource['supportsOrDenies'] {
+function analyzeSupport(snippet: string): OfficialSource['supportsOrDenies'] {
   const snippetLower = snippet.toLowerCase();
 
   // Checked first and wins outright — see DEBUNK_MARKERS's doc comment in
@@ -128,22 +132,30 @@ function analyzeSupport(
   // snippets come from official sources, where the word "official" shows up
   // constantly as incidental framing ("oficial dezmintit" = "officially
   // denied") rather than as a signal of support.
-  if (DEBUNK_MARKERS.some(kw => snippetLower.includes(kw))) return 'denies';
+  if (matchesAnyPhrase(snippetLower, DEBUNK_MARKERS)) return 'denies';
 
   const allContradictions = [...CONTRADICTION_KEYWORDS_RO, ...CONTRADICTION_KEYWORDS_EN];
   const allConfirmations = [...CONFIRMATION_KEYWORDS_RO, ...CONFIRMATION_KEYWORDS_EN];
 
-  const contradicts = allContradictions.some(kw => snippetLower.includes(kw));
-  const confirms = allConfirmations.some(kw => snippetLower.includes(kw));
+  const contradicts = matchesAnyPhrase(snippetLower, allContradictions);
+  const confirms = matchesAnyPhrase(snippetLower, allConfirmations);
 
   if (contradicts && !confirms) return 'denies';
   if (confirms && !contradicts) return 'supports';
 
-  // Additional check: does the snippet contain key claim words?
-  const claimWords = inputText.toLowerCase().split(/\s+/).filter(w => w.length > 4);
-  const matchRatio = claimWords.filter(w => snippetLower.includes(w)).length / Math.max(claimWords.length, 1);
-
-  if (matchRatio > 0.5) return 'supports'; // High content match = probably supporting
+  // Word overlap used to be read as support here ("high content match =
+  // probably supporting"), which confuses being *about* a topic with agreeing
+  // about it. Asked whether "nicusor dan a murit astazi", the layer scored
+  // 100/100 in favour on two government PDFs: a 2019 transport ministry
+  // minute that happens to list an attendee named Nicușor Dan and, further
+  // down, an unrelated taxi-licensing remark containing "a murit"; and a study
+  // naming a programmer called Mihai Nicușor. Repeating a claim's words is
+  // what a *relevant* document does — isRelevantToClaim already tests for
+  // that — and says nothing about which way the document points.
+  //
+  // A document with no stance markers is neutral. That is the honest reading,
+  // and it keeps the layer out of the score entirely rather than voting for
+  // whichever claim happens to share its vocabulary.
   return 'neutral';
 }
 
@@ -177,7 +189,7 @@ function buildOfficialSearchQuery(text: string, language: Language): string {
 /**
  * Calculates the layer 3 score based on official source content.
  */
-function calculateLayer3Score(sources: OfficialSource[]): number {
+export function calculateLayer3Score(sources: OfficialSource[]): number {
   if (sources.length === 0) return 0.5; // neutral when no official sources found
 
   let score = 0;
@@ -247,14 +259,24 @@ export async function runLayer3(
   const data = (await response.json()) as TavilyResponse;
   const items = data.results ?? [];
 
-  const sources: OfficialSource[] = items.map((item): OfficialSource => ({
+  // Tavily is asked for keyword matches restricted to INCLUDE_DOMAINS, so
+  // everything it returns is an official source — but not necessarily an
+  // official source about this claim. Without this filter every hit was
+  // reported as evidence, which is how nih.gov COVID papers appeared under
+  // unrelated claims. analyzeSupport() only labels support/deny/neutral; it
+  // never judged whether the document was on topic at all.
+  const relevantItems = items.filter(item =>
+    isRelevantToClaim(text, `${item.title ?? ''} ${item.content ?? ''}`)
+  );
+
+  const sources: OfficialSource[] = relevantItems.map((item): OfficialSource => ({
     title: item.title,
     organization: extractOrganization(item.url),
     organizationType: classifyOrganization(item.url),
     documentUrl: item.url,
     publishedAt: item.published_date ?? '',
     relevantQuote: item.content?.slice(0, 400) ?? '',
-    supportsOrDenies: analyzeSupport(item.content ?? '', text),
+    supportsOrDenies: analyzeSupport(item.content ?? ''),
   }));
 
   return {

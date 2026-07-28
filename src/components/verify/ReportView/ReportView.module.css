@@ -129,6 +129,19 @@
   color: var(--color-ink-muted);
 }
 
+/* The matched passage. Set in the serif to read as quoted material rather than
+   as more interface chrome, and indented off a rule so it is clearly the
+   source speaking and not the report. */
+.sourceExcerpt {
+  margin-top: var(--space-2);
+  padding-left: var(--space-3);
+  border-left: var(--border-width-hairline) solid var(--color-line-strong);
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+}
+
 .footer {
   display: flex;
   align-items: center;
