@@ -193,7 +193,6 @@ html {
 html,
 body {
   max-width: 100vw;
-  overflow-x: hidden;
   font-family: var(--font-family-sans);
   font-size: var(--font-size-body);
   line-height: var(--line-height-body);
@@ -201,6 +200,15 @@ body {
   color: var(--color-ink-secondary);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* `clip`, never `hidden`. `overflow-x: hidden` computes `overflow-y` to `auto`,
+   which turns the element into a scroll container — that silently breaks every
+   `position: sticky` on the site (the header included) and takes scrolling away
+   from the window. `clip` clips the same way without creating one, and it goes
+   on the body alone so the document keeps scrolling normally. */
+body {
+  overflow-x: clip;
 }
 
 /* ---- Base elements -------------------------------------------------------- */
