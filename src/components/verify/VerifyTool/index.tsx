@@ -15,6 +15,13 @@ type VerifyResponse =
   | { success: true; report: VerificationReport }
   | ({ success?: false } & VerifyAPIError);
 
+/**
+ * Carries the server's own failure message instead of collapsing every OCR
+ * error into an empty string — a rate limit and a blank image are not the
+ * same thing to the visitor.
+ */
+type OcrOutcome = { ok: true; text: string } | { ok: false; message: string };
+
 type Status =
   | { state: 'idle' }
   | { state: 'loading' }
@@ -81,15 +88,19 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
       let claimText = text.trim();
 
       if (kind === 'screenshot' && file) {
-        const ocrText = await runOcr(file);
-        if (!ocrText || ocrText.trim().length < 10) {
+        const ocr = await runOcr(file);
+        if (!ocr.ok) {
+          setStatus({ state: 'error', message: ocr.message });
+          return;
+        }
+        if (ocr.text.trim().length < 10) {
           setStatus({
             state: 'error',
             message: t('verifyTool.errors.ocrFailed'),
           });
           return;
         }
-        claimText = ocrText.trim();
+        claimText = ocr.text.trim();
       }
 
       if (kind === 'url') claimText = url.trim();
@@ -125,7 +136,12 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
     }
   };
 
-  async function runOcr(image: File): Promise<string> {
+  /**
+   * Extracts the claim text from a screenshot. readAsDataURL yields a
+   * `data:image/...;base64,` string, and the API contract is bare base64, so
+   * the prefix is dropped here.
+   */
+  async function runOcr(image: File): Promise<OcrOutcome> {
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
@@ -138,8 +154,12 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64: base64, mimeType: image.type }),
     });
-    const data = (await res.json()) as { success?: boolean; text?: string };
-    return data.text ?? '';
+    const data = (await res.json()) as { success?: boolean; text?: string; error?: string };
+
+    if (!res.ok || !data.success) {
+      return { ok: false, message: data.error || t('verifyTool.errors.ocrFailed') };
+    }
+    return { ok: true, text: data.text ?? '' };
   }
 
   return (

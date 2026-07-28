@@ -356,3 +356,91 @@ ol {
     padding-right: var(--space-5);
   }
 }
+
+/* ---- Print ----------------------------------------------------------------
+   The PDF export is the browser's own print engine rather than a generator
+   library: it already embeds fonts, so Romanian diacritics survive, links stay
+   clickable, and the app ships no extra dependency for it.
+
+   Only the element marked [data-print-root] is meant to reach paper. Hiding
+   everything else with `visibility` rather than `display` keeps the report's
+   own layout intact — collapsing the page boxes around it would reflow the
+   thing we are trying to print. */
+@media print {
+  /* A dark-theme reader would otherwise get a near-black page. Restating the
+     light values on :root beats overriding rules one by one, since every
+     component already draws from these. */
+  :root,
+  :root[data-theme='dark'] {
+    --color-paper: #ffffff;
+    --color-paper-shade: #ffffff;
+    --color-surface: #ffffff;
+    --color-ink: #000000;
+    --color-ink-secondary: #1a1a1a;
+    --color-ink-muted: #444444;
+    --color-line: #cccccc;
+    --color-line-strong: #999999;
+    --color-accent: #125643;
+    --verdict-true: #125643;
+    --verdict-partial: #7a5410;
+    --verdict-unclear: #4a4a4a;
+    --verdict-false: #8f2f2e;
+    --color-rule: #000000;
+    --color-rule-hairline: #cccccc;
+    color-scheme: light;
+  }
+
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  html,
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  body * {
+    visibility: hidden;
+    box-shadow: none !important;
+  }
+
+  [data-print-root],
+  [data-print-root] * {
+    visibility: visible;
+  }
+
+  [data-print-root] {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  /* Buttons and disclaimers-with-actions mean nothing on paper. */
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  /* A printed citation is only checkable if the address is on the page. */
+  [data-print-root] a {
+    color: #000000;
+    text-decoration: none;
+  }
+
+  [data-print-root] a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-family: var(--font-family-mono);
+    font-size: 0.72em;
+    color: #444444;
+    word-break: break-all;
+  }
+
+  /* Never split a source away from its publisher line. */
+  [data-print-root] li {
+    break-inside: avoid;
+  }
+}

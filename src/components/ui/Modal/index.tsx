@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { useLanguage } from '@/i18n';
 import styles from './Modal.module.css';
 
 export interface ModalProps {
@@ -19,6 +20,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
 }) => {
+  const { t } = useLanguage();
   const contentRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
 
@@ -92,9 +94,9 @@ export const Modal: React.FC<ModalProps> = ({
             type="button"
             className={styles.closeButton}
             onClick={onClose}
-            aria-label="Închide dialogul"
+            aria-label={t('common.closeAria')}
           >
-            Închide
+            {t('common.close')}
           </button>
         </div>
         <div className={styles.body}>{children}</div>

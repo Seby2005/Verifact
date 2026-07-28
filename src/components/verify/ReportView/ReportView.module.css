@@ -4,6 +4,36 @@
   gap: var(--space-6);
 }
 
+/* Print-only masthead: the site header never reaches paper, so the sheet has
+   to say what it is and which report it carries. */
+.printHeader {
+  display: none;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: var(--border-width-heavy) solid var(--color-ink);
+}
+
+@media print {
+  .printHeader {
+    display: flex;
+  }
+}
+
+.printBrand {
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-body);
+  letter-spacing: var(--tracking-label);
+}
+
+.printId {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+}
+
 .head {
   display: flex;
   flex-wrap: wrap;
@@ -104,6 +134,16 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+/* Keeps the download and dispute buttons together as one group, so the
+   footer's space-between still reads as "disclaimer left, actions right"
+   rather than spreading three separate children across the row. */
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 

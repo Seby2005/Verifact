@@ -61,6 +61,7 @@ export const metadata: Metadata = {
 };
 
 import { LanguageProvider } from '@/i18n';
+import { ToastProvider } from '@/components/ui';
 import { THEME_SCRIPT } from '@/components/layout/ThemeToggle/theme-script';
 
 export default function RootLayout({
@@ -83,17 +84,19 @@ export default function RootLayout({
       </head>
       <body>
         <LanguageProvider>
-          <a href="#main-content" className="skip-link">
-            Sari la conținut
-          </a>
-          <div className="app-shell">
-            <Header />
-            <main id="main-content" className="app-shell__main" tabIndex={-1}>
-              {children}
-            </main>
-            <Footer />
-          </div>
-          <Analytics />
+          <ToastProvider>
+            <a href="#main-content" className="skip-link">
+              Sari la conținut
+            </a>
+            <div className="app-shell">
+              <Header />
+              <main id="main-content" className="app-shell__main" tabIndex={-1}>
+                {children}
+              </main>
+              <Footer />
+            </div>
+            <Analytics />
+          </ToastProvider>
         </LanguageProvider>
       </body>
     </html>

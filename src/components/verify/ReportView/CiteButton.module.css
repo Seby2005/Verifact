@@ -1,0 +1,84 @@
+/* Matches the ghost Button used beside it, but owns its own markup because the
+   label slides out of the way as the confirmation slides in. */
+.cite {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-secondary);
+  background: transparent;
+  border: var(--border-width-hairline) solid transparent;
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.cite:hover {
+  color: var(--color-ink);
+  background-color: var(--color-paper-shade);
+}
+
+.label,
+.done {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: transform 300ms var(--ease-out), opacity 200ms ease;
+}
+
+.label {
+  transform: none;
+  opacity: 1;
+}
+
+.done {
+  position: absolute;
+  inset: 0;
+  justify-content: center;
+  transform: translateY(140%);
+  opacity: 0;
+  color: var(--verdict-true);
+}
+
+.isCopied .label {
+  transform: translateY(-140%);
+  opacity: 0;
+}
+
+.isCopied .done {
+  transform: none;
+  opacity: 1;
+}
+
+.icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* Without motion the two states simply swap. */
+@media (prefers-reduced-motion: reduce) {
+  .label,
+  .done {
+    transition: opacity 120ms ease;
+  }
+
+  .done {
+    transform: none;
+  }
+
+  .isCopied .label {
+    transform: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .cite {
+    min-height: 44px;
+  }
+}
