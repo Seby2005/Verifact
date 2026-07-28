@@ -1,0 +1,104 @@
+.item {
+  border-bottom: var(--border-width-hairline) solid var(--color-line);
+}
+
+.trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-4) 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-ink);
+  transition: color var(--transition-fast);
+}
+
+.trigger:hover {
+  color: var(--color-accent);
+}
+
+.summary {
+  min-width: 0;
+}
+
+/* A plus that loses its vertical stroke when open — no icon font, no emoji. */
+.mark {
+  position: relative;
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.mark::before,
+.mark::after {
+  content: '';
+  position: absolute;
+  background-color: currentColor;
+  transition: transform var(--transition-normal), opacity var(--transition-normal);
+}
+
+.mark::before {
+  top: 5px;
+  left: 0;
+  width: 11px;
+  height: 1.5px;
+}
+
+.mark::after {
+  left: 5px;
+  top: 0;
+  width: 1.5px;
+  height: 11px;
+}
+
+.isOpen .mark::after {
+  transform: scaleY(0);
+  opacity: 0;
+}
+
+/* Animating the row track avoids measuring the content and keeps the
+   transition off layout-driving properties. */
+.panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--transition-normal);
+}
+
+.isOpen .panel {
+  grid-template-rows: 1fr;
+}
+
+.panelInner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.content {
+  padding-bottom: var(--space-4);
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+  max-width: var(--measure);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .mark::before,
+  .mark::after {
+    transition: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .trigger {
+    min-height: 44px;
+  }
+}

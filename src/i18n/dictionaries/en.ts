@@ -505,11 +505,24 @@ export const en: Translations = {
       },
     ],
     limitsTitle: 'Methodological Limitations',
-    limitsList: [
-      'We verify facts, not opinions, predictions, or value judgments. "X is wrong" cannot receive a score.',
-      'If public sources are missing — a recent or niche topic — the verdict stays "unclear", not "false".',
-      'A high score is not a guarantee, but a measure of how well the claim held up in the sources at the time.',
-      'We do not detect satire reliably. A claim from a satirical context may be read literally.',
+    /** Split into a heading and its detail so the list can be scanned first. */
+    limits: [
+      {
+        title: 'We verify facts, not opinions',
+        text: 'We do not evaluate predictions or value judgments. "X is wrong" cannot receive a score.',
+      },
+      {
+        title: 'If sources are missing, we say "unclear"',
+        text: 'For a recent or niche topic the verdict stays "unclear", not "false".',
+      },
+      {
+        title: 'A high score is not a guarantee',
+        text: 'It measures how well the claim held up in the sources available at the time of checking.',
+      },
+      {
+        title: 'We do not detect satire reliably',
+        text: 'A claim taken from a satirical context may be read literally.',
+      },
     ],
     calloutLabel: 'Implementation Status',
     calloutText:

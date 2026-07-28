@@ -505,11 +505,24 @@ export const ro = {
       },
     ],
     limitsTitle: 'Limitele metodei',
-    limitsList: [
-      'Verificăm fapte, nu opinii, predicții sau judecăți de valoare. „X este greșit” nu poate primi un scor.',
-      'Dacă sursele publice lipsesc — subiect recent sau de nișă — verdictul rămâne „neclar”, nu „fals”.',
-      'Un scor mare nu e o garanție, ci o măsură a cât se susține afirmația în sursele de la momentul verificării.',
-      'Nu detectăm satira fiabil. O afirmație dintr-un context satiric poate fi evaluată literal.',
+    /** Split into a heading and its detail so the list can be scanned first. */
+    limits: [
+      {
+        title: 'Verificăm fapte, nu opinii',
+        text: 'Nu evaluăm predicții sau judecăți de valoare. „X este greșit” nu poate primi un scor.',
+      },
+      {
+        title: 'Dacă lipsesc sursele, spunem „neclar”',
+        text: 'Pentru un subiect recent sau de nișă, verdictul rămâne „neclar”, nu „fals”.',
+      },
+      {
+        title: 'Un scor mare nu e o garanție',
+        text: 'E o măsură a cât se susține afirmația în sursele de la momentul verificării.',
+      },
+      {
+        title: 'Nu detectăm satira fiabil',
+        text: 'O afirmație preluată dintr-un context satiric poate fi evaluată literal.',
+      },
     ],
     calloutLabel: 'Statusul implementării',
     calloutText:
