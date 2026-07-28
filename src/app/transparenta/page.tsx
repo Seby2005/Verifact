@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Callout, WeightBar } from '@/components/ui';
+import { Callout, Disclosure, WeightBar } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import shell from '../page-shell.module.css';
 import styles from './page.module.css';
@@ -67,10 +67,10 @@ export default function TransparentaPage() {
   ];
 
   const limits = [
-    t('transparentaPage.limitsList.0'),
-    t('transparentaPage.limitsList.1'),
-    t('transparentaPage.limitsList.2'),
-    t('transparentaPage.limitsList.3'),
+    { title: t('transparentaPage.limits.0.title'), text: t('transparentaPage.limits.0.text') },
+    { title: t('transparentaPage.limits.1.title'), text: t('transparentaPage.limits.1.text') },
+    { title: t('transparentaPage.limits.2.title'), text: t('transparentaPage.limits.2.text') },
+    { title: t('transparentaPage.limits.3.title'), text: t('transparentaPage.limits.3.text') },
   ];
 
   return (
@@ -123,12 +123,13 @@ export default function TransparentaPage() {
 
         <section className={shell.sectionRule}>
           <h2 className={styles.sectionTitle}>{t('transparentaPage.limitsTitle')}</h2>
-          <div className={shell.prose}>
-            <ul>
-              {limits.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
+          {/* Headings stay scannable; the detail is there for whoever wants it. */}
+          <div className={styles.limits}>
+            {limits.map((item) => (
+              <Disclosure key={item.title} summary={item.title}>
+                {item.text}
+              </Disclosure>
+            ))}
           </div>
           <Callout label={t('transparentaPage.calloutLabel')} tone="plain">
             {t('transparentaPage.calloutText')}

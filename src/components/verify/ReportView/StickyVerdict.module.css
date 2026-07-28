@@ -1,0 +1,74 @@
+/* Parks beneath the site header. Hidden from assistive tech because it only
+   repeats what the report already states — it is a visual anchor, not content. */
+.bar {
+  position: sticky;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: calc(-1 * var(--space-2));
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-md);
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+.isShown {
+  opacity: 1;
+  transform: none;
+}
+
+.verdict {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.01em;
+  color: var(--vc, var(--color-ink));
+  white-space: nowrap;
+}
+
+.score {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-body-sm);
+  color: var(--vc, var(--color-ink));
+  font-variant-numeric: tabular-nums;
+}
+
+.true { --vc: var(--verdict-true); }
+.partial { --vc: var(--verdict-partial); }
+.unclear { --vc: var(--verdict-unclear); }
+.false { --vc: var(--verdict-false); }
+
+/* The claim yields first: it is the least important of the three. */
+.claim {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink-muted);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 560px) {
+  .claim {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    transition: none;
+  }
+}
+
+@media print {
+  .bar {
+    display: none;
+  }
+}

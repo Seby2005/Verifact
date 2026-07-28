@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { VerdictLabel, Callout } from '@/components/ui';
 import type { VerificationReport } from '@/types/verification';
 import { useLanguage } from '@/i18n';
 import { CiteButton } from './CiteButton';
 import { DisputeButton } from './DisputeButton';
 import { DownloadButton } from './DownloadButton';
+import { StickyVerdict } from './StickyVerdict';
 import styles from './ReportView.module.css';
 
 export interface ReportViewProps {
@@ -30,6 +31,7 @@ function formatDate(iso?: string, locale: string = 'ro'): string | null {
 
 export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
   const { locale, t } = useLanguage();
+  const headRef = useRef<HTMLElement>(null);
 
   return (
     <article className={styles.report} data-print-root>
@@ -42,7 +44,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
         </span>
       </div>
 
-      <header className={styles.head}>
+      <header className={styles.head} ref={headRef}>
         <div>
           {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
           <VerdictLabel kind={report.verdict} score={report.score} />
@@ -57,6 +59,14 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
             : null}
         </p>
       </header>
+
+      {/* Anchors the verdict once the header above has scrolled away. */}
+      <StickyVerdict
+        kind={report.verdict}
+        score={report.score}
+        claim={report.claim ?? report.inputText ?? ''}
+        watch={headRef}
+      />
 
       <div>
         <p className={styles.sectionLabel}>{t('reportView.claimLabel')}</p>

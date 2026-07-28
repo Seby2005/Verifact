@@ -109,6 +109,13 @@
   max-width: var(--measure);
 }
 
+/* The method's limits, as an expandable list. */
+.limits {
+  border-top: var(--border-width-hairline) solid var(--color-line);
+  max-width: var(--measure);
+  margin-bottom: var(--space-8);
+}
+
 .follow {
   margin-top: var(--space-8);
   font-family: var(--font-family-mono);

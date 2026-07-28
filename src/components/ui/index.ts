@@ -9,6 +9,7 @@ export { ScoreRing, type ScoreRingProps } from './ScoreRing';
 export { Reveal, type RevealProps } from './Reveal';
 export { WeightBar, type WeightBarProps } from './WeightBar';
 export { ToastProvider, useToast, type Toast, type ToastTone } from './Toast';
+export { Disclosure, type DisclosureProps } from './Disclosure';
 export {
   VerdictLabel,
   verdictFromScore,
