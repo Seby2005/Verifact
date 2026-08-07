@@ -12,6 +12,7 @@ jest.mock('@/lib/supabase/server', () => ({
 }));
 
 import { checkUsageLimit } from '@/lib/usage/limits';
+import { TIER_CONFIG } from '@/types/user';
 
 describe('checkUsageLimit', () => {
   beforeEach(() => {
@@ -33,7 +34,7 @@ describe('checkUsageLimit', () => {
     expect(result).toEqual({
       allowed: true,
       current: 0,
-      limit: 10,
+      limit: TIER_CONFIG.free.monthlyLimit,
       resetDate: expect.any(String),
       tier: 'free',
       percentageUsed: 0,
@@ -43,16 +44,16 @@ describe('checkUsageLimit', () => {
   it('allows and reports usage under the limit', async () => {
     const today = new Date().toISOString().split('T')[0];
     mockSingle.mockResolvedValue({
-      data: { tier: 'free', verifications_count: 3, verifications_reset: today },
+      data: { tier: 'free', verifications_count: 1, verifications_reset: today },
       error: null,
     });
 
     const result = await checkUsageLimit('user-1');
 
     expect(result.allowed).toBe(true);
-    expect(result.current).toBe(3);
-    expect(result.limit).toBe(10);
-    expect(result.percentageUsed).toBe(30);
+    expect(result.current).toBe(1);
+    expect(result.limit).toBe(TIER_CONFIG.free.monthlyLimit);
+    expect(result.percentageUsed).toBe(Math.round((1 / TIER_CONFIG.free.monthlyLimit) * 100));
   });
 
   it('disallows at the tier limit', async () => {
@@ -76,7 +77,7 @@ describe('checkUsageLimit', () => {
 
     const result = await checkUsageLimit('user-1');
 
-    expect(result.limit).toBe(200);
+    expect(result.limit).toBe(TIER_CONFIG.pro.monthlyLimit);
     expect(result.tier).toBe('pro');
   });
 
@@ -103,7 +104,7 @@ describe('checkUsageLimit', () => {
     const result = await checkUsageLimit('user-1');
 
     expect(result.tier).toBe('free');
-    expect(result.limit).toBe(10);
+    expect(result.limit).toBe(TIER_CONFIG.free.monthlyLimit);
   });
 
   it('caps percentageUsed at 100', async () => {

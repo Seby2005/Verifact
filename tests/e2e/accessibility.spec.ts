@@ -7,7 +7,7 @@ import { gotoReady } from './helpers';
  * failing on critical/serious violations (moderate/minor are logged but
  * don't fail the run — see the threshold note below).
  */
-const PAGES = ['/', '/cont', '/rapoarte', '/preturi', '/transparenta', '/misiune', '/open-source'];
+const PAGES = ['/', '/cont', '/despre-dezinformare', '/preturi', '/transparenta', '/misiune', '/open-source'];
 
 test.describe('Accessibility (axe-core)', () => {
   for (const path of PAGES) {

@@ -4,13 +4,13 @@ import { en } from '@/i18n/dictionaries/en';
 
 describe('i18n core and dictionaries', () => {
   it('should return nested translation keys correctly from Romanian dictionary', () => {
-    const title = getTranslation(ro, 'header.nav.reports');
-    expect(title).toBe('Rapoarte');
+    const title = getTranslation(ro, 'header.nav.disinformation');
+    expect(title).toBe('Dezinformare');
   });
 
   it('should return nested translation keys correctly from English dictionary', () => {
-    const title = getTranslation(en, 'header.nav.reports');
-    expect(title).toBe('Reports');
+    const title = getTranslation(en, 'header.nav.disinformation');
+    expect(title).toBe('Disinformation');
   });
 
   it('should format string parameters correctly', () => {

@@ -8,6 +8,8 @@ import { CiteButton } from './CiteButton';
 import { DisputeButton } from './DisputeButton';
 import { DownloadButton } from './DownloadButton';
 import { StickyVerdict } from './StickyVerdict';
+import { useUserTier } from './useUserTier';
+import { sourceHref } from './sourceLink';
 import styles from './ReportView.module.css';
 
 export interface ReportViewProps {
@@ -31,6 +33,7 @@ function formatDate(iso?: string, locale: string = 'ro'): string | null {
 
 export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
   const { locale, t } = useLanguage();
+  const { isPremium } = useUserTier();
   const headRef = useRef<HTMLElement>(null);
 
   return (
@@ -94,7 +97,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
               <span className={styles.sourceIndex}>{String(index + 1).padStart(2, '0')}</span>
               <span className={styles.sourceBody}>
                 <a
-                  href={source.url}
+                  href={sourceHref(source.url, source.excerpt, isPremium)}
                   target="_blank"
                   rel="noreferrer noopener"
                   className={styles.sourceTitle}
@@ -123,7 +126,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
         </Callout>
         <div className={styles.footerActions} data-print-hide>
           <CiteButton report={report} />
-          <DownloadButton />
+          <DownloadButton report={report} isPremium={isPremium} />
           <DisputeButton reportId={report.id} />
         </div>
       </div>

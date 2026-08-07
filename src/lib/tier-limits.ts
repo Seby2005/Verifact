@@ -1,7 +1,12 @@
+import { TIER_CONFIG } from '@/types/user';
+
+// Numbers live once, in TIER_CONFIG. This module keeps its own field name
+// (verificationsPerMonth) for the canUserVerify API, but derives the values so
+// the two never drift apart.
 export const TIER_LIMITS = {
-  free: { verificationsPerMonth: 10 },
-  pro: { verificationsPerMonth: 200 },
-  business: { verificationsPerMonth: 2000 },
+  free: { verificationsPerMonth: TIER_CONFIG.free.monthlyLimit },
+  pro: { verificationsPerMonth: TIER_CONFIG.pro.monthlyLimit },
+  business: { verificationsPerMonth: TIER_CONFIG.business.monthlyLimit },
 } as const;
 
 export type Tier = keyof typeof TIER_LIMITS;

@@ -22,6 +22,28 @@
   color: var(--color-ink-muted);
 }
 
+/* Short per-mode line under the tabs, so login and signup no longer read as
+   the same screen with a different button label. */
+.modeIntro {
+  margin-top: var(--space-4);
+  max-width: 30rem;
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+}
+
+.forgotRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: calc(-1 * var(--space-2));
+}
+
+.termsNote {
+  font-size: var(--font-size-caption);
+  line-height: 1.5;
+  color: var(--color-ink-muted);
+}
+
 .status {
   margin-top: var(--space-2);
 }

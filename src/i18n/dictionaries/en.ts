@@ -7,7 +7,7 @@ export const en: Translations = {
   },
   header: {
     nav: {
-      reports: 'Reports',
+      disinformation: 'Disinformation',
       transparency: 'Transparency',
       pricing: 'Pricing',
       account: 'Account',
@@ -35,17 +35,17 @@ export const en: Translations = {
 
   footer: {
     privacy:
-      'Everything is private. Your reports, history, and account remain yours — we never sell data and never publish anything unless you explicitly request it.',
+      'What you check stays yours. We never sell data and publish nothing without your say-so.',
     sections: {
       product: {
         title: 'Product',
         verify: 'Verify a claim',
-        reports: 'Reports',
         pricing: 'Pricing',
         account: 'Account',
       },
       project: {
         title: 'Project',
+        disinformation: 'About disinformation',
         mission: 'Mission',
         transparency: 'Transparency',
         openSource: 'Open source & privacy',
@@ -74,7 +74,7 @@ export const en: Translations = {
       example3: 'The Great Wall of China is visible from space',
     },
     trust: {
-      line: 'A verdict without sources is just another opinion.',
+      line: 'Don’t take our word for it — see the sources.',
     },
     sample: {
       eyebrow: 'What an answer looks like',
@@ -147,7 +147,7 @@ export const en: Translations = {
     },
     actions: {
       submit: 'Verify now',
-      privacyHint: 'Your reports stay private until you explicitly choose to publish them.',
+      privacyHint: 'Your check stays private until you choose to publish it.',
       pending: 'Verifying…',
     },
     errors: {
@@ -174,6 +174,15 @@ export const en: Translations = {
     disclaimerText:
       'This report is generated automatically and does not constitute a final editorial decision. Read cited sources for full context.',
     downloadBtn: 'Download PDF',
+    downloadDocTitle: 'Verification report',
+    downloadGeneratedOn: 'Generated on',
+    downloadScoreLabel: 'Credibility score',
+    premiumModalTitle: 'The full PDF report is a Pro feature',
+    premiumModalLead:
+      'Below is a slice of the report and a few exact sources. The full PDF — every source linked straight to the sentence checked — comes with the Pro plan.',
+    premiumSourcesLabel: 'A few of the sources',
+    premiumUpgradeCta: 'See the plans',
+    premiumCloseCta: 'Close',
     printId: 'Report ID',
   },
   cite: {
@@ -207,52 +216,6 @@ export const en: Translations = {
     errorGeneric: 'An error occurred. Please try again.',
     errorNetwork: 'Could not reach the server. Please check your connection and try again.',
   },
-  rapoartePage: {
-    metadata: {
-      title: 'Published Reports',
-      description: 'Reports published by the Verifact community and your verification history.',
-    },
-    eyebrow: 'Reports',
-    title: 'Published Verifications',
-    lead: 'Reports appear here only if their author explicitly chooses to publish them. Your verifications remain private by default.',
-    listAriaLabel: 'Published reports',
-    sourcesCount: '{count} sources cited',
-    filters: {
-      ariaLabel: 'Report filters',
-      searchLabel: 'Search claims',
-      searchPlaceholder: 'Word or phrase from the claim',
-      verdictLabel: 'Verdict',
-      languageLabel: 'Language',
-      periodLabel: 'Period',
-      optionAll: 'All',
-      languageRo: 'Romanian',
-      languageEn: 'English',
-      period24h: 'Last 24 hours',
-      period7d: 'Last 7 days',
-      period30d: 'Last 30 days',
-    },
-    loading: 'Loading reports…',
-    errorLabel: 'Could not load reports',
-    errorText: 'The connection failed or the server did not respond. Please try again.',
-    retryBtn: 'Reload',
-    emptyTitle: 'No reports published yet',
-    emptyText: 'Nobody has published a verification yet. When someone chooses to make a report public, it shows up here.',
-    emptyFilteredTitle: 'No reports match these filters',
-    emptyFilteredText: 'Change the verdict, language or period to see more results.',
-    resultsCount: '{count} reports',
-    paginationAriaLabel: 'Report pagination',
-    pagePosition: 'Page {page} of {total}',
-    prevPage: 'Previous page',
-    nextPage: 'Next page',
-    yourHistoryTitle: 'Your History',
-    yourHistoryText: 'If you have an account, your verifications are automatically saved and visible only to you. You can delete any report at any time.',
-    historyEmptyTitle: 'No saved verifications yet',
-    historyEmptyText: 'Verifications you run while signed in appear here, private by default.',
-    privateBadge: 'Private',
-    loginBtn: 'Log in',
-    verifyLink: 'Verify a claim',
-  },
-
   auth: {
     tabs: {
       login: 'Sign in',
@@ -282,19 +245,31 @@ export const en: Translations = {
     },
     form: {
       ariaLabel: 'Authentication',
+      loginSubtitle: 'Welcome back. Sign in to pick up your verifications.',
+      signupSubtitle: 'A free account in seconds. No card, no spam.',
       emailLabel: 'Email',
       emailPlaceholder: 'name@example.com',
       passwordLabel: 'Password',
       passwordPlaceholder: 'Minimum 8 characters',
       passwordHelperSignup: 'Choose a password with at least 8 characters.',
+      confirmPasswordLabel: 'Confirm password',
+      confirmPasswordPlaceholder: 'Repeat the password',
+      passwordMismatch: 'The passwords do not match.',
+      forgotPassword: 'Forgot your password?',
+      resetSent: 'We sent a password reset link to your email.',
+      resetError: 'We could not send the reset email. Please try again.',
+      resetNeedsEmail: 'Enter your email address above, then click again.',
       submitLogin: 'Sign in',
       submitSignup: 'Create account',
       socialGoogle: 'Continue with Google',
-      socialFacebook: 'Continue with Facebook',
-      socialGithub: 'Continue with GitHub',
       orDivider: 'or use email and password',
+      termsPrefix: 'By creating an account, you agree to the ',
+      termsLink: 'Terms',
+      termsMid: ' and ',
+      privacyLink: 'Privacy Policy',
+      termsSuffix: '.',
       privacyNote:
-        'Everything is private: your reports and history are not visible to anyone else and are never sold.',
+        'Your verifications stay private. No one else can see them.',
       successSignup:
         'Account created. Please check your email for the confirmation link.',
       successLogin: 'Signed in successfully.',
@@ -348,71 +323,6 @@ export const en: Translations = {
       bullet4Text: ' Deleting your account permanently removes your reports.',
       noteText: 'Full details can be found on the ',
       noteLink: 'Open source & privacy page',
-    },
-  },
-  preturiPage: {
-    metadata: {
-      title: 'Pricing',
-      description:
-        'Verifact is free for personal use. Pro and Business plans for journalists, newsrooms, and organizations.',
-    },
-    eyebrow: 'Pricing',
-    title: 'Free for citizens. Paid only at scale.',
-    lead:
-      'Fact-checking should not be a privilege. The free plan covers normal personal use; only those checking at a professional scale pay.',
-    plans: [
-      {
-        name: 'Free',
-        price: 'Free',
-        cadence: null,
-        forWho: 'For anyone who wants to verify what they see in their feed.',
-        checks: '10 verifications per month',
-        features: [
-          'Standard report with cited sources',
-          'Verification from text, screenshot, or URL',
-          'Personal verification history',
-          'Public sharing of a report, if you choose',
-        ],
-        cta: 'Start for free',
-      },
-      {
-        name: 'Pro',
-        price: '€7.99',
-        cadence: 'per month',
-        forWho: 'For journalists, researchers, and educators.',
-        checks: '200 verifications per month',
-        features: [
-          'Everything in the Free plan',
-          'Detailed layer-by-layer report breakdown',
-          'PDF export for citation',
-          'Personal API key',
-        ],
-        cta: 'Choose Pro',
-      },
-      {
-        name: 'Business',
-        price: '€49',
-        cadence: 'per month',
-        forWho: 'For newsrooms, NGOs, and platforms.',
-        checks: '2000 verifications per month',
-        features: [
-          'Everything in the Pro plan',
-          'Full API access and webhooks',
-          'Team analytics dashboard',
-          'Priority support',
-        ],
-        cta: 'Contact us',
-      },
-    ],
-    callout: {
-      label: 'No hidden costs',
-      text:
-        'The free plan does not automatically turn into a paid subscription and does not require a credit card. If you reach your monthly limit, verifications pause until next month — no surprise charges.',
-    },
-    footnote: {
-      text: 'Prices exclude VAT. Need something custom? ',
-      linkText: 'Create an account',
-      suffix: ' and write to us.',
     },
   },
   misiunePage: {
@@ -562,9 +472,9 @@ export const en: Translations = {
         text: 'A claim taken from a satirical context may be read literally.',
       },
     ],
-    calloutLabel: 'Implementation Status',
+    calloutLabel: 'Open code',
     calloutText:
-      'The methodology above is the technical specification powering the verification engine. Pipeline progress can be tracked in the public repository.',
+      'This is the methodology the verification runs on. The code that implements it is public and can be followed in the repository.',
     openSourceLead: 'The code implementing all of this is open source. ',
     openSourceLink: 'View the open source page',
   },
@@ -664,7 +574,7 @@ export const en: Translations = {
       'IP address, temporarily used for rate limiting and abuse prevention.',
       'Aggregated traffic statistics via Vercel Analytics — a cookieless service that does not identify individual visitors or track across other sites.',
     ],
-    sec2SocialNote: 'We do not offer social login (Google/GitHub) — only email and password.',
+    sec2SocialNote: 'If you sign in with Google, we receive only your email address and an account identifier from Google — nothing from the rest of your Google activity.',
     sec3Title: '3. Why We Collect This Data',
     sec3List: [
       'Performance of a contract: to create and manage your account and generate requested reports.',
