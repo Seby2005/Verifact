@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs';
+
 /**
  * The browser only ever talks directly to this app's own origin and to
  * Supabase (REST + Auth, from the browser client in src/lib/supabase/client.ts).
@@ -18,11 +20,30 @@ const supabaseOrigin = (() => {
   }
 })();
 
+// Self-hosted tools the BROWSER talks to directly need their origin in the CSP,
+// or the browser silently blocks the request. Each is derived from env and
+// collapses to '' (filtered out) when the tool isn't configured — so a stock
+// setup keeps exactly the old, tight policy and only widens when you opt in.
+const originOf = (value) => {
+  try {
+    return value ? new URL(value).origin : '';
+  } catch {
+    return '';
+  }
+};
+// GlitchTip DSN host: the Sentry browser SDK POSTs events here. new URL().origin
+// drops the public key in the DSN userinfo, leaving just scheme + host.
+const glitchtipOrigin = originOf(process.env.NEXT_PUBLIC_SENTRY_DSN);
+// Formbricks: loads its UMD script and calls its ingest API from the browser.
+const formbricksOrigin = originOf(process.env.NEXT_PUBLIC_FORMBRICKS_APP_URL);
+
 const connectSrc = [
   "'self'",
   supabaseOrigin,
   'https://*.supabase.co',
   'wss://*.supabase.co',
+  glitchtipOrigin,
+  formbricksOrigin,
 ]
   .filter(Boolean)
   .join(' ');
@@ -42,7 +63,7 @@ const csp = [
   // (no nonce plumbing set up yet) — 'unsafe-inline' is required for the
   // app to boot, not an oversight. Tightening this to a nonce-based policy
   // is tracked as follow-up work, not part of this pass.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
@@ -62,6 +83,9 @@ const nextConfig = {
   experimental: {
     workerThreads: false,
     cpus: 1,
+    // Required on Next 14 for src/instrumentation.ts (Sentry/GlitchTip init) to
+    // run. Stable and automatic from Next 15; explicit here.
+    instrumentationHook: true,
   },
   async headers() {
     return [
@@ -83,4 +107,13 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// withSentryConfig injects the client config into the browser bundle and wires
+// the server/edge instrumentation. Source-map upload is intentionally left off
+// (no org/project/authToken): self-hosted GlitchTip doesn't require it, and the
+// build must not depend on a token. When NEXT_PUBLIC_SENTRY_DSN is unset the
+// whole SDK is inert (see the sentry.*.config.ts guards).
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  disableLogger: true,
+  sourcemaps: { disable: true },
+});

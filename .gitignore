@@ -157,3 +157,13 @@ vite.config.ts.timestamp-*
 
 # Reference repositories (for local knowledge, not project dependencies)
 .andrej-karpathy-skills/
+
+# OmniRoute upstream clone — run from its own repo, not committed (docs/tools/omniroute.md)
+services/omniroute-upstream/
+
+# Python bytecode (services/crew)
+__pycache__/
+*.pyc
+
+# Docker volumes / local data
+docker/**/data/

@@ -1,0 +1,343 @@
+# =============================================================================
+# Verifact — Self-hosted / Open-source stack
+# =============================================================================
+# One compose file, one command:  docker compose up -d
+#
+# Every service below is open-source, self-hostable, and chosen to keep data
+# and infrastructure in your control (EU-hostable, no hard US-vendor lock-in).
+# Ports are picked to avoid clashing with `next dev` (3000) and each other.
+#
+# Phase 1 services start by default. Phase 2 (ToolJet) is behind a profile:
+#     docker compose --profile phase2 up -d
+#
+# Secrets: this file NEVER hardcodes a real secret. Where a service refuses to
+# start without one, it reads `${VAR:-<obvious-dev-placeholder>}`. The dev
+# placeholders are insecure on purpose and fine for `localhost` only — see
+# .env.example for how to generate real values before exposing anything.
+#
+# Not started by default because it isn't a pullable image: OmniRoute (#6).
+# See docs/tools/omniroute.md — its role is filled here by `litellm`.
+# =============================================================================
+
+name: verifact-stack
+
+# ----------------------------------------------------------------------------
+# Reusable snippets
+# ----------------------------------------------------------------------------
+x-postgres-env: &postgres-env
+  POSTGRES_USER: ${POSTGRES_USER:-verifact}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-verifact_dev_only_change_me}
+
+services:
+  # ==========================================================================
+  # Shared infrastructure
+  # ==========================================================================
+
+  # One Postgres instance, many databases. The init script creates a separate
+  # database per app (glitchtip, listmonk, formbricks, calcom, tooljet) so the
+  # services stay isolated without running five Postgres containers.
+  postgres:
+    image: postgres:16-alpine
+    container_name: verifact-postgres
+    restart: unless-stopped
+    environment:
+      <<: *postgres-env
+      # Consumed by the init script below.
+      POSTGRES_MULTIPLE_DATABASES: glitchtip,listmonk,formbricks,calcom,tooljet
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-verifact}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Shared Redis, used by GlitchTip (celery broker/cache) and ToolJet.
+  redis:
+    image: redis:7-alpine
+    container_name: verifact-redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - redis-data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # 1. n8n — workflow orchestration
+  #    Uses its built-in SQLite store (no Postgres dependency) to keep the
+  #    stack light. Import workflows/n8n/verifact-4-sources.json after boot.
+  # ==========================================================================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: verifact-n8n
+    restart: unless-stopped
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      # Where the demo workflow POSTs its aggregated result back to. Points at
+      # the Next.js callback route (see src/app/api/webhooks/n8n/route.ts).
+      VERIFACT_CALLBACK_URL: ${VERIFACT_CALLBACK_URL:-http://host.docker.internal:3000/api/webhooks/n8n}
+      # The workflow reads source API keys via {{ $env.* }}; allow that and pass
+      # the keys through from your .env so no credentials live in the workflow JSON.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      GOOGLE_FACT_CHECK_API_KEY: ${GOOGLE_FACT_CHECK_API_KEY:-}
+      NEWS_API_KEY: ${NEWS_API_KEY:-}
+      GOOGLE_CUSTOM_SEARCH_API_KEY: ${GOOGLE_CUSTOM_SEARCH_API_KEY:-}
+      GOOGLE_OFFICIAL_SEARCH_ENGINE_ID: ${GOOGLE_OFFICIAL_SEARCH_ENGINE_ID:-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      GENERIC_TIMEZONE: ${TZ:-Europe/Bucharest}
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    volumes:
+      - n8n-data:/home/node/.n8n
+      - ./workflows/n8n:/workflows:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ==========================================================================
+  # 2. GlitchTip — self-hosted, Sentry-compatible error tracking
+  #    web + worker + one-shot migrate. Backend (src/instrumentation*.ts) and
+  #    frontend (src/instrumentation-client.ts) point their DSN here.
+  # ==========================================================================
+  glitchtip-migrate:
+    image: glitchtip/glitchtip:v4.0
+    container_name: verifact-glitchtip-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: &glitchtip-env
+      DATABASE_URL: postgres://${POSTGRES_USER:-verifact}:${POSTGRES_PASSWORD:-verifact_dev_only_change_me}@postgres:5432/glitchtip
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY:-glitchtip_dev_only_change_me_0123456789abcdef}
+      REDIS_URL: redis://redis:6379/0
+      PORT: "8000"
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN:-http://localhost:8000}
+      DEFAULT_FROM_EMAIL: ${GLITCHTIP_FROM_EMAIL:-alerts@verifact.local}
+      EMAIL_URL: ${GLITCHTIP_EMAIL_URL:-consolemail://}
+      CELERY_WORKER_AUTOSCALE: "1,3"
+      ENABLE_OPEN_USER_REGISTRATION: "true"
+    command: ./bin/run-migrate.sh
+    restart: on-failure
+
+  glitchtip-web:
+    image: glitchtip/glitchtip:v4.0
+    container_name: verifact-glitchtip-web
+    depends_on:
+      glitchtip-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment: *glitchtip-env
+    ports:
+      - "${GLITCHTIP_PORT:-8000}:8000"
+    restart: unless-stopped
+
+  glitchtip-worker:
+    image: glitchtip/glitchtip:v4.0
+    container_name: verifact-glitchtip-worker
+    depends_on:
+      glitchtip-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment: *glitchtip-env
+    command: ./bin/run-celery-with-beat.sh
+    restart: unless-stopped
+
+  # ==========================================================================
+  # 3. ntfy — dead-simple HTTP pub/sub notifications
+  #    Alert sink for the pipeline (src/lib/alerts/ntfy.ts) and a webhook
+  #    target for GlitchTip. Publish:  curl -d "msg" localhost:8080/verifact
+  # ==========================================================================
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: verifact-ntfy
+    restart: unless-stopped
+    command: ["serve"]
+    environment:
+      NTFY_BASE_URL: ${NTFY_BASE_URL:-http://localhost:8080}
+      NTFY_BEHIND_PROXY: "false"
+      NTFY_AUTH_FILE: /var/lib/ntfy/user.db
+      # 'deny-all' + a token is safer; 'read-write' keeps the local demo open.
+      NTFY_AUTH_DEFAULT_ACCESS: ${NTFY_AUTH_DEFAULT_ACCESS:-read-write}
+    volumes:
+      - ntfy-data:/var/lib/ntfy
+    ports:
+      - "${NTFY_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/v1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ==========================================================================
+  # 4. Listmonk — self-hosted newsletter / waitlist
+  #    Signup flows through src/app/api/waitlist/route.ts -> Listmonk API.
+  #    First run needs a one-time schema install (see docs/tools/listmonk.md).
+  # ==========================================================================
+  listmonk:
+    image: listmonk/listmonk:latest
+    container_name: verifact-listmonk
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["sh", "-c", "./listmonk --idempotent-install --yes --config '' && ./listmonk --config ''"]
+    environment:
+      LISTMONK_app__address: 0.0.0.0:9000
+      LISTMONK_db__host: postgres
+      LISTMONK_db__port: "5432"
+      LISTMONK_db__user: ${POSTGRES_USER:-verifact}
+      LISTMONK_db__password: ${POSTGRES_PASSWORD:-verifact_dev_only_change_me}
+      LISTMONK_db__database: listmonk
+      LISTMONK_db__ssl_mode: disable
+      LISTMONK_ADMIN_USER: ${LISTMONK_ADMIN_USER:-admin}
+      LISTMONK_ADMIN_PASSWORD: ${LISTMONK_ADMIN_PASSWORD:-listmonk_dev_only_change_me}
+    ports:
+      - "${LISTMONK_PORT:-9000}:9000"
+
+  # ==========================================================================
+  # 5. crewAI — multi-agent prototype (isolated Python service)
+  #    Mirrors the "4 sources in parallel -> AI synthesis" pipeline as agents.
+  #    Built locally from services/crew. Uses the same AI gateway as the app.
+  # ==========================================================================
+  crew:
+    build: ./services/crew
+    container_name: verifact-crew
+    restart: unless-stopped
+    environment:
+      # Point crewAI at the self-hosted gateway (litellm/OmniRoute), so the
+      # prototype swaps providers from config exactly like the main app.
+      OPENAI_API_BASE: ${AI_GATEWAY_BASE_URL:-http://litellm:4000/v1}
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-verifact-dev-only}
+      CREW_MODEL: ${CREW_MODEL:-gemini-flash}
+      # Verifact source APIs (optional — the prototype degrades to mock tools
+      # when a key is missing, so it still runs end-to-end).
+      GOOGLE_FACT_CHECK_API_KEY: ${GOOGLE_FACT_CHECK_API_KEY:-}
+      NEWS_API_KEY: ${NEWS_API_KEY:-}
+      GOOGLE_CUSTOM_SEARCH_API_KEY: ${GOOGLE_CUSTOM_SEARCH_API_KEY:-}
+      GOOGLE_OFFICIAL_SEARCH_ENGINE_ID: ${GOOGLE_OFFICIAL_SEARCH_ENGINE_ID:-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+    ports:
+      - "${CREW_PORT:-8100}:8100"
+    depends_on:
+      - litellm
+
+  # ==========================================================================
+  # 6. LiteLLM — OpenAI-compatible AI gateway (stand-in for OmniRoute)
+  #    One endpoint in front of Gemini / DeepSeek / Mistral / OpenRouter.
+  #    Swap providers in docker/litellm/config.yaml, not in app code.
+  #    The app points at it via AI_GATEWAY_BASE_URL. OmniRoute (#6) plugs into
+  #    the same env var — see docs/tools/omniroute.md.
+  # ==========================================================================
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: verifact-litellm
+    restart: unless-stopped
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-verifact-dev-only}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+    volumes:
+      - ./docker/litellm/config.yaml:/app/config.yaml:ro
+    ports:
+      - "${LITELLM_PORT:-4000}:4000"
+
+  # ==========================================================================
+  # 8. Formbricks — self-hosted surveys / feedback
+  #    Frontend widget (env-gated) lives in src/components/feedback.
+  # ==========================================================================
+  formbricks:
+    image: ghcr.io/formbricks/formbricks:latest
+    container_name: verifact-formbricks
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-verifact}:${POSTGRES_PASSWORD:-verifact_dev_only_change_me}@postgres:5432/formbricks
+      WEBAPP_URL: ${FORMBRICKS_URL:-http://localhost:3001}
+      NEXTAUTH_URL: ${FORMBRICKS_URL:-http://localhost:3001}
+      NEXTAUTH_SECRET: ${FORMBRICKS_NEXTAUTH_SECRET:-formbricks_dev_only_change_me_0123456789abcdef}
+      ENCRYPTION_KEY: ${FORMBRICKS_ENCRYPTION_KEY:-formbricks_dev_only_change_me_0123456789abcdef}
+      CRON_SECRET: ${FORMBRICKS_CRON_SECRET:-formbricks_dev_only_cron_secret_0123456789}
+    ports:
+      - "${FORMBRICKS_PORT:-3001}:3000"
+
+  # ==========================================================================
+  # 9. Cal.com — self-hosted scheduling (investor/mentor booking page)
+  #    Self-hosting Cal.com is finicky; if this image tag is unavailable,
+  #    build from github.com/calcom/docker — see docs/tools/calcom.md.
+  # ==========================================================================
+  calcom:
+    image: calcom/cal.com:latest
+    container_name: verifact-calcom
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-verifact}:${POSTGRES_PASSWORD:-verifact_dev_only_change_me}@postgres:5432/calcom
+      DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-verifact}:${POSTGRES_PASSWORD:-verifact_dev_only_change_me}@postgres:5432/calcom
+      NEXTAUTH_URL: ${CALCOM_URL:-http://localhost:3002}
+      NEXT_PUBLIC_WEBAPP_URL: ${CALCOM_URL:-http://localhost:3002}
+      NEXTAUTH_SECRET: ${CALCOM_NEXTAUTH_SECRET:-calcom_dev_only_change_me_0123456789abcdef}
+      CALENDSO_ENCRYPTION_KEY: ${CALCOM_ENCRYPTION_KEY:-calcom_dev_only_change_me_0123456789abcdef}
+      NEXT_PUBLIC_LICENSE_CONSENT: "agree"
+      CALCOM_TELEMETRY_DISABLED: "1"
+    ports:
+      - "${CALCOM_PORT:-3002}:3000"
+
+  # ==========================================================================
+  # 11. ToolJet — internal admin panel (PHASE 2, opt-in)
+  #     Cost/pipeline monitoring dashboard. Start with:
+  #        docker compose --profile phase2 up -d
+  # ==========================================================================
+  tooljet:
+    image: tooljet/tooljet:ee-lts-latest
+    container_name: verifact-tooljet
+    profiles: ["phase2"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      TOOLJET_HOST: ${TOOLJET_URL:-http://localhost:8082}
+      LOCKBOX_MASTER_KEY: ${TOOLJET_LOCKBOX_KEY:-0123456789abcdef0123456789abcdef}
+      SECRET_KEY_BASE: ${TOOLJET_SECRET_KEY_BASE:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      PG_HOST: postgres
+      PG_PORT: "5432"
+      PG_USER: ${POSTGRES_USER:-verifact}
+      PG_PASS: ${POSTGRES_PASSWORD:-verifact_dev_only_change_me}
+      PG_DB: tooljet
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      TOOLJET_DB: tooljet_db
+      TOOLJET_DB_HOST: postgres
+      TOOLJET_DB_USER: ${POSTGRES_USER:-verifact}
+      TOOLJET_DB_PASS: ${POSTGRES_PASSWORD:-verifact_dev_only_change_me}
+    command: ["npm", "run", "start:prod"]
+    ports:
+      - "${TOOLJET_PORT:-8082}:3000"
+
+volumes:
+  postgres-data:
+  redis-data:
+  n8n-data:
+  ntfy-data:

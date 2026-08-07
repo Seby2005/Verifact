@@ -1,0 +1,174 @@
+{
+  "name": "Verifact — 4 sources in parallel",
+  "meta": {
+    "description": "Skeleton: webhook receives a claim, queries Verifact's 4 data sources in parallel, merges the results, and POSTs the aggregate back to the app. Add/replace a source by adding/removing an HTTP node + a Merge input — no app code change."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "verifact-verify",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-verify",
+      "name": "Webhook - Verify",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-360, 300],
+      "webhookId": "verifact-verify"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://factchecktools.googleapis.com/v1alpha1/claims:search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "query", "value": "={{ $json.body.text }}" },
+            { "name": "languageCode", "value": "={{ $json.body.language || 'ro' }}" },
+            { "name": "key", "value": "={{ $env.GOOGLE_FACT_CHECK_API_KEY }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "src-factcheck",
+      "name": "1. Fact Check API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-80, 60],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://newsapi.org/v2/everything",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "q", "value": "={{ $json.body.text }}" },
+            { "name": "pageSize", "value": "5" },
+            { "name": "sortBy", "value": "relevancy" },
+            { "name": "apiKey", "value": "={{ $env.NEWS_API_KEY }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "src-news",
+      "name": "2. News API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-80, 220],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/customsearch/v1",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "q", "value": "={{ $json.body.text }}" },
+            { "name": "num", "value": "5" },
+            { "name": "key", "value": "={{ $env.GOOGLE_CUSTOM_SEARCH_API_KEY }}" },
+            { "name": "cx", "value": "={{ $env.GOOGLE_OFFICIAL_SEARCH_ENGINE_ID }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "src-official",
+      "name": "3. Custom Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-80, 380],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"api_key\": $env.TAVILY_API_KEY, \"query\": $json.body.text, \"max_results\": 5, \"search_depth\": \"basic\" } }}",
+        "options": {}
+      },
+      "id": "src-social",
+      "name": "4. Social (Tavily)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-80, 540],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "id": "merge-sources",
+      "name": "Merge sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pull each source separately by node name (all four ran upstream).\nconst body = $('Webhook - Verify').first().json.body || {};\nfunction safe(name) {\n  try { return $(name).all().map(i => i.json); } catch (e) { return []; }\n}\nreturn [{\n  json: {\n    claim: body.text || '',\n    language: body.language || 'ro',\n    sources: {\n      factCheck: safe('1. Fact Check API'),\n      news: safe('2. News API'),\n      official: safe('3. Custom Search'),\n      social: safe('4. Social (Tavily)'),\n    },\n  },\n}];"
+      },
+      "id": "aggregate",
+      "name": "Aggregate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.VERIFACT_CALLBACK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "callback",
+      "name": "Callback to Verifact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Webhook - Verify": {
+      "main": [
+        [
+          { "node": "1. Fact Check API", "type": "main", "index": 0 },
+          { "node": "2. News API", "type": "main", "index": 0 },
+          { "node": "3. Custom Search", "type": "main", "index": 0 },
+          { "node": "4. Social (Tavily)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "1. Fact Check API": {
+      "main": [[{ "node": "Merge sources", "type": "main", "index": 0 }]]
+    },
+    "2. News API": {
+      "main": [[{ "node": "Merge sources", "type": "main", "index": 1 }]]
+    },
+    "3. Custom Search": {
+      "main": [[{ "node": "Merge sources", "type": "main", "index": 2 }]]
+    },
+    "4. Social (Tavily)": {
+      "main": [[{ "node": "Merge sources", "type": "main", "index": 3 }]]
+    },
+    "Merge sources": {
+      "main": [[{ "node": "Aggregate", "type": "main", "index": 0 }]]
+    },
+    "Aggregate": {
+      "main": [[{ "node": "Callback to Verifact", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

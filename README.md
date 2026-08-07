@@ -114,6 +114,64 @@ Scripts defined in `package.json`:
 
 ---
 
+## Self-hosted / Open-source stack
+
+Verifact ships a single root [`docker-compose.yml`](docker-compose.yml) that runs
+an entirely self-hostable, EU-hostable support stack — chosen to keep data and
+infrastructure under your control (data sovereignty), with no hard US-vendor
+lock-in. Each tool has a short guide in [`docs/tools/`](docs/tools/) covering
+what it does, how to start it, its env vars, and a **license + activity note**
+(useful for open-source-positioning in funding applications).
+
+```bash
+# Phase 1 (all services):
+docker compose up -d
+# Phase 2 (opt-in, e.g. ToolJet):
+docker compose --profile phase2 up -d tooljet
+```
+
+### Phase 1 — active
+
+| Tool | Role | Port | License | Doc |
+|------|------|------|---------|-----|
+| **n8n** | Workflow orchestration of the 4 sources | 5678 | ⚠️ Sustainable Use License (fair-code, *not* OSI) | [n8n.md](docs/tools/n8n.md) |
+| **GlitchTip** | Error tracking (Sentry-compatible) | 8000 | MIT | [glitchtip.md](docs/tools/glitchtip.md) |
+| **ntfy** | HTTP alerting (health, cost, errors) | 8080 | Apache-2.0 | [ntfy.md](docs/tools/ntfy.md) |
+| **Listmonk** | Waitlist / newsletter | 9000 | AGPL-3.0 | [listmonk.md](docs/tools/listmonk.md) |
+| **crewAI** | Multi-agent pipeline prototype (Python) | 8100 | MIT | [crewai.md](docs/tools/crewai.md) |
+| **LiteLLM / OmniRoute** | Self-hosted AI gateway (swap provider from config) | 4000 / 20129 | MIT | [omniroute.md](docs/tools/omniroute.md) |
+| **Formbricks** | In-app feedback surveys | 3001 | AGPL-3.0 (core) | [formbricks.md](docs/tools/formbricks.md) |
+| **Cal.com** | Investor/mentor booking | 3002 | MIT (root; `/ee` differs) | [calcom.md](docs/tools/calcom.md) |
+| **public-apis** | 10 free sources for extra layers (no install) | — | — | [additional-apis.md](docs/tools/additional-apis.md) |
+
+Shared infra: one Postgres (`5432`, multi-database) + one Redis (`6379`).
+
+### Phase 2 — scaffold + plan only (needs a VPS decision; no live deploy)
+
+| Tool | Role | License | Doc |
+|------|------|---------|-----|
+| **Coolify** | Self-hosted PaaS (replaces Vercel/Heroku) | Apache-2.0 | [coolify.md](docs/tools/coolify.md) |
+| **ToolJet** | Internal admin panel (cost/pipeline monitoring) | AGPL-3.0 | [tooljet.md](docs/tools/tooljet.md) |
+| **Documenso** | E-signature (contracts) — research/setup only | AGPL-3.0 | [documenso.md](docs/tools/documenso.md) |
+
+### App-side integrations (minimal, env-gated — inert until configured)
+
+- **AI gateway:** [`src/lib/ai/openrouter.ts`](src/lib/ai/openrouter.ts) reads
+  `AI_GATEWAY_BASE_URL` to route all AI through LiteLLM/OmniRoute.
+- **GlitchTip:** `sentry.*.config.ts` + [`src/instrumentation.ts`](src/instrumentation.ts) + [`src/app/global-error.tsx`](src/app/global-error.tsx); CSP origin added automatically in [`next.config.mjs`](next.config.mjs).
+- **ntfy:** [`src/lib/alerts/ntfy.ts`](src/lib/alerts/ntfy.ts) + [`/api/health`](src/app/api/health/route.ts) (`?notify=1`).
+- **n8n:** callback route [`/api/webhooks/n8n`](src/app/api/webhooks/n8n/route.ts) + [`workflows/n8n/verifact-4-sources.json`](workflows/n8n/verifact-4-sources.json).
+- **Listmonk:** [`/api/waitlist`](src/app/api/waitlist/route.ts) + [`WaitlistForm`](src/components/waitlist/WaitlistForm.tsx).
+- **Formbricks:** env-gated [`FeedbackWidget`](src/components/feedback/FeedbackWidget.tsx) in the layout.
+
+> **License note for funding applications:** most of the stack is truly OSI
+> (MIT / Apache-2.0 / AGPL-3.0). The one exception is **n8n**, whose license is
+> *fair-code / source-available*, not OSI-permissive — see [n8n.md](docs/tools/n8n.md)
+> for OSI alternatives (Node-RED, Windmill, Kestra) if strict open-source
+> positioning matters.
+
+---
+
 ## Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on branch naming, conventional commit standards, and pull request workflows.

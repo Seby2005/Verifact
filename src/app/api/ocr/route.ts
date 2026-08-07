@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
+import { sniffImageType } from '@/lib/utils/image-type';
 import { processOCR } from '@/lib/ocr';
 import { CircuitOpenError } from '@/lib/utils/circuit-breaker';
 import { logger } from '@/lib/utils/logger';
@@ -62,6 +63,21 @@ export async function POST(req: NextRequest) {
           success: false,
           error: 'Imaginea este prea mare. Maximul permis este de 10MB.',
           code: 'IMAGE_TOO_LARGE',
+        },
+        { status: 400 }
+      );
+    }
+
+    // The mimeType checked above is only the sender's claim. Confirm the actual
+    // bytes are one of the formats we accept before spending an OCR call on
+    // them — an attacker can label anything (an SVG, HTML, a random blob)
+    // 'image/png', but the magic bytes give it away.
+    if (sniffImageType(imageBuffer) === null) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Fișierul transmis nu este o imagine validă (JPEG, PNG sau WEBP).',
+          code: 'INVALID_INPUT',
         },
         { status: 400 }
       );
