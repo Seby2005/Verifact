@@ -5,7 +5,7 @@ import { createClient as createServerClient } from './server';
  * Created on first login or user registration.
  */
 export async function ensureProfileExists(userId: string, _email?: string): Promise<void> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: existing } = await supabase
     .from('profiles')
     .select('id')
@@ -27,7 +27,7 @@ export async function ensureProfileExists(userId: string, _email?: string): Prom
  * Server-side helper to fetch the current authenticated user.
  */
 export async function getAuthenticatedUser() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return null;
   return user;

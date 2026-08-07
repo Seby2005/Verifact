@@ -29,7 +29,7 @@ interface LoadedReport {
  * Cached per request so generateMetadata and the page share one query.
  */
 const loadReport = cache(async (id: string): Promise<LoadedReport | null> => {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data, error } = await supabase
     .from('verifications')
     .select('*')
@@ -55,9 +55,10 @@ const loadReport = cache(async (id: string): Promise<LoadedReport | null> => {
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const loaded = await loadReport(params.id);
+  const { id } = await params;
+  const loaded = await loadReport(id);
   if (!loaded) {
     return { title: 'Raport indisponibil', robots: { index: false } };
   }
@@ -90,8 +91,9 @@ export async function generateMetadata({
   };
 }
 
-export default async function ReportPage({ params }: { params: { id: string } }) {
-  const loaded = await loadReport(params.id);
+export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const loaded = await loadReport(id);
   if (!loaded) notFound();
 
   return (

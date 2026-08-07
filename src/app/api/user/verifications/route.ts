@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const limit = 30;
   const offset = (page - 1) * limit;
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   let query = supabase
     .from('verifications')
     .select('id, input_text, verdict, score, is_public, created_at', { count: 'exact' })

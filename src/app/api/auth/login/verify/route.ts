@@ -44,7 +44,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
 
   if (error) {

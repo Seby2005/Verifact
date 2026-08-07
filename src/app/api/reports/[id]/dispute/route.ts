@@ -25,8 +25,9 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const ip =
     request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
     request.headers.get('x-real-ip') ??
@@ -67,13 +68,13 @@ export async function POST(
     email = trimmedEmail;
   }
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const result = await fileDispute(
-    { verificationId: params.id, reason, email, userId: user?.id ?? null },
+    { verificationId: id, reason, email, userId: user?.id ?? null },
     supabase
   );
 
