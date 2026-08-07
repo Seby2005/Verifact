@@ -8,6 +8,7 @@ import { useLanguage } from '@/i18n';
 import styles from './AuthPanel.module.css';
 
 type Mode = 'login' | 'signup';
+type LoginStep = 'credentials' | 'code';
 
 const DELETE_CONFIRM_PHRASE = 'ȘTERGE';
 
@@ -25,6 +26,8 @@ export const AuthPanel: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<Status>({ state: 'idle' });
+  const [loginStep, setLoginStep] = useState<LoginStep>('credentials');
+  const [code, setCode] = useState('');
 
   const [session, setSession] = useState<Session>(undefined);
   const [usage, setUsage] = useState<UsageLimitCheck | null>(null);
@@ -66,6 +69,8 @@ export const AuthPanel: React.FC = () => {
   const handleModeChange = (next: Mode) => {
     setMode(next);
     setStatus({ state: 'idle' });
+    setLoginStep('credentials');
+    setCode('');
   };
 
   const handleOAuthSignIn = async (provider: 'google' | 'facebook' | 'github') => {
@@ -92,28 +97,94 @@ export const AuthPanel: React.FC = () => {
     setStatus({ state: 'loading' });
 
     try {
-      const supabase = createClient();
-
       if (mode === 'signup') {
+        const supabase = createClient();
         const { error } = await supabase.auth.signUp({ email: email.trim(), password });
         if (error) throw error;
         setStatus({
           state: 'success',
           message: t('auth.form.successSignup'),
         });
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-        if (error) throw error;
-        setStatus({ state: 'success', message: t('auth.form.successLogin') });
+        return;
       }
+
+      // Login: the password is checked server-side without creating a
+      // session. A real session is only established in handleVerifyCode,
+      // once the emailed code is confirmed.
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const data = (await res.json()) as { success: boolean; error?: string };
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || t('auth.form.errorGeneric'));
+      }
+
+      setLoginStep('code');
+      setStatus({ state: 'idle' });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : t('auth.form.errorGeneric');
       setStatus({ state: 'error', message });
     }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+
+    setStatus({ state: 'loading' });
+
+    try {
+      const res = await fetch('/api/auth/login/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), token: code.trim() }),
+      });
+      const data = (await res.json()) as { success: boolean; error?: string };
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || t('auth.twoFactor.errorGeneric'));
+      }
+
+      // The session cookie was just set by the server response above —
+      // reload so every client on the page, including this component's own
+      // Supabase client, picks it up.
+      window.location.reload();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : t('auth.twoFactor.errorGeneric');
+      setStatus({ state: 'error', message });
+    }
+  };
+
+  const handleResendCode = async () => {
+    setStatus({ state: 'loading' });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const data = (await res.json()) as { success: boolean; error?: string };
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || t('auth.form.errorGeneric'));
+      }
+      setStatus({ state: 'success', message: t('auth.twoFactor.resendSuccess') });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : t('auth.form.errorGeneric');
+      setStatus({ state: 'error', message });
+    }
+  };
+
+  const handleBackToCredentials = () => {
+    setLoginStep('credentials');
+    setCode('');
+    setStatus({ state: 'idle' });
   };
 
   const handleSignOut = async () => {
@@ -243,6 +314,73 @@ export const AuthPanel: React.FC = () => {
         {t('auth.form.ariaLabel')}
       </h2>
 
+      {mode === 'login' && loginStep === 'code' ? (
+        <form className={styles.form} onSubmit={handleVerifyCode}>
+          <p className={styles.modalLead}>{t('auth.twoFactor.hint', { email: email.trim() })}</p>
+
+          <Input
+            label={t('auth.twoFactor.codeLabel')}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete="one-time-code"
+            maxLength={6}
+            required
+            placeholder={t('auth.twoFactor.codePlaceholder')}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            fullWidth
+          />
+
+          <div className={styles.actions}>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              fullWidth
+              isLoading={status.state === 'loading'}
+            >
+              {t('auth.twoFactor.submitBtn')}
+            </Button>
+          </div>
+
+          <div className={styles.twoFactorActions}>
+            <button
+              type="button"
+              className={`${styles.linkButton} ${styles.textLink}`}
+              onClick={handleResendCode}
+            >
+              {t('auth.twoFactor.resendBtn')}
+            </button>
+            <button
+              type="button"
+              className={`${styles.linkButton} ${styles.textLink}`}
+              onClick={handleBackToCredentials}
+            >
+              {t('auth.twoFactor.backBtn')}
+            </button>
+          </div>
+
+          <div aria-live="polite">
+            {status.state === 'error' ? (
+              <div className={styles.status}>
+                <Callout label={t('auth.form.errorLabel')} tone="plain">
+                  {status.message}
+                </Callout>
+              </div>
+            ) : null}
+
+            {status.state === 'success' ? (
+              <div className={styles.status}>
+                <Callout label={t('auth.form.successLabel')} tone="plain">
+                  {status.message}
+                </Callout>
+              </div>
+            ) : null}
+          </div>
+        </form>
+      ) : (
+        <>
       <Tabs items={modes} value={mode} onChange={handleModeChange} ariaLabel={t('auth.tabs.ariaLabel')} />
 
       {/* Social Logins */}
@@ -368,6 +506,8 @@ export const AuthPanel: React.FC = () => {
           ) : null}
         </div>
       </form>
+        </>
+      )}
     </section>
   );
 };

@@ -1,48 +1,58 @@
 import { sendEmailWithResend, type SendEmailPayload, type SendEmailResponse } from './resend';
 import { sendEmailWithBrevo } from './brevo';
+import { sendEmailWithMailjet } from './mailjet';
 import { logger } from '@/lib/utils/logger';
 
 export type { SendEmailPayload, SendEmailResponse };
 
 /**
- * Unified Email Dispatcher — automatically sends emails via:
- * 1. Resend (if RESEND_API_KEY is configured)
- * 2. Brevo (if BREVO_API_KEY is configured or as fallback if Resend fails)
- * 3. Simulated log mode in development if no email keys are set
+ * Unified Email Dispatcher — sends via the first configured provider and
+ * falls through to the next if it fails, in priority order:
+ * 1. Mailjet (if MAILJET_API_KEY + MAILJET_SECRET_KEY are set)
+ * 2. Resend  (if RESEND_API_KEY is set)
+ * 3. Brevo   (if BREVO_API_KEY is set)
+ *
+ * If no provider is configured, logs a simulated send (dev mode). If every
+ * configured provider fails, the last error is re-thrown.
  */
 export async function sendEmail(payload: SendEmailPayload): Promise<SendEmailResponse> {
-  const resendKey = process.env.RESEND_API_KEY;
-  const brevoKey = process.env.BREVO_API_KEY;
+  const providers: Array<{ name: SendEmailResponse['provider']; send: () => Promise<SendEmailResponse> }> = [];
 
-  // Try Resend first
-  if (resendKey) {
+  if (process.env.MAILJET_API_KEY && process.env.MAILJET_SECRET_KEY) {
+    providers.push({ name: 'mailjet', send: () => sendEmailWithMailjet(payload) });
+  }
+  if (process.env.RESEND_API_KEY) {
+    providers.push({ name: 'resend', send: () => sendEmailWithResend(payload) });
+  }
+  if (process.env.BREVO_API_KEY) {
+    providers.push({ name: 'brevo', send: () => sendEmailWithBrevo(payload) });
+  }
+
+  // Dev / fallback log mode when no provider is configured.
+  if (providers.length === 0) {
+    logger.info('Simulated email sending (no MAILJET/RESEND/BREVO keys configured)', {
+      to: payload.to,
+      subject: payload.subject,
+    });
+    return {
+      id: `simulated-${Date.now()}`,
+      provider: 'mailjet',
+    };
+  }
+
+  let lastError: unknown;
+  for (const provider of providers) {
     try {
-      return await sendEmailWithResend(payload);
+      return await provider.send();
     } catch (error) {
-      logger.warn('Resend email failed, attempting Brevo fallback', {
+      lastError = error;
+      logger.warn(`${provider.name} email failed, attempting next provider`, {
         service: 'email',
+        provider: provider.name,
         error: String(error),
       });
-      if (brevoKey) {
-        return sendEmailWithBrevo(payload);
-      }
-      throw error;
     }
   }
 
-  // Try Brevo if set
-  if (brevoKey) {
-    return sendEmailWithBrevo(payload);
-  }
-
-  // Dev / Fallback log mode
-  logger.info('Simulated email sending (No RESEND_API_KEY or BREVO_API_KEY configured)', {
-    to: payload.to,
-    subject: payload.subject,
-  });
-
-  return {
-    id: `simulated-${Date.now()}`,
-    provider: 'resend',
-  };
+  throw lastError;
 }

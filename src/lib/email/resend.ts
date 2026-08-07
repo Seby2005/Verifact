@@ -11,7 +11,7 @@ export interface SendEmailPayload {
 
 export interface SendEmailResponse {
   id: string;
-  provider: 'resend' | 'brevo';
+  provider: 'resend' | 'brevo' | 'mailjet';
 }
 
 /**

@@ -1,0 +1,7 @@
+# crewAI multi-agent prototype for Verifact.
+# Pinned to a known-good range; crewAI moves fast, so a floor + ceiling keeps
+# a rebuild reproducible.
+crewai>=0.86,<0.100
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.29,<1.0
+requests>=2.31,<3.0
