@@ -28,15 +28,18 @@ const config = [
     },
   },
   {
-    // New in eslint-plugin-react-hooks@7 (pulled in by eslint-config-next@16).
-    // These flag pre-existing, working patterns across several components; kept
-    // as warnings so the ESLint 8→9 + Next 14→16 upgrade doesn't turn a security
-    // patch into a UI refactor. Addressing them is separate follow-up. The rules
-    // must sit in an object that also registers the plugin (flat-config scoping).
+    // `set-state-in-effect` is new in eslint-plugin-react-hooks@7 (pulled in by
+    // eslint-config-next@16). It flags the SSR-safe pattern this app uses
+    // throughout — render a server-safe default, then sync a client-only value
+    // (matchMedia, a cookie, the head script's data-theme attribute, the
+    // Supabase session) in an effect after mount so the markup doesn't hydrate
+    // to a mismatch. That deferral is intentional and correct, so the rule is
+    // disabled here rather than worked around at each call site.
+    // `react-hooks/refs` stays at its shared-config default. The rule must sit
+    // in an object that also registers the plugin (flat-config scoping).
     plugins: { 'react-hooks': reactHooks },
     rules: {
-      'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/refs': 'warn',
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
 ];

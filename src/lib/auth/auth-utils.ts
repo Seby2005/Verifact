@@ -71,6 +71,9 @@ export async function signOut(): Promise<void> {
   const supabase = createBrowserClient();
   await supabase.auth.signOut();
   if (typeof window !== 'undefined') {
+    // Full reload (not router navigation) so every bit of client state and the
+    // Supabase client are torn down after sign-out, not just the current route.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = '/';
   }
 }

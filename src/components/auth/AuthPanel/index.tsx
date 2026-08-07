@@ -208,6 +208,8 @@ export const AuthPanel: React.FC = () => {
       }
       const supabase = createClient();
       await supabase.auth.signOut();
+      // Full reload after account deletion so no stale client state survives.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = '/';
     } catch (err) {
       const message = err instanceof Error ? err.message : t('auth.deleteModal.errorGeneric');

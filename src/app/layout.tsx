@@ -71,9 +71,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+    // The inline THEME_SCRIPT in <head> resolves and sets data-theme before
+    // hydration to avoid a flash of the wrong theme; that intentionally makes
+    // the server and client <html> attributes differ, so suppressHydrationWarning
+    // silences the expected mismatch on this element.
     <html
       lang="ro"
       translate="no"
+      suppressHydrationWarning
       className={`${hanken.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}
     >
       <head>
