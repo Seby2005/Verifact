@@ -39,7 +39,7 @@ interface ProfileRoleRow {
 export async function requireAdmin(
   options: { allowModerator?: boolean } = {}
 ): Promise<{ user: User; role: UserRole }> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const {
     data: { user },
     error: authError,

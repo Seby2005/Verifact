@@ -17,7 +17,7 @@ function getFirstOfNextMonth(): string {
 }
 
 export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from('profiles')

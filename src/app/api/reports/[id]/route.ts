@@ -12,15 +12,16 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = createServerClient();
+  const { id } = await params;
+  const supabase = await createServerClient();
   const user = await getAuthenticatedUser();
 
   const { data, error } = await supabase
     .from('verifications')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (error || !data) {
@@ -38,8 +39,9 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const user = await getAuthenticatedUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -55,11 +57,11 @@ export async function PATCH(
     return Response.json({ error: 'is_public must be a boolean' }, { status: 400 });
   }
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: updated, error } = await supabase
     .from('verifications')
     .update({ is_public: isPublic } as never)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id)
     .select()
     .single();
@@ -73,16 +75,17 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const user = await getAuthenticatedUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { error } = await supabase
     .from('verifications')
     .delete()
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id);
 
   if (error) {

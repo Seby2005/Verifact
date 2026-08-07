@@ -5,8 +5,9 @@ export const dynamic = 'force-dynamic';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const user = await getAuthenticatedUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -21,11 +22,11 @@ export async function PATCH(
     return Response.json({ error: 'isPublic must be a boolean' }, { status: 400 });
   }
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { error } = await supabase
     .from('verifications')
     .update({ is_public: body.isPublic } as never)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id);
 
   if (error) {

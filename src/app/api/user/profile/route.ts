@@ -7,7 +7,7 @@ export async function GET() {
   const user = await getAuthenticatedUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: profile, error } = await supabase
     .from('profiles')
     .select('*')
@@ -32,7 +32,7 @@ export async function PATCH(request: Request) {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const updates: Record<string, unknown> = {};
 
   if (typeof body.username === 'string') {
