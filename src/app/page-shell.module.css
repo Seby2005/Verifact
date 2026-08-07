@@ -80,7 +80,8 @@
   background-color: var(--color-line-strong);
 }
 
-.prose a {
+.prose a,
+.textLink {
   color: var(--color-ink);
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -89,7 +90,8 @@
   transition: color var(--transition-fast), text-decoration-color var(--transition-fast);
 }
 
-.prose a:hover {
+.prose a:hover,
+.textLink:hover {
   color: var(--color-accent);
   text-decoration-color: var(--color-accent);
 }

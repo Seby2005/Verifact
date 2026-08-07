@@ -12,6 +12,7 @@ export default function ConfidentialitatePage() {
     t('confidentialitatePage.sec2AccountList.0'),
     t('confidentialitatePage.sec2AccountList.1'),
     t('confidentialitatePage.sec2AccountList.2'),
+    t('confidentialitatePage.sec2AccountList.3'),
   ];
 
   const sec2ContentList = [
@@ -37,13 +38,15 @@ export default function ConfidentialitatePage() {
     { name: 'Google Gemini', desc: t('confidentialitatePage.sec4Vendors.2.desc') },
     { name: 'Google Fact Check Tools / Custom Search', desc: t('confidentialitatePage.sec4Vendors.3.desc') },
     { name: 'Tavily', desc: t('confidentialitatePage.sec4Vendors.4.desc') },
-    { name: 'Vercel', desc: t('confidentialitatePage.sec4Vendors.5.desc') },
+    { name: 'Creem', desc: t('confidentialitatePage.sec4Vendors.5.desc') },
+    { name: 'Vercel', desc: t('confidentialitatePage.sec4Vendors.6.desc') },
   ];
 
   const sec5List = [
     t('confidentialitatePage.sec5List.0'),
     t('confidentialitatePage.sec5List.1'),
     t('confidentialitatePage.sec5List.2'),
+    t('confidentialitatePage.sec5List.3'),
   ];
 
   const sec7List = [

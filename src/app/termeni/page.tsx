@@ -32,7 +32,7 @@ export default function TermeniPage() {
           <p>{t('termeniPage.sec1Text1')}</p>
           <p>
             {t('termeniPage.sec1Text2Prefix')}
-            <Link href="/preturi" className={shell.textLink}>
+            <Link href="/preturi">
               {t('termeniPage.pricingLinkText')}
             </Link>
             {t('termeniPage.sec1Text2Suffix')}
@@ -49,7 +49,7 @@ export default function TermeniPage() {
           <p>{t('termeniPage.sec3Text2')}</p>
           <p>
             {t('termeniPage.sec3Text3Prefix')}
-            <Link href="/transparenta" className={shell.textLink}>
+            <Link href="/transparenta">
               {t('termeniPage.transparencyLinkText')}
             </Link>
             {t('termeniPage.sec3Text3Suffix')}
@@ -64,30 +64,30 @@ export default function TermeniPage() {
           </ul>
 
           <h2>{t('termeniPage.sec5Title')}</h2>
-          <p>
-            {t('termeniPage.sec5Text1Prefix')}
-            <a href={REPO_URL} target="_blank" rel="noreferrer noopener" className={shell.textLink}>
-              {t('termeniPage.repoLinkText')}
-            </a>
-            {t('termeniPage.sec5Text1Suffix')}
-          </p>
-          <p>
-            {t('termeniPage.sec5Text2Prefix')}
-            <Link href="/confidentialitate" className={shell.textLink}>
-              {t('termeniPage.privacyLinkText')}
-            </Link>
-            {t('termeniPage.sec5Text2Suffix')}
-          </p>
-          <p>{t('termeniPage.sec5Text3')}</p>
+          <p>{t('termeniPage.sec5Intro')}</p>
+          <h3>{t('termeniPage.sec5RenewalTitle')}</h3>
+          <p>{t('termeniPage.sec5RenewalText')}</p>
+          <h3>{t('termeniPage.sec5RefundTitle')}</h3>
+          <p>{t('termeniPage.sec5RefundText')}</p>
+          <h3>{t('termeniPage.sec5PriceTitle')}</h3>
+          <p>{t('termeniPage.sec5PriceText')}</p>
 
           <h2>{t('termeniPage.sec6Title')}</h2>
           <p>
-            {t('termeniPage.sec6TextPrefix')}
-            <a href={REPO_URL} target="_blank" rel="noreferrer noopener" className={shell.textLink}>
-              {t('termeniPage.issueLinkText')}
+            {t('termeniPage.sec6Text1Prefix')}
+            <a href={REPO_URL} target="_blank" rel="noreferrer noopener">
+              {t('termeniPage.repoLinkText')}
             </a>
-            {t('termeniPage.sec6TextSuffix')}
+            {t('termeniPage.sec6Text1Suffix')}
           </p>
+          <p>
+            {t('termeniPage.sec6Text2Prefix')}
+            <Link href="/confidentialitate">
+              {t('termeniPage.privacyLinkText')}
+            </Link>
+            {t('termeniPage.sec6Text2Suffix')}
+          </p>
+          <p>{t('termeniPage.sec6Text3')}</p>
 
           <h2>{t('termeniPage.sec7Title')}</h2>
           <p>{t('termeniPage.sec7Text')}</p>
@@ -95,9 +95,9 @@ export default function TermeniPage() {
           <h2>{t('termeniPage.sec8Title')}</h2>
           <p>
             {t('termeniPage.sec8TextPrefix')}
-            <Link href="/confidentialitate" className={shell.textLink}>
-              {t('termeniPage.sec8PrivacyLinkText')}
-            </Link>
+            <a href={REPO_URL} target="_blank" rel="noreferrer noopener">
+              {t('termeniPage.issueLinkText')}
+            </a>
             {t('termeniPage.sec8TextSuffix')}
           </p>
 
@@ -109,8 +109,23 @@ export default function TermeniPage() {
 
           <h2>{t('termeniPage.sec11Title')}</h2>
           <p>
-            {t('termeniPage.sec11Text')}
-            <a href="mailto:verifactro@gmail.com" className={shell.textLink}>
+            {t('termeniPage.sec11TextPrefix')}
+            <Link href="/confidentialitate">
+              {t('termeniPage.sec11PrivacyLinkText')}
+            </Link>
+            {t('termeniPage.sec11TextSuffix')}
+          </p>
+
+          <h2>{t('termeniPage.sec12Title')}</h2>
+          <p>{t('termeniPage.sec12Text')}</p>
+
+          <h2>{t('termeniPage.sec13Title')}</h2>
+          <p>{t('termeniPage.sec13Text')}</p>
+
+          <h2>{t('termeniPage.sec14Title')}</h2>
+          <p>
+            {t('termeniPage.sec14Text')}
+            <a href="mailto:verifactro@gmail.com">
               verifactro@gmail.com
             </a>
             .
