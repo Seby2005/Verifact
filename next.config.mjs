@@ -83,9 +83,6 @@ const nextConfig = {
   experimental: {
     workerThreads: false,
     cpus: 1,
-    // Required on Next 14 for src/instrumentation.ts (Sentry/GlitchTip init) to
-    // run. Stable and automatic from Next 15; explicit here.
-    instrumentationHook: true,
   },
   async headers() {
     return [

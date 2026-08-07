@@ -27,7 +27,7 @@ export async function checkRateLimit(
   windowMs: number = 60 * 1000
 ): Promise<RateLimitResult> {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     // Cast for the same reason as reserveUsageSlot() in db-operations.ts:
     // this Database type is hand-maintained (no `supabase gen types` run in
     // this project), and supabase-js's generic RPC typing doesn't resolve a

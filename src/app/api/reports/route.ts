@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const userOnly = searchParams.get('user_only') === 'true';
 
   const user = await getAuthenticatedUser();
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   let query = supabase
     .from('verifications')
