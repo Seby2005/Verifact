@@ -35,21 +35,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # High-severity findings currently trace back to transitive deps of
-      # `next` and `eslint`, whose only fix is a major-version bump
-      # (next 14→16, eslint 8→10) — deliberately deferred: Next 15+ made
-      # next/headers's cookies() and route params async (touches many files
-      # here) and eslint 9+ requires migrating .eslintrc.json to flat config;
-      # each needs its own dedicated, tested migration, not a drive-by upgrade.
-      # Until then the high scan is informational (non-blocking) so the report
-      # stays visible in the logs, while a CRITICAL advisory still hard-fails
-      # the build in the step below. Run `npm audit` locally for details.
-      - name: Audit dependencies (high — informational, non-blocking)
+      # The high-severity advisories that were previously deferred all traced
+      # back to transitive deps of next 14 and eslint 8, fixable only by a
+      # major bump. That migration is done — next 14→16 (async cookies()/route
+      # params) and eslint 8→9 with eslint-config-next 16 (flat config) — and
+      # `npm audit` now reports 0 vulnerabilities. The high scan is blocking
+      # again; since --audit-level=high also fails on critical, it subsumes the
+      # separate critical step this replaced. Run `npm audit` locally for details.
+      - name: Audit dependencies (high — blocking)
         run: npm audit --audit-level=high
-        continue-on-error: true
-
-      - name: Audit dependencies (critical — blocking)
-        run: npm audit --audit-level=critical
 
       - name: TypeScript type check
         run: npm run type-check

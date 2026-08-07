@@ -2,6 +2,10 @@
 const config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  // Clears external-provider API keys before each test file so unit tests run
+  // against a deterministic "not configured" baseline regardless of ambient env
+  // (CI sets them to placeholders for the build). See jest.setup.env.cjs.
+  setupFiles: ['<rootDir>/jest.setup.env.cjs'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.module\\.css$': 'identity-obj-proxy',

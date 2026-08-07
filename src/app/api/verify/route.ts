@@ -121,7 +121,7 @@ export async function POST(request: Request): Promise<Response> {
   // cap is low (3 / 30 days) and isn't the billing-relevant limit, so the
   // remaining race window is an accepted tradeoff rather than one worth a
   // second RPC.
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   let usageReserved = false;
