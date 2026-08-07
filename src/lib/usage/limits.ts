@@ -70,7 +70,7 @@ export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> 
   }
 
   const tier = (profile.tier as UserTier) || 'free';
-  const limit = TIER_CONFIG[tier]?.monthlyLimit ?? 10;
+  const limit = TIER_CONFIG[tier]?.monthlyLimit ?? TIER_CONFIG.free.monthlyLimit;
   const allowed = currentCount < limit;
 
   return {

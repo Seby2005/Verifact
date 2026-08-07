@@ -6,7 +6,7 @@ export const ro = {
   },
   header: {
     nav: {
-      reports: 'Rapoarte',
+      disinformation: 'Dezinformare',
       transparency: 'Transparență',
       pricing: 'Prețuri',
       account: 'Cont',
@@ -34,17 +34,17 @@ export const ro = {
 
   footer: {
     privacy:
-      'Totul este privat. Rapoartele tale, istoricul tău și contul tău rămân ale tale — nu vindem date și nu publicăm nimic fără să ceri tu asta explicit.',
+      'Ce verifici rămâne al tău. Nu vindem date și nu publicăm nimic fără acordul tău.',
     sections: {
       product: {
         title: 'Produs',
         verify: 'Verifică o afirmație',
-        reports: 'Rapoarte',
         pricing: 'Prețuri',
         account: 'Cont',
       },
       project: {
         title: 'Proiect',
+        disinformation: 'Despre dezinformare',
         mission: 'Misiune',
         transparency: 'Transparență',
         openSource: 'Open source și confidențialitate',
@@ -73,7 +73,7 @@ export const ro = {
       example3: 'Zidul Chinezesc se vede din spațiu cu ochiul liber',
     },
     trust: {
-      line: 'Un verdict fără surse e doar o altă opinie.',
+      line: 'Nu-ți cerem să ne crezi pe cuvânt — îți arătăm sursele.',
     },
     sample: {
       eyebrow: 'Așa arată un răspuns',
@@ -146,7 +146,7 @@ export const ro = {
     },
     actions: {
       submit: 'Verifică acum',
-      privacyHint: 'Rapoartele tale rămân private până când alegi tu să le publici.',
+      privacyHint: 'Verificarea rămâne privată până o publici tu.',
       pending: 'Se verifică…',
     },
     errors: {
@@ -173,6 +173,15 @@ export const ro = {
     disclaimerText:
       'Raportul este generat automat și nu reprezintă o decizie editorială finală. Citește sursele citate pentru contextul complet.',
     downloadBtn: 'Descarcă PDF',
+    downloadDocTitle: 'Raport de verificare',
+    downloadGeneratedOn: 'Generat pe',
+    downloadScoreLabel: 'Scor de veridicitate',
+    premiumModalTitle: 'Raportul PDF complet e pentru Pro',
+    premiumModalLead:
+      'Mai jos vezi un fragment din raport și câteva surse exacte. Raportul PDF complet — cu fiecare sursă legată direct la propoziția verificată — vine cu planul Pro.',
+    premiumSourcesLabel: 'Câteva dintre surse',
+    premiumUpgradeCta: 'Vezi planurile',
+    premiumCloseCta: 'Închide',
     /** Shown only on the printed page, which loses the site header. */
     printId: 'ID raport',
   },
@@ -207,52 +216,6 @@ export const ro = {
     errorGeneric: 'A apărut o eroare. Te rugăm să încerci din nou.',
     errorNetwork: 'Nu am putut contacta serverul. Verifică conexiunea și încearcă din nou.',
   },
-  rapoartePage: {
-    metadata: {
-      title: 'Rapoarte publicate',
-      description: 'Rapoartele publicate de comunitatea Verifact și istoricul verificărilor tale.',
-    },
-    eyebrow: 'Rapoarte',
-    title: 'Verificări publicate',
-    lead: 'Rapoartele apar aici doar dacă autorul lor alege să le publice. Verificările tale rămân private în mod implicit.',
-    listAriaLabel: 'Rapoarte publicate',
-    sourcesCount: '{count} surse citate',
-    filters: {
-      ariaLabel: 'Filtre pentru rapoarte',
-      searchLabel: 'Caută în afirmații',
-      searchPlaceholder: 'Cuvânt sau frază din afirmație',
-      verdictLabel: 'Verdict',
-      languageLabel: 'Limbă',
-      periodLabel: 'Perioadă',
-      optionAll: 'Toate',
-      languageRo: 'Română',
-      languageEn: 'Engleză',
-      period24h: 'Ultimele 24 de ore',
-      period7d: 'Ultimele 7 zile',
-      period30d: 'Ultimele 30 de zile',
-    },
-    loading: 'Se încarcă rapoartele…',
-    errorLabel: 'Nu am putut încărca rapoartele',
-    errorText: 'Conexiunea a eșuat sau serverul nu a răspuns. Încearcă din nou.',
-    retryBtn: 'Reîncarcă',
-    emptyTitle: 'Niciun raport publicat încă',
-    emptyText: 'Nimeni nu a publicat încă o verificare. Când cineva alege să facă un raport public, apare aici.',
-    emptyFilteredTitle: 'Niciun raport pentru aceste filtre',
-    emptyFilteredText: 'Schimbă verdictul, limba sau perioada ca să vezi mai multe rezultate.',
-    resultsCount: '{count} rapoarte',
-    paginationAriaLabel: 'Paginare rapoarte',
-    pagePosition: 'Pagina {page} din {total}',
-    prevPage: 'Pagina anterioară',
-    nextPage: 'Pagina următoare',
-    yourHistoryTitle: 'Istoricul tău',
-    yourHistoryText: 'Dacă ai un cont, verificările tale se salvează automat și le vezi doar tu. Poți șterge oricare dintre ele, oricând.',
-    historyEmptyTitle: 'Nu ai nicio verificare salvată',
-    historyEmptyText: 'Verificările pe care le faci cu contul conectat apar aici, private în mod implicit.',
-    privateBadge: 'Privat',
-    loginBtn: 'Intră în cont',
-    verifyLink: 'Verifică o afirmație',
-  },
-
   auth: {
     tabs: {
       login: 'Intră în cont',
@@ -282,19 +245,31 @@ export const ro = {
     },
     form: {
       ariaLabel: 'Autentificare',
+      loginSubtitle: 'Bine ai revenit. Intră în cont ca să-ți continui verificările.',
+      signupSubtitle: 'Cont gratuit în câteva secunde. Fără card, fără spam.',
       emailLabel: 'Email',
       emailPlaceholder: 'nume@exemplu.ro',
       passwordLabel: 'Parolă',
       passwordPlaceholder: 'Minimum 8 caractere',
       passwordHelperSignup: 'Alege o parolă de cel puțin 8 caractere.',
+      confirmPasswordLabel: 'Confirmă parola',
+      confirmPasswordPlaceholder: 'Repetă parola',
+      passwordMismatch: 'Parolele nu coincid.',
+      forgotPassword: 'Ai uitat parola?',
+      resetSent: 'Ți-am trimis pe email un link de resetare a parolei.',
+      resetError: 'Nu am putut trimite emailul de resetare. Încearcă din nou.',
+      resetNeedsEmail: 'Scrie-ți adresa de email mai sus, apoi apasă din nou.',
       submitLogin: 'Intră în cont',
       submitSignup: 'Creează cont',
-      socialGoogle: 'Conectează-te cu Google',
-      socialFacebook: 'Conectează-te cu Facebook',
-      socialGithub: 'Conectează-te cu GitHub',
+      socialGoogle: 'Continuă cu Google',
       orDivider: 'sau cu email și parolă',
+      termsPrefix: 'Creând un cont, accepți ',
+      termsLink: 'Termenii',
+      termsMid: ' și ',
+      privacyLink: 'Politica de confidențialitate',
+      termsSuffix: '.',
       privacyNote:
-        'Totul este privat: rapoartele și istoricul tău nu sunt vizibile pentru nimeni altcineva și nu sunt vândute mai departe.',
+        'Verificările tale rămân private. Nu le vede nimeni altcineva.',
       successSignup:
         'Contul a fost creat. Verifică-ți emailul pentru linkul de confirmare.',
       successLogin: 'Autentificare reușită.',
@@ -348,71 +323,6 @@ export const ro = {
       bullet4Text: ' Ștergerea contului îți șterge și rapoartele, definitiv.',
       noteText: 'Detaliile complete sunt pe pagina ',
       noteLink: 'Open source și confidențialitate',
-    },
-  },
-  preturiPage: {
-    metadata: {
-      title: 'Prețuri',
-      description:
-        'Verifact este gratuit pentru uz personal. Planuri Pro și Business pentru jurnaliști, redacții și organizații.',
-    },
-    eyebrow: 'Prețuri',
-    title: 'Gratuit pentru cetățeni. Plătit doar la volum.',
-    lead:
-      'Verificarea informației nu ar trebui să fie un privilegiu. Planul gratuit acoperă nevoia unui utilizator obișnuit; plătesc doar cei care verifică la scară profesională.',
-    plans: [
-      {
-        name: 'Free',
-        price: 'Gratuit',
-        cadence: null,
-        forWho: 'Pentru oricine vrea să verifice ce vede în feed.',
-        checks: '10 verificări pe lună',
-        features: [
-          'Raport standard cu surse citate',
-          'Verificare din text, screenshot sau URL',
-          'Istoric personal al verificărilor',
-          'Partajare publică a unui raport, dacă alegi tu',
-        ],
-        cta: 'Începe gratuit',
-      },
-      {
-        name: 'Pro',
-        price: '€7,99',
-        cadence: 'pe lună',
-        forWho: 'Pentru jurnaliști, cercetători și profesori.',
-        checks: '200 de verificări pe lună',
-        features: [
-          'Tot ce include planul Free',
-          'Raport detaliat pe straturi de verificare',
-          'Export PDF pentru citare',
-          'Cheie API personală',
-        ],
-        cta: 'Alege Pro',
-      },
-      {
-        name: 'Business',
-        price: '€49',
-        cadence: 'pe lună',
-        forWho: 'Pentru redacții, ONG-uri și platforme.',
-        checks: '2000 de verificări pe lună',
-        features: [
-          'Tot ce include planul Pro',
-          'Acces API complet și webhook-uri',
-          'Dashboard de analytics pentru echipă',
-          'Suport prioritar',
-        ],
-        cta: 'Contactează-ne',
-      },
-    ],
-    callout: {
-      label: 'Fără costuri ascunse',
-      text:
-        'Planul gratuit nu se transformă în plată automat și nu îți cere card la înregistrare. Dacă depășești limita lunară, verificările se opresc până în luna următoare — nu te taxăm surpriză.',
-    },
-    footnote: {
-      text: 'Prețurile nu includ TVA. Ai nevoie de altceva? ',
-      linkText: 'Creează un cont',
-      suffix: ' și scrie-ne.',
     },
   },
   misiunePage: {
@@ -562,9 +472,9 @@ export const ro = {
         text: 'O afirmație preluată dintr-un context satiric poate fi evaluată literal.',
       },
     ],
-    calloutLabel: 'Statusul implementării',
+    calloutLabel: 'Cod deschis',
     calloutText:
-      'Metodologia de mai sus este specificația după care se construiește motorul de verificare. Pipeline-ul nu este încă activ public — progresul poate fi urmărit în repository.',
+      'Aceasta este metodologia după care funcționează verificarea. Codul care o implementează este public și poate fi urmărit în repository.',
     openSourceLead: 'Codul care implementează toate acestea este public. ',
     openSourceLink: 'Vezi pagina open source',
   },
@@ -664,7 +574,7 @@ export const ro = {
       'Adresa IP, folosită temporar pentru limitarea numărului de cereri (rate limiting) și prevenirea abuzului.',
       'Statistici de trafic agregate prin Vercel Analytics — un serviciu fără cookie-uri, care nu identifică vizitatorii individual și nu urmărește pe niciun alt site.',
     ],
-    sec2SocialNote: 'Nu colectăm date printr-un login social (Google/GitHub) — doar email și parolă.',
+    sec2SocialNote: 'Dacă te autentifici cu Google, primim de la Google doar adresa ta de email și un identificator de cont — nimic din restul activității tale Google.',
     sec3Title: '3. De ce colectăm aceste date',
     sec3List: [
       'Executarea contractului: ca să creăm și administrăm contul tău și să generăm raportul cerut.',

@@ -1,0 +1,76 @@
+.lead {
+  margin-bottom: var(--space-5);
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+}
+
+/* The teaser: a real slice of the report, shown before the ask. */
+.previewCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background-color: var(--color-paper-shade);
+  border-radius: var(--radius-md);
+}
+
+.previewSummary {
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+}
+
+.previewSources {
+  margin-top: var(--space-5);
+}
+
+.previewSourcesLabel {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--color-ink-muted);
+  margin-bottom: var(--space-3);
+}
+
+.sourceList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sourceItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sourceLink {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--color-line-strong);
+  transition: color var(--transition-fast), text-decoration-color var(--transition-fast);
+}
+
+.sourceLink:hover {
+  color: var(--color-accent);
+  text-decoration-color: var(--color-accent);
+}
+
+.sourceMeta {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}

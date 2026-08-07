@@ -7,7 +7,7 @@ export interface NavLink {
 
 /** Primary nav — kept to three items so the header stays a masthead, not a menu. */
 export const NAV_LINKS: ReadonlyArray<NavLink> = [
-  { href: '/rapoarte', label: 'Rapoarte' },
+  { href: '/despre-dezinformare', label: 'Dezinformare' },
   { href: '/transparenta', label: 'Transparență' },
   { href: '/preturi', label: 'Prețuri' },
 ];
@@ -18,7 +18,6 @@ export const FOOTER_SECTIONS: ReadonlyArray<{ title: string; links: ReadonlyArra
     title: 'Produs',
     links: [
       { href: '/', label: 'Verifică o afirmație' },
-      { href: '/rapoarte', label: 'Rapoarte' },
       { href: '/preturi', label: 'Prețuri' },
       { href: '/cont', label: 'Cont' },
     ],
@@ -26,6 +25,7 @@ export const FOOTER_SECTIONS: ReadonlyArray<{ title: string; links: ReadonlyArra
   {
     title: 'Proiect',
     links: [
+      { href: '/despre-dezinformare', label: 'Despre dezinformare' },
       { href: '/misiune', label: 'Misiune' },
       { href: '/transparenta', label: 'Transparență' },
       { href: '/open-source', label: 'Open source și confidențialitate' },

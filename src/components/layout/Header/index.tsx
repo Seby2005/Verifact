@@ -8,7 +8,7 @@ import { ThemeToggle } from '../ThemeToggle';
 import styles from './Header.module.css';
 
 const NAV_ITEMS = [
-  { href: '/rapoarte', key: 'header.nav.reports' },
+  { href: '/despre-dezinformare', key: 'header.nav.disinformation' },
   { href: '/transparenta', key: 'header.nav.transparency' },
   { href: '/preturi', key: 'header.nav.pricing' },
 ];

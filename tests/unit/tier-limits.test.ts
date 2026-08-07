@@ -2,9 +2,9 @@ import { canUserVerify, TIER_LIMITS } from '@/lib/tier-limits';
 
 describe('canUserVerify', () => {
   it('allows verification when under the tier limit', () => {
-    const result = canUserVerify('free', 5, new Date());
+    const result = canUserVerify('free', 1, new Date());
     expect(result.allowed).toBe(true);
-    expect(result.remaining).toBe(5);
+    expect(result.remaining).toBe(TIER_LIMITS.free.verificationsPerMonth - 1);
   });
 
   it('disallows verification at the tier limit', () => {

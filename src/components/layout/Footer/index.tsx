@@ -15,7 +15,6 @@ export const Footer: React.FC = () => {
       title: t('footer.sections.product.title'),
       links: [
         { href: '/', label: t('footer.sections.product.verify') },
-        { href: '/rapoarte', label: t('footer.sections.product.reports') },
         { href: '/preturi', label: t('footer.sections.product.pricing') },
         { href: '/cont', label: t('footer.sections.product.account') },
       ],
@@ -23,6 +22,7 @@ export const Footer: React.FC = () => {
     {
       title: t('footer.sections.project.title'),
       links: [
+        { href: '/despre-dezinformare', label: t('footer.sections.project.disinformation') },
         { href: '/misiune', label: t('footer.sections.project.mission') },
         { href: '/transparenta', label: t('footer.sections.project.transparency') },
         { href: '/open-source', label: t('footer.sections.project.openSource') },
