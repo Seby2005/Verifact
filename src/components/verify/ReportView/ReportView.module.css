@@ -4,8 +4,6 @@
   gap: var(--space-6);
 }
 
-/* Print-only masthead: the site header never reaches paper, so the sheet has
-   to say what it is and which report it carries. */
 .printHeader {
   display: none;
   align-items: baseline;
@@ -61,13 +59,35 @@
   margin-bottom: var(--space-3);
 }
 
-/* The claim under review — the serif accent, set like a pull quote. */
 .claim {
   font-family: var(--font-family-serif);
   font-size: var(--font-size-lead);
   line-height: 1.45;
   color: var(--color-ink);
   max-width: var(--measure);
+}
+
+.takeawaysContainer {
+  background: var(--color-paper-shade, #f8f9fa);
+  border-left: 4px solid #2563eb;
+  padding: 1rem 1.25rem;
+  border-radius: 6px;
+  margin-bottom: var(--space-4);
+}
+
+.takeawaysList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.takeawayItem {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-ink);
+  font-weight: 500;
 }
 
 .summary {
@@ -77,7 +97,6 @@
   max-width: var(--measure);
 }
 
-/* Sources: soft rows that highlight on hover. No check icons, no bullets. */
 .sources {
   display: flex;
   flex-direction: column;
@@ -100,86 +119,85 @@
   font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
   color: var(--color-ink-muted);
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-  padding-top: 3px;
-  min-width: 1.5rem;
+  min-width: 24px;
 }
 
 .sourceBody {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  min-width: 0;
+  flex: 1;
+}
+
+.sourceHeaderLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .sourceTitle {
-  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-body);
   color: var(--color-ink);
-  transition: color var(--transition-fast);
+  text-decoration: none;
 }
 
 .sourceTitle:hover {
-  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.tier1Badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.tier2Badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1e40af;
+  background: #dbeafe;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.tier3Badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #854d0e;
+  background: #fef9c3;
+  padding: 2px 8px;
+  border-radius: 12px;
 }
 
 .sourceMeta {
-  font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
   color: var(--color-ink-muted);
 }
 
-/* The matched passage. Set in the serif to read as quoted material rather than
-   as more interface chrome, and indented off a rule so it is clearly the
-   source speaking and not the report. */
 .sourceExcerpt {
-  margin-top: var(--space-2);
-  padding-left: var(--space-3);
-  border-left: var(--border-width-hairline) solid var(--color-line-strong);
-  font-family: var(--font-family-serif);
-  font-size: var(--font-size-body-sm);
-  line-height: var(--line-height-body-sm);
+  font-size: var(--font-size-caption);
   color: var(--color-ink-secondary);
+  font-style: italic;
+  margin-top: 4px;
+  quotes: "“" "”";
 }
 
 .footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
-/* Keeps the download and dispute buttons together as one group, so the
-   footer's space-between still reads as "disclaimer left, actions right"
-   rather than spreading three separate children across the row. */
-.footerActions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.disputeForm {
-  display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: var(--border-width-hairline) solid var(--color-line);
 }
 
-.disputeLegalPlaceholder {
-  font-family: var(--font-family-sans);
-  font-size: var(--font-size-caption);
-  color: var(--color-ink-muted);
-  font-style: italic;
-}
-
-@media (max-width: 480px) {
-  .meta {
-    text-align: left;
-  }
-
-  .footer {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.footerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }

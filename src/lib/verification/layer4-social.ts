@@ -235,7 +235,6 @@ export async function runLayer4(
   const roQuery = expandedQueries?.romanianQuery || text;
   const enQuery = expandedQueries?.englishQuery || text;
 
-  // Try Twitter API first if token is available
   if (process.env.TWITTER_BEARER_TOKEN) {
     try {
       const results = await searchTwitter(roQuery, namedEntities);
@@ -247,7 +246,6 @@ export async function runLayer4(
     }
   }
 
-  // Fallback: Tavily search across major social media domains
   try {
     const [roPosts, enPosts] = await Promise.all([
       searchSocialViaTavily(roQuery, namedEntities),
@@ -256,8 +254,8 @@ export async function runLayer4(
 
     const seen = new Set<string>();
     const allPosts = [...roPosts, ...enPosts].filter((p) => {
-      const url = p.postUrl ?? p.content;
-      if (seen.has(url)) return false;
+      const url = p.postUrl ?? p.content ?? '';
+      if (!url || seen.has(url)) return false;
       seen.add(url);
       return true;
     });
@@ -267,6 +265,7 @@ export async function runLayer4(
     return {
       status: 'unavailable',
       results: [],
+      summary: 'Social media search unavailable',
       layerScore: 0.5,
       processingTime: Date.now() - startTime,
       error: `Social media search unavailable: ${String(error)}`,

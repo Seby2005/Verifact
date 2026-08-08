@@ -2,49 +2,66 @@ import type {
   VerificationReport,
   CombinedSource,
   ReportBuilderParams,
+  ScoreBreakdown,
+  Layer1Result,
+  Layer2Result,
+  Layer3Result,
+  Layer4Result,
 } from '@/types/verification';
 import { scoreToVerdict, scoreToConfidence } from './scoring';
+import { assignSourceTier } from './ai-source-filter';
 
-/**
- * Extracts a 1-2 sentence executive summary from the full AI analysis, which
- * is the line the report leads with.
- *
- * Emphasis is flattened before matching rather than pattern-matched around.
- * The previous version searched for a literal `**Rezumat**` and captured up to
- * the next asterisk, which broke in two ways seen in production: a summary
- * containing inline bold was truncated mid-sentence, and a section the model
- * opened with an italic line — what it writes when the layers found no
- * evidence — captured nothing, so the report rendered a blank summary.
- * Removing the emphasis first retires that whole class of failure instead of
- * adding one more pattern per shape.
- */
 export function extractExecutiveSummary(aiAnalysis: string): string {
   const plain = aiAnalysis.replace(/\*+/g, '');
 
-  // The paragraph following the heading: consecutive non-blank lines. The
-  // newline is optional because the model writes the summary on the heading's
-  // own line about as often as beneath it, and requiring one left the label
-  // "Rezumat:" sitting inside the summary the report displays. Anchoring to a
-  // line start keeps the word from matching mid-sentence in the prose.
   const section = plain.match(
     /(?:^|\n)[ \t]*(?:Rezumat|Summary)[ \t]*:?[ \t]*\n*[ \t]*([^\n]+(?:\n(?!\s*\n)[^\n]+)*)/i
   );
 
-  // A capture too short to be a sentence means the heading was empty and we
-  // caught the next heading instead — worth less than the fallback below.
   const summary = section?.[1]?.trim();
   if (summary && summary.length >= 25) return summary;
 
   const sentences = plain
     .split(/(?<=[.!?])\s+/)
-    .filter(s => s.trim().length > 10);
+    .filter((s) => s.trim().length > 10);
 
   return sentences.slice(0, 2).join(' ').trim();
 }
 
-/**
- * Combines sources from all layers into a unified, deduplicated, sorted list.
- */
+export function generateKeyTakeaways(
+  claim: string,
+  summary: string,
+  sources: CombinedSource[],
+  score: number
+): string[] {
+  const takeaways: string[] = [];
+
+  if (score >= 70) {
+    takeaways.push(`Afirmația este susținută de dovezile și sursele identificate (Scor veridicitate: ${score}%).`);
+  } else if (score <= 30) {
+    takeaways.push(`Afirmația s-a dovedit a fi falsă sau înșelătoare pe baza verificărilor (Scor veridicitate: ${score}%).`);
+  } else {
+    takeaways.push(`Afirmația conține informații mixte, scoase din context sau neconfirmate (Scor: ${score}%).`);
+  }
+
+  const tier1Count = sources.filter((s) => s.tier === 1).length;
+  if (tier1Count > 0) {
+    takeaways.push(`Au fost identificate ${tier1Count} surse de înaltă autoritate (fact-checkeri oficiali / instituții).`);
+  } else if (sources.length > 0) {
+    takeaways.push(`Au fost analizate ${sources.length} surse din presă și mediu digital.`);
+  } else {
+    takeaways.push('Nu au fost găsite înregistrări directe în bazele de date publice de fact-checking.');
+  }
+
+  if (summary && summary.length > 30) {
+    takeaways.push(summary.slice(0, 140) + (summary.length > 140 ? '...' : ''));
+  } else {
+    takeaways.push(`Verificarea a analizat contextul factual pentru "${claim.slice(0, 50)}...".`);
+  }
+
+  return takeaways.slice(0, 3);
+}
+
 function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
   const layer1 = params.layer1 || params.layers?.layer1;
   const layer2 = params.layer2 || params.layers?.layer2;
@@ -52,7 +69,6 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
   const layer4 = params.layer4 || params.layers?.layer4;
   const sources: CombinedSource[] = [];
 
-  // Layer 1: Fact-check sources
   if (layer1?.results) {
     for (const r of layer1.results) {
       const url = r.reviewUrl || r.url;
@@ -66,11 +82,11 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
         sourceType: 'fact_check',
         relevance: r.relevanceScore,
         supports: (r.ratingValue ?? 0.5) > 0.6 ? true : (r.ratingValue ?? 0.5) < 0.4 ? false : null,
+        tier: assignSourceTier(url, r.publisher),
       });
     }
   }
 
-  // Layer 2: News articles
   if (layer2?.results) {
     for (const a of layer2.results) {
       const url = a.articleUrl || a.url;
@@ -87,11 +103,11 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
           : a.sentiment === 'contradicts' ? false
           : null,
         excerpt: a.snippet,
+        tier: assignSourceTier(url, a.source),
       });
     }
   }
 
-  // Layer 3: Official sources
   if (layer3?.results) {
     for (const o of layer3.results) {
       const url = o.documentUrl || o.url;
@@ -102,17 +118,17 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
         publisher: o.organization || o.publisher || 'Oficial',
         publishedAt: o.publishedAt || o.publishedDate,
         sourceType: 'official',
-        relevance: 0.9, // Official sources are always highly relevant
+        relevance: 0.9,
         supports:
           o.supportsOrDenies === 'supports' ? true
           : o.supportsOrDenies === 'denies' ? false
           : null,
         excerpt: o.relevantQuote ?? o.snippet,
+        tier: assignSourceTier(url, o.organization || o.publisher),
       });
     }
   }
 
-  // Layer 4: Social media
   if (layer4?.results) {
     for (const p of layer4.results) {
       const url = p.postUrl || p.url;
@@ -125,36 +141,41 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
         publishedAt: p.postDate || p.date,
         sourceType: 'social',
         relevance: p.isOriginalSource ? 0.8 : 0.4,
-        supports: null, // Social media posts are informational, not verdicts
+        supports: null,
         excerpt: text,
+        tier: assignSourceTier(url, p.platform),
       });
     }
   }
 
-  // Deduplicate by URL
   const seen = new Set<string>();
-  const unique = sources.filter(s => {
+  const unique = sources.filter((s) => {
     if (!s.url || seen.has(s.url)) return false;
     seen.add(s.url);
     return true;
   });
 
-  // Sort: official > fact_check > news > social, then by relevance
-  const typeOrder: Record<string, number> = { official: 0, fact_check: 1, news: 2, social: 3 };
   unique.sort((a, b) => {
-    const aOrder = typeOrder[a.sourceType || ''] ?? 99;
-    const bOrder = typeOrder[b.sourceType || ''] ?? 99;
-    const typeDiff = aOrder - bOrder;
-    if (typeDiff !== 0) return typeDiff;
+    const aTier = a.tier ?? 2;
+    const bTier = b.tier ?? 2;
+    if (aTier !== bTier) return aTier - bTier;
     return b.relevance - a.relevance;
   });
 
   return unique.slice(0, 15);
 }
 
-/**
- * Builds the final VerificationReport from all layer results and AI analysis.
- */
+const DEFAULT_SCORE_BREAKDOWN: ScoreBreakdown = {
+  finalScore: 50,
+  availableLayers: 0,
+  weights: { factCheck: 0.35, news: 0.3, official: 0.25, social: 0.1 },
+};
+
+const DEFAULT_UNAVAILABLE_LAYER1: Layer1Result = { status: 'unavailable', results: [], summary: '', layerScore: 0.5 };
+const DEFAULT_UNAVAILABLE_LAYER2: Layer2Result = { status: 'unavailable', results: [], summary: '', layerScore: 0.5 };
+const DEFAULT_UNAVAILABLE_LAYER3: Layer3Result = { status: 'unavailable', results: [], summary: '', layerScore: 0.5 };
+const DEFAULT_UNAVAILABLE_LAYER4: Layer4Result = { status: 'unavailable', results: [], summary: '', layerScore: 0.5 };
+
 export function buildReport(params: ReportBuilderParams): VerificationReport {
   const {
     input,
@@ -167,8 +188,10 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
     processingTime,
   } = params;
 
-  const verdict = scoreToVerdict(scoreBreakdown?.finalScore ?? 50);
-  const confidenceLevel = scoreToConfidence(scoreBreakdown?.availableLayers ?? 4);
+  const breakdown = scoreBreakdown || DEFAULT_SCORE_BREAKDOWN;
+  const score = breakdown.finalScore;
+  const verdict = scoreToVerdict(score);
+  const confidenceLevel = scoreToConfidence(breakdown.availableLayers);
 
   const disclaimer =
     input.language === 'ro'
@@ -178,6 +201,7 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
   const sources = buildCombinedSources(params);
   const rawAnalysis = typeof aiAnalysis === 'object' ? aiAnalysis.summary : (aiAnalysis ?? '');
   const executiveSummary = extractExecutiveSummary(rawAnalysis);
+  const keyTakeaways = generateKeyTakeaways(input.text, executiveSummary, sources, score);
 
   return {
     id: crypto.randomUUID(),
@@ -186,17 +210,19 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
     inputType: input.inputType,
     language: input.language,
     verdict,
-    score: scoreBreakdown?.finalScore ?? 50,
+    score,
     confidenceLevel,
+    riskLevel: 'low',
+    keyTakeaways,
     processingTimeMs: processingTime,
     processingTime,
-    scoreBreakdown,
+    scoreBreakdown: breakdown,
     executiveSummary,
     layers: {
-      layer1: layer1 || { status: 'unavailable', results: [] },
-      layer2: layer2 || { status: 'unavailable', results: [] },
-      layer3: layer3 || { status: 'unavailable', results: [] },
-      layer4: layer4 || { status: 'unavailable', results: [] },
+      layer1: layer1 || DEFAULT_UNAVAILABLE_LAYER1,
+      layer2: layer2 || DEFAULT_UNAVAILABLE_LAYER2,
+      layer3: layer3 || DEFAULT_UNAVAILABLE_LAYER3,
+      layer4: layer4 || DEFAULT_UNAVAILABLE_LAYER4,
     },
     layer1,
     layer2,
