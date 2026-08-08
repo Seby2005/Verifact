@@ -18,29 +18,66 @@ export interface LayerSet {
   layer4: Layer4Result;
 }
 
-/**
- * Second-stage relevance pass over everything the layers found.
- *
- * The keyword filter in relevance.ts runs first and inside each layer, but it
- * cannot solve the case it was written for. "Donald Trump is dead" reduces to
- * three significant words, two of which are the person's name, so any article
- * naming him clears a word-overlap test — "Disinformation, disease, and Donald
- * Trump" scores the same as a fact-check about his death. Deciding that the
- * claim's load-bearing word is "dead" needs to read the sentence, not count
- * its tokens.
- *
- * So the model gets one batched triage call over the candidates from all four
- * layers, and answers a narrower question than the assessment does: is this
- * document about the claim at all?
- *
- * Filtering happens before scoring, not just before display, so a dropped
- * source stops influencing the verdict as well as disappearing from the source
- * list. Each affected layer's own score function is re-run over its surviving
- * results.
- */
+export type SourceTier = 1 | 2 | 3;
+
+export interface SourceTierBreakdown {
+  tier1Count: number;
+  tier2Count: number;
+  tier3Count: number;
+}
+
 /** Trims a URL to what is worth spending prompt tokens on. */
 function origin(url?: string): string | undefined {
   return url?.replace(/^https?:\/\//, '').slice(0, 120);
+}
+
+/**
+ * Assigns a Source Reputation Tier (1, 2, or 3) to a URL or publisher.
+ * Tier 1: Primary Fact-checkers & Official Institutions
+ * Tier 2: Established News Media
+ * Tier 3: Social & Unverified Web Sources
+ */
+export function assignSourceTier(urlStr?: string, publisher?: string): SourceTier {
+  const url = (urlStr || '').toLowerCase();
+  const pub = (publisher || '').toLowerCase();
+
+  // Tier 1: Recognized Fact-Checkers & International/Governmental Bodies
+  if (
+    url.includes('snopes.com') ||
+    url.includes('factual.ro') ||
+    url.includes('veridica.ro') ||
+    url.includes('politifact.com') ||
+    url.includes('factcheck.org') ||
+    url.includes('reuters.com/fact-check') ||
+    url.includes('apnews.com/ap-fact-check') ||
+    url.includes('who.int') ||
+    url.includes('europa.eu') ||
+    url.includes('.gov') ||
+    pub.includes('snopes') ||
+    pub.includes('factual') ||
+    pub.includes('veridica') ||
+    pub.includes('politifact')
+  ) {
+    return 1;
+  }
+
+  // Tier 3: Social Media & User-Generated Platforms
+  if (
+    url.includes('twitter.com') ||
+    url.includes('x.com') ||
+    url.includes('facebook.com') ||
+    url.includes('youtube.com') ||
+    url.includes('reddit.com') ||
+    url.includes('instagram.com') ||
+    url.includes('threads.net') ||
+    url.includes('bsky.app') ||
+    url.includes('tiktok.com')
+  ) {
+    return 3;
+  }
+
+  // Tier 2: General News Outlets & Other Domains
+  return 2;
 }
 
 export async function applyAISourceFilter(layers: LayerSet, claim: string): Promise<LayerSet> {
@@ -85,54 +122,52 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
   if (candidates.length === 0) return layers;
 
   const relevantIds = await filterRelevantSources(claim, candidates);
-
-  // null means the filter was unavailable or failed — keep everything rather
-  // than discarding evidence because a model call did not come back.
   if (relevantIds === null) return layers;
 
-  // An empty list used to be overridden and everything kept, on the reasoning
-  // that "none of these are relevant" was more likely a confused model than a
-  // true reading. In practice it was usually right and the override was the
-  // error: asked about "apa pură fierbe la 100°C" it correctly rejected an EU
-  // regulation on chemical test methods, and the guard put it back in the
-  // report as evidence.
-  //
-  // Trusting the verdict is also safe now in a way it was not before. A failed
-  // call still arrives as null and keeps everything, so this branch only ever
-  // sees a judgement the model actually made; and a report that ends up with
-  // no evidence can no longer produce a confident verdict, because scoring.ts
-  // caps a score built on the assessment alone. The worst case is a cautious
-  // "unclear" over an empty source list — which is honest — rather than a
-  // definitive verdict resting on documents about something else.
-  if (relevantIds.length === 0) {
-    logger.info('AI source filter found nothing on topic', {
-      service: 'ai-source-filter',
-      candidates: candidates.length,
-    });
-  }
+  const keepSet = new Set(relevantIds);
 
-  const keep = new Set(relevantIds);
-  const l1 = layers.layer1.results.filter((_, i) => keep.has(`l1:${i}`));
-  const l2 = layers.layer2.results.filter((_, i) => keep.has(`l2:${i}`));
-  const l3 = layers.layer3.results.filter((_, i) => keep.has(`l3:${i}`));
-  const l4 = layers.layer4.results.filter((_, i) => keep.has(`l4:${i}`));
+  const l1Surviving = layers.layer1.results.filter((_, i) => keepSet.has(`l1:${i}`));
+  const l2Surviving = layers.layer2.results.filter((_, i) => keepSet.has(`l2:${i}`));
+  const l3Surviving = layers.layer3.results.filter((_, i) => keepSet.has(`l3:${i}`));
+  const l4Surviving = layers.layer4.results.filter((_, i) => keepSet.has(`l4:${i}`));
 
-  const removed = candidates.length - (l1.length + l2.length + l3.length + l4.length);
-  if (removed > 0) {
-    logger.info('AI source filter removed off-topic sources', {
-      service: 'ai-source-filter',
-      removed,
-      kept: candidates.length - removed,
-    });
-  }
-
-  return {
-    // Scores are recomputed from the surviving results by each layer's own
-    // scoring function, so the number the reader sees and the sources they can
-    // click always describe the same evidence.
-    layer1: { ...layers.layer1, results: l1, matches: l1, layerScore: calculateLayer1Score(l1) },
-    layer2: { ...layers.layer2, results: l2, articles: l2, layerScore: calculateLayer2Score(l2) },
-    layer3: { ...layers.layer3, results: l3, sources: l3, layerScore: calculateLayer3Score(l3) },
-    layer4: { ...layers.layer4, results: l4, posts: l4, layerScore: calculateLayer4Score(l4) },
+  const layer1: Layer1Result = {
+    ...layers.layer1,
+    results: l1Surviving,
+    matches: l1Surviving,
+    summary: `${l1Surviving.length} fact-checks found`,
+    layerScore: calculateLayer1Score(l1Surviving),
   };
+
+  const layer2: Layer2Result = {
+    ...layers.layer2,
+    results: l2Surviving,
+    articles: l2Surviving,
+    summary: `${l2Surviving.length} news articles found`,
+    layerScore: calculateLayer2Score(l2Surviving),
+  };
+
+  const layer3: Layer3Result = {
+    ...layers.layer3,
+    results: l3Surviving,
+    sources: l3Surviving,
+    summary: `${l3Surviving.length} official documents found`,
+    layerScore: calculateLayer3Score(l3Surviving),
+  };
+
+  const layer4: Layer4Result = {
+    ...layers.layer4,
+    results: l4Surviving,
+    posts: l4Surviving,
+    summary: `${l4Surviving.length} social media posts found`,
+    layerScore: calculateLayer4Score(l4Surviving),
+  };
+
+  logger.info('AI source filter applied', {
+    service: 'verification',
+    before: candidates.length,
+    after: l1Surviving.length + l2Surviving.length + l3Surviving.length + l4Surviving.length,
+  });
+
+  return { layer1, layer2, layer3, layer4 };
 }

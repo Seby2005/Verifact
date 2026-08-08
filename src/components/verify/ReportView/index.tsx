@@ -14,13 +14,7 @@ import styles from './ReportView.module.css';
 
 export interface ReportViewProps {
   report: VerificationReport;
-  /** Rendered above the verdict, e.g. "Exemplu de raport" on the homepage. */
   eyebrow?: string;
-  /**
-   * When false, the sticky verdict bar and the cite/download/dispute actions are
-   * omitted — used for the static homepage specimen, which is illustrative and
-   * isn't the reader's own report to act on. Defaults to true (a real result).
-   */
   interactive?: boolean;
 }
 
@@ -37,6 +31,16 @@ function formatDate(iso?: string, locale: string = 'ro'): string | null {
   return dateStyle.format(parsed);
 }
 
+function renderTierBadge(tier?: 1 | 2 | 3): React.ReactNode {
+  if (tier === 1) {
+    return <span className={styles.tier1Badge}>Tier 1: Sursă de Încredere / Fact-Checker</span>;
+  }
+  if (tier === 3) {
+    return <span className={styles.tier3Badge}>Tier 3: Social / Web General</span>;
+  }
+  return <span className={styles.tier2Badge}>Tier 2: Presă Generală</span>;
+}
+
 export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interactive = true }) => {
   const { locale, t } = useLanguage();
   const { isPremium, ready } = useUserTier();
@@ -44,8 +48,6 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
 
   return (
     <article className={styles.report} data-print-root>
-      {/* The site header does not print, so the sheet carries its own
-          provenance: who produced it and which report it is. */}
       <div className={styles.printHeader}>
         <span className={styles.printBrand}>Verifact</span>
         <span className={styles.printId}>
@@ -69,8 +71,6 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </p>
       </header>
 
-      {/* Anchors the verdict once the header above has scrolled away. Omitted
-          for the static specimen, which shouldn't pop a sticky bar mid-homepage. */}
       {interactive ? (
         <StickyVerdict
           kind={report.verdict}
@@ -84,6 +84,19 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         <p className={styles.sectionLabel}>{t('reportView.claimLabel')}</p>
         <p className={styles.claim}>&ldquo;{report.claim ?? report.inputText}&rdquo;</p>
       </div>
+
+      {report.keyTakeaways && report.keyTakeaways.length > 0 ? (
+        <div className={styles.takeawaysContainer}>
+          <p className={styles.sectionLabel}>📌 Idei Cheie (Executive Summary)</p>
+          <ul className={styles.takeawaysList}>
+            {report.keyTakeaways.map((item, idx) => (
+              <li key={idx} className={styles.takeawayItem}>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {report.aiAvailable === false ? (
         <Callout label={t('reportView.partialAnalysisLabel')} tone="plain">
@@ -105,21 +118,21 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
             <li key={source.url} className={styles.source}>
               <span className={styles.sourceIndex}>{String(index + 1).padStart(2, '0')}</span>
               <span className={styles.sourceBody}>
-                <a
-                  href={sourceHref(source.url, source.excerpt, isPremium)}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className={styles.sourceTitle}
-                >
-                  {source.title}
-                </a>
+                <div className={styles.sourceHeaderLine}>
+                  <a
+                    href={sourceHref(source.url, source.excerpt, isPremium)}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className={styles.sourceTitle}
+                  >
+                    {source.title}
+                  </a>
+                  {renderTierBadge(source.tier)}
+                </div>
                 <span className={styles.sourceMeta}>
                   {source.publisher}
                   {formatDate(source.date, locale) ? ` · ${formatDate(source.date, locale)}` : null}
                 </span>
-                {/* The passage the search matched on. Without it a citation is
-                    just a title, and a document that only shares a few words
-                    with the claim looks identical to one that addresses it. */}
                 {source.excerpt ? (
                   <q className={styles.sourceExcerpt}>{source.excerpt.slice(0, 300)}</q>
                 ) : null}

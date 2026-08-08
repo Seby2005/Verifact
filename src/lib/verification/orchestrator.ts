@@ -20,6 +20,7 @@ import { getCached, setCached } from './cache';
 import { createContentHash } from '@/lib/utils/hash';
 import { logger } from '@/lib/utils/logger';
 import { expandClaimQueries } from './query-expander';
+import { decomposeAndAssessRisk } from '@/lib/ai/claim-decomposer';
 
 const LAYER_TIMEOUT_MS = 10_000; // 10 seconds per layer
 
@@ -103,8 +104,11 @@ export async function verifyContent(
 
   const startTime = Date.now();
 
-  // 1b. AI Query Expansion — transforms raw claim into targeted RO & EN search queries + named entities
-  const queries = await expandClaimQueries(input.text);
+  // 1b. AI Query Expansion & Risk Assessment in Parallel
+  const [queries, decomposed] = await Promise.all([
+    expandClaimQueries(input.text),
+    decomposeAndAssessRisk(input.text),
+  ]);
 
   // 2. Run all 4 layers in parallel with individual timeouts.
   const p1 = withTimeout(runLayer1(input.text, input.language, queries), LAYER_TIMEOUT_MS, 'layer1');
@@ -204,6 +208,7 @@ export async function verifyContent(
     processingTime: Date.now() - startTime,
   });
 
+  report.riskLevel = decomposed.riskLevel;
   report.aiAvailable = aiAvailable;
 
   const layersWithData = [layer1, layer2, layer3, layer4].filter(

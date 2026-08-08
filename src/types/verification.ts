@@ -34,15 +34,9 @@ export interface VerifyStatusEvent {
   label?: string;
   error?: string;
   progressPercentage?: number;
-  /** How many results the layer returned, for the live "N found" label. */
   count?: number;
 }
 
-/**
- * Newline-delimited events streamed by POST /api/verify while a verification
- * runs: many `progress` events as each layer settles, then exactly one terminal
- * `report` (success) or `error`.
- */
 export type VerifyStreamEvent =
   | { type: 'progress'; step: VerifyStatusEvent['step']; status: LayerStatus; count?: number; error?: string }
   | { type: 'report'; report: VerificationReport }
@@ -98,8 +92,8 @@ export interface OfficialSource {
   publisher?: string;
   organization?: string;
   organizationType?: string;
+  documentUrl?: string;
   url?: string;
-  documentUrl: string;
   publishedAt?: string;
   publishedDate?: string;
   snippet?: string;
@@ -109,74 +103,63 @@ export interface OfficialSource {
 }
 
 export interface SocialMediaPost {
+  platform: 'twitter' | 'facebook' | 'youtube' | 'other';
   author: string;
-  handle?: string;
-  platform: 'twitter' | 'facebook' | 'instagram' | 'youtube' | 'other';
-  content: string;
-  snippet?: string;
-  text?: string;
-  url?: string;
-  postUrl?: string;
-  date?: string;
-  postDate?: string;
-  authorRole?: string;
-  isVerifiedAuthor?: boolean;
   authorVerified?: boolean;
+  authorRole?: string;
+  postUrl?: string;
+  url?: string;
+  postDate?: string;
+  date?: string;
+  content?: string;
+  text?: string;
   isOriginalSource?: boolean;
 }
 
 export interface Layer1Result {
   status: LayerStatus;
-  matches?: FactCheckResult[];
   results: FactCheckResult[];
+  matches?: FactCheckResult[];
   summary?: string;
   layerScore: number;
   processingTime?: number;
   error?: string;
-  sourcesChecked?: number;
 }
 
 export interface Layer2Result {
   status: LayerStatus;
-  articles?: NewsArticle[];
   results: NewsArticle[];
+  articles?: NewsArticle[];
   summary?: string;
   layerScore: number;
   processingTime?: number;
-  error?: string;
   sourcesChecked?: number;
+  error?: string;
 }
 
 export interface Layer3Result {
   status: LayerStatus;
-  sources?: OfficialSource[];
   results: OfficialSource[];
+  sources?: OfficialSource[];
   summary?: string;
   layerScore: number;
   processingTime?: number;
   error?: string;
-  sourcesChecked?: number;
 }
 
 export interface Layer4Result {
   status: LayerStatus;
-  posts?: SocialMediaPost[];
   results: SocialMediaPost[];
+  posts?: SocialMediaPost[];
   summary?: string;
   layerScore: number;
   processingTime?: number;
   error?: string;
-  sourcesChecked?: number;
 }
 
 export interface ScoreBreakdown {
-  factCheckScore?: number;
-  newsScore?: number;
-  officialScore?: number;
-  socialScore?: number;
-  aiScore?: number;
   finalScore: number;
-  confidenceLevel?: string;
+  aiScore?: number;
   availableLayers: number;
   layer1Score?: number;
   layer2Score?: number;
@@ -207,13 +190,7 @@ export interface CombinedSource {
   sourceType: 'fact_check' | 'official' | 'news' | 'social';
   supports?: boolean | null;
   relevance: number;
-  /**
-   * The passage the search actually matched on. Shown under the source so a
-   * reader can see what the citation rests on — a government PDF cited for
-   * "Nicușor Dan a murit" turned out to be a meeting minute listing an
-   * attendee by that name next to an unrelated remark, which is obvious from
-   * the excerpt and invisible from the title alone.
-   */
+  tier?: 1 | 2 | 3;
   excerpt?: string;
 }
 
@@ -226,6 +203,8 @@ export interface VerificationReport {
   verdict: Verdict;
   score: number;
   confidenceLevel: 'low' | 'medium' | 'high';
+  riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+  keyTakeaways?: string[];
   processingTimeMs?: number;
   processingTime?: number;
   executiveSummary: string;
@@ -251,8 +230,24 @@ export interface VerificationReport {
   isPublic: boolean;
   language: Language;
   fromCache?: boolean;
-  /** False when the Gemini analysis could not be produced (quota/outage). */
   aiAvailable?: boolean;
+}
+
+export interface AIAnalysisContext {
+  claim?: string;
+  inputText?: string;
+  language?: Language;
+  layers?: {
+    layer1?: Layer1Result;
+    layer2?: Layer2Result;
+    layer3?: Layer3Result;
+    layer4?: Layer4Result;
+  };
+  layer1?: Layer1Result;
+  layer2?: Layer2Result;
+  layer3?: Layer3Result;
+  layer4?: Layer4Result;
+  scoreBreakdown?: ScoreBreakdown;
 }
 
 export interface ReportBuilderParams {
@@ -262,49 +257,16 @@ export interface ReportBuilderParams {
     layer2: Layer2Result;
     layer3: Layer3Result;
     layer4: Layer4Result;
-    factCheck?: Layer1Result;
-    news?: Layer2Result;
-    official?: Layer3Result;
-    social?: Layer4Result;
-  };
-  layer1: Layer1Result;
-  layer2: Layer2Result;
-  layer3: Layer3Result;
-  layer4: Layer4Result;
-  scoreBreakdown: ScoreBreakdown;
-  aiAnalysis: {
-    summary: string;
-    scoreAdjustment?: number;
-  } | string;
-  processingTimeMs?: number;
-  processingTime?: number;
-}
-
-export interface AIAnalysisContext {
-  claim?: string;
-  inputText?: string;
-  input?: VerificationInput;
-  language: Language;
-  layers: {
-    layer1: Layer1Result;
-    layer2: Layer2Result;
-    layer3: Layer3Result;
-    layer4: Layer4Result;
-    factCheck?: Layer1Result;
-    news?: Layer2Result;
-    official?: Layer3Result;
-    social?: Layer4Result;
   };
   layer1?: Layer1Result;
   layer2?: Layer2Result;
   layer3?: Layer3Result;
   layer4?: Layer4Result;
+  finalScore?: number;
+  verdict?: Verdict;
+  executiveSummary?: string;
   scoreBreakdown?: ScoreBreakdown;
-}
-
-export interface VerifyAPIResponse {
-  reportId: string;
-  verdict: Verdict;
-  score: number;
-  report: VerificationReport;
+  aiAnalysis?: string | { summary: string; scoreAdjustment?: number };
+  processingTimeMs?: number;
+  processingTime?: number;
 }
