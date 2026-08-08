@@ -33,7 +33,7 @@ function formatDate(iso?: string, locale: string = 'ro'): string | null {
 
 export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
   const { locale, t } = useLanguage();
-  const { isPremium } = useUserTier();
+  const { isPremium, ready } = useUserTier();
   const headRef = useRef<HTMLElement>(null);
 
   return (
@@ -126,7 +126,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
         </Callout>
         <div className={styles.footerActions} data-print-hide>
           <CiteButton report={report} />
-          <DownloadButton report={report} isPremium={isPremium} />
+          <DownloadButton report={report} isPremium={isPremium} ready={ready} />
           <DisputeButton reportId={report.id} />
         </div>
       </div>
