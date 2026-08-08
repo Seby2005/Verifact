@@ -32,12 +32,6 @@
   color: var(--color-ink-secondary);
 }
 
-.forgotRow {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: calc(-1 * var(--space-2));
-}
-
 .termsNote {
   font-size: var(--font-size-caption);
   line-height: 1.5;

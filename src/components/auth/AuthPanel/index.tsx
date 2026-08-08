@@ -192,24 +192,6 @@ export const AuthPanel: React.FC = () => {
     setStatus({ state: 'idle' });
   };
 
-  const handleForgotPassword = async () => {
-    if (!email.trim()) {
-      setStatus({ state: 'error', message: t('auth.form.resetNeedsEmail') });
-      return;
-    }
-    setStatus({ state: 'loading' });
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/cont`,
-      });
-      if (error) throw error;
-      setStatus({ state: 'success', message: t('auth.form.resetSent') });
-    } catch {
-      setStatus({ state: 'error', message: t('auth.form.resetError') });
-    }
-  };
-
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -491,17 +473,7 @@ export const AuthPanel: React.FC = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             fullWidth
           />
-        ) : (
-          <div className={styles.forgotRow}>
-            <button
-              type="button"
-              className={`${styles.linkButton} ${styles.textLink}`}
-              onClick={handleForgotPassword}
-            >
-              {t('auth.form.forgotPassword')}
-            </button>
-          </div>
-        )}
+        ) : null}
 
         <div className={styles.actions}>
           <Button

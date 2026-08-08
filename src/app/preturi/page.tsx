@@ -60,7 +60,7 @@ export default function PreturiPage() {
         eyebrow: 'Pricing',
         title: 'Free for everyday checks. Paid when you check a lot.',
         lead: 'The free plan covers the casual reader. Pro is for people who verify all day.',
-        billing: { monthly: 'Monthly', yearly: 'Yearly', save: 'Save 25%' },
+        billing: { monthly: 'Monthly', yearly: 'Yearly', save: 'Save 25%', aria: 'Billing period' },
         recommended: 'Recommended',
         perMonth: '/mo',
         billedYearly: 'billed €35.90 a year',
@@ -108,7 +108,7 @@ export default function PreturiPage() {
         eyebrow: 'Prețuri',
         title: 'Gratuit pentru verificări de zi cu zi. Plătit când verifici mult.',
         lead: 'Planul gratuit acoperă cititorul obișnuit. Pro e pentru cine verifică toată ziua.',
-        billing: { monthly: 'Lunar', yearly: 'Anual', save: 'Economisești 25%' },
+        billing: { monthly: 'Lunar', yearly: 'Anual', save: 'Economisești 25%', aria: 'Perioadă de facturare' },
         recommended: 'Recomandat',
         perMonth: '/lună',
         billedYearly: 'facturat €35,90 pe an',
@@ -165,7 +165,7 @@ export default function PreturiPage() {
 
       <div className={shell.body}>
         {/* Billing period toggle — monthly vs a cheaper yearly. */}
-        <div className={styles.billingToggle} role="group" aria-label={c.compareTitle}>
+        <div className={styles.billingToggle} role="group" aria-label={c.billing.aria}>
           <button
             type="button"
             className={[styles.billingOption, billing === 'monthly' ? styles.billingActive : '']
