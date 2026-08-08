@@ -3,9 +3,9 @@ import { getTrendingExamples, type ExamplesLocale } from '@/lib/examples/trendin
 export const dynamic = 'force-dynamic';
 
 /**
- * Homepage claim suggestions — live Romanian headlines when available, curated
- * evergreen claims otherwise. Cached at the edge for an hour; the underlying
- * fetch is additionally throttled in-process (see getTrendingExamples).
+ * Homepage claim suggestions — curated fact-checks from recognised
+ * fact-checking organisations (Factual.ro, Veridica.ro, Snopes), served
+ * in both Romanian and English.
  */
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
@@ -17,7 +17,7 @@ export async function GET(request: Request): Promise<Response> {
     { examples },
     {
       headers: {
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
       },
     }
   );
