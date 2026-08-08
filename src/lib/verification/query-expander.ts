@@ -17,15 +17,74 @@ const STOP_WORDS = new Set([
   'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under',
 ]);
 
+const RO_EN_LEXICON: Record<string, string> = {
+  papa: 'pope',
+  francisc: 'francis',
+  geaca: 'jacket',
+  geacă: 'jacket',
+  puffoasa: 'puffer',
+  puffoasă: 'puffer',
+  pufos: 'puffer',
+  alba: 'white',
+  albă: 'white',
+  inteligența: 'intelligence',
+  inteligenta: 'intelligence',
+  artificială: 'artificial',
+  artificiala: 'artificial',
+  generata: 'generated',
+  generată: 'generated',
+  imaginea: 'image',
+  imagine: 'image',
+  poza: 'photo',
+  poză: 'photo',
+  fotografie: 'photo',
+  vaccin: 'vaccine',
+  vaccinuri: 'vaccines',
+  vaccinurile: 'vaccines',
+  vaccinare: 'vaccination',
+  arnm: 'mrna',
+  adn: 'dna',
+  adnul: 'dna',
+  virus: 'virus',
+  pandemie: 'pandemic',
+  coronavirus: 'coronavirus',
+  covid: 'covid',
+  pamant: 'earth',
+  pământ: 'earth',
+  plat: 'flat',
+  razboi: 'war',
+  război: 'war',
+  ucraina: 'ukraine',
+  rusia: 'russia',
+  alegeri: 'elections',
+  alegerile: 'elections',
+  frauda: 'fraud',
+  fraudă: 'fraud',
+  rechin: 'shark',
+  inundație: 'flood',
+  inundatie: 'flood',
+  autostrada: 'highway',
+  autostradă: 'highway',
+  lamai: 'lemon',
+  lămâie: 'lemon',
+  cancer: 'cancer',
+  usturoi: 'garlic',
+  vindeca: 'cure',
+  vindecă: 'cure',
+};
+
 function buildFallbackQueries(text: string): ExpandedQueries {
   const words = text
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .split(/\s+/)
-    .filter((w) => w.length > 3 && !STOP_WORDS.has(w));
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
 
   const unique = Array.from(new Set(words));
-  const queryStr = unique.slice(0, 6).join(' ');
+
+  const enWords = unique.map((w) => RO_EN_LEXICON[w] || w);
+  const roStr = unique.slice(0, 6).join(' ');
+  const enStr = Array.from(new Set(enWords)).slice(0, 6).join(' ');
 
   const entityMatches = text.match(/\b[A-ZĂÂÎȘȚ][a-zăâîșțA-ZĂÂÎȘȚ0-9\-]{2,}\b/g) || [];
   const namedEntities = Array.from(new Set(entityMatches)).filter(
@@ -33,8 +92,8 @@ function buildFallbackQueries(text: string): ExpandedQueries {
   );
 
   return {
-    romanianQuery: queryStr || text.slice(0, 100),
-    englishQuery: queryStr || text.slice(0, 100),
+    romanianQuery: roStr || text.slice(0, 100),
+    englishQuery: enStr || text.slice(0, 100),
     keywords: unique.slice(0, 8),
     namedEntities,
   };
@@ -46,7 +105,8 @@ export async function expandClaimQueries(text: string): Promise<ExpandedQueries>
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  // If GEMINI_API_KEY is not a valid Gemini API Key (e.g. starts with AQ), fallback immediately
+  if (!apiKey || apiKey.startsWith('AQ')) {
     return buildFallbackQueries(text);
   }
 
