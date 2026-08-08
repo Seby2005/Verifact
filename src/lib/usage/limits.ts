@@ -7,6 +7,17 @@ interface ProfileRecord {
   tier?: string | null;
   verifications_count?: number | null;
   verifications_reset?: string | null;
+  role?: string | null;
+}
+
+/**
+ * Single source of truth for who is exempt from the monthly verification cap.
+ * Admins are unlimited so the project owner can test freely; both the usage
+ * display (this module) and the enforcement path (/api/verify) call this so the
+ * rule can never drift between the two.
+ */
+export function hasUnlimitedUsage(role?: string | null): boolean {
+  return role === 'admin';
 }
 
 function getFirstOfNextMonth(): string {
@@ -21,7 +32,7 @@ export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> 
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('tier, verifications_count, verifications_reset')
+    .select('tier, verifications_count, verifications_reset, role')
     .eq('id', userId)
     .single();
 
@@ -71,6 +82,21 @@ export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> 
 
   const tier = (profile.tier as UserTier) || 'free';
   const limit = TIER_CONFIG[tier]?.monthlyLimit ?? TIER_CONFIG.free.monthlyLimit;
+
+  // Admins are uncapped — report it as such rather than as a number the panel
+  // would otherwise render as "N of 3".
+  if (hasUnlimitedUsage(profile.role)) {
+    return {
+      allowed: true,
+      current: currentCount,
+      limit,
+      resetDate,
+      tier,
+      percentageUsed: 0,
+      unlimited: true,
+    };
+  }
+
   const allowed = currentCount < limit;
 
   return {

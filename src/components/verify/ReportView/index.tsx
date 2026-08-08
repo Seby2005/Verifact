@@ -16,6 +16,12 @@ export interface ReportViewProps {
   report: VerificationReport;
   /** Rendered above the verdict, e.g. "Exemplu de raport" on the homepage. */
   eyebrow?: string;
+  /**
+   * When false, the sticky verdict bar and the cite/download/dispute actions are
+   * omitted — used for the static homepage specimen, which is illustrative and
+   * isn't the reader's own report to act on. Defaults to true (a real result).
+   */
+  interactive?: boolean;
 }
 
 function formatDate(iso?: string, locale: string = 'ro'): string | null {
@@ -31,7 +37,7 @@ function formatDate(iso?: string, locale: string = 'ro'): string | null {
   return dateStyle.format(parsed);
 }
 
-export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
+export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interactive = true }) => {
   const { locale, t } = useLanguage();
   const { isPremium } = useUserTier();
   const headRef = useRef<HTMLElement>(null);
@@ -63,13 +69,16 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
         </p>
       </header>
 
-      {/* Anchors the verdict once the header above has scrolled away. */}
-      <StickyVerdict
-        kind={report.verdict}
-        score={report.score}
-        claim={report.claim ?? report.inputText ?? ''}
-        watch={headRef}
-      />
+      {/* Anchors the verdict once the header above has scrolled away. Omitted
+          for the static specimen, which shouldn't pop a sticky bar mid-homepage. */}
+      {interactive ? (
+        <StickyVerdict
+          kind={report.verdict}
+          score={report.score}
+          claim={report.claim ?? report.inputText ?? ''}
+          watch={headRef}
+        />
+      ) : null}
 
       <div>
         <p className={styles.sectionLabel}>{t('reportView.claimLabel')}</p>
@@ -124,11 +133,13 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow }) => {
         <Callout label={t('reportView.disclaimerLabel')} tone="plain">
           {t('reportView.disclaimerText')}
         </Callout>
-        <div className={styles.footerActions} data-print-hide>
-          <CiteButton report={report} />
-          <DownloadButton report={report} isPremium={isPremium} />
-          <DisputeButton reportId={report.id} />
-        </div>
+        {interactive ? (
+          <div className={styles.footerActions} data-print-hide>
+            <CiteButton report={report} />
+            <DownloadButton report={report} isPremium={isPremium} />
+            <DisputeButton reportId={report.id} />
+          </div>
+        ) : null}
       </div>
     </article>
   );

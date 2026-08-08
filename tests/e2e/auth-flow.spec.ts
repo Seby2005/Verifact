@@ -37,7 +37,8 @@ test.describe('Authentication', () => {
   test('logging in with the wrong password shows an error, not a silent failure', async ({ page }) => {
     await gotoReady(page, '/cont');
 
-    // Login is the default tab.
+    // Signup is now the default tab, so switch to login first.
+    await page.getByRole('tab', { name: 'Intră în cont' }).click();
     await page.getByLabel('Email').fill(`nonexistent.${Date.now()}@example.com`);
     await page.getByLabel('Parolă').fill('WrongPassword123!');
     await page.getByRole('button', { name: 'Intră în cont' }).click();
@@ -48,6 +49,9 @@ test.describe('Authentication', () => {
   test('switching between login and signup tabs clears any previous status message', async ({ page }) => {
     await gotoReady(page, '/cont');
 
+    // Signup is the default tab; go to login, trigger an error, then switch back
+    // to signup and confirm the error message is cleared.
+    await page.getByRole('tab', { name: 'Intră în cont' }).click();
     await page.getByLabel('Email').fill(`nonexistent.${Date.now()}@example.com`);
     await page.getByLabel('Parolă').fill('WrongPassword123!');
     await page.getByRole('button', { name: 'Intră în cont' }).click();

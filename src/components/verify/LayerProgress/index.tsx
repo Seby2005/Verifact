@@ -5,129 +5,153 @@ import type { LayerStatus, VerificationReport } from '@/types/verification';
 import { useLanguage } from '@/i18n';
 import styles from './LayerProgress.module.css';
 
-export type LayerPhase = 'searching' | 'resolved';
+export type LayerPhase = 'streaming' | 'resolved';
+
+/** Live per-step state, keyed by the event `step` the server streams. */
+export type LiveStep = { status: LayerStatus; count?: number };
+export type LiveSteps = Partial<
+  Record<'layer1' | 'layer2' | 'layer3' | 'layer4' | 'analysis', LiveStep>
+>;
 
 export interface LayerProgressProps {
   /**
-   * `searching` while the request is open — every layer runs concurrently on
-   * the server, so all four are shown searching and none is claimed complete.
-   * `resolved` once the report is back, when each row shows what that layer
-   * actually returned.
+   * `streaming` while the request is open: each row advances on its own as the
+   * server reports that layer settling (via `live`). `resolved` once the report
+   * is back, when each row shows what that layer actually returned.
    */
   phase: LayerPhase;
-  /** Present only in the resolved phase. */
+  /** Present in the resolved phase. */
   report?: VerificationReport;
+  /** Present in the streaming phase — the latest status streamed per step. */
+  live?: LiveSteps;
 }
 
-// Row 04 used to be labelled with the methodology's AI entry while showing
-// layer4's status — but layer4 is the social-media search, not the AI. The AI
-// assessment had no row at all, so a claim naming no public figure rendered as
-// "AI Contextual Analysis — unavailable" while the model was in fact running
-// and scoring the claim. The two are separate rows now.
+// Row 04 shows layer4 (the social-media search); the AI assessment is its own
+// row, mapped to the streamed `analysis` step and, once resolved, to the score
+// on the report rather than to report.layers.
 const LAYERS = [
-  { key: 'layer1', labelKey: 'transparentaPage.layers.0.title', weight: '35%' },
-  { key: 'layer2', labelKey: 'transparentaPage.layers.1.title', weight: '30%' },
-  { key: 'layer3', labelKey: 'transparentaPage.layers.2.title', weight: '25%' },
-  { key: 'layer4', labelKey: 'transparentaPage.layers.3.title', weight: '10%' },
-  { key: 'ai', labelKey: 'transparentaPage.layers.4.title', weight: '10%' },
+  { key: 'layer1', liveKey: 'layer1', labelKey: 'transparentaPage.layers.0.title', weight: '35%' },
+  { key: 'layer2', liveKey: 'layer2', labelKey: 'transparentaPage.layers.1.title', weight: '30%' },
+  { key: 'layer3', liveKey: 'layer3', labelKey: 'transparentaPage.layers.2.title', weight: '25%' },
+  { key: 'layer4', liveKey: 'layer4', labelKey: 'transparentaPage.layers.3.title', weight: '10%' },
+  { key: 'ai', liveKey: 'analysis', labelKey: 'transparentaPage.layers.4.title', weight: '10%' },
 ] as const;
 
-/** Layers that produced evidence are the only ones marked as such. */
-function isSuccess(status: LayerStatus | undefined): boolean {
-  return status === 'success' || status === 'done';
-}
+type RowState = 'pending' | 'ok' | 'empty' | 'failed';
 
-/**
- * The four layer result types carry differently-typed `results` arrays, so
- * indexing the report's `layers` by key widens to `never`. This view only ever
- * needs the status and how many items came back.
- */
+/** The four layer result types carry differently-typed `results` arrays. */
 type LayerSummary = { status?: LayerStatus; results?: readonly unknown[] };
 
-/**
- * The four evidence layers, shown while a verification runs and after it
- * returns. Nothing here simulates progress: during the request every layer is
- * simply "searching", and once the report arrives each row reports that
- * layer's real status and result count. A layer that failed or found nothing
- * says so — that is the point of showing the work at all.
- */
-export const LayerProgress: React.FC<LayerProgressProps> = ({ phase, report }) => {
+const isDone = (status: LayerStatus | undefined): boolean =>
+  status === 'success' || status === 'done';
+
+export const LayerProgress: React.FC<LayerProgressProps> = ({ phase, report, live }) => {
   const { t } = useLanguage();
 
-  return (
-    <ol className={styles.layers} aria-label={t('verifyTool.layers.ariaLabel')}>
-      {LAYERS.map((layer, index) => {
-        const resolved = phase === 'resolved';
+  const foundLabel = (count: number): string =>
+    count > 0
+      ? t(count === 1 ? 'verifyTool.layers.foundOne' : 'verifyTool.layers.found', {
+          count: String(count),
+        })
+      : t('verifyTool.layers.empty');
 
-        let ok = false;
-        let empty = false;
-        let failed = false;
-        let state: string;
-
-        if (!resolved) {
-          state = t('verifyTool.layers.searching');
-        } else if (layer.key === 'ai') {
-          // The AI assessment is not one of report.layers: it runs across all
-          // of them and reports a score, not a list of documents.
-          const aiScore = report?.scoreBreakdown?.aiScore;
-          if (report?.aiAvailable !== false && typeof aiScore === 'number') {
-            ok = true;
-            state = t('verifyTool.layers.aiScored', { score: String(aiScore) });
-          } else {
-            failed = true;
-            state = t('verifyTool.layers.unavailable');
-          }
-        } else {
-          const layerMap = report?.layers as Record<string, LayerSummary> | undefined;
-          const result = layerMap?.[layer.key];
-          const status = result?.status;
-          const count = result?.results?.length ?? 0;
-
-          if (status === 'skipped') {
-            // A layer the algorithm deliberately did not apply — layer4 when
-            // the claim names no public figure. Reporting that as
-            // "unavailable" made a correct decision look like a malfunction.
-            empty = true;
-            state = t('verifyTool.layers.notApplicable');
-          } else if (isSuccess(status)) {
-            ok = count > 0;
-            empty = count === 0;
-            state = ok
-              ? t(count === 1 ? 'verifyTool.layers.foundOne' : 'verifyTool.layers.found', {
-                  count: String(count),
-                })
-              : t('verifyTool.layers.empty');
-          } else {
-            failed = true;
-            state = t('verifyTool.layers.unavailable');
-          }
+  const describe = (
+    row: (typeof LAYERS)[number]
+  ): { state: RowState; label: string } => {
+    if (phase === 'resolved') {
+      if (row.key === 'ai') {
+        const aiScore = report?.scoreBreakdown?.aiScore;
+        if (report?.aiAvailable !== false && typeof aiScore === 'number') {
+          return { state: 'ok', label: t('verifyTool.layers.aiScored', { score: String(aiScore) }) };
         }
+        return { state: 'failed', label: t('verifyTool.layers.unavailable') };
+      }
+      const layerMap = report?.layers as Record<string, LayerSummary> | undefined;
+      const result = layerMap?.[row.key];
+      const status = result?.status;
+      const count = result?.results?.length ?? 0;
+      if (status === 'skipped') return { state: 'empty', label: t('verifyTool.layers.notApplicable') };
+      if (isDone(status)) {
+        return { state: count > 0 ? 'ok' : 'empty', label: foundLabel(count) };
+      }
+      return { state: 'failed', label: t('verifyTool.layers.unavailable') };
+    }
 
-        return (
-          <li
-            key={layer.key}
-            className={[
-              styles.layer,
-              !resolved ? styles.isSearching : '',
-              ok ? styles.isOk : '',
-              empty ? styles.isEmpty : '',
-              failed ? styles.isFailed : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            style={resolved ? { transitionDelay: `${index * 90}ms` } : undefined}
-          >
-            <span className={styles.dot} aria-hidden="true" />
-            <span className={styles.body}>
-              <span className={styles.name}>{t(layer.labelKey)}</span>
-              <span className={styles.weight}>
-                {t('transparentaPage.layersWeight', { weight: layer.weight })}
-              </span>
+    // Streaming: advance from whatever the server has reported for this step.
+    const s = live?.[row.liveKey];
+    if (!s) return { state: 'pending', label: t('verifyTool.layers.searching') };
+    if (row.key === 'ai') {
+      return isDone(s.status)
+        ? { state: 'ok', label: t('verifyTool.layers.done') }
+        : { state: 'failed', label: t('verifyTool.layers.unavailable') };
+    }
+    if (s.status === 'skipped') return { state: 'empty', label: t('verifyTool.layers.notApplicable') };
+    if (isDone(s.status)) {
+      const count = s.count ?? 0;
+      return { state: count > 0 ? 'ok' : 'empty', label: foundLabel(count) };
+    }
+    if (s.status === 'unavailable' || s.status === 'error') {
+      return { state: 'failed', label: t('verifyTool.layers.unavailable') };
+    }
+    return { state: 'pending', label: t('verifyTool.layers.searching') };
+  };
+
+  const rows = LAYERS.map((layer, index) => ({ layer, index, ...describe(layer) }));
+  const done = rows.filter((r) => r.state !== 'pending').length;
+  const overallPct = Math.round((done / LAYERS.length) * 100);
+
+  return (
+    <div className={styles.wrap}>
+      {phase === 'streaming' ? (
+        <div className={styles.overall}>
+          <div className={styles.overallHead}>
+            <span className={styles.overallLabel}>{t('verifyTool.actions.pending')}</span>
+            <span className={styles.overallCount}>
+              {done}/{LAYERS.length}
             </span>
-            <span className={styles.state}>{state}</span>
-          </li>
-        );
-      })}
-    </ol>
+          </div>
+          <div className={styles.overallTrack}>
+            <div className={styles.overallFill} style={{ transform: `scaleX(${overallPct / 100})` }} />
+          </div>
+        </div>
+      ) : null}
+
+      <ol className={styles.layers} aria-label={t('verifyTool.layers.ariaLabel')}>
+        {rows.map(({ layer, index, state, label }) => {
+          const pending = state === 'pending';
+          return (
+            <li
+              key={layer.key}
+              className={[
+                styles.layer,
+                pending ? styles.isSearching : '',
+                state === 'ok' ? styles.isOk : '',
+                state === 'empty' ? styles.isEmpty : '',
+                state === 'failed' ? styles.isFailed : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              style={phase === 'resolved' ? { transitionDelay: `${index * 90}ms` } : undefined}
+            >
+              <span className={styles.dot} aria-hidden="true" />
+              <span className={styles.body}>
+                <span className={styles.head}>
+                  <span className={styles.name}>{t(layer.labelKey)}</span>
+                  <span className={styles.weight}>
+                    {t('transparentaPage.layersWeight', { weight: layer.weight })}
+                  </span>
+                </span>
+                {/* One bar per component: indeterminate while pending, then a
+                    filled bar coloured by the outcome. */}
+                <span className={`${styles.bar} ${pending ? styles.barPending : styles.barDone}`} aria-hidden="true">
+                  <span className={styles.barFill} />
+                </span>
+              </span>
+              <span className={styles.state}>{label}</span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 };

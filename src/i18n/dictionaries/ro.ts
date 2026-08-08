@@ -68,9 +68,9 @@ export const ro = {
     },
     try: {
       label: 'Încearcă',
-      example1: 'Fulgerul nu lovește de două ori în același loc',
-      example2: 'Folosim doar 10% din creier',
-      example3: 'Zidul Chinezesc se vede din spațiu cu ochiul liber',
+      example1: 'Vaccinurile provoacă autism.',
+      example2: 'Rețeaua 5G răspândește coronavirusul.',
+      example3: 'Usturoiul vindecă infecția cu COVID-19.',
     },
     trust: {
       line: 'Nu-ți cerem să ne crezi pe cuvânt — îți arătăm sursele.',
@@ -78,12 +78,9 @@ export const ro = {
     sample: {
       eyebrow: 'Așa arată un răspuns',
       title: 'Verdictul, nu o pagină de text.',
-      scoreCaption: 'scor',
-      meta: '4/4 straturi cu dovezi · 12,3 s',
-      sourcesLabel: 'Sursele pe care se sprijină',
-      claim: 'Vaccinurile ARNm modifică ADN-ul uman.',
+      claim: 'Antibioticele tratează infecțiile virale precum răceala și gripa.',
       summary:
-        'ARN-ul mesager din vaccin nu ajunge în nucleul celulei, unde se află ADN-ul, și se degradează în câteva zile după ce celula produce proteina spike. Nu există niciun mecanism cunoscut prin care acest proces să modifice genomul uman.',
+        'Antibioticele acționează asupra bacteriilor, nu a virusurilor. Răceala și gripa sunt cauzate de virusuri, așa că antibioticele nu le tratează — iar folosirea lor inutilă accelerează rezistența la antibiotice, avertizează OMS și ECDC.',
     },
     steps: {
       title: 'Cum funcționează',
@@ -121,6 +118,7 @@ export const ro = {
       unavailable: 'indisponibil',
       notApplicable: 'nu se aplică',
       aiScored: 'evaluat {score}/100',
+      done: 'gata',
     },
     heading: 'Verifică o afirmație',
     ariaTabContent: 'Tip de conținut de verificat',
@@ -228,6 +226,8 @@ export const ro = {
       plan: 'Plan',
       verificationsThisMonth: 'Verificări luna asta',
       verificationsValue: '{current} din {limit}',
+      verificationsUnlimited: 'Nelimitat',
+      adminPlan: 'Admin',
       signOut: 'Deconectare',
       dangerLead:
         'Ștergerea contului este definitivă: rapoartele tale private se șterg pentru totdeauna, iar cele publicate rămân în baza publică, anonimizated. Detalii în Politica de confidențialitate.',
@@ -259,6 +259,7 @@ export const ro = {
       resetSent: 'Ți-am trimis pe email un link de resetare a parolei.',
       resetError: 'Nu am putut trimite emailul de resetare. Încearcă din nou.',
       resetNeedsEmail: 'Scrie-ți adresa de email mai sus, apoi apasă din nou.',
+      resetSending: 'Se trimite…',
       submitLogin: 'Intră în cont',
       submitSignup: 'Creează cont',
       socialGoogle: 'Continuă cu Google',
@@ -272,6 +273,7 @@ export const ro = {
         'Verificările tale rămân private. Nu le vede nimeni altcineva.',
       successSignup:
         'Contul a fost creat. Verifică-ți emailul pentru linkul de confirmare.',
+      successSignupToast: 'Cont creat! Verifică-ți emailul pentru confirmare.',
       successLogin: 'Autentificare reușită.',
       errorGeneric: 'A apărut o eroare la autentificare.',
       errorLabel: 'Nu a funcționat',
@@ -291,6 +293,27 @@ export const ro = {
       resendSuccess: 'Am retrimis codul pe email.',
       backBtn: 'Înapoi',
       errorGeneric: 'Codul introdus nu este valid.',
+    },
+    resetPassword: {
+      eyebrow: 'Resetare parolă',
+      title: 'Setează o parolă nouă',
+      lead: 'Alege o parolă nouă pentru contul tău. După ce o salvezi, ești conectat automat.',
+      verifying: 'Se verifică linkul de resetare…',
+      invalidLabel: 'Link invalid',
+      invalidText:
+        'Linkul de resetare este invalid sau a expirat. Cere unul nou din pagina de cont.',
+      backToLogin: 'Înapoi la cont',
+      newPasswordLabel: 'Parolă nouă',
+      newPasswordPlaceholder: 'Minimum 8 caractere',
+      confirmLabel: 'Confirmă parola nouă',
+      confirmPlaceholder: 'Repetă parola',
+      submitBtn: 'Salvează parola',
+      successLabel: 'Gata',
+      successText: 'Parola a fost schimbată. Ești conectat.',
+      goToAccount: 'Mergi la cont',
+      errorLabel: 'Nu a funcționat',
+      errorTooShort: 'Parola trebuie să aibă cel puțin 8 caractere.',
+      errorGeneric: 'Nu am putut schimba parola. Încearcă din nou.',
     },
   },
   contPage: {

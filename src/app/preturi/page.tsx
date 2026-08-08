@@ -53,7 +53,9 @@ function CellMark({ value, included, excluded }: { value: Cell; included: string
 export default function PreturiPage() {
   const { locale } = useLanguage();
   const isEn = locale === 'en';
-  const [billing, setBilling] = useState<Billing>('monthly');
+  // Yearly first: the annual price is the smaller per-month figure, so the plan
+  // reads as its cheapest by default; clicking "Monthly" reveals the higher one.
+  const [billing, setBilling] = useState<Billing>('yearly');
 
   const c = isEn
     ? {

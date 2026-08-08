@@ -1,0 +1,7 @@
+/* The form is a single narrow column, centred under the shared page head —
+   this route asks for one thing, so it gets one measure, not a split card. */
+.wrap {
+  max-width: 30rem;
+  margin-left: auto;
+  margin-right: auto;
+}

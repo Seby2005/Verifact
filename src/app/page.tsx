@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Reveal, ScoreRing, verdictFromScore } from '@/components/ui';
-import { VerifyTool } from '@/components/verify';
+import { Reveal } from '@/components/ui';
+import { VerifyTool, ReportView } from '@/components/verify';
+import type { VerificationReport } from '@/types/verification';
 import { useLanguage } from '@/i18n';
 import styles from './page.module.css';
 
@@ -14,42 +15,88 @@ import styles from './page.module.css';
  * leaves before reaching the thing they came for.
  */
 export default function HomePage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
-  // A fixed, clearly-labelled specimen. Never presented as a live result.
-  const sample = {
+  // A fixed, clearly-labelled specimen, rendered through the real ReportView so
+  // it matches an actual report exactly. Never presented as a live result.
+  const sampleReport: VerificationReport = {
+    id: 'exemplu-verifact',
     claim: t('home.sample.claim'),
-    summary: t('home.sample.summary'),
-    score: 6,
+    inputText: t('home.sample.claim'),
+    inputType: 'text',
+    verdict: 'false',
+    score: 9,
+    confidenceLevel: 'high',
+    processingTimeMs: 12300,
+    executiveSummary: t('home.sample.summary'),
+    aiAvailable: true,
+    createdAt: '2026-08-01T09:00:00.000Z',
+    isPublic: false,
+    language: locale === 'en' ? 'en' : 'ro',
+    scoreBreakdown: {
+      finalScore: 9,
+      availableLayers: 3,
+      weights: { factCheck: 0.35, news: 0.3, official: 0.25 },
+    },
     sources: [
       {
-        title: 'Understanding How COVID-19 Vaccines Work',
-        publisher: 'Centers for Disease Control',
-        year: '2024',
-        url: 'https://www.cdc.gov/covid/vaccines/how-they-work.html',
+        title: 'Antibiotic resistance',
+        publisher: 'World Health Organization',
+        url: 'https://www.who.int/news-room/fact-sheets/detail/antibiotic-resistance',
+        date: '2023-11-21',
+        sourceType: 'official',
+        relevance: 0.96,
+        excerpt:
+          'Antibiotics are used to prevent and treat bacterial infections. Antibiotics do not work against viral infections such as colds and flu.',
       },
       {
-        title: 'mRNA vaccines — a new era in vaccinology',
-        publisher: 'Nature Reviews Drug Discovery',
-        year: '2018',
-        url: 'https://www.nature.com/articles/nrd.2017.243',
+        title: 'Antimicrobial resistance',
+        publisher: 'ECDC',
+        url: 'https://www.ecdc.europa.eu/en/antimicrobial-resistance',
+        date: '2024-11-18',
+        sourceType: 'official',
+        relevance: 0.9,
+        excerpt:
+          'Antibiotics have no effect on viruses such as those causing the common cold or influenza.',
       },
       {
-        title: 'Fact check: mRNA vaccines do not alter human DNA',
+        title: 'Fact check: antibiotics do not treat viral infections like colds and flu',
         publisher: 'Reuters',
-        year: '2021',
-        url: 'https://www.reuters.com/article/factcheck-dna-vaccine-idUSL2N2N918K',
+        url: 'https://www.reuters.com/fact-check/',
+        date: '2021-09-30',
+        sourceType: 'fact_check',
+        relevance: 0.88,
+        excerpt:
+          'Health authorities confirm antibiotics target bacteria, not viruses; taking them for a cold is ineffective and fuels resistance.',
       },
     ],
   };
 
-  const sampleVerdict = verdictFromScore(sample.score);
+  // Curated evergreen claims shown instantly; upgraded to live trending
+  // Romanian claims once /api/trending-examples responds (falls back to these).
+  const fallbackExamples = useMemo(
+    () => [t('home.try.example1'), t('home.try.example2'), t('home.try.example3')],
+    [t]
+  );
+  const [examples, setExamples] = useState<string[]>(fallbackExamples);
 
-  const examples = [
-    t('home.try.example1'),
-    t('home.try.example2'),
-    t('home.try.example3'),
-  ];
+  useEffect(() => {
+    let active = true;
+    setExamples(fallbackExamples);
+    fetch(`/api/trending-examples?lang=${locale}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && Array.isArray(data?.examples) && data.examples.length > 0) {
+          setExamples(data.examples as string[]);
+        }
+      })
+      .catch(() => {
+        /* keep the curated fallback */
+      });
+    return () => {
+      active = false;
+    };
+  }, [locale, fallbackExamples]);
 
   const steps = [
     { number: t('home.steps.step1.number'), title: t('home.steps.step1.title') },
@@ -89,40 +136,7 @@ export default function HomePage() {
         </Reveal>
 
         <Reveal delay={80} className={styles.card}>
-          <p className={styles.claim}>&ldquo;{sample.claim}&rdquo;</p>
-
-          <div className={styles.verdictRow}>
-            <ScoreRing score={sample.score} kind={sampleVerdict} label={t('home.sample.scoreCaption')} />
-            <div>
-              <p className={`${styles.verdictWord} ${styles[sampleVerdict]}`}>
-                {t(`verdict.copy.${sampleVerdict}`)}
-              </p>
-              <p className={styles.verdictMeta}>{t('home.sample.meta')}</p>
-            </div>
-          </div>
-
-          <p className={styles.summary}>{sample.summary}</p>
-
-          <div className={styles.sources}>
-            <p className={styles.sourcesLabel}>{t('home.sample.sourcesLabel')}</p>
-            {sample.sources.map((source, index) => (
-              <a
-                key={source.url}
-                href={source.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                className={styles.source}
-              >
-                <span className={styles.sourceIndex}>
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <span className={styles.sourceTitle}>{source.title}</span>
-                <span className={styles.sourceMeta}>
-                  {source.publisher} · {source.year}
-                </span>
-              </a>
-            ))}
-          </div>
+          <ReportView report={sampleReport} interactive={false} />
         </Reveal>
       </section>
 
