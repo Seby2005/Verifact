@@ -10,10 +10,21 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      const forwardedHost = request.headers.get('x-forwarded-host');
+      const isLocalEnv = process.env.NODE_ENV === 'development';
+
+      let redirectBase = origin;
+      if (!isLocalEnv && forwardedHost) {
+        redirectBase = `https://${forwardedHost}`;
+      } else if (!isLocalEnv && process.env.NEXT_PUBLIC_APP_URL) {
+        redirectBase = process.env.NEXT_PUBLIC_APP_URL;
+      }
+
+      return NextResponse.redirect(`${redirectBase}${next}`);
     }
   }
 
-  // Return the user to an error page or back to /cont with error parameter
-  return NextResponse.redirect(`${origin}/cont?error=oauth_failed`);
+  // Return the user to /cont with error parameter on failure
+  const fallbackBase = process.env.NEXT_PUBLIC_APP_URL || origin;
+  return NextResponse.redirect(`${fallbackBase}/cont?error=oauth_failed`);
 }
