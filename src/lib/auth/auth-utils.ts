@@ -57,7 +57,12 @@ export async function signUpWithEmail(email: string, password: string): Promise<
 
 export async function signInWithOAuth(provider: 'google' | 'github'): Promise<void> {
   const supabase = createBrowserClient();
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+  // Prefer window.location.origin on client — it reflects the real domain
+  // (verifact.ro in production, localhost in dev). NEXT_PUBLIC_APP_URL is only
+  // a server-side fallback for SSR contexts where window is unavailable.
+  const baseUrl = typeof window !== 'undefined'
+    ? window.location.origin
+    : (process.env.NEXT_PUBLIC_APP_URL || '');
   
   await supabase.auth.signInWithOAuth({
     provider,
@@ -80,10 +85,14 @@ export async function signOut(): Promise<void> {
 
 export async function resetPassword(email: string): Promise<{ success: boolean; error?: string }> {
   const supabase = createBrowserClient();
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+  const baseUrl = typeof window !== 'undefined'
+    ? window.location.origin
+    : (process.env.NEXT_PUBLIC_APP_URL || '');
 
+  // Route through the auth callback (PKCE code exchange) then on to the
+  // reset-password page — same pattern as AuthPanel.handleForgotPassword.
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${baseUrl}/update-password`,
+    redirectTo: `${baseUrl}/api/auth/callback?next=${encodeURIComponent('/reseteaza-parola')}`,
   });
 
   if (error) {
