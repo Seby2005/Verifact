@@ -1,6 +1,8 @@
 import type {
   VerificationInput,
   VerificationReport,
+  VerifyStatusEvent,
+  LayerStatus,
   Layer1Result,
   Layer2Result,
   Layer3Result,
@@ -101,12 +103,26 @@ function makeUnavailableLayer4(error: string): Layer4Result {
  * Only if ALL layers fail is an error thrown.
  */
 export async function verifyContent(
-  input: VerificationInput
+  input: VerificationInput,
+  onEvent?: (event: VerifyStatusEvent) => void
 ): Promise<VerificationReport> {
+  const emit = (event: VerifyStatusEvent) => {
+    // Progress reporting must never be able to break a verification.
+    try {
+      onEvent?.(event);
+    } catch {
+      /* ignore */
+    }
+  };
+
   // 1. Cache check
   const contentHash = createContentHash(input.text, input.language);
   const cached = await getCached(contentHash);
   if (cached) {
+    // Nothing ran, but the reader still gets a coherent "all done" animation.
+    for (const step of ['layer1', 'layer2', 'layer3', 'layer4', 'analysis'] as const) {
+      emit({ step, status: 'done' });
+    }
     return { ...cached, fromCache: true, isPublic: input.isPublic, userId: input.userId };
   }
 
@@ -127,12 +143,31 @@ export async function verifyContent(
   // Twitter+Tavily) instead absorb a single source's CircuitOpenError the
   // same way they already absorbed that source failing outright, and
   // still report success from whichever source is still healthy.
-  const [l1Result, l2Result, l3Result, l4Result] = await Promise.allSettled([
-    withTimeout(runLayer1(input.text, input.language), LAYER_TIMEOUT_MS, 'layer1'),
-    withTimeout(runLayer2(input.text, input.language), LAYER_TIMEOUT_MS, 'layer2'),
-    withTimeout(runLayer3(input.text, input.language), LAYER_TIMEOUT_MS, 'layer3'),
-    withTimeout(runLayer4(input.text, input.language), LAYER_TIMEOUT_MS, 'layer4'),
-  ]);
+  const p1 = withTimeout(runLayer1(input.text, input.language), LAYER_TIMEOUT_MS, 'layer1');
+  const p2 = withTimeout(runLayer2(input.text, input.language), LAYER_TIMEOUT_MS, 'layer2');
+  const p3 = withTimeout(runLayer3(input.text, input.language), LAYER_TIMEOUT_MS, 'layer3');
+  const p4 = withTimeout(runLayer4(input.text, input.language), LAYER_TIMEOUT_MS, 'layer4');
+
+  // Emit each layer's outcome the moment it settles, so a client can advance
+  // that row's progress bar independently instead of waiting for the whole
+  // batch. This is a separate consumer of each promise — the allSettled below
+  // still sees the same results — and it swallows rejections so it can never
+  // raise an unhandled rejection.
+  const tap = (
+    step: 'layer1' | 'layer2' | 'layer3' | 'layer4',
+    p: Promise<{ status: LayerStatus; results?: readonly unknown[] }>
+  ) => {
+    p.then(
+      (r) => emit({ step, status: r.status, count: r.results?.length ?? 0 }),
+      (e) => emit({ step, status: 'unavailable', error: String(e) })
+    );
+  };
+  tap('layer1', p1);
+  tap('layer2', p2);
+  tap('layer3', p3);
+  tap('layer4', p4);
+
+  const [l1Result, l2Result, l3Result, l4Result] = await Promise.allSettled([p1, p2, p3, p4]);
 
   // 3. Extract results with graceful fallback for failed layers
   const rawLayer1 = l1Result.status === 'fulfilled'
@@ -187,6 +222,7 @@ export async function verifyContent(
   };
 
   const assessment = await generateAIAssessment(aiContext);
+  emit({ step: 'analysis', status: 'done' });
 
   // 6. Calculate score, including the AI assessment as a weighted component
   const scoreBreakdown = calculateScore({

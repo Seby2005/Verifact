@@ -34,7 +34,19 @@ export interface VerifyStatusEvent {
   label?: string;
   error?: string;
   progressPercentage?: number;
+  /** How many results the layer returned, for the live "N found" label. */
+  count?: number;
 }
+
+/**
+ * Newline-delimited events streamed by POST /api/verify while a verification
+ * runs: many `progress` events as each layer settles, then exactly one terminal
+ * `report` (success) or `error`.
+ */
+export type VerifyStreamEvent =
+  | { type: 'progress'; step: VerifyStatusEvent['step']; status: LayerStatus; count?: number; error?: string }
+  | { type: 'report'; report: VerificationReport }
+  | { type: 'error'; code?: string; error: string };
 
 export interface VerifyAPIError {
   success?: boolean;

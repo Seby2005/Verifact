@@ -7,6 +7,11 @@ export interface UsageLimitCheck {
   resetDate: string;
   tier: UserTier;
   percentageUsed: number;
+  /**
+   * True when the account is exempt from the monthly cap (admin role). Present
+   * only in that case, so callers can render "unlimited" instead of a number.
+   */
+  unlimited?: boolean;
 }
 
 /**

@@ -3,7 +3,8 @@ import { verifyContent } from '@/lib/verification/orchestrator';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
 import { saveVerification, reserveUsageSlot, releaseUsageSlot } from '@/lib/verification/db-operations';
 import { checkAnonymousLimit } from '@/lib/usage/anonymous-limit';
-import type { Language, InputType, VerifyAPIError } from '@/types/verification';
+import { hasUnlimitedUsage } from '@/lib/usage/limits';
+import type { Language, InputType, VerifyAPIError, VerifyStreamEvent } from '@/types/verification';
 import { extractArticleText, isValidHttpUrl, UrlExtractionError } from '@/lib/verification/url-extract';
 import { logger } from '@/lib/utils/logger';
 
@@ -128,16 +129,28 @@ export async function POST(request: Request): Promise<Response> {
   let anonymousHash: string | undefined;
 
   if (user) {
-    const reservation = await reserveUsageSlot(supabase);
-    if (!reservation.allowed) {
-      const err: VerifyAPIError = {
-        success: false,
-        error: `Ai atins limita de ${reservation.limit} verificari pentru aceasta luna. Upgradeaza la Pro pentru mai multe.`,
-        code: 'USAGE_LIMIT',
-      };
-      return Response.json(err, { status: 403 });
+    // Admins are uncapped: skip the reservation entirely so their count never
+    // increments and they can test without limit. Any read hiccup falls through
+    // to the normal metered path, so this can only ever grant, never deny.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    const isAdmin = hasUnlimitedUsage((profile as { role?: string | null } | null)?.role);
+
+    if (!isAdmin) {
+      const reservation = await reserveUsageSlot(supabase);
+      if (!reservation.allowed) {
+        const err: VerifyAPIError = {
+          success: false,
+          error: `Ai atins limita de ${reservation.limit} verificari pentru aceasta luna. Upgradeaza la Pro pentru mai multe.`,
+          code: 'USAGE_LIMIT',
+        };
+        return Response.json(err, { status: 403 });
+      }
+      usageReserved = true;
     }
-    usageReserved = true;
   } else {
     const userAgent = request.headers.get('user-agent') ?? 'unknown';
     const anonymousCheck = await checkAnonymousLimit(ip, userAgent);
@@ -171,56 +184,87 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
-  // 4. Run verification algorithm
-  try {
-    const report = await verifyContent({
-      text: claimText,
-      language: validatedInput.language,
-      type: validatedInput.inputType,
-      inputType: validatedInput.inputType,
-      isPublic: validatedInput.isPublic,
-      userId: user?.id ?? undefined,
-    });
-
-    // 5. Save to Supabase. A cache hit did no new work, so any reserved slot
-    //    is released instead of charging the user's monthly quota.
-    if (report.fromCache) {
-      if (usageReserved) await releaseUsageSlot(supabase);
-      return Response.json({ success: true, report }, { status: 200 });
-    }
-
-    const saved = await saveVerification(report, supabase, anonymousHash);
-    if (!saved && usageReserved) {
-      // The verification ran (and cost real API calls) but the record
-      // didn't persist — release the reservation so the user isn't charged
-      // for a report that won't show up in their history.
-      await releaseUsageSlot(supabase);
-    }
-
-    return Response.json({ success: true, report }, { status: 200 });
-
-  } catch (error) {
-    // The reservation was consumed for a verification that never completed
-    // — release it rather than charging the user's quota for nothing.
-    if (usageReserved) {
-      await releaseUsageSlot(supabase);
-    }
-
-    if (error instanceof Error && error.message === 'ALL_LAYERS_FAILED') {
-      const err: VerifyAPIError = {
-        success: false,
-        error: 'Nu am putut accesa sursele de verificare. Te rugam sa incerci din nou.',
-        code: 'ALL_LAYERS_FAILED',
+  // 4. Run the verification, streaming per-layer progress to the client as
+  //    newline-delimited JSON: many `progress` events (one per layer as it
+  //    settles, plus the AI analysis), then a single terminal `report` or
+  //    `error`. The pre-flight failures above already returned plain JSON with
+  //    a real status code; once work starts the response is a 200 stream, so
+  //    any failure from here on travels as an in-band `error` event.
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let open = true;
+      const send = (event: VerifyStreamEvent) => {
+        if (!open) return;
+        try {
+          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        } catch {
+          // Client went away mid-stream — stop enqueuing.
+          open = false;
+        }
       };
-      return Response.json(err, { status: 503 });
-    }
 
-    logger.error('Unexpected error in /api/verify', { service: 'api/verify', error });
-    const err: VerifyAPIError = {
-      success: false,
-      error: 'A aparut o eroare interna. Te rugam sa incerci din nou.',
-      code: 'SERVER_ERROR',
-    };
-    return Response.json(err, { status: 500 });
-  }
+      try {
+        const report = await verifyContent(
+          {
+            text: claimText,
+            language: validatedInput.language,
+            type: validatedInput.inputType,
+            inputType: validatedInput.inputType,
+            isPublic: validatedInput.isPublic,
+            userId: user?.id ?? undefined,
+          },
+          (ev) =>
+            send({ type: 'progress', step: ev.step, status: ev.status, count: ev.count, error: ev.error })
+        );
+
+        // 5. Save to Supabase. A cache hit did no new work, so any reserved slot
+        //    is released instead of charging the user's monthly quota; a save
+        //    failure means the report won't appear in history, so release then
+        //    too — but still hand the reader the report they waited for.
+        if (report.fromCache) {
+          if (usageReserved) await releaseUsageSlot(supabase);
+        } else {
+          const saved = await saveVerification(report, supabase, anonymousHash);
+          if (!saved && usageReserved) await releaseUsageSlot(supabase);
+        }
+
+        send({ type: 'report', report });
+      } catch (error) {
+        // The reservation was consumed for a verification that never completed
+        // — release it rather than charging the user's quota for nothing.
+        if (usageReserved) await releaseUsageSlot(supabase);
+
+        if (error instanceof Error && error.message === 'ALL_LAYERS_FAILED') {
+          send({
+            type: 'error',
+            code: 'ALL_LAYERS_FAILED',
+            error: 'Nu am putut accesa sursele de verificare. Te rugam sa incerci din nou.',
+          });
+        } else {
+          logger.error('Unexpected error in /api/verify', { service: 'api/verify', error });
+          send({
+            type: 'error',
+            code: 'SERVER_ERROR',
+            error: 'A aparut o eroare interna. Te rugam sa incerci din nou.',
+          });
+        }
+      } finally {
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'X-Accel-Buffering': 'no',
+    },
+  });
 }

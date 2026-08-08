@@ -2,18 +2,19 @@
 
 import React, { useRef, useState } from 'react';
 import { Button, Tabs, Textarea, Input, Callout, type TabItem } from '@/components/ui';
-import type { InputType, VerificationReport, VerifyAPIError } from '@/types/verification';
+import type {
+  InputType,
+  VerificationReport,
+  VerifyAPIError,
+  VerifyStreamEvent,
+} from '@/types/verification';
 import { useLanguage } from '@/i18n';
 import { ReportView } from '../ReportView';
-import { LayerProgress } from '../LayerProgress';
+import { LayerProgress, type LiveSteps } from '../LayerProgress';
 import { useTypedPlaceholder } from './useTypedPlaceholder';
 import styles from './VerifyTool.module.css';
 
 type VerificationInputKind = InputType;
-
-type VerifyResponse =
-  | { success: true; report: VerificationReport }
-  | ({ success?: false } & VerifyAPIError);
 
 /**
  * Carries the server's own failure message instead of collapsing every OCR
@@ -45,6 +46,8 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
   const [url, setUrl] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<Status>({ state: 'idle' });
+  // Per-layer progress streamed from the server while a verification runs.
+  const [liveSteps, setLiveSteps] = useState<LiveSteps>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tabs: ReadonlyArray<TabItem<VerificationInputKind>> = [
@@ -83,6 +86,7 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
     }
 
     setStatus({ state: 'loading' });
+    setLiveSteps({});
 
     try {
       let claimText = text.trim();
@@ -117,17 +121,18 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
         }),
       });
 
-      const data = (await res.json()) as VerifyResponse;
-
-      if (res.ok && data.success && 'report' in data) {
-        setStatus({ state: 'report', report: data.report });
-      } else {
-        const err = data as VerifyAPIError;
+      // Pre-flight failures (validation, rate limit, usage) come back as plain
+      // JSON with a real status code; a started verification streams NDJSON.
+      if (!res.ok || !res.body) {
+        const err = (await res.json().catch(() => null)) as VerifyAPIError | null;
         setStatus({
-          state: err.code === 'ALL_LAYERS_FAILED' ? 'unavailable' : 'error',
-          message: err.error || t('verifyTool.errors.generic'),
+          state: err?.code === 'ALL_LAYERS_FAILED' ? 'unavailable' : 'error',
+          message: err?.error || t('verifyTool.errors.generic'),
         });
+        return;
       }
+
+      await consumeStream(res.body);
     } catch {
       setStatus({
         state: 'error',
@@ -135,6 +140,65 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
       });
     }
   };
+
+  /**
+   * Reads the server's NDJSON progress stream: each `progress` event advances a
+   * layer's bar as it settles; the terminal `report`/`error` event resolves the
+   * view. Returns once a terminal event arrives or the stream ends.
+   */
+  async function consumeStream(body: ReadableStream<Uint8Array>): Promise<void> {
+    const reader = body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    const handle = (event: VerifyStreamEvent): boolean => {
+      if (event.type === 'progress') {
+        if (event.step !== 'report') {
+          setLiveSteps((prev) => ({
+            ...prev,
+            [event.step]: { status: event.status, count: event.count },
+          }));
+        }
+        return false;
+      }
+      if (event.type === 'report') {
+        setStatus({ state: 'report', report: event.report });
+        return true;
+      }
+      setStatus({
+        state: event.code === 'ALL_LAYERS_FAILED' ? 'unavailable' : 'error',
+        message: event.error || t('verifyTool.errors.generic'),
+      });
+      return true;
+    };
+
+    const parseLine = (line: string): boolean => {
+      const trimmed = line.trim();
+      if (!trimmed) return false;
+      try {
+        return handle(JSON.parse(trimmed) as VerifyStreamEvent);
+      } catch {
+        return false;
+      }
+    };
+
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let nl: number;
+      while ((nl = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, nl);
+        buffer = buffer.slice(nl + 1);
+        if (parseLine(line)) {
+          await reader.cancel().catch(() => undefined);
+          return;
+        }
+      }
+    }
+    // Flush a final line that arrived without a trailing newline.
+    if (buffer) parseLine(buffer);
+  }
 
   /**
    * Extracts the claim text from a screenshot. readAsDataURL yields a
@@ -280,8 +344,7 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
             four layers being searched rather than a bare spinner. */}
         {status.state === 'loading' ? (
           <div className={styles.progress}>
-            <p className={styles.pending}>{t('verifyTool.actions.pending')}</p>
-            <LayerProgress phase="searching" />
+            <LayerProgress phase="streaming" live={liveSteps} />
           </div>
         ) : null}
 

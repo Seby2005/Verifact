@@ -69,9 +69,9 @@ export const en: Translations = {
     },
     try: {
       label: 'Try',
-      example1: 'Lightning never strikes the same place twice',
-      example2: 'We only use 10% of our brain',
-      example3: 'The Great Wall of China is visible from space',
+      example1: 'Vaccines cause autism.',
+      example2: '5G networks spread the coronavirus.',
+      example3: 'Garlic cures COVID-19 infection.',
     },
     trust: {
       line: 'Don’t take our word for it — see the sources.',
@@ -79,12 +79,9 @@ export const en: Translations = {
     sample: {
       eyebrow: 'What an answer looks like',
       title: 'The verdict, not a wall of text.',
-      scoreCaption: 'score',
-      meta: '4/4 evidence layers · 12.3 s',
-      sourcesLabel: 'The sources behind it',
-      claim: 'mRNA vaccines alter human DNA.',
+      claim: 'Antibiotics treat viral infections like colds and the flu.',
       summary:
-        'Messenger RNA from the vaccine does not enter the cell nucleus where DNA is located, and degrades within days after producing the spike protein. There is no known mechanism by which this process could modify the human genome.',
+        'Antibiotics act on bacteria, not viruses. Colds and flu are caused by viruses, so antibiotics do not treat them — and using them needlessly accelerates antibiotic resistance, the WHO and ECDC warn.',
     },
     steps: {
       title: 'How it works',
@@ -122,6 +119,7 @@ export const en: Translations = {
       unavailable: 'unavailable',
       notApplicable: 'not applicable',
       aiScored: 'assessed {score}/100',
+      done: 'done',
     },
     heading: 'Verify a claim',
     ariaTabContent: 'Content type to verify',
@@ -228,6 +226,8 @@ export const en: Translations = {
       plan: 'Plan',
       verificationsThisMonth: 'Verifications this month',
       verificationsValue: '{current} of {limit}',
+      verificationsUnlimited: 'Unlimited',
+      adminPlan: 'Admin',
       signOut: 'Sign out',
       dangerLead:
         'Deleting your account is permanent: your private reports will be deleted forever, while published ones will remain in the public database, anonymized. Details in the Privacy Policy.',
@@ -259,6 +259,7 @@ export const en: Translations = {
       resetSent: 'We sent a password reset link to your email.',
       resetError: 'We could not send the reset email. Please try again.',
       resetNeedsEmail: 'Enter your email address above, then click again.',
+      resetSending: 'Sending…',
       submitLogin: 'Sign in',
       submitSignup: 'Create account',
       socialGoogle: 'Continue with Google',
@@ -272,6 +273,7 @@ export const en: Translations = {
         'Your verifications stay private. No one else can see them.',
       successSignup:
         'Account created. Please check your email for the confirmation link.',
+      successSignupToast: 'Account created! Check your email to confirm.',
       successLogin: 'Signed in successfully.',
       errorGeneric: 'An error occurred during authentication.',
       errorLabel: 'Action failed',
@@ -291,6 +293,27 @@ export const en: Translations = {
       resendSuccess: 'Code resent by email.',
       backBtn: 'Back',
       errorGeneric: 'The code you entered is not valid.',
+    },
+    resetPassword: {
+      eyebrow: 'Password reset',
+      title: 'Set a new password',
+      lead: 'Choose a new password for your account. Once you save it, you’ll be signed in automatically.',
+      verifying: 'Verifying your reset link…',
+      invalidLabel: 'Invalid link',
+      invalidText:
+        'This reset link is invalid or has expired. Request a new one from the account page.',
+      backToLogin: 'Back to account',
+      newPasswordLabel: 'New password',
+      newPasswordPlaceholder: 'Minimum 8 characters',
+      confirmLabel: 'Confirm new password',
+      confirmPlaceholder: 'Repeat the password',
+      submitBtn: 'Save password',
+      successLabel: 'Done',
+      successText: 'Your password has been changed. You’re signed in.',
+      goToAccount: 'Go to account',
+      errorLabel: 'Action failed',
+      errorTooShort: 'The password must be at least 8 characters.',
+      errorGeneric: 'We could not change your password. Please try again.',
     },
   },
   contPage: {

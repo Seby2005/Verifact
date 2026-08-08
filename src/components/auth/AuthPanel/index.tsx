@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Button, Input, Tabs, Callout, Modal, type TabItem } from '@/components/ui';
+import { Button, Input, Tabs, Callout, Modal, useToast, type TabItem } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
 import { TIER_CONFIG, type UsageLimitCheck } from '@/types/user';
 import { useLanguage } from '@/i18n';
@@ -22,13 +22,19 @@ type Session = { email: string | null } | null | undefined; // undefined = still
 
 export const AuthPanel: React.FC = () => {
   const { t } = useLanguage();
-  const [mode, setMode] = useState<Mode>('login');
+  const { notify } = useToast();
+  // Signup is the primary action for a first-time visitor, so it leads and is
+  // selected by default; returning users switch to the login tab.
+  const [mode, setMode] = useState<Mode>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [status, setStatus] = useState<Status>({ state: 'idle' });
   const [loginStep, setLoginStep] = useState<LoginStep>('credentials');
   const [code, setCode] = useState('');
+  // Password reset runs its own request, so it gets its own status — reusing the
+  // shared `status` above would spin the main submit button while sending.
+  const [resetStatus, setResetStatus] = useState<Status>({ state: 'idle' });
 
   const [session, setSession] = useState<Session>(undefined);
   const [usage, setUsage] = useState<UsageLimitCheck | null>(null);
@@ -38,9 +44,14 @@ export const AuthPanel: React.FC = () => {
   const [deleteStatus, setDeleteStatus] = useState<Status>({ state: 'idle' });
 
   const modes: ReadonlyArray<TabItem<Mode>> = [
-    { id: 'login', label: t('auth.tabs.login') },
     { id: 'signup', label: t('auth.tabs.signup') },
+    { id: 'login', label: t('auth.tabs.login') },
   ];
+
+  // Live check so the confirm field can flag a mismatch as the user types,
+  // rather than only failing on submit.
+  const passwordMismatch =
+    mode === 'signup' && confirmPassword.length > 0 && password !== confirmPassword;
 
   useEffect(() => {
     const supabase = createClient();
@@ -70,6 +81,7 @@ export const AuthPanel: React.FC = () => {
   const handleModeChange = (next: Mode) => {
     setMode(next);
     setStatus({ state: 'idle' });
+    setResetStatus({ state: 'idle' });
     setLoginStep('credentials');
     setCode('');
     setConfirmPassword('');
@@ -106,6 +118,9 @@ export const AuthPanel: React.FC = () => {
         const supabase = createClient();
         const { error } = await supabase.auth.signUp({ email: email.trim(), password });
         if (error) throw error;
+        // A visible toast on top of the inline confirmation: the callout alone
+        // sits low in the form and was easy to miss.
+        notify(t('auth.form.successSignupToast'), 'success');
         setStatus({
           state: 'success',
           message: t('auth.form.successSignup'),
@@ -194,19 +209,22 @@ export const AuthPanel: React.FC = () => {
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      setStatus({ state: 'error', message: t('auth.form.resetNeedsEmail') });
+      setResetStatus({ state: 'error', message: t('auth.form.resetNeedsEmail') });
       return;
     }
-    setStatus({ state: 'loading' });
+    setResetStatus({ state: 'loading' });
     try {
       const supabase = createClient();
+      // The recovery link carries a PKCE `?code=`; send it through the callback
+      // route that exchanges it for a session (same route the OAuth flow uses),
+      // then on to /reseteaza-parola where the new password is actually set.
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/cont`,
+        redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent('/reseteaza-parola')}`,
       });
       if (error) throw error;
-      setStatus({ state: 'success', message: t('auth.form.resetSent') });
+      setResetStatus({ state: 'success', message: t('auth.form.resetSent') });
     } catch {
-      setStatus({ state: 'error', message: t('auth.form.resetError') });
+      setResetStatus({ state: 'error', message: t('auth.form.resetError') });
     }
   };
 
@@ -245,7 +263,11 @@ export const AuthPanel: React.FC = () => {
   }
 
   if (session) {
-    const tierLabel = usage ? t(`auth.tiers.${usage.tier}`) ?? usage.tier : null;
+    const tierLabel = usage?.unlimited
+      ? t('auth.session.adminPlan')
+      : usage
+        ? t(`auth.tiers.${usage.tier}`) ?? usage.tier
+        : null;
     const limit = usage ? usage.limit : TIER_CONFIG.free.monthlyLimit;
 
     return (
@@ -266,7 +288,11 @@ export const AuthPanel: React.FC = () => {
           <div className={styles.accountRow}>
             <span className={styles.accountLabel}>{t('auth.session.verificationsThisMonth')}</span>
             <span className={styles.accountValue}>
-              {usage ? t('auth.session.verificationsValue', { current: usage.current, limit }) : '—'}
+              {usage
+                ? usage.unlimited
+                  ? t('auth.session.verificationsUnlimited')
+                  : t('auth.session.verificationsValue', { current: usage.current, limit })
+                : '—'}
             </span>
           </div>
         </div>
@@ -489,17 +515,31 @@ export const AuthPanel: React.FC = () => {
             placeholder={t('auth.form.confirmPasswordPlaceholder')}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
+            error={passwordMismatch ? t('auth.form.passwordMismatch') : undefined}
             fullWidth
           />
         ) : (
-          <div className={styles.forgotRow}>
-            <button
-              type="button"
-              className={`${styles.linkButton} ${styles.textLink}`}
-              onClick={handleForgotPassword}
-            >
-              {t('auth.form.forgotPassword')}
-            </button>
+          <div className={styles.forgotBlock}>
+            <div className={styles.forgotRow}>
+              <button
+                type="button"
+                className={`${styles.linkButton} ${styles.textLink}`}
+                onClick={handleForgotPassword}
+                disabled={resetStatus.state === 'loading'}
+              >
+                {resetStatus.state === 'loading'
+                  ? t('auth.form.resetSending')
+                  : t('auth.form.forgotPassword')}
+              </button>
+            </div>
+            <div aria-live="polite">
+              {resetStatus.state === 'error' ? (
+                <p className={styles.forgotStatus}>{resetStatus.message}</p>
+              ) : null}
+              {resetStatus.state === 'success' ? (
+                <p className={styles.forgotStatus}>{resetStatus.message}</p>
+              ) : null}
+            </div>
           </div>
         )}
 
@@ -510,6 +550,7 @@ export const AuthPanel: React.FC = () => {
             size="lg"
             fullWidth
             isLoading={status.state === 'loading'}
+            disabled={passwordMismatch}
           >
             {mode === 'signup' ? t('auth.form.submitSignup') : t('auth.form.submitLogin')}
           </Button>

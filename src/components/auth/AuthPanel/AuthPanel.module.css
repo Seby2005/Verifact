@@ -32,10 +32,30 @@
   color: var(--color-ink-secondary);
 }
 
+.forgotBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .forgotRow {
   display: flex;
   justify-content: flex-end;
   margin-top: calc(-1 * var(--space-2));
+}
+
+/* The reset action reports beside the link, kept quiet so it never competes
+   with the main submit button's own status at the foot of the form. */
+.forgotStatus {
+  text-align: right;
+  font-size: var(--font-size-caption);
+  line-height: 1.5;
+  color: var(--color-ink-muted);
+}
+
+.linkButton:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .termsNote {
