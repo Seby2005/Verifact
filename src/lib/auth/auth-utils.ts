@@ -62,7 +62,7 @@ export async function signInWithOAuth(provider: 'google' | 'github'): Promise<vo
   await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `${baseUrl}/auth/callback`,
+      redirectTo: `${baseUrl}/api/auth/callback`,
     },
   });
 }

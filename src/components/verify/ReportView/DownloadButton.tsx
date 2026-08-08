@@ -5,6 +5,7 @@ import { Button, Modal, VerdictLabel } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import type { VerificationReport, Verdict } from '@/types/verification';
 import { sourceHref } from './sourceLink';
+import { fetchIsPremium } from './useUserTier';
 import { buildReportHtml, printReportDocument, type ReportDocSource } from './reportDocument';
 import styles from './DownloadButton.module.css';
 
@@ -12,6 +13,8 @@ export interface DownloadButtonProps {
   report: VerificationReport;
   /** Pro/Business get the full PDF; everyone else gets the paywall preview. */
   isPremium: boolean;
+  /** False until the tier fetch settles; gates the click on an authoritative answer. */
+  ready: boolean;
 }
 
 /**
@@ -38,7 +41,7 @@ function formatDate(iso: string | undefined, locale: string): string {
   }).format(parsed);
 }
 
-export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremium }) => {
+export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremium, ready }) => {
   const { locale, t } = useLanguage();
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -78,8 +81,12 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremiu
     printReportDocument(html);
   };
 
-  const handleClick = () => {
-    if (isPremium) {
+  const handleClick = async () => {
+    // If the tier fetch hasn't settled yet, resolve it authoritatively before
+    // deciding — otherwise a Pro user who clicks on first render (isPremium
+    // still on its free default) would wrongly get the paywall.
+    const premium = ready ? isPremium : await fetchIsPremium();
+    if (premium) {
       handleDownload();
     } else {
       setPreviewOpen(true);
