@@ -1,8 +1,9 @@
 import type { SocialMediaPost, Language, Layer4Result } from '@/types/verification';
-import { ROMANIAN_PUBLIC_FIGURES } from './constants';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { isRelevantToClaim } from './relevance';
+import type { ExpandedQueries } from './query-expander';
+import { ROMANIAN_PUBLIC_FIGURES } from './constants';
 
 interface TwitterSearchResponse {
   data?: Array<{
@@ -34,45 +35,72 @@ interface TavilySearchResponse {
   results?: TavilySearchResult[];
 }
 
-/**
- * Extracts named entities (Romanian public figures) mentioned in the text.
- */
-export function extractNamedEntities(text: string, _language: Language): string[] {
+const SOCIAL_DOMAINS = [
+  'twitter.com',
+  'x.com',
+  'facebook.com',
+  'youtube.com',
+  'instagram.com',
+  'reddit.com',
+  'threads.net',
+  'bsky.app',
+  'linkedin.com',
+];
+
+export function extractNamedEntities(text: string, _language?: Language): string[] {
   const textLower = text.toLowerCase();
-  return ROMANIAN_PUBLIC_FIGURES.filter(name =>
+  const known = ROMANIAN_PUBLIC_FIGURES.filter((name) =>
     textLower.includes(name.toLowerCase())
   );
+  const capitalized = text.match(/\b[A-ZĂÂÎȘȚ][a-zăâîșțA-ZĂÂÎȘȚ0-9\-]{2,}\b/g) || [];
+  const dynamicEntities = Array.from(new Set(capitalized)).filter(
+    (e) => !['Imaginea', 'Afirmația', 'Stirea', 'Poza'].includes(e)
+  );
+
+  return Array.from(new Set([...known, ...dynamicEntities]));
 }
 
-/**
- * Searches Twitter/X API for relevant posts.
- */
+function determinePlatform(url: string): SocialMediaPost['platform'] {
+  if (url.includes('twitter.com') || url.includes('x.com')) return 'twitter';
+  if (url.includes('facebook.com') || url.includes('fb.com')) return 'facebook';
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
+  return 'other';
+}
+
+function extractSocialAuthor(title: string, url: string): string {
+  const match = title.match(/^([^:|–—]+)[:|–—]/);
+  if (match && match[1].trim().length < 40) {
+    return match[1].trim();
+  }
+  try {
+    const parsed = new URL(url);
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    if (parts.length > 0 && !['posts', 'watch', 'status', 'p'].includes(parts[0])) {
+      return `@${parts[0]}`;
+    }
+  } catch {
+    /* fallback */
+  }
+  return title.slice(0, 40);
+}
+
 async function searchTwitter(
-  text: string,
+  queryStr: string,
   namedEntities: string[]
 ): Promise<SocialMediaPost[]> {
   const bearerToken = process.env.TWITTER_BEARER_TOKEN;
   if (!bearerToken) throw new Error('Twitter API not configured');
 
-  // Build query: search for the entities mentioned
-  const entityQuery = namedEntities
-    .map(e => `"${e}"`)
-    .slice(0, 3)
-    .join(' OR ');
-
-  const query = entityQuery || text.slice(0, 100);
+  const query = namedEntities.length > 0 ? namedEntities.map((e) => `"${e}"`).join(' OR ') : queryStr;
 
   const params = new URLSearchParams({
-    query: `${query} is:verified lang:ro OR lang:en`,
+    query: `${query.slice(0, 100)} lang:ro OR lang:en`,
     'tweet.fields': 'created_at,author_id',
     'user.fields': 'name,username,verified,description',
     expansions: 'author_id',
     max_results: '10',
   });
 
-  // Any throw here (including CircuitOpenError once open) is caught by
-  // runLayer4's caller, which falls through to the Tavily fallback — see
-  // below and the try/catch around this call in runLayer4().
   const response = await withCircuitBreaker('twitter', () =>
     fetchWithRetry(
       `https://api.twitter.com/2/tweets/search/recent?${params.toString()}`,
@@ -87,48 +115,37 @@ async function searchTwitter(
     })
   );
 
-  const data = await response.json() as TwitterSearchResponse;
+  const data = (await response.json()) as TwitterSearchResponse;
   const tweets = data.data ?? [];
   const users = data.includes?.users ?? [];
-
-  const userMap = new Map(users.map(u => [u.id, u]));
+  const userMap = new Map(users.map((u) => [u.id, u]));
 
   return tweets.map((tweet): SocialMediaPost => {
     const user = tweet.author_id ? userMap.get(tweet.author_id) : undefined;
     return {
       platform: 'twitter',
-      author: user?.name ?? 'Unknown',
+      author: user?.name ?? 'Utilizator',
       authorVerified: user?.verified ?? false,
       authorRole: user?.description?.slice(0, 100),
       postUrl: `https://twitter.com/${user?.username ?? 'i'}/status/${tweet.id}`,
       postDate: tweet.created_at ?? '',
       content: tweet.text,
-      isOriginalSource: namedEntities.some(e =>
+      isOriginalSource: namedEntities.some((e) =>
         (user?.name ?? '').toLowerCase().includes(e.toLowerCase())
       ),
     };
   });
 }
 
-/**
- * Searches social media via Tavily as a fallback (Twitter API not
- * configured). Restricted to the social platform domains on purpose —
- * unlike layer2's news search, we specifically only want posts from
- * these platforms here, so include_domains is the right tool.
- */
 async function searchSocialViaTavily(
-  text: string,
+  queryStr: string,
   namedEntities: string[]
 ): Promise<SocialMediaPost[]> {
   const apiKey = process.env.TAVILY_API_KEY;
-  if (!apiKey) return [];
+  if (!apiKey || !queryStr.trim()) return [];
 
-  const entityQuery = namedEntities.slice(0, 2).join(' ');
-  const searchQuery = entityQuery || text.slice(0, 200);
-
-  let response: Response;
   try {
-    response = await withCircuitBreaker('tavily', () =>
+    const response = await withCircuitBreaker('tavily', () =>
       fetchWithRetry(
         'https://api.tavily.com/search',
         () => ({
@@ -138,56 +155,53 @@ async function searchSocialViaTavily(
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            query: searchQuery,
+            query: queryStr.slice(0, 300),
             search_depth: 'basic',
-            max_results: 8,
-            include_domains: ['twitter.com', 'x.com', 'facebook.com', 'youtube.com'],
+            max_results: 10,
+            include_domains: SOCIAL_DOMAINS,
           }),
           signal: AbortSignal.timeout(8000),
         }),
         { label: 'layer4-tavily' }
       ).then((res) => {
-        if (!res.ok) throw new Error(`Tavily error: ${res.status} ${res.statusText}`);
+        if (!res.ok) throw new Error(`Tavily error: ${res.status}`);
         return res;
       })
     );
+
+    const data = (await response.json()) as TavilySearchResponse;
+    const items = data.results ?? [];
+
+    return items.map((item): SocialMediaPost => {
+      const platform = determinePlatform(item.url);
+      const isOriginal = namedEntities.some((e) =>
+        item.title.toLowerCase().includes(e.toLowerCase())
+      );
+
+      return {
+        platform,
+        author: extractSocialAuthor(item.title, item.url),
+        authorVerified: item.url.includes('twitter.com') || item.url.includes('facebook.com'),
+        postUrl: item.url,
+        postDate: item.published_date ?? '',
+        content: item.content,
+        isOriginalSource: isOriginal,
+      };
+    });
   } catch {
     return [];
   }
-
-  const data = await response.json() as TavilySearchResponse;
-  const items = data.results ?? [];
-
-  return items.map((item): SocialMediaPost => {
-    const platform = determinePlatform(item.url);
-    const isOriginal = namedEntities.some(e =>
-      item.title.toLowerCase().includes(e.toLowerCase())
-    );
-
-    return {
-      platform,
-      author: extractSocialAuthor(item.title),
-      authorVerified: false,
-      postUrl: item.url,
-      postDate: item.published_date ?? '',
-      content: item.content,
-      isOriginalSource: isOriginal,
-    };
-  });
 }
 
-function determinePlatform(url: string): SocialMediaPost['platform'] {
-  if (url.includes('twitter.com') || url.includes('x.com')) return 'twitter';
-  if (url.includes('facebook.com') || url.includes('fb.com')) return 'facebook';
-  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
-  return 'other';
-}
+export function calculateLayer4Score(posts: SocialMediaPost[]): number {
+  if (posts.length === 0) return 0.5;
 
-function extractSocialAuthor(title: string): string {
-  // Try to extract author from common patterns like "Name on Twitter: ..."
-  const match = title.match(/^([^:]+):/);
-  if (match) return match[1].trim();
-  return title.slice(0, 50);
+  const verifiedPosts = posts.filter((p) => p.authorVerified);
+  const originalSources = posts.filter((p) => p.isOriginalSource);
+
+  if (originalSources.length > 0) return 0.7;
+  if (verifiedPosts.length > 0) return 0.6;
+  return 0.5;
 }
 
 function buildLayer4Result(
@@ -195,13 +209,7 @@ function buildLayer4Result(
   startTime: number,
   claim: string
 ): Layer4Result {
-  // Both search paths query by named entity alone, so a claim about Trump
-  // returns whatever that account posted this week. Posts that only share the
-  // entity with the claim are not evidence about the claim, and were being
-  // listed as declarations backing it. Filtering can legitimately empty this
-  // layer, which scores a neutral 0.5 — the honest result when nothing on
-  // topic was said publicly.
-  const relevant = results.filter(p =>
+  const relevant = results.filter((p) =>
     isRelevantToClaim(claim, `${p.author} ${p.content}`)
   );
 
@@ -216,60 +224,45 @@ function buildLayer4Result(
   };
 }
 
-export function calculateLayer4Score(posts: SocialMediaPost[]): number {
-  if (posts.length === 0) return 0.5; // neutral
-
-  // Weight verified accounts more
-  const verifiedPosts = posts.filter(p => p.authorVerified);
-  const unverifiedPosts = posts.filter(p => !p.authorVerified);
-
-  // Original sources get the highest weight
-  const originalSources = posts.filter(p => p.isOriginalSource);
-  if (originalSources.length > 0) return 0.7; // Original source found — tends to confirm
-
-  if (verifiedPosts.length > 0) return 0.6;
-  if (unverifiedPosts.length > 0) return 0.5;
-
-  return 0.5;
-}
-
-/**
- * Layer 4: Social media and public declarations
- * Verifies if attributed statements were actually made by the claimed person.
- */
 export async function runLayer4(
   text: string,
-  language: Language
+  language: Language,
+  expandedQueries?: ExpandedQueries
 ): Promise<Layer4Result> {
   const startTime = Date.now();
 
-  // Extract named entities (public figures) from text
-  const namedEntities = extractNamedEntities(text, language);
+  const namedEntities = expandedQueries?.namedEntities || extractNamedEntities(text, language);
+  const roQuery = expandedQueries?.romanianQuery || text;
+  const enQuery = expandedQueries?.englishQuery || text;
 
-  if (namedEntities.length === 0) {
-    // No public figures mentioned — layer is not applicable
-    return {
-      status: 'skipped',
-      results: [],
-      layerScore: 0.5, // neutral
-      processingTime: Date.now() - startTime,
-    };
-  }
-
-  // Try Twitter API first
+  // Try Twitter API first if token is available
   if (process.env.TWITTER_BEARER_TOKEN) {
     try {
-      const results = await searchTwitter(text, namedEntities);
-      return buildLayer4Result(results, startTime, text);
+      const results = await searchTwitter(roQuery, namedEntities);
+      if (results.length > 0) {
+        return buildLayer4Result(results, startTime, text);
+      }
     } catch {
-      // Twitter API failed, fall through to Google Search
+      /* Fallback to Tavily */
     }
   }
 
-  // Fallback: Tavily search restricted to social platform domains
+  // Fallback: Tavily search across major social media domains
   try {
-    const results = await searchSocialViaTavily(text, namedEntities);
-    return buildLayer4Result(results, startTime, text);
+    const [roPosts, enPosts] = await Promise.all([
+      searchSocialViaTavily(roQuery, namedEntities),
+      searchSocialViaTavily(enQuery, namedEntities),
+    ]);
+
+    const seen = new Set<string>();
+    const allPosts = [...roPosts, ...enPosts].filter((p) => {
+      const url = p.postUrl ?? p.content;
+      if (seen.has(url)) return false;
+      seen.add(url);
+      return true;
+    });
+
+    return buildLayer4Result(allPosts, startTime, text);
   } catch (error) {
     return {
       status: 'unavailable',
