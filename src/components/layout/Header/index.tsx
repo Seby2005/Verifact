@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/i18n';
+import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from '../ThemeToggle';
 import styles from './Header.module.css';
 
@@ -16,10 +17,31 @@ const NAV_ITEMS = [
 export const Header: React.FC = () => {
   const pathname = usePathname();
   const { locale, setLocale, t } = useLanguage();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email ?? null);
+    });
+
+    return () => subscription.subscription.unsubscribe();
+  }, []);
 
   const toggleLanguage = () => {
     setLocale(locale === 'ro' ? 'en' : 'ro');
   };
+
+  const displayAccountText = userEmail
+    ? userEmail.length > 22
+      ? `${userEmail.slice(0, 20)}...`
+      : userEmail
+    : t('header.nav.account');
 
   return (
     <header className={styles.header}>
@@ -44,8 +66,14 @@ export const Header: React.FC = () => {
               </Link>
             );
           })}
-          <Link href="/cont" className={styles.accountLink}>
-            {t('header.nav.account')}
+          <Link
+            href="/cont"
+            className={[styles.accountLink, pathname === '/cont' ? styles.navLinkActive : '']
+              .filter(Boolean)
+              .join(' ')}
+            title={userEmail ?? undefined}
+          >
+            {displayAccountText}
           </Link>
           <button
             type="button"
