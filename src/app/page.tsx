@@ -3,10 +3,32 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Reveal } from '@/components/ui';
-import { VerifyTool, ReportView } from '@/components/verify';
-import type { VerificationReport } from '@/types/verification';
+import { VerifyTool } from '@/components/verify';
+import { AnimatedDemo } from '@/components/verify/AnimatedDemo';
 import { useLanguage } from '@/i18n';
+import { Logo } from '@/components/layout/Logo';
 import styles from './page.module.css';
+
+// A quiet, slowly-drifting wall of duotone news photography behind the hero —
+// the "claims in circulation" the tool cuts through. Public-domain placeholders
+// for now; swap for licensed editorial photography in production.
+const HERO_PHOTOS = ['face', 'podium', 'jet', 'crowd', 'anchor', 'handshake', 'chamber', 'globe'];
+const HERO_ROWS = [
+  [0, 2, 3, 6, 1, 7, 4, 5],
+  [4, 7, 0, 3, 6, 1, 5, 2],
+];
+
+function heroFrames(order: number[]): React.ReactNode {
+  // Rendered twice so the marquee can translate -50% and loop seamlessly.
+  return [...order, ...order].map((i, k) => (
+    <span className={styles.heroFrame} key={`${i}-${k}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/hero/${HERO_PHOTOS[i]}.jpg`} alt="" loading="lazy" decoding="async" />
+      <span className={styles.heroLo} />
+      <span className={styles.heroHi} />
+    </span>
+  ));
+}
 
 /**
  * The home page is arranged around a single action: check a claim. The tool
@@ -16,61 +38,6 @@ import styles from './page.module.css';
  */
 export default function HomePage() {
   const { t, locale } = useLanguage();
-
-  // A fixed, clearly-labelled specimen, rendered through the real ReportView so
-  // it matches an actual report exactly. Never presented as a live result.
-  const sampleReport: VerificationReport = {
-    id: 'exemplu-verifact',
-    claim: t('home.sample.claim'),
-    inputText: t('home.sample.claim'),
-    inputType: 'text',
-    verdict: 'false',
-    score: 9,
-    confidenceLevel: 'high',
-    processingTimeMs: 12300,
-    executiveSummary: t('home.sample.summary'),
-    aiAvailable: true,
-    createdAt: '2026-08-01T09:00:00.000Z',
-    isPublic: false,
-    language: locale === 'en' ? 'en' : 'ro',
-    scoreBreakdown: {
-      finalScore: 9,
-      availableLayers: 3,
-      weights: { factCheck: 0.35, news: 0.3, official: 0.25 },
-    },
-    sources: [
-      {
-        title: 'Antibiotic resistance',
-        publisher: 'World Health Organization',
-        url: 'https://www.who.int/news-room/fact-sheets/detail/antibiotic-resistance',
-        date: '2023-11-21',
-        sourceType: 'official',
-        relevance: 0.96,
-        excerpt:
-          'Antibiotics are used to prevent and treat bacterial infections. Antibiotics do not work against viral infections such as colds and flu.',
-      },
-      {
-        title: 'Antimicrobial resistance',
-        publisher: 'ECDC',
-        url: 'https://www.ecdc.europa.eu/en/antimicrobial-resistance',
-        date: '2024-11-18',
-        sourceType: 'official',
-        relevance: 0.9,
-        excerpt:
-          'Antibiotics have no effect on viruses such as those causing the common cold or influenza.',
-      },
-      {
-        title: 'Fact check: antibiotics do not treat viral infections like colds and flu',
-        publisher: 'Reuters',
-        url: 'https://www.reuters.com/fact-check/',
-        date: '2021-09-30',
-        sourceType: 'fact_check',
-        relevance: 0.88,
-        excerpt:
-          'Health authorities confirm antibiotics target bacteria, not viruses; taking them for a cold is ineffective and fuels resistance.',
-      },
-    ],
-  };
 
   // Curated evergreen claims shown instantly; upgraded to live trending
   // Romanian claims once /api/trending-examples responds (falls back to these).
@@ -106,26 +73,35 @@ export default function HomePage() {
 
   return (
     <div className={styles.page}>
-      {/* Stage: headline and the tool, together in the first viewport. */}
-      <section className={`container-narrow ${styles.stage}`}>
-        <Reveal>
-          <p className={`eyebrow ${styles.stageEyebrow}`}>{t('home.hero.eyebrow')}</p>
-        </Reveal>
+      {/* Stage: headline and the tool, together in the first viewport, over a
+          quiet drifting wall of news photography. */}
+      <section className={styles.stage}>
+        <div className={styles.heroWall} aria-hidden="true">
+          <div className={styles.heroRow}>{heroFrames(HERO_ROWS[0])}</div>
+          <div className={`${styles.heroRow} ${styles.heroRowB}`}>{heroFrames(HERO_ROWS[1])}</div>
+        </div>
+        <div className={styles.heroScrim} aria-hidden="true" />
 
-        <Reveal delay={70}>
-          <h1 className={styles.stageTitle}>
-            {t('home.hero.title')}{' '}
-            <em className={styles.stageTitleAccent}>{t('home.hero.titleAccent')}</em>
-          </h1>
-        </Reveal>
+        <div className={`container-narrow ${styles.stageInner}`}>
+          <Reveal>
+            <p className={`eyebrow ${styles.stageEyebrow}`}>{t('home.hero.eyebrow')}</p>
+          </Reveal>
 
-        <Reveal delay={140}>
-          <p className={styles.stageLead}>{t('home.hero.lead')}</p>
-        </Reveal>
+          <Reveal delay={70}>
+            <h1 className={styles.stageTitle}>
+              {t('home.hero.title')}{' '}
+              <em className={styles.stageTitleAccent}>{t('home.hero.titleAccent')}</em>
+            </h1>
+          </Reveal>
 
-        <Reveal delay={210} className={styles.stageTool}>
-          <VerifyTool examples={examples} />
-        </Reveal>
+          <Reveal delay={140}>
+            <p className={styles.stageLead}>{t('home.hero.lead')}</p>
+          </Reveal>
+
+          <Reveal delay={210} className={styles.stageTool}>
+            <VerifyTool examples={examples} />
+          </Reveal>
+        </div>
       </section>
 
       {/* Specimen: what an answer looks like. */}
@@ -135,8 +111,8 @@ export default function HomePage() {
           <h2 className={styles.specimenTitle}>{t('home.sample.title')}</h2>
         </Reveal>
 
-        <Reveal delay={80} className={styles.card}>
-          <ReportView report={sampleReport} interactive={false} />
+        <Reveal delay={80}>
+          <AnimatedDemo />
         </Reveal>
       </section>
 
@@ -154,10 +130,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* The promise, in one line. */}
+      {/* The promise, in one line — signed off with the mark. */}
       <section className={`container-narrow ${styles.trust}`}>
         <Reveal>
           <p className={styles.trustLine}>{t('home.trust.line')}</p>
+          <Logo className={styles.trustMark} />
           <p className={styles.trustLinks}>
             <Link href="/transparenta" className={styles.textLink}>
               {t('home.callout.methodologyLink')}

@@ -14,21 +14,21 @@
   /* ---- Colour ------------------------------------------------------------
      Warm-neutral paper and near-black ink. Chrome is monochrome; the only
      hues in the system are the four semantic verdict colours below. */
-  --color-paper: #fbfbf9;          /* page background */
-  --color-paper-shade: #f3f2ec;    /* banded / recessed sections */
+  --color-paper: #f3f2ed;          /* page background — warm porcelain */
+  --color-paper-shade: #ece9e1;    /* banded / recessed sections */
   --color-surface: #ffffff;        /* raised surfaces: inputs, cards */
-  --color-ink: #16181c;            /* headings, primary fills */
-  --color-ink-secondary: #3f424a;  /* body copy */
-  --color-ink-muted: #62646c;      /* captions, metadata — AA on paper */
+  --color-ink: #17140f;            /* headings, primary fills */
+  --color-ink-secondary: #524d44;  /* body copy */
+  --color-ink-muted: #8a8478;      /* captions, metadata — AA on paper */
 
   /* Rules & borders */
-  --color-line: #e6e5df;           /* hairline separators, input borders */
-  --color-line-strong: #d3d2cb;    /* stronger hairline, resting field border */
+  --color-line: #e5e3db;           /* hairline separators, input borders */
+  --color-line-strong: #d6d2c8;    /* stronger hairline, resting field border */
 
-  /* Brand accent — a calm teal, used *sparingly* for chrome: focus rings,
-     a link hover, an eyebrow keyword. It doubles as the "adevărat" verdict. */
-  --color-accent: #1a6b54;
-  --color-accent-dark: #155a47;
+  /* Brand accent — a signal red. The single brand colour; it also carries the
+     "probabil fals" verdict, so colour always means something. */
+  --color-accent: #d63a2c;
+  --color-accent-dark: #b62f22;
 
   /* Interaction shifts. These move *away* from the page ground, which means
      they invert between themes — hence tokens rather than literals. */
@@ -39,22 +39,23 @@
   /* ---- Semantic verdict scale -------------------------------------------
      The meaningful colour of the product. Muted and editorial — never neon,
      never a traffic light. Applied ONLY to verdicts and scores. */
-  --verdict-true: #1a6b54;         /* probabil adevărat — teal */
-  --verdict-partial: #986516;      /* parțial adevărat — ochre */
-  --verdict-unclear: #4d5866;      /* neclar — slate */
-  --verdict-false: #a63a39;        /* probabil fals — deep rose */
+  --verdict-true: #2f7d5b;         /* probabil adevărat — pine */
+  --verdict-partial: #c0892e;      /* parțial adevărat — amber */
+  --verdict-unclear: #6c7480;      /* neclar — slate */
+  --verdict-false: #d63a2c;        /* probabil fals — signal red (= brand) */
 
   /* Legacy rule aliases (kept so nothing breaks): strong structural rule and
      hairline still resolve, now to the new palette. */
-  --color-rule: #16181c;
-  --color-rule-hairline: #e6e5df;
+  --color-rule: #17140f;
+  --color-rule-hairline: #e5e3db;
 
   /* ---- Typography --------------------------------------------------------
      Sans-forward. Hanken Grotesk carries the interface and headlines; Fraunces
      is the serif accent for the claim under review and pull-quotes; JetBrains
      Mono sets scores, timestamps, labels and other "instrument" data. */
-  --font-family-sans: var(--font-hanken), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-family-serif: var(--font-fraunces), Georgia, 'Times New Roman', serif;
+  --font-family-sans: var(--font-general), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-family-serif: var(--font-zodiak), Georgia, 'Times New Roman', serif;
+  --font-family-logo: var(--font-boska), Georgia, serif;
   --font-family-mono: var(--font-jetbrains), 'Consolas', ui-monospace, monospace;
 
   --font-weight-normal: 400;
@@ -136,31 +137,31 @@
    resolves the stored choice (or the system preference) before first paint, so
    there is exactly one dark block here and never a flash of the wrong theme. */
 :root[data-theme='dark'] {
-  --color-paper: #15161a;
-  --color-paper-shade: #1c1e23;
-  --color-surface: #1b1d21;      /* raised surfaces lift toward the light */
-  --color-ink: #f2f2ef;
-  --color-ink-secondary: #c4c6cb;
-  --color-ink-muted: #93969d;
+  --color-paper: #17140f;        /* warm near-black */
+  --color-paper-shade: #1e1a15;
+  --color-surface: #201b16;      /* raised surfaces lift toward the light */
+  --color-ink: #f3efe8;
+  --color-ink-secondary: #cbc2b5;
+  --color-ink-muted: #9a9184;
 
-  --color-line: #2a2d33;
-  --color-line-strong: #3a3e45;
+  --color-line: #2c2820;
+  --color-line-strong: #3c372e;
 
-  --color-accent: #4ea88a;
-  --color-accent-dark: #6cbfa2;  /* hover lifts instead of deepening */
+  --color-accent: #e0563f;       /* red lifted for AA on the dark ground */
+  --color-accent-dark: #f0705a;  /* hover lifts instead of deepening */
 
   /* Inverted: a solid-ink button is light here, so its hover brightens. */
   --color-ink-hover: #ffffff;
   --color-danger-hover: #eda4a1;
   --color-overlay: rgba(0, 0, 0, 0.66);
 
-  --verdict-true: #4ea88a;
-  --verdict-partial: #d09a3c;
-  --verdict-unclear: #99a3b0;
-  --verdict-false: #e08582;
+  --verdict-true: #57b98f;
+  --verdict-partial: #e0a53a;
+  --verdict-unclear: #97a2b3;
+  --verdict-false: #e0563f;
 
-  --color-rule: #f2f2ef;
-  --color-rule-hairline: #2a2d33;
+  --color-rule: #f3efe8;
+  --color-rule-hairline: #2c2820;
 
   --focus-ring: 0 0 0 4px color-mix(in srgb, var(--color-ink) 16%, transparent);
 
@@ -388,11 +389,11 @@ ol {
     --color-ink-muted: #444444;
     --color-line: #cccccc;
     --color-line-strong: #999999;
-    --color-accent: #125643;
-    --verdict-true: #125643;
-    --verdict-partial: #7a5410;
+    --color-accent: #b62f22;
+    --verdict-true: #256149;
+    --verdict-partial: #9a6b1e;
     --verdict-unclear: #4a4a4a;
-    --verdict-false: #8f2f2e;
+    --verdict-false: #b62f22;
     --color-rule: #000000;
     --color-rule-hairline: #cccccc;
     color-scheme: light;

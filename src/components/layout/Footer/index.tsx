@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { REPO_URL } from '../routes';
 import { useLanguage } from '@/i18n';
+import { Logo } from '../Logo';
 import styles from './Footer.module.css';
 
 export const Footer: React.FC = () => {
@@ -42,7 +43,7 @@ export const Footer: React.FC = () => {
       <div className={`container ${styles.inner}`}>
         <div className={styles.top}>
           <div className={styles.brandBlock}>
-            <p className={styles.wordmark}>Verifact</p>
+            <p className={styles.wordmark}><Logo /></p>
             <p className={styles.privacy}>{t('footer.privacy')}</p>
           </div>
 

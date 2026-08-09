@@ -1,0 +1,28 @@
+/* The wordmark, set between square brackets. The brackets are drawn from
+   borders so they scale with the font-size and stay crisp at any size. The
+   size itself comes from the parent (Header, Footer, hero) via font-size. */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.16em;
+  font-family: var(--font-family-logo);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+  line-height: 1;
+}
+
+.bracket {
+  width: 0.2em;
+  height: 0.76em;
+  border: 0.1em solid var(--color-accent);
+  flex: none;
+}
+
+.bracketLeft {
+  border-right: none;
+}
+
+.bracketRight {
+  border-left: none;
+}

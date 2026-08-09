@@ -6,9 +6,96 @@
 /* Stage — headline and tool share the first viewport ------------------------ */
 
 .stage {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   padding-top: var(--space-16);
   padding-bottom: var(--space-20);
   text-align: center;
+}
+
+.stageInner {
+  position: relative;
+  z-index: 2;
+}
+
+/* Drifting wall of duotone news photography behind the hero. */
+.heroWall {
+  position: absolute;
+  inset: -8% 0;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(14px, 2vw, 24px);
+  opacity: 0.5;
+}
+
+.heroRow {
+  display: flex;
+  gap: clamp(14px, 2vw, 24px);
+  width: max-content;
+}
+
+.heroFrame {
+  position: relative;
+  flex: none;
+  width: clamp(220px, 24vw, 330px);
+  height: clamp(240px, 26vw, 340px);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--color-surface);
+}
+
+.heroFrame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.05);
+}
+
+.heroLo {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #151515;
+  mix-blend-mode: lighten;
+}
+
+.heroHi {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--color-paper);
+  mix-blend-mode: darken;
+}
+
+.heroScrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(92% 78% at 50% 46%, var(--color-paper) 0%, var(--color-paper) 30%,
+      color-mix(in srgb, var(--color-paper) 55%, transparent) 58%, transparent 88%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-paper) 50%, transparent) 0%,
+      transparent 20%, transparent 72%, var(--color-paper) 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .heroRow {
+    animation: heroDrift 96s linear infinite;
+  }
+  .heroRowB {
+    animation: heroDrift 116s linear infinite reverse;
+  }
+}
+
+@keyframes heroDrift {
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 .stageEyebrow {
@@ -17,18 +104,23 @@
 }
 
 .stageTitle {
-  font-size: var(--font-size-display);
-  line-height: var(--line-height-display);
-  max-width: 16ch;
+  font-family: var(--font-family-serif);
+  font-size: clamp(2.8rem, 1.4rem + 6vw, 6rem);
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+  max-width: 15ch;
   margin: 0 auto;
+  text-shadow: 0 1px 26px var(--color-paper), 0 0 60px var(--color-paper);
 }
 
-/* The one serif moment on the page — the turn from question to instruction. */
+/* The accent word carries the single brand colour. */
 .stageTitleAccent {
-  font-family: var(--font-family-serif);
-  font-style: italic;
-  font-weight: var(--font-weight-normal);
-  letter-spacing: -0.015em;
+  font-family: inherit;
+  font-style: normal;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  color: var(--color-accent);
 }
 
 .stageLead {
@@ -119,6 +211,12 @@
   color: var(--color-ink);
   max-width: 26ch;
   margin: 0 auto;
+}
+
+.trustMark {
+  display: inline-flex;
+  margin-top: var(--space-6);
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.2rem);
 }
 
 .trustLinks {

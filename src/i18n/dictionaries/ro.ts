@@ -61,10 +61,10 @@ export const ro = {
   home: {
     hero: {
       eyebrow: 'Verificare independentă · surse publice',
-      title: 'Adevărat sau fals?',
-      titleAccent: 'Verifică pe surse.',
+      title: 'Informația e cea mai puternică',
+      titleAccent: 'armă.',
       lead:
-        'Lipești o afirmație — primești un verdict, un scor și sursele pe care se sprijină.',
+        'Lipești o afirmație, un link sau un screenshot — primești un verdict, un scor și sursele pe care se sprijină.',
     },
     try: {
       label: 'Încearcă',

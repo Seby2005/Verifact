@@ -62,10 +62,10 @@ export const en: Translations = {
   home: {
     hero: {
       eyebrow: 'Independent verification · public sources',
-      title: 'True or false?',
-      titleAccent: 'Check the sources.',
+      title: 'Information is the most powerful',
+      titleAccent: 'weapon.',
       lead:
-        'Paste a claim — get a verdict, a score, and the sources behind it.',
+        'Paste a claim, a link or a screenshot — get a verdict, a score, and the sources behind it.',
     },
     try: {
       label: 'Try',
