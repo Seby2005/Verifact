@@ -53,6 +53,14 @@ export const metadata: Metadata = {
   },
   description:
     'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile. Algoritm open source, surse citate integral, rapoarte private.',
+  icons: {
+    icon: [
+      { url: '/logo/verifact-v-logo-red.svg', type: 'image/svg+xml' },
+      { url: '/logo/verifact-v-logo-red.png', type: 'image/png' },
+    ],
+    shortcut: '/logo/verifact-v-logo-red.svg',
+    apple: '/logo/verifact-v-logo-red.png',
+  },
   openGraph: {
     title: 'Verifact — Verificare independentă a informației',
     description:
