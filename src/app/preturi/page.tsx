@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Callout } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import shell from '../page-shell.module.css';
@@ -53,9 +53,50 @@ function CellMark({ value, included, excluded }: { value: Cell; included: string
 export default function PreturiPage() {
   const { locale } = useLanguage();
   const isEn = locale === 'en';
-  // Yearly first: the annual price is the smaller per-month figure, so the plan
-  // reads as its cheapest by default; clicking "Monthly" reveals the higher one.
   const [billing, setBilling] = useState<Billing>('yearly');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('checkout') === 'success') {
+        setCheckoutSuccess(true);
+      }
+    }
+  }, []);
+
+  const handleProCheckout = async () => {
+    setIsSubmitting(true);
+    setCheckoutError(null);
+    try {
+      const res = await fetch('/api/checkout/creem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await res.json();
+
+      if (res.status === 401) {
+        window.location.href = '/cont';
+        return;
+      }
+
+      if (!res.ok || !data.checkoutUrl) {
+        setCheckoutError(
+          data.error || (isEn ? 'Failed to initiate checkout session.' : 'Nu am putut iniția sesiunea de plată.')
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      window.location.href = data.checkoutUrl;
+    } catch {
+      setCheckoutError(isEn ? 'A network error occurred.' : 'A apărut o eroare de rețea. Te rugăm să reîncerci.');
+      setIsSubmitting(false);
+    }
+  };
 
   const c = isEn
     ? {
@@ -66,6 +107,8 @@ export default function PreturiPage() {
         recommended: 'Recommended',
         perMonth: '/mo',
         billedYearly: 'billed €35.90 a year',
+        successTitle: 'Subscription Active!',
+        successMsg: 'Your Pro subscription has been activated successfully! You now have 30 verifications per month.',
         free: {
           name: 'Free',
           price: 'Free',
@@ -79,7 +122,7 @@ export default function PreturiPage() {
           priceYearly: '€2.99',
           tagline: 'For journalists, researchers, and anyone who checks daily.',
           checks: '30 verifications a month — 10× the free plan',
-          cta: 'Choose Pro',
+          cta: isSubmitting ? 'Connecting to Creem...' : 'Choose Pro',
         },
         business: {
           name: 'Business',
@@ -103,7 +146,7 @@ export default function PreturiPage() {
         ],
         calloutLabel: 'No hidden costs',
         calloutText:
-          'The free plan never turns into a paid one and asks for no card. When you hit the monthly limit, checks pause until next month. Online payment for Pro is arriving soon — until then we activate Pro by hand once you have an account.',
+          'The free plan never turns into a paid one and asks for no card. When you hit the monthly limit, checks pause until next month. Pro subscriptions are processed securely through Creem with instant activation.',
         footnotePrefix: 'No card needed for the free plan. For anything custom, write to ',
       }
     : {
@@ -114,6 +157,8 @@ export default function PreturiPage() {
         recommended: 'Recomandat',
         perMonth: '/lună',
         billedYearly: 'facturat €35,90 pe an',
+        successTitle: 'Abonament Activat!',
+        successMsg: 'Abonamentul tău Pro a fost activat cu succes! Ai acum 30 de verificări pe lună.',
         free: {
           name: 'Free',
           price: 'Gratuit',
@@ -127,7 +172,7 @@ export default function PreturiPage() {
           priceYearly: '€2,99',
           tagline: 'Pentru jurnaliști, cercetători și oricine verifică zilnic.',
           checks: '30 de verificări pe lună — de 10× mai multe ca Free',
-          cta: 'Alege Pro',
+          cta: isSubmitting ? 'Se conectează la Creem...' : 'Alege Pro',
         },
         business: {
           name: 'Business',
@@ -151,7 +196,7 @@ export default function PreturiPage() {
         ],
         calloutLabel: 'Fără costuri ascunse',
         calloutText:
-          'Planul gratuit nu se transformă niciodată în plată și nu cere card. Când atingi limita lunară, verificările se opresc până luna următoare. Plata online pentru Pro se activează în curând — până atunci îți activăm Pro manual după ce îți creezi contul.',
+          'Planul gratuit nu se transformă niciodată în plată și nu cere card. Când atingi limita lunară, verificările se opresc până luna următoare. Abonamentele Pro sunt procesate în siguranță prin Creem cu activare instantanee.',
         footnotePrefix: 'Fără card pentru planul gratuit. Pentru orice nevoie aparte, scrie-ne la ',
       };
 
@@ -166,6 +211,18 @@ export default function PreturiPage() {
       </header>
 
       <div className={shell.body}>
+        {checkoutSuccess && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <Callout label={c.successTitle}>{c.successMsg}</Callout>
+          </div>
+        )}
+
+        {checkoutError && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <Callout label="Eroare Plată">{checkoutError}</Callout>
+          </div>
+        )}
+
         {/* Billing period toggle — monthly vs a cheaper yearly. */}
         <div className={styles.billingToggle} role="group" aria-label={c.billing.aria}>
           <button
@@ -219,14 +276,19 @@ export default function PreturiPage() {
                 <span className={styles.cadence}>{c.perMonth}</span>
               </p>
               <p className={styles.billedNote}>
-                {billing === 'yearly' ? c.billedYearly : ' '}
+                {billing === 'yearly' ? c.billedYearly : '\u00A0'}
               </p>
               <p className={styles.checks}>{c.pro.checks}</p>
               <p className={styles.forWho}>{c.pro.tagline}</p>
             </div>
-            {/* TODO(creem): swap href for a Creem checkout session once billing is wired. */}
             <div className={styles.planCta}>
-              <Button variant="primary" size="md" fullWidth href="/cont">
+              <Button
+                variant="primary"
+                size="md"
+                fullWidth
+                disabled={isSubmitting}
+                onClick={handleProCheckout}
+              >
                 {c.pro.cta}
               </Button>
             </div>
@@ -299,3 +361,4 @@ export default function PreturiPage() {
     </div>
   );
 }
+
