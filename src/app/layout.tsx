@@ -1,28 +1,40 @@
 import type { Metadata } from 'next';
-import { Fraunces, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
+import { JetBrains_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 
 import { Header, Footer } from '@/components/layout';
 import './globals.css';
 
-// Sans — carries the interface and the headlines.
-const hanken = Hanken_Grotesk({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-hanken',
+// Sans — carries the interface and body copy. Self-hosted (Fontshare).
+const generalSans = localFont({
+  src: [
+    { path: './fonts/generalsans-400.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/generalsans-500.woff2', weight: '500', style: 'normal' },
+    { path: './fonts/generalsans-600.woff2', weight: '600', style: 'normal' },
+    { path: './fonts/generalsans-700.woff2', weight: '700', style: 'normal' },
+  ],
+  variable: '--font-general',
   display: 'swap',
 });
 
-// Serif accent — the claim under review, pull-quotes, the wordmark.
-// Only the two weights the design actually uses: 400 for quoted text and the
-// italic hero accent, 700 for the wordmark. 500 and 600 were being downloaded
-// and never referenced, and 700 was referenced without being downloaded, which
-// left the wordmark faux-bolded by the browser on every page.
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  style: ['normal', 'italic'],
-  variable: '--font-fraunces',
+// Serif display — headlines, the claim under review, pull-quotes. Self-hosted.
+const zodiak = localFont({
+  src: [
+    { path: './fonts/zodiak-400.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/zodiak-700.woff2', weight: '700', style: 'normal' },
+  ],
+  variable: '--font-zodiak',
+  display: 'swap',
+});
+
+// Logo serif — the bracket wordmark only. Self-hosted.
+const boska = localFont({
+  src: [
+    { path: './fonts/boska-400.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/boska-700.woff2', weight: '700', style: 'normal' },
+  ],
+  variable: '--font-boska',
   display: 'swap',
 });
 
@@ -79,7 +91,7 @@ export default function RootLayout({
       lang="ro"
       translate="no"
       suppressHydrationWarning
-      className={`${hanken.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}
+      className={`${generalSans.variable} ${zodiak.variable} ${boska.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         <meta name="google" content="notranslate" />

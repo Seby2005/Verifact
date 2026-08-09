@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/i18n';
 import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from '../ThemeToggle';
+import { Logo } from '../Logo';
 import styles from './Header.module.css';
 
 const NAV_ITEMS = [
@@ -46,8 +47,8 @@ export const Header: React.FC = () => {
   return (
     <header className={styles.header}>
       <div className={`container ${styles.inner}`}>
-        <Link href="/" className={styles.wordmark}>
-          Verifact
+        <Link href="/" className={styles.wordmark} aria-label="Verifact — acasă">
+          <Logo />
         </Link>
 
         <nav className={styles.nav} aria-label={t('header.nav.ariaNav')}>
