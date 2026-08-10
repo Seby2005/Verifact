@@ -117,13 +117,81 @@ async function fetchOfficialTavily(queryStr: string): Promise<TavilySearchResult
   }
 }
 
+interface WikiSearchResponse {
+  pages?: Array<{ key: string; title: string; excerpt?: string; description?: string }>;
+}
+
+/** Search excerpts arrive with <span class="searchmatch"> markup and entities. */
+function stripHtml(value: string): string {
+  return value
+    .replace(/<[^>]+>/g, '')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&#\d+;/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Wikipedia — encyclopedic grounding for the entities and events in a claim, no
+ * key (a User-Agent is required). Added as reference *context*: its entries are
+ * marked 'neutral' and, being organizationType 'encyclopedia', are excluded from
+ * the verdict score (see calculateLayer3Score) so they enrich the report's
+ * citations without diluting a real official signal.
+ */
+async function fetchWikipedia(queryStr: string, lang: 'ro' | 'en'): Promise<OfficialSource[]> {
+  const q = queryStr.trim();
+  if (q.length < 3) return [];
+
+  const url = `https://${lang}.wikipedia.org/w/rest.php/v1/search/page?q=${encodeURIComponent(
+    q.slice(0, 120)
+  )}&limit=3`;
+
+  try {
+    const response = await withCircuitBreaker('wikipedia', () =>
+      fetchWithRetry(
+        url,
+        () => ({
+          headers: { 'User-Agent': 'Verifact/1.0 (https://verifact.ro)' },
+          signal: AbortSignal.timeout(6000),
+        }),
+        { label: 'layer3-wikipedia' }
+      ).then((res) => {
+        if (!res.ok) throw new Error(`Wikipedia error: ${res.status}`);
+        return res;
+      })
+    );
+
+    const data = (await response.json()) as WikiSearchResponse;
+    if (!Array.isArray(data.pages)) return [];
+
+    return data.pages
+      .filter((p) => p.title && p.key)
+      .map((p): OfficialSource => ({
+        title: p.title,
+        publisher: lang === 'ro' ? 'Wikipedia' : 'Wikipedia (EN)',
+        organization: 'Wikipedia',
+        organizationType: 'encyclopedia',
+        documentUrl: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(p.key)}`,
+        publishedAt: '',
+        relevantQuote: stripHtml(p.excerpt ?? p.description ?? ''),
+        supportsOrDenies: 'neutral',
+      }));
+  } catch {
+    return [];
+  }
+}
+
 export function calculateLayer3Score(sources: OfficialSource[]): number {
-  if (sources.length === 0) return 0.5;
+  // Encyclopedic entries are context, not a verdict signal — keep them out of
+  // the score so they cannot dilute a genuine official confirm/deny.
+  const scored = sources.filter((s) => s.organizationType !== 'encyclopedia');
+  if (scored.length === 0) return 0.5;
 
   let totalScore = 0;
   let count = 0;
 
-  for (const s of sources) {
+  for (const s of scored) {
     if (s.supportsOrDenies === 'denies') {
       totalScore += 0.0;
       count++;
@@ -147,7 +215,50 @@ export async function runLayer3(
   const startTime = Date.now();
   const apiKey = process.env.TAVILY_API_KEY;
 
-  if (!apiKey) {
+  const roQuery = expandedQueries?.romanianQuery || text;
+  const enQuery = expandedQueries?.englishQuery || text;
+
+  // Official-domain search (Tavily) plus Wikipedia grounding, in parallel.
+  // Wikipedia needs no key, so this layer still contributes reference context
+  // even when the official search provider isn't configured.
+  const [roItems, enItems, wikiRo, wikiEn] = await Promise.all([
+    apiKey ? fetchOfficialTavily(roQuery) : Promise.resolve([]),
+    apiKey ? fetchOfficialTavily(enQuery) : Promise.resolve([]),
+    fetchWikipedia(roQuery, 'ro'),
+    fetchWikipedia(enQuery, 'en'),
+  ]);
+
+  const seen = new Set<string>();
+  const officialSources: OfficialSource[] = [...roItems, ...enItems]
+    .filter((item) => {
+      if (seen.has(item.url)) return false;
+      seen.add(item.url);
+      return true;
+    })
+    .map((item) => {
+      const org = identifyOrganization(item.url);
+      return {
+        title: item.title,
+        publisher: org.name || 'Instituție Oficială',
+        organization: org.name,
+        organizationType: org.type,
+        documentUrl: item.url,
+        publishedAt: item.published_date ?? '',
+        relevantQuote: item.content?.slice(0, 400) ?? '',
+        supportsOrDenies: analyzeSupport(item.content ?? ''),
+      };
+    });
+
+  const wikiSources = [...wikiRo, ...wikiEn].filter((s) => {
+    if (!s.documentUrl || seen.has(s.documentUrl)) return false;
+    seen.add(s.documentUrl);
+    return true;
+  });
+
+  // Official sources lead (they carry the verdict signal); Wikipedia follows.
+  const sources = [...officialSources, ...wikiSources];
+
+  if (sources.length === 0 && !apiKey) {
     return {
       status: 'unavailable',
       results: [],
@@ -158,40 +269,11 @@ export async function runLayer3(
     };
   }
 
-  const roQuery = expandedQueries?.romanianQuery || text;
-  const enQuery = expandedQueries?.englishQuery || text;
-
-  const [roItems, enItems] = await Promise.all([
-    fetchOfficialTavily(roQuery),
-    fetchOfficialTavily(enQuery),
-  ]);
-
-  const seen = new Set<string>();
-  const combined = [...roItems, ...enItems].filter((item) => {
-    if (seen.has(item.url)) return false;
-    seen.add(item.url);
-    return true;
-  });
-
-  const sources: OfficialSource[] = combined.map((item) => {
-    const org = identifyOrganization(item.url);
-    return {
-      title: item.title,
-      publisher: org.name || 'Instituție Oficială',
-      organization: org.name,
-      organizationType: org.type,
-      documentUrl: item.url,
-      publishedAt: item.published_date ?? '',
-      relevantQuote: item.content?.slice(0, 400) ?? '',
-      supportsOrDenies: analyzeSupport(item.content ?? ''),
-    };
-  });
-
   return {
     status: 'success',
-    sources: sources.slice(0, 6),
-    results: sources.slice(0, 6),
-    summary: `${sources.length} official documents found`,
+    sources: sources.slice(0, 8),
+    results: sources.slice(0, 8),
+    summary: `${sources.length} official/reference documents found`,
     layerScore: calculateLayer3Score(sources),
     processingTime: Date.now() - startTime,
   };

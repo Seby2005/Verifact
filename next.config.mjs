@@ -37,6 +37,11 @@ const glitchtipOrigin = originOf(process.env.NEXT_PUBLIC_SENTRY_DSN);
 // Formbricks: loads its UMD script and calls its ingest API from the browser.
 const formbricksOrigin = originOf(process.env.NEXT_PUBLIC_FORMBRICKS_APP_URL);
 
+// Google Identity Services (One Tap / "Sign in with Google"): the browser loads
+// its script, opens its popup in an iframe, and posts the ID token — all on
+// accounts.google.com. Only widened when a Google Client ID is configured.
+const googleAuthOrigin = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? 'https://accounts.google.com' : '';
+
 const connectSrc = [
   "'self'",
   supabaseOrigin,
@@ -44,6 +49,7 @@ const connectSrc = [
   'wss://*.supabase.co',
   glitchtipOrigin,
   formbricksOrigin,
+  googleAuthOrigin,
 ]
   .filter(Boolean)
   .join(' ');
@@ -63,12 +69,12 @@ const csp = [
   // (no nonce plumbing set up yet) — 'unsafe-inline' is required for the
   // app to boot, not an oversight. Tightening this to a nonce-based policy
   // is tracked as follow-up work, not part of this pass.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
+  `img-src 'self' data:${googleAuthOrigin ? ' https://*.googleusercontent.com' : ''}`,
   "font-src 'self'",
   `connect-src ${connectSrc}`,
-  "frame-src 'none'",
+  `frame-src ${googleAuthOrigin || "'none'"}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

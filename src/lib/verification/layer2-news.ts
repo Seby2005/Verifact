@@ -199,6 +199,78 @@ async function fetchFromTavily(query: string, rawInputText: string): Promise<New
   }
 }
 
+interface GdeltArticle {
+  url?: string;
+  title?: string;
+  seendate?: string;
+  domain?: string;
+}
+
+/** GDELT's compact stamp (20260721T083142Z) → ISO. */
+function parseGdeltDate(s?: string): string {
+  const m = s?.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z` : '';
+}
+
+/**
+ * GDELT DOC API — global news coverage across ~65 languages, no key. Strictly
+ * best-effort: GDELT rate-limits to one request / 5s and answers a rate-limited
+ * or malformed query with plain text, not JSON. Both cases parse to nothing and
+ * return [], so this can only ever add coverage, never break the layer.
+ */
+async function fetchFromGDELT(query: string, rawInputText: string): Promise<NewsArticle[]> {
+  const q = query.trim();
+  if (q.length < 4) return [];
+
+  const params = new URLSearchParams({
+    query: q.slice(0, 100),
+    mode: 'artlist',
+    format: 'json',
+    maxrecords: '15',
+    sort: 'hybridrel',
+    timespan: '6m',
+  });
+
+  try {
+    // Plain fetch, short timeout, NO retry: GDELT rate-limits to 1 req/5s, so a
+    // retry loop would burn ~11s and blow layer 2's 10s budget — sinking the
+    // whole news layer for a source that is only a bonus. Capped and fail-open.
+    const response = await fetch(`https://api.gdeltproject.org/api/v2/doc/doc?${params.toString()}`, {
+      signal: AbortSignal.timeout(3500),
+    });
+    if (!response.ok) return [];
+
+    const raw = await response.text();
+    let data: { articles?: GdeltArticle[] };
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return []; // rate-limit / error message, not JSON
+    }
+    if (!Array.isArray(data.articles)) return [];
+
+    return data.articles
+      .filter((a) => a.url && a.title)
+      .map((a): NewsArticle => {
+        const url = a.url as string;
+        const credibilityScore = getCredibilityScore(url);
+        const sentiment = detectSentiment(a.title ?? '', '', rawInputText, credibilityScore);
+        return {
+          title: a.title ?? '',
+          source: a.domain ?? extractDomain(url),
+          sourceUrl: url,
+          articleUrl: url,
+          publishedAt: parseGdeltDate(a.seendate),
+          snippet: a.title ?? '',
+          sentiment,
+          credibilityScore,
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
 export function calculateLayer2Score(articles: NewsArticle[]): number {
   const relevant = articles.filter((a) => a.sentiment !== 'unrelated');
   if (relevant.length === 0) return 0.5;
@@ -231,11 +303,15 @@ export async function runLayer2(
   const roQuery = expandedQueries?.romanianQuery || text;
   const enQuery = expandedQueries?.englishQuery || text;
 
-  const [newsRo, newsEn, tavilyRo, tavilyEn] = await Promise.allSettled([
+  // One GDELT call only (it rate-limits to 1 req / 5s); enQuery casts the widest
+  // net across its global, mostly-English index, complementing the RO-first
+  // NewsAPI/Tavily calls.
+  const [newsRo, newsEn, tavilyRo, tavilyEn, gdelt] = await Promise.allSettled([
     fetchFromNewsAPI(roQuery, 'ro'),
     fetchFromNewsAPI(enQuery, 'en'),
     fetchFromTavily(roQuery, text),
     fetchFromTavily(enQuery, text),
+    fetchFromGDELT(enQuery, text),
   ]);
 
   const allArticles: NewsArticle[] = [
@@ -243,6 +319,7 @@ export async function runLayer2(
     ...(newsEn.status === 'fulfilled' ? newsEn.value : []),
     ...(tavilyRo.status === 'fulfilled' ? tavilyRo.value : []),
     ...(tavilyEn.status === 'fulfilled' ? tavilyEn.value : []),
+    ...(gdelt.status === 'fulfilled' ? gdelt.value : []),
   ];
 
   const unique = deduplicateArticles(allArticles);
