@@ -19,19 +19,29 @@
   z-index: 2;
 }
 
+.heroBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: clamp(520px, 75vh, 740px);
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* Drifting wall of duotone news photography behind the hero. */
 .heroWall {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: auto;
-  height: clamp(480px, 65vh, 680px);
+  height: 100%;
   z-index: 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding-top: var(--space-6);
+  padding-top: var(--space-4);
   gap: clamp(14px, 2vw, 24px);
   opacity: 0.5;
 }
@@ -82,10 +92,10 @@
   z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(92% 78% at 50% 46%, var(--color-paper) 0%, var(--color-paper) 30%,
+    radial-gradient(92% 78% at 50% 260px, var(--color-paper) 0%, var(--color-paper) 30%,
       color-mix(in srgb, var(--color-paper) 55%, transparent) 58%, transparent 88%),
-    linear-gradient(180deg, color-mix(in srgb, var(--color-paper) 50%, transparent) 0%,
-      transparent 20%, transparent 72%, var(--color-paper) 100%);
+    linear-gradient(180deg, color-mix(in srgb, var(--color-paper) 40%, transparent) 0%,
+      transparent 180px, transparent 420px, var(--color-paper) 100%);
 }
 
 @media (prefers-reduced-motion: no-preference) {
