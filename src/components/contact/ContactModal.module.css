@@ -1,0 +1,222 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.progressBar {
+  width: 100%;
+  height: 6px;
+  background-color: var(--color-paper-shade);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: var(--color-accent);
+  transition: width var(--transition-medium);
+}
+
+.stepCounter {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  margin-top: -4px;
+}
+
+.stepContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.stepTitle {
+  font-size: var(--font-size-h3);
+  font-family: var(--font-family-serif);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.stepDesc {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink-muted);
+  margin-top: -6px;
+}
+
+.roleGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.roleCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.roleCard:hover {
+  border-color: var(--color-line-strong);
+  background-color: var(--color-paper-shade);
+}
+
+.roleCardSelected {
+  border-color: var(--color-accent) !important;
+  background-color: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface)) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.roleIcon {
+  font-size: 1.6rem;
+  margin-bottom: var(--space-2);
+}
+
+.roleTitle {
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink);
+}
+
+.roleDesc {
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+  margin-top: 2px;
+}
+
+.interestList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.interestChip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.interestChip:hover {
+  border-color: var(--color-line-strong);
+  background-color: var(--color-paper-shade);
+}
+
+.interestChipSelected {
+  border-color: var(--color-accent) !important;
+  background-color: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface)) !important;
+  font-weight: var(--font-weight-medium);
+}
+
+.checkIcon {
+  font-weight: bold;
+  color: var(--color-accent);
+}
+
+.formFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.stepActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.actions {
+  margin-top: var(--space-3);
+}
+
+.alternativeDirect {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--border-width-hairline) solid var(--color-line);
+}
+
+.altLabel {
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+  margin-bottom: var(--space-2);
+}
+
+.altButtons {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.altBtn {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-paper-shade);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.altBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.successBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-6) 0;
+  gap: var(--space-3);
+}
+
+.successIcon {
+  font-size: 3rem;
+}
+
+.successTitle {
+  font-size: var(--font-size-h2);
+  font-family: var(--font-family-serif);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.successText {
+  font-size: var(--font-size-body);
+  color: var(--color-ink-muted);
+  max-width: 36ch;
+}
+
+@media (max-width: 640px) {
+  .roleGrid {
+    grid-template-columns: 1fr;
+  }
+}
