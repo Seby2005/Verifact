@@ -21,6 +21,7 @@ import { createContentHash } from '@/lib/utils/hash';
 import { logger } from '@/lib/utils/logger';
 import { expandClaimQueries } from './query-expander';
 import { decomposeAndAssessRisk } from '@/lib/ai/claim-decomposer';
+import { extractClaim, shouldExtractClaim, type ExtractedClaim } from '@/lib/ai/claim-extractor';
 
 const LAYER_TIMEOUT_MS = 10_000; // 10 seconds per layer
 
@@ -104,17 +105,32 @@ export async function verifyContent(
 
   const startTime = Date.now();
 
+  // 1a. For noisy input (screenshots, long pastes), pull the core factual claim
+  // out of the interface chrome and the sharer's own commentary before anything
+  // else: the search layers can only match the claim, not the caption wrapped
+  // around it, and a true underlying post must be scored apart from a false take
+  // laid over it. Clean input passes through unchanged.
+  let claimForSearch = input.text;
+  let extraction: ExtractedClaim | null = null;
+  if (shouldExtractClaim(input.inputType, input.text)) {
+    extraction = await extractClaim(input.text, input.language);
+    if (extraction.primaryClaim.length >= 12) {
+      claimForSearch = extraction.primaryClaim;
+    }
+  }
+  const commentary = extraction?.commentary?.trim() || undefined;
+
   // 1b. AI Query Expansion & Risk Assessment in Parallel
   const [queries, decomposed] = await Promise.all([
-    expandClaimQueries(input.text),
-    decomposeAndAssessRisk(input.text),
+    expandClaimQueries(claimForSearch),
+    decomposeAndAssessRisk(claimForSearch),
   ]);
 
   // 2. Run all 4 layers in parallel with individual timeouts.
-  const p1 = withTimeout(runLayer1(input.text, input.language, queries), LAYER_TIMEOUT_MS, 'layer1');
-  const p2 = withTimeout(runLayer2(input.text, input.language, queries), LAYER_TIMEOUT_MS, 'layer2');
-  const p3 = withTimeout(runLayer3(input.text, input.language, queries), LAYER_TIMEOUT_MS, 'layer3');
-  const p4 = withTimeout(runLayer4(input.text, input.language, queries), LAYER_TIMEOUT_MS, 'layer4');
+  const p1 = withTimeout(runLayer1(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer1');
+  const p2 = withTimeout(runLayer2(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer2');
+  const p3 = withTimeout(runLayer3(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer3');
+  const p4 = withTimeout(runLayer4(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer4');
 
   const tap = (
     step: 'layer1' | 'layer2' | 'layer3' | 'layer4',
@@ -158,12 +174,16 @@ export async function verifyContent(
 
   const { layer1, layer2, layer3, layer4 } = await applyAISourceFilter(
     { layer1: rawLayer1, layer2: rawLayer2, layer3: rawLayer3, layer4: rawLayer4 },
-    input.text
+    claimForSearch
   );
 
   const aiContext = {
-    claim: input.text,
-    inputText: input.text,
+    // The analysis and assessment reason about the cleaned claim, not the raw
+    // OCR blob; the sharer's commentary rides alongside so the prose can judge
+    // it separately rather than folding it into the verdict.
+    claim: claimForSearch,
+    inputText: claimForSearch,
+    commentary,
     language: input.language,
     layers: { layer1, layer2, layer3, layer4 },
     layer1,
@@ -198,6 +218,8 @@ export async function verifyContent(
 
   const report = buildReport({
     input,
+    verifiedClaim: extraction && claimForSearch !== input.text ? claimForSearch : undefined,
+    posterCommentary: commentary,
     layers: { layer1, layer2, layer3, layer4 },
     layer1,
     layer2,

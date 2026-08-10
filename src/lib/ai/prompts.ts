@@ -9,6 +9,7 @@ import type {
 
 export interface PromptData {
   inputText: string;
+  commentary?: string;
   factChecks: string;
   newsArticles: string;
   officialDocs: string;
@@ -70,6 +71,7 @@ export function buildAnalysisPrompt(context: AIAnalysisContext): string {
 
   const data: PromptData = {
     inputText,
+    commentary: context.commentary,
     factChecks,
     newsArticles,
     officialDocs,
@@ -89,7 +91,7 @@ function buildRomanianPrompt(data: PromptData): string {
 
 AFIRMAȚIA DE VERIFICAT:
 "${data.inputText}"
-
+${data.commentary ? `\nCOMENTARIUL CELUI CARE A DISTRIBUIT (opinia/concluzia lui personală — NU face parte din afirmația factuală de mai sus):\n"${data.commentary}"\n` : ''}
 DATE COLECTATE DIN STRATURILE DE CĂUTARE:
 
 Stratul 1 (Baze de Fact-Checking existente):
@@ -114,7 +116,7 @@ INSTRUCIUNI STRICTE:
    - **Context**: De unde provine știrea/afirmația și cum s-a răspândit.
    - **Concluzie**: Sinteză finală despre veridicitate.
 3. Fii neutru, obiectiv și folosește limbaj probabilistic când este cazul ("indică", "sugerează").
-4. NU inventa surse sau citate care nu apar în datele de mai sus.`;
+4. NU inventa surse sau citate care nu apar în datele de mai sus.${data.commentary ? `\n5. Verdictul se referă DOAR la afirmația factuală. Într-un paragraf scurt, evaluează SEPARAT comentariul celui care a distribuit: spune dacă interpretarea/concluzia lui este susținută de dovezi (de ex. afirmația de bază poate fi adevărată, dar concluzia trasă din ea poate fi falsă sau exagerată).` : ''}`;
 }
 
 function buildEnglishPrompt(data: PromptData): string {
@@ -122,7 +124,7 @@ function buildEnglishPrompt(data: PromptData): string {
 
 CLAIM TO VERIFY:
 "${data.inputText}"
-
+${data.commentary ? `\nTHE SHARER'S OWN COMMENTARY (their personal opinion/conclusion — NOT part of the factual claim above):\n"${data.commentary}"\n` : ''}
 COLLECTED SEARCH EVIDENCE:
 
 Layer 1 (Fact-Checking Databases):
@@ -147,5 +149,5 @@ STRICT INSTRUCTIONS:
    - **Context**: Provenance and viral context of the claim.
    - **Conclusion**: Final synthesis.
 3. Be neutral and objective.
-4. DO NOT invent sources or citations.`;
+4. DO NOT invent sources or citations.${data.commentary ? `\n5. The verdict concerns ONLY the factual claim. In a short paragraph, assess the sharer's commentary SEPARATELY: say whether their interpretation/conclusion is supported by the evidence (e.g. the underlying claim may be true, yet the conclusion drawn from it false or exaggerated).` : ''}`;
 }

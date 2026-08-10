@@ -67,6 +67,30 @@
   max-width: var(--measure);
 }
 
+/* The sharer's separated commentary — set apart as a quiet recessed panel (the
+   role --color-paper-shade exists for) so the reader sees it is the poster's
+   take, not the verified claim. */
+.commentaryBlock {
+  background-color: var(--color-paper-shade);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+}
+
+.commentary {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+  color: var(--color-ink-secondary);
+  max-width: var(--measure);
+}
+
+.commentaryNote {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink-muted);
+  max-width: var(--measure);
+}
+
 .takeawaysContainer {
   background: var(--color-paper-shade, #f8f9fa);
   border-left: 4px solid #2563eb;
