@@ -112,7 +112,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </Callout>
       ) : null}
 
-      {report.executiveSummary ? (
+      {isPremium && report.executiveSummary ? (
         <div>
           <p className={styles.sectionLabel}>{t('reportView.summaryLabel')}</p>
           <p className={styles.summary}>

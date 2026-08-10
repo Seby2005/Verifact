@@ -37,13 +37,9 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremiu
         body: JSON.stringify({ report }),
       });
 
-      if (res.status === 403) {
-        // Tier changed under us (e.g. downgraded); fall back to the preview.
-        setPreviewOpen(true);
-        return;
-      }
       if (!res.ok) {
-        notify(t('reportView.downloadError'), 'error');
+        // Free user, unauthenticated, 403, or server error: show the preview modal!
+        setPreviewOpen(true);
         return;
       }
 
@@ -57,7 +53,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremiu
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch {
-      notify(t('reportView.downloadError'), 'error');
+      setPreviewOpen(true);
     } finally {
       setDownloading(false);
     }
