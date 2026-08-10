@@ -19,18 +19,21 @@ Verifact allows users to submit text claims, web URLs, or social media screensho
 
 ## Tech Stack
 
-- **Framework & Language**: Next.js 14 (App Router), React 18, Strict TypeScript (`strict: true`)
+- **Framework & Language**: Next.js 16 (App Router), React 18, Strict TypeScript (`strict: true`)
 - **Styling**: Vanilla CSS Modules (zero external UI utility framework, custom design system)
 - **Backend & Database**: Next.js Serverless Route Handlers, Supabase (PostgreSQL, Supabase Auth, Row Level Security)
-- **AI & OCR Engine**: Gemini 2.0 Flash (`@google/generative-ai`), Google Cloud Vision API (with OCR.space fallback)
+- **AI & OCR Engine**: OpenRouter (Google Gemini 2.5 Flash primary, DeepSeek V3 fallback), Google Cloud Vision API (with OCR.space fallback)
 - **Research Services**: Google Fact Check Tools API, Tavily Search API, Google Custom Search API, optional NewsAPI
+- **Payments**: Creem (Merchant of Record) for Pro subscriptions
 - **Testing & Tooling**: Jest (`ts-jest`), ESLint (`eslint-config-next`), Playwright (`@playwright/test`), TypeScript Compiler
 
 ---
 
 ## How the Algorithm Works
 
-Verifact processes every claim through four independent research layers executed concurrently with fail-open fault tolerance:
+For screenshots and noisy social-media text, an AI **claim-extraction** step runs first: it isolates the core verifiable claim from the sharer's own commentary, so the engine searches the actual claim (not the surrounding caption) and can tell a true underlying post from a false interpretation laid over it.
+
+Verifact then processes every claim through four independent research layers executed concurrently with fail-open fault tolerance:
 
 1. **Layer 1 — Existing Fact-Checks**: Queries the Google Fact Check Tools API for existing debunkings published by IFCN-accredited organizations.
 2. **Layer 2 — Web & News Search**: Searches full-web indices via Tavily Search API (and optional NewsAPI) to discover journalistic coverage and context.
@@ -39,7 +42,7 @@ Verifact processes every claim through four independent research layers executed
 
 ### AI Synthesis & Scoring
 - Results from all four layers are combined into an overall weighted confidence score (0–100%).
-- Gemini 2.0 Flash synthesizes a neutral, objective summary in the user's language.
+- The AI model (via OpenRouter — Google Gemini 2.5 Flash) synthesizes a neutral, objective summary in the user's language.
 - Outputs are validated against hallucinated sources (all cited URLs must exist in the retrieved evidence set).
 - Cached results (TTL 7 days) prevent redundant external API queries for identical claims.
 
@@ -77,7 +80,8 @@ Verifact processes every claim through four independent research layers executed
    - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL.
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anonymous public key (safe for browser).
    - `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key (server-side only, bypasses RLS).
-   - `GEMINI_API_KEY`: API key from [Google AI Studio](https://ai.google.dev/) for AI summaries.
+   - `OPENROUTER_API_KEY`: API key from [OpenRouter](https://openrouter.ai/) — the primary AI provider. Set `OPENROUTER_MODEL` (default `google/gemini-2.5-flash`) and `DEFAULT_AI_PROVIDER=openrouter`.
+   - `GEMINI_API_KEY`: *(Optional)* Direct [Google AI Studio](https://ai.google.dev/) key — used only if `DEFAULT_AI_PROVIDER=gemini`.
    - `GOOGLE_FACT_CHECK_API_KEY`: API key from Google Cloud Console with Fact Check Tools API enabled.
    - `TAVILY_API_KEY`: API key from [Tavily](https://tavily.com/) for full-web search.
    - `GOOGLE_CUSTOM_SEARCH_API_KEY` & `GOOGLE_OFFICIAL_SEARCH_ENGINE_ID`: Google Custom Search key & engine ID (`cx`).

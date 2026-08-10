@@ -47,12 +47,23 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro'),
   title: {
     default: 'Verifact — Verificare independentă a informației',
     template: '%s — Verifact',
   },
   description:
     'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile. Algoritm open source, surse citate integral, rapoarte private.',
+  keywords: [
+    'verificare stiri',
+    'fact checker romania',
+    'verificare informatie',
+    'fake news romania',
+    'dezinformare',
+    'verifact',
+    'inteligenta artificiala',
+    'fact checking AI',
+  ],
   icons: {
     icon: [
       { url: '/logo/verifact-v-logo-red.svg', type: 'image/svg+xml' },
@@ -68,12 +79,22 @@ export const metadata: Metadata = {
     siteName: 'Verifact',
     locale: 'ro_RO',
     type: 'website',
+    url: '/',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Verifact — Verificare independentă a informației',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Verifact — Verificare independentă a informației',
     description:
       'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile.',
+    images: ['/og-image.png'],
   },
   other: {
     google: 'notranslate',
@@ -107,6 +128,27 @@ export default function RootLayout({
             the wrong one. Runs ahead of hydration and is deliberately tiny;
             THEME_SCRIPT is a constant string, never user input. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebApplication',
+              name: 'Verifact',
+              url: process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
+              applicationCategory: 'FactCheckingApplication',
+              operatingSystem: 'All',
+              description:
+                'Platformă AI independentă de verificare a știrilor și informațiilor din mediul online.',
+              inLanguage: 'ro-RO',
+              offers: {
+                '@type': 'Offer',
+                price: '0',
+                priceCurrency: 'RON',
+              },
+            }),
+          }}
+        />
       </head>
       <body>
         <LanguageProvider>

@@ -169,3 +169,12 @@ __pycache__/
 docker/**/data/
 .vercel
 .env*
+
+# ad hoc test / render scripts (not part of the app)
+scratch/
+# graphify knowledge-graph output (local only)
+graphify-out/
+# impeccable design-hook cache
+.impeccable/
+# Claude Code local worktrees
+.claude/worktrees/
