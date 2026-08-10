@@ -176,6 +176,7 @@ export const ro = {
     disclaimerText:
       'Raportul este generat automat și nu reprezintă o decizie editorială finală. Citește sursele citate pentru contextul complet.',
     downloadBtn: 'Descarcă PDF',
+    downloadError: 'Nu am putut genera raportul PDF. Încearcă din nou.',
     downloadDocTitle: 'Raport de verificare',
     downloadGeneratedOn: 'Generat pe',
     downloadScoreLabel: 'Scor de veridicitate',

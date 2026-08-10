@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Modal, VerdictLabel } from '@/components/ui';
+import { Button, Modal, VerdictLabel, useToast } from '@/components/ui';
 import { useLanguage } from '@/i18n';
-import type { VerificationReport, Verdict } from '@/types/verification';
+import type { VerificationReport } from '@/types/verification';
 import { sourceHref } from './sourceLink';
 import { fetchIsPremium } from './useUserTier';
-import { buildReportHtml, printReportDocument, type ReportDocSource } from './reportDocument';
 import styles from './DownloadButton.module.css';
 
 export interface DownloadButtonProps {
@@ -18,76 +17,59 @@ export interface DownloadButtonProps {
 }
 
 /**
- * The verdict palette, needed as literal hex only for the standalone PDF, which
- * renders outside the app and cannot read its CSS tokens. Values mirror the
- * light-theme verdict scale in DESIGN.md; the on-page/modal verdict colour still
- * comes from VerdictLabel, so this is the single exception, not a second source.
+ * Downloads the report as a real PDF file: posts the report to /api/report/pdf,
+ * which synthesizes it and renders a server-side PDF, then saves the returned
+ * blob. Free/anonymous readers get the upgrade preview instead — the same gate
+ * the API enforces server-side.
  */
-const VERDICT_COLOR: Record<Verdict, string> = {
-  true: '#1a6b54',
-  partial: '#986516',
-  unclear: '#4d5866',
-  false: '#a63a39',
-};
-
-function formatDate(iso: string | undefined, locale: string): string {
-  if (!iso) return '';
-  const parsed = new Date(iso);
-  if (Number.isNaN(parsed.getTime())) return '';
-  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'ro-RO', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(parsed);
-}
-
 export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremium, ready }) => {
-  const { locale, t } = useLanguage();
+  const { t } = useLanguage();
+  const { notify } = useToast();
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
-  const claim = report.claim ?? report.inputText ?? '';
-  const verdictWord = t(`verdict.copy.${report.verdict}`);
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch('/api/report/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report }),
+      });
 
-  const handleDownload = () => {
-    const sources: ReportDocSource[] = report.sources.map((source) => ({
-      title: source.title,
-      href: sourceHref(source.url, source.excerpt, true),
-      meta: [source.publisher, formatDate(source.date, locale)].filter(Boolean).join(' · '),
-      excerpt: source.excerpt ? source.excerpt.slice(0, 300) : undefined,
-    }));
+      if (res.status === 403) {
+        // Tier changed under us (e.g. downgraded); fall back to the preview.
+        setPreviewOpen(true);
+        return;
+      }
+      if (!res.ok) {
+        notify(t('reportView.downloadError'), 'error');
+        return;
+      }
 
-    const html = buildReportHtml({
-      lang: locale,
-      brand: 'Verifact',
-      docTitle: t('reportView.downloadDocTitle'),
-      generatedOnLabel: t('reportView.downloadGeneratedOn'),
-      dateStr: formatDate(new Date().toISOString(), locale),
-      reportIdLabel: t('reportView.printId'),
-      reportId: report.id,
-      claimLabel: t('reportView.claimLabel'),
-      claim,
-      verdictWord,
-      verdictColor: VERDICT_COLOR[report.verdict] ?? '#16181c',
-      scoreLabel: t('reportView.downloadScoreLabel'),
-      score: report.score,
-      summaryLabel: t('reportView.summaryLabel'),
-      summary: report.executiveSummary,
-      sourcesLabel: t('reportView.sourcesLabel', { count: report.sources.length }),
-      sources,
-      disclaimerLabel: t('reportView.disclaimerLabel'),
-      disclaimerText: t('reportView.disclaimerText'),
-    });
-
-    printReportDocument(html);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `raport-verifact-${report.id}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      notify(t('reportView.downloadError'), 'error');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const handleClick = async () => {
-    // If the tier fetch hasn't settled yet, resolve it authoritatively before
-    // deciding — otherwise a Pro user who clicks on first render (isPremium
-    // still on its free default) would wrongly get the paywall.
+    // Resolve the tier authoritatively before deciding, so a Pro user who clicks
+    // on first render (isPremium still on its free default) is not shown the
+    // paywall.
     const premium = ready ? isPremium : await fetchIsPremium();
     if (premium) {
-      handleDownload();
+      await handleDownload();
     } else {
       setPreviewOpen(true);
     }
@@ -101,7 +83,14 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremiu
 
   return (
     <>
-      <Button type="button" variant="ghost" size="sm" onClick={handleClick}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={handleClick}
+        disabled={downloading}
+        isLoading={downloading}
+      >
         {t('reportView.downloadBtn')}
       </Button>
 

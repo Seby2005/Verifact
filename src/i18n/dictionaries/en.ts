@@ -177,6 +177,7 @@ export const en: Translations = {
     disclaimerText:
       'This report is generated automatically and does not constitute a final editorial decision. Read cited sources for full context.',
     downloadBtn: 'Download PDF',
+    downloadError: 'Could not generate the PDF report. Please try again.',
     downloadDocTitle: 'Verification report',
     downloadGeneratedOn: 'Generated on',
     downloadScoreLabel: 'Credibility score',
