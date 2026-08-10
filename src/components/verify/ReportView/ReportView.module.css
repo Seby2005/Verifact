@@ -92,10 +92,10 @@
 }
 
 .takeawaysContainer {
-  background: var(--color-paper-shade, #f8f9fa);
-  border-left: 4px solid #2563eb;
-  padding: 1rem 1.25rem;
-  border-radius: 6px;
+  background-color: var(--color-paper-shade);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
   margin-bottom: var(--space-4);
 }
 
@@ -171,31 +171,34 @@
   text-decoration: underline;
 }
 
+/* Tier badges map to the verdict palette rather than off-system pastels:
+   trusted → pine, general press → neutral ink, social → amber. Tinted grounds
+   via color-mix so they stay legible in both themes. */
 .tier1Badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #15803d;
-  background: #dcfce7;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--verdict-true);
+  background: color-mix(in srgb, var(--verdict-true) 14%, transparent);
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: var(--radius-pill);
 }
 
 .tier2Badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #1e40af;
-  background: #dbeafe;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-secondary);
+  background: var(--color-paper-shade);
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: var(--radius-pill);
 }
 
 .tier3Badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #854d0e;
-  background: #fef9c3;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--verdict-partial);
+  background: color-mix(in srgb, var(--verdict-partial) 16%, transparent);
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: var(--radius-pill);
 }
 
 .sourceMeta {
