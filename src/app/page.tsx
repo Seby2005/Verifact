@@ -76,11 +76,13 @@ export default function HomePage() {
       {/* Stage: headline and the tool, together in the first viewport, over a
           quiet drifting wall of news photography. */}
       <section className={styles.stage}>
-        <div className={styles.heroWall} aria-hidden="true">
-          <div className={styles.heroRow}>{heroFrames(HERO_ROWS[0])}</div>
-          <div className={`${styles.heroRow} ${styles.heroRowB}`}>{heroFrames(HERO_ROWS[1])}</div>
+        <div className={styles.heroBackground} aria-hidden="true">
+          <div className={styles.heroWall}>
+            <div className={styles.heroRow}>{heroFrames(HERO_ROWS[0])}</div>
+            <div className={`${styles.heroRow} ${styles.heroRowB}`}>{heroFrames(HERO_ROWS[1])}</div>
+          </div>
+          <div className={styles.heroScrim} />
         </div>
-        <div className={styles.heroScrim} aria-hidden="true" />
 
         <div className={`container-narrow ${styles.stageInner}`}>
           <Reveal>
