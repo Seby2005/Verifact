@@ -134,17 +134,24 @@ export async function POST(request: Request): Promise<Response> {
     // to the normal metered path, so this can only ever grant, never deny.
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, tier')
       .eq('id', user.id)
       .single();
-    const isAdmin = hasUnlimitedUsage((profile as { role?: string | null } | null)?.role);
+    const typedProfile = profile as { role?: string | null; tier?: string | null } | null;
+    const isAdmin = hasUnlimitedUsage(typedProfile?.role);
 
     if (!isAdmin) {
       const reservation = await reserveUsageSlot(supabase);
       if (!reservation.allowed) {
+        // The free cap (3) is advertised, so naming it here is fine and drives
+        // the upsell. The Pro cap is deliberately never printed anywhere, so
+        // paid tiers get a number-free message.
+        const isFree = (typedProfile?.tier ?? 'free') === 'free';
         const err: VerifyAPIError = {
           success: false,
-          error: `Ai atins limita de ${reservation.limit} verificari pentru aceasta luna. Upgradeaza la Pro pentru mai multe.`,
+          error: isFree
+            ? 'Ai atins limita de 3 verificări gratuite pentru luna aceasta. Treci la Pro pentru mult mai multe.'
+            : 'Ai atins limita de verificări pentru luna aceasta. Se resetează la începutul lunii viitoare.',
           code: 'USAGE_LIMIT',
         };
         return Response.json(err, { status: 403 });

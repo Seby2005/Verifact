@@ -102,13 +102,12 @@ export default function PreturiPage() {
     ? {
         eyebrow: 'Pricing',
         title: 'Free for everyday checks. Paid when you check a lot.',
-        lead: 'The free plan covers the casual reader. Pro is for people who verify all day.',
         billing: { monthly: 'Monthly', yearly: 'Yearly', save: 'Save 25%', aria: 'Billing period' },
         recommended: 'Recommended',
         perMonth: '/mo',
         billedYearly: 'billed €35.90 a year',
         successTitle: 'Subscription Active!',
-        successMsg: 'Your Pro subscription has been activated successfully! You now have 30 verifications per month.',
+        successMsg: 'Your Pro subscription is now active! You have full Pro access.',
         free: {
           name: 'Free',
           price: 'Free',
@@ -121,7 +120,7 @@ export default function PreturiPage() {
           priceMonthly: '€3.99',
           priceYearly: '€2.99',
           tagline: 'For journalists, researchers, and anyone who checks daily.',
-          checks: '30 verifications a month — 10× the free plan',
+          checks: 'Over 10× more checks than the free plan.',
           cta: isSubmitting ? 'Connecting to Creem...' : 'Choose Pro',
         },
         business: {
@@ -135,7 +134,7 @@ export default function PreturiPage() {
         included: 'Included',
         excluded: 'Not included',
         rows: [
-          { label: 'Verifications per month', free: '3', pro: '30', business: 'Custom' },
+          { label: 'Verifications per month', free: '3', pro: 'Over 10×', business: 'Custom' },
           { label: 'Text, screenshot, and URL checks', free: true, pro: true, business: true },
           { label: 'Verdict, score, and cited sources', free: true, pro: true, business: true },
           { label: 'Download the report as PDF', free: false, pro: true, business: true },
@@ -144,21 +143,17 @@ export default function PreturiPage() {
           { label: 'API access', free: false, pro: false, business: true },
           { label: 'Team billing and seats', free: false, pro: false, business: true },
         ],
-        calloutLabel: 'No hidden costs',
-        calloutText:
-          'The free plan never turns into a paid one and asks for no card. When you hit the monthly limit, checks pause until next month. Pro subscriptions are processed securely through Creem with instant activation.',
         footnotePrefix: 'No card needed for the free plan. For anything custom, write to ',
       }
     : {
         eyebrow: 'Prețuri',
         title: 'Gratuit pentru verificări de zi cu zi. Plătit când verifici mult.',
-        lead: 'Planul gratuit acoperă cititorul obișnuit. Pro e pentru cine verifică toată ziua.',
         billing: { monthly: 'Lunar', yearly: 'Anual', save: 'Economisești 25%', aria: 'Perioadă de facturare' },
         recommended: 'Recomandat',
         perMonth: '/lună',
         billedYearly: 'facturat €35,90 pe an',
         successTitle: 'Abonament Activat!',
-        successMsg: 'Abonamentul tău Pro a fost activat cu succes! Ai acum 30 de verificări pe lună.',
+        successMsg: 'Abonamentul tău Pro a fost activat cu succes! Ai acum acces la toate funcțiile Pro.',
         free: {
           name: 'Free',
           price: 'Gratuit',
@@ -171,7 +166,7 @@ export default function PreturiPage() {
           priceMonthly: '€3,99',
           priceYearly: '€2,99',
           tagline: 'Pentru jurnaliști, cercetători și oricine verifică zilnic.',
-          checks: '30 de verificări pe lună — de 10× mai multe ca Free',
+          checks: 'De peste 10× mai multe verificări ca planul gratuit.',
           cta: isSubmitting ? 'Se conectează la Creem...' : 'Alege Pro',
         },
         business: {
@@ -185,7 +180,7 @@ export default function PreturiPage() {
         included: 'Inclus',
         excluded: 'Neinclus',
         rows: [
-          { label: 'Verificări pe lună', free: '3', pro: '30', business: 'La cerere' },
+          { label: 'Verificări pe lună', free: '3', pro: 'Peste 10×', business: 'La cerere' },
           { label: 'Verificare din text, screenshot și URL', free: true, pro: true, business: true },
           { label: 'Verdict, scor și surse citate', free: true, pro: true, business: true },
           { label: 'Descarcă raportul ca PDF', free: false, pro: true, business: true },
@@ -194,9 +189,6 @@ export default function PreturiPage() {
           { label: 'Acces API', free: false, pro: false, business: true },
           { label: 'Facturare și locuri pentru echipă', free: false, pro: false, business: true },
         ],
-        calloutLabel: 'Fără costuri ascunse',
-        calloutText:
-          'Planul gratuit nu se transformă niciodată în plată și nu cere card. Când atingi limita lunară, verificările se opresc până luna următoare. Abonamentele Pro sunt procesate în siguranță prin Creem cu activare instantanee.',
         footnotePrefix: 'Fără card pentru planul gratuit. Pentru orice nevoie aparte, scrie-ne la ',
       };
 
@@ -207,7 +199,6 @@ export default function PreturiPage() {
       <header className={shell.head}>
         <p className="eyebrow">{c.eyebrow}</p>
         <h1 className={shell.title}>{c.title}</h1>
-        <p className={shell.lead}>{c.lead}</p>
       </header>
 
       <div className={shell.body}>
@@ -348,7 +339,6 @@ export default function PreturiPage() {
         </section>
 
         <div className={shell.sectionRule}>
-          <Callout label={c.calloutLabel}>{c.calloutText}</Callout>
           <p className={styles.footnote}>
             {c.footnotePrefix}
             <a href={`mailto:${BUSINESS_EMAIL}`} className={styles.textLink}>

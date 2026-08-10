@@ -98,6 +98,23 @@
   }
 }
 
+/* Dark theme — the light duotone caps highlights at --color-paper, which is a
+   near-black here, so the whole wall collapsed to black and vanished. Remap the
+   highlight to a warm light tone (a sepia-on-black duotone) and lift the wall a
+   touch so the photography actually reads on the dark ground. The scrim already
+   fades the centre with the (now dark) paper, keeping the headline legible. */
+:global(:root[data-theme='dark']) .heroWall {
+  opacity: 0.6;
+}
+
+:global(:root[data-theme='dark']) .heroHi {
+  background: #cabfa9;
+}
+
+:global(:root[data-theme='dark']) .heroLo {
+  background: #0d0c0a;
+}
+
 .stageEyebrow {
   display: block;
   margin-bottom: var(--space-5);
@@ -246,6 +263,26 @@
   .steps {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-6);
+  }
+}
+
+/* On phones the stage is tall (the tool stacks under a big headline), so a
+   vertically-centred wall drifted down behind the tool instead of sitting
+   behind the headline. Anchor it to the top band and let the scrim fade it into
+   the page below, so the photography stays behind the words it belongs to. */
+@media (max-width: 768px) {
+  .heroWall {
+    inset: 0 0 auto 0;
+    height: min(70vh, 600px);
+    justify-content: flex-start;
+    padding-top: var(--space-10);
+  }
+
+  .heroScrim {
+    background:
+      radial-gradient(120% 62% at 50% 24%, var(--color-paper) 0%, var(--color-paper) 32%,
+        color-mix(in srgb, var(--color-paper) 55%, transparent) 60%, transparent 92%),
+      linear-gradient(180deg, transparent 0%, transparent 46%, var(--color-paper) 82%);
   }
 }
 

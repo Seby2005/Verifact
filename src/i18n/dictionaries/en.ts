@@ -12,6 +12,8 @@ export const en: Translations = {
       pricing: 'Pricing',
       account: 'Account',
       ariaNav: 'Main navigation',
+      menuOpen: 'Open menu',
+      menuClose: 'Close menu',
       toggleLangAria: 'Switch language to Romanian',
     },
     theme: {
@@ -163,6 +165,9 @@ export const en: Translations = {
     analyzedIn: 'analyzed in {seconds}s',
     layersWithEvidence: '{count}/4 layers with evidence',
     claimLabel: 'Verified claim',
+    commentaryLabel: "The sharer's commentary",
+    commentaryNote:
+      "This is the opinion of the person who shared the content, not the verified claim. The verdict concerns the factual claim above, not this interpretation.",
     partialAnalysisLabel: 'Partial analysis',
     partialAnalysisText:
       'Natural language analysis could not be generated for this report. The verdict and sources below are complete from source searching; only the narrative summary is missing.',
@@ -228,6 +233,9 @@ export const en: Translations = {
       verificationsValue: '{current} of {limit}',
       verificationsUnlimited: 'Unlimited',
       adminPlan: 'Admin',
+      proLimitWarningLabel: 'Near your limit',
+      proLimitWarningText:
+        "You're close to your monthly Pro limit. Checks reset at the start of next month.",
       signOut: 'Sign out',
       dangerLead:
         'Deleting your account is permanent: your private reports will be deleted forever, while published ones will remain in the public database, anonymized. Details in the Privacy Policy.',
@@ -578,7 +586,7 @@ export const en: Translations = {
     leadSuffix: '. Below is the complete GDPR-compliant policy.',
     sec1Title: '1. Data Controller',
     sec1Text:
-      'Your data is processed by Sebi Iancu, individual developer and administrator of the Verifact project. For any data request, contact ',
+      'Your data is processed by Iancu Luca Sebastian, individual developer and administrator of the Verifact project. For any data request, contact ',
     sec2Title: '2. Data We Collect',
     sec2AccountTitle: 'Account',
     sec2AccountList: [
@@ -664,7 +672,7 @@ export const en: Translations = {
     title: 'Terms of Service',
     lead: 'Last updated: August 8, 2026. By using Verifact, you agree to the terms below.',
     intro:
-      'Verifact is operated by Sebi Iancu, individual developer, as an open-source project ("We", "Operator"). These terms govern your access to and use of the Verifact web application ("Service"). If you disagree with them, please do not use the Service.',
+      'Verifact is operated by Iancu Luca Sebastian, individual developer, as an open-source project ("We", "Operator"). These terms govern your access to and use of the Verifact web application ("Service"). If you disagree with them, please do not use the Service.',
     sec1Title: '1. What the Service Is',
     sec1Text1:
       'Verifact is a tool that receives text, a link, or a screenshot and generates an automated report regarding the veracity of the claim by aggregating news media, fact-checking databases, official sources, and search results synthesized by an AI model.',
@@ -704,7 +712,7 @@ export const en: Translations = {
     sec5PriceText:
       'We may change paid plan prices. We will notify you by email at least 30 days before the new price takes effect. If you disagree, you can cancel your subscription before the next renewal.',
     sec6Title: '6. Open Source & Your Content',
-    sec6Text1Prefix: 'Source code is published under the MIT license (Copyright (c) 2026 Sebi Iancu) in the ',
+    sec6Text1Prefix: 'Source code is published under the MIT license (Copyright (c) 2026 Iancu Luca Sebastian) in the ',
     repoLinkText: 'official repository',
     sec6Text1Suffix: '. The license covers code, not the "Verifact" name, infrastructure, or database.',
     sec6Text2Prefix: 'You retain rights to text submitted for verification. By submitting it, you grant permission to process it — and transmit it to third-party providers listed in the ',

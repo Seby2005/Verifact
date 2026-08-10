@@ -268,7 +268,22 @@ export const AuthPanel: React.FC = () => {
       : usage
         ? t(`auth.tiers.${usage.tier}`) ?? usage.tier
         : null;
-    const limit = usage ? usage.limit : TIER_CONFIG.free.monthlyLimit;
+    // Pro/Business never show a denominator — the cap is intentionally unnamed
+    // (see TIER_CONFIG). Free shows "used / 3" since 3 is advertised openly.
+    const usageValue = !usage
+      ? '—'
+      : usage.unlimited
+        ? t('auth.session.verificationsUnlimited')
+        : usage.tier === 'free'
+          ? t('auth.session.verificationsValue', { current: usage.current, limit: usage.limit })
+          : String(usage.current);
+    // Warn a Pro user once they pass the soft limit, ahead of the silent hard
+    // cap — the account is the one place they're told they're running low.
+    const showProLimitWarning =
+      !!usage &&
+      !usage.unlimited &&
+      usage.tier === 'pro' &&
+      usage.current >= TIER_CONFIG.pro.softLimit;
 
     return (
       <section className={styles.panel} aria-labelledby="auth-heading">
@@ -287,15 +302,17 @@ export const AuthPanel: React.FC = () => {
           </div>
           <div className={styles.accountRow}>
             <span className={styles.accountLabel}>{t('auth.session.verificationsThisMonth')}</span>
-            <span className={styles.accountValue}>
-              {usage
-                ? usage.unlimited
-                  ? t('auth.session.verificationsUnlimited')
-                  : t('auth.session.verificationsValue', { current: usage.current, limit })
-                : '—'}
-            </span>
+            <span className={styles.accountValue}>{usageValue}</span>
           </div>
         </div>
+
+        {showProLimitWarning ? (
+          <div className={styles.status}>
+            <Callout label={t('auth.session.proLimitWarningLabel')} tone="plain">
+              {t('auth.session.proLimitWarningText')}
+            </Callout>
+          </div>
+        ) : null}
 
         <div className={styles.accountActions}>
           <Button type="button" variant="secondary" size="md" onClick={handleSignOut}>
