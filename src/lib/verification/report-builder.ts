@@ -12,20 +12,27 @@ import { scoreToVerdict, scoreToConfidence } from './scoring';
 import { assignSourceTier } from './ai-source-filter';
 
 export function extractExecutiveSummary(aiAnalysis: string): string {
-  const plain = aiAnalysis.replace(/\*+/g, '');
+  if (!aiAnalysis) return '';
 
-  const section = plain.match(
-    /(?:^|\n)[ \t]*(?:Rezumat|Summary)[ \t]*:?[ \t]*\n*[ \t]*([^\n]+(?:\n(?!\s*\n)[^\n]+)*)/i
-  );
+  let clean = aiAnalysis
+    .replace(/^#+\s*.*$/gm, '') // Remove markdown heading lines like ### Raport de Verificare
+    .replace(/#+/g, '') // Remove leftover hashes
+    .replace(/\*+/g, '') // Remove asterisks
+    .replace(/^(?:Raport de Verificare a Faptelor|Rezumat|Summary|Concluzie)\s*:?\s*/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-  const summary = section?.[1]?.trim();
-  if (summary && summary.length >= 25) return summary;
+  if (!clean || clean.length < 25) {
+    const rawClean = aiAnalysis
+      .replace(/#+\s*/g, '')
+      .replace(/\*+/g, '')
+      .replace(/^(?:Raport de Verificare a Faptelor|Rezumat|Summary|Concluzie)\s*:?\s*/gi, '')
+      .trim();
+    const sentences = rawClean.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 15);
+    clean = sentences.slice(0, 2).join(' ').trim();
+  }
 
-  const sentences = plain
-    .split(/(?<=[.!?])\s+/)
-    .filter((s) => s.trim().length > 10);
-
-  return sentences.slice(0, 2).join(' ').trim();
+  return clean;
 }
 
 export function generateKeyTakeaways(
@@ -53,13 +60,7 @@ export function generateKeyTakeaways(
     takeaways.push('Nu au fost găsite înregistrări directe în bazele de date publice de fact-checking.');
   }
 
-  if (summary && summary.length > 30) {
-    takeaways.push(summary.slice(0, 140) + (summary.length > 140 ? '...' : ''));
-  } else {
-    takeaways.push(`Verificarea a analizat contextul factual pentru "${claim.slice(0, 50)}...".`);
-  }
-
-  return takeaways.slice(0, 3);
+  return takeaways;
 }
 
 function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
