@@ -11,6 +11,8 @@ export const ro = {
       pricing: 'Prețuri',
       account: 'Cont',
       ariaNav: 'Navigare principală',
+      menuOpen: 'Deschide meniul',
+      menuClose: 'Închide meniul',
       toggleLangAria: 'Schimbă limba în engleză',
     },
     theme: {
@@ -162,6 +164,9 @@ export const ro = {
     analyzedIn: 'analizat în {seconds}s',
     layersWithEvidence: '{count}/4 straturi cu dovezi',
     claimLabel: 'Afirmația verificată',
+    commentaryLabel: 'Comentariul distribuitorului',
+    commentaryNote:
+      'Aceasta este opinia persoanei care a distribuit conținutul, nu afirmația verificată. Verdictul se referă la afirmația factuală de mai sus, nu la această interpretare.',
     partialAnalysisLabel: 'Analiză parțială',
     partialAnalysisText:
       'Analiza în limbaj natural nu a putut fi generată pentru acest raport. Verdictul și sursele de mai jos provin din căutarea în surse și sunt complete; lipsește doar explicația narativă.',
@@ -228,6 +233,9 @@ export const ro = {
       verificationsValue: '{current} din {limit}',
       verificationsUnlimited: 'Nelimitat',
       adminPlan: 'Admin',
+      proLimitWarningLabel: 'Aproape de limită',
+      proLimitWarningText:
+        'Te apropii de limita lunară de verificări Pro. Verificările se reiau la începutul lunii viitoare.',
       signOut: 'Deconectare',
       dangerLead:
         'Ștergerea contului este definitivă: rapoartele tale private se șterg pentru totdeauna, iar cele publicate rămân în baza publică, anonimizated. Detalii în Politica de confidențialitate.',
@@ -578,7 +586,7 @@ export const ro = {
     leadSuffix: '. Aici e versiunea completă, conform GDPR.',
     sec1Title: '1. Operatorul de date',
     sec1Text:
-      'Datele tale sunt operate de Sebi Iancu, persoană fizică, dezvoltatorul și administratorul proiectului Verifact. Pentru orice solicitare legată de datele tale, scrie la ',
+      'Datele tale sunt operate de Iancu Luca Sebastian, persoană fizică, dezvoltatorul și administratorul proiectului Verifact. Pentru orice solicitare legată de datele tale, scrie la ',
     sec2Title: '2. Ce date colectăm',
     sec2AccountTitle: 'Cont',
     sec2AccountList: [
@@ -664,7 +672,7 @@ export const ro = {
     title: 'Termeni și condiții',
     lead: 'Ultima actualizare: 8 august 2026. Prin folosirea Verifact ești de acord cu termenii de mai jos.',
     intro:
-      'Verifact este operat de Sebi Iancu, persoană fizică, ca proiect open-source („Noi”, „Operatorul”). Acești termeni guvernează accesarea și folosirea aplicației web Verifact („Serviciul”). Dacă nu ești de acord cu ei, te rugăm să nu folosești Serviciul.',
+      'Verifact este operat de Iancu Luca Sebastian, persoană fizică, ca proiect open-source („Noi”, „Operatorul”). Acești termeni guvernează accesarea și folosirea aplicației web Verifact („Serviciul”). Dacă nu ești de acord cu ei, te rugăm să nu folosești Serviciul.',
     sec1Title: '1. Ce este Serviciul',
     sec1Text1:
       'Verifact este un instrument care primește text, un link sau un screenshot și generează un raport automat despre veridicitatea afirmației, agregând surse din presă, baze de fact-checking, surse oficiale și rezultate de căutare, sintetizate cu ajutorul unui model AI.',
@@ -704,7 +712,7 @@ export const ro = {
     sec5PriceText:
       'Putem modifica prețurile planurilor plătite. Te vom notifica prin email cu cel puțin 30 de zile înainte de intrarea în vigoare a noului preț. Dacă nu ești de acord, poți anula abonamentul înainte de următoarea reînnoire.',
     sec6Title: '6. Cod deschis și conținutul tău',
-    sec6Text1Prefix: 'Codul sursă este publicat sub licența MIT (Copyright (c) 2026 Sebi Iancu) în ',
+    sec6Text1Prefix: 'Codul sursă este publicat sub licența MIT (Copyright (c) 2026 Iancu Luca Sebastian) în ',
     repoLinkText: 'repository-ul oficial',
     sec6Text1Suffix: '. Licența acoperă codul, nu numele „Verifact”, infrastructura sau baza de date pe care o operăm noi.',
     sec6Text2Prefix: 'Păstrezi drepturile asupra textului pe care îl trimiți spre verificare. Prin trimiterea lui, ne dai voie să îl procesăm — și să îl transmitem furnizorilor terți enumerați în ',

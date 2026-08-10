@@ -16,12 +16,14 @@ export interface UsageLimitCheck {
 
 /**
  * Single source of truth for monthly verification limits. Pro is deliberately
- * 10× Free (the pricing page leans on that ratio). Business is bespoke — sold
- * by email, not self-serve — so its number is a generous placeholder, never
- * shown as a figure on the pricing page.
+ * "over 10× Free" — the pricing page leans on that ratio and never prints a
+ * number. The hard cap is 35, but the user is only *warned* once they pass the
+ * `softLimit` of 30: the last five are a silent buffer, so neither 30 nor 35 is
+ * ever shown as a figure anywhere in the product. Business is bespoke — sold by
+ * email, not self-serve — so its number is a generous placeholder.
  */
 export const TIER_CONFIG = {
   free: { monthlyLimit: 3 },
-  pro: { monthlyLimit: 30 },
+  pro: { monthlyLimit: 35, softLimit: 30 },
   business: { monthlyLimit: 1000 },
 } as const;

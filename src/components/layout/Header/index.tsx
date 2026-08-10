@@ -19,6 +19,9 @@ export const Header: React.FC = () => {
   const pathname = usePathname();
   const { locale, setLocale, t } = useLanguage();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  // On phones the nav collapses into a dropdown behind a menu button so the
+  // sticky bar stays a single compact row instead of a tall stacked block.
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -33,6 +36,11 @@ export const Header: React.FC = () => {
 
     return () => subscription.subscription.unsubscribe();
   }, []);
+
+  // Close the mobile menu whenever navigation lands on a new route.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   const toggleLanguage = () => {
     setLocale(locale === 'ro' ? 'en' : 'ro');
@@ -51,41 +59,79 @@ export const Header: React.FC = () => {
           <Logo />
         </Link>
 
-        <nav className={styles.nav} aria-label={t('header.nav.ariaNav')}>
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={[styles.navLink, isActive ? styles.navLinkActive : '']
-                  .filter(Boolean)
-                  .join(' ')}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {t(item.key)}
-              </Link>
-            );
-          })}
-          <Link
-            href="/cont"
-            className={[styles.accountLink, pathname === '/cont' ? styles.navLinkActive : '']
-              .filter(Boolean)
-              .join(' ')}
-            title={userEmail ?? undefined}
+        <div className={styles.actions}>
+          <nav
+            id="site-nav"
+            className={[styles.nav, menuOpen ? styles.navOpen : ''].filter(Boolean).join(' ')}
+            aria-label={t('header.nav.ariaNav')}
           >
-            {displayAccountText}
-          </Link>
+            {NAV_ITEMS.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={[styles.navLink, isActive ? styles.navLinkActive : '']
+                    .filter(Boolean)
+                    .join(' ')}
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t(item.key)}
+                </Link>
+              );
+            })}
+            <Link
+              href="/cont"
+              className={[styles.accountLink, pathname === '/cont' ? styles.navLinkActive : '']
+                .filter(Boolean)
+                .join(' ')}
+              title={userEmail ?? undefined}
+              onClick={() => setMenuOpen(false)}
+            >
+              {displayAccountText}
+            </Link>
+            <button
+              type="button"
+              className={styles.langToggle}
+              onClick={toggleLanguage}
+              aria-label={locale === 'ro' ? 'Switch to English' : 'Schimbă în română'}
+            >
+              {locale === 'ro' ? 'RO | EN' : 'EN | RO'}
+            </button>
+          </nav>
+
+          <ThemeToggle />
+
           <button
             type="button"
-            className={styles.langToggle}
-            onClick={toggleLanguage}
-            aria-label={locale === 'ro' ? 'Switch to English' : 'Schimbă în română'}
+            className={styles.menuBtn}
+            aria-expanded={menuOpen}
+            aria-controls="site-nav"
+            aria-label={menuOpen ? t('header.nav.menuClose') : t('header.nav.menuOpen')}
+            onClick={() => setMenuOpen((open) => !open)}
           >
-            {locale === 'ro' ? 'RO | EN' : 'EN | RO'}
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              {menuOpen ? (
+                <path
+                  d="M6 6l12 12M18 6L6 18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              ) : (
+                <path
+                  d="M4 7h16M4 12h16M4 17h16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              )}
+            </svg>
           </button>
-          <ThemeToggle />
-        </nav>
+        </div>
       </div>
     </header>
   );
