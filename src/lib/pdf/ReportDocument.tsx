@@ -19,25 +19,24 @@ import { sourceHref } from '@/components/verify/ReportView/sourceLink';
  * Romanian diacritics, and keeps every source link clickable.
  */
 
-// Fonts are served from /public and fetched by @react-pdf at render time. The
-// default PDF fonts (Helvetica) lack ș/ț/ă, so Inter (UI) + Source Serif (the
-// claim and quotes) are registered explicitly.
-const FONT_BASE = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+import path from 'path';
 
 let fontsRegistered = false;
 function ensureFonts(): void {
   if (fontsRegistered) return;
+  const fontsDir = path.join(process.cwd(), 'public', 'fonts');
+
   Font.register({
     family: 'Inter',
     fonts: [
-      { src: `${FONT_BASE}/fonts/Inter-Regular.ttf`, fontWeight: 400 },
-      { src: `${FONT_BASE}/fonts/Inter-SemiBold.ttf`, fontWeight: 600 },
-      { src: `${FONT_BASE}/fonts/Inter-Bold.ttf`, fontWeight: 700 },
+      { src: path.join(fontsDir, 'Inter-Regular.ttf'), fontWeight: 400 },
+      { src: path.join(fontsDir, 'Inter-SemiBold.ttf'), fontWeight: 600 },
+      { src: path.join(fontsDir, 'Inter-Bold.ttf'), fontWeight: 700 },
     ],
   });
   Font.register({
     family: 'SourceSerif',
-    fonts: [{ src: `${FONT_BASE}/fonts/SourceSerif-Regular.ttf`, fontWeight: 400 }],
+    fonts: [{ src: path.join(fontsDir, 'SourceSerif-Regular.ttf'), fontWeight: 400 }],
   });
   // Long URLs and Romanian words should not be hyphenated mid-word.
   Font.registerHyphenationCallback((word) => [word]);
