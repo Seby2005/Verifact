@@ -23,7 +23,7 @@ import { expandClaimQueries } from './query-expander';
 import { decomposeAndAssessRisk } from '@/lib/ai/claim-decomposer';
 import { extractClaim, shouldExtractClaim, type ExtractedClaim } from '@/lib/ai/claim-extractor';
 
-const LAYER_TIMEOUT_MS = 10_000; // 10 seconds per layer
+const LAYER_TIMEOUT_MS = 6_000; // 6 seconds per layer (fast search)
 
 function buildFallbackSummary(
   layers: { layer1: Layer1Result; layer2: Layer2Result; layer3: Layer3Result; layer4: Layer4Result },
@@ -105,11 +105,7 @@ export async function verifyContent(
 
   const startTime = Date.now();
 
-  // 1a. For noisy input (screenshots, long pastes), pull the core factual claim
-  // out of the interface chrome and the sharer's own commentary before anything
-  // else: the search layers can only match the claim, not the caption wrapped
-  // around it, and a true underlying post must be scored apart from a false take
-  // laid over it. Clean input passes through unchanged.
+  // 1a. Extract primary claim if input is noisy/long
   let claimForSearch = input.text;
   let extraction: ExtractedClaim | null = null;
   if (shouldExtractClaim(input.inputType, input.text)) {
@@ -126,7 +122,7 @@ export async function verifyContent(
     decomposeAndAssessRisk(claimForSearch),
   ]);
 
-  // 2. Run all 4 layers in parallel with individual timeouts.
+  // 2. Run all 4 layers in parallel with individual 6s timeouts.
   const p1 = withTimeout(runLayer1(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer1');
   const p2 = withTimeout(runLayer2(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer2');
   const p3 = withTimeout(runLayer3(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer3');
@@ -178,9 +174,6 @@ export async function verifyContent(
   );
 
   const aiContext = {
-    // The analysis and assessment reason about the cleaned claim, not the raw
-    // OCR blob; the sharer's commentary rides alongside so the prose can judge
-    // it separately rather than folding it into the verdict.
     claim: claimForSearch,
     inputText: claimForSearch,
     commentary,
@@ -192,7 +185,16 @@ export async function verifyContent(
     layer4,
   };
 
-  const assessment = await generateAIAssessment(aiContext);
+  // Run AI Assessment and AI Analysis IN PARALLEL for maximum speed
+  const [assessmentResult, analysisResult] = await Promise.allSettled([
+    generateAIAssessment(aiContext),
+    generateAIAnalysis(aiContext),
+  ]);
+
+  const assessment = assessmentResult.status === 'fulfilled'
+    ? assessmentResult.value
+    : { score: 50, verdict: 'insufficient' as const, confidence: 0, reasoning: '' };
+
   emit({ step: 'analysis', status: 'done' });
 
   const scoreBreakdown = calculateScore({
@@ -205,13 +207,13 @@ export async function verifyContent(
 
   let aiAnalysis: string;
   let aiAvailable = true;
-  try {
-    aiAnalysis = await generateAIAnalysis({ ...aiContext, scoreBreakdown });
-  } catch (error) {
+  if (analysisResult.status === 'fulfilled') {
+    aiAnalysis = analysisResult.value;
+  } else {
     aiAvailable = false;
     logger.error('AI analysis unavailable, falling back to a factual summary', {
       service: 'orchestrator',
-      error,
+      error: (analysisResult as PromiseRejectedResult).reason,
     });
     aiAnalysis = buildFallbackSummary({ layer1, layer2, layer3, layer4 }, scoreBreakdown.finalScore);
   }
