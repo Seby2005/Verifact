@@ -85,6 +85,14 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         <p className={styles.claim}>&ldquo;{report.claim ?? report.inputText}&rdquo;</p>
       </div>
 
+      {report.posterCommentary ? (
+        <div className={styles.commentaryBlock}>
+          <p className={styles.sectionLabel}>{t('reportView.commentaryLabel')}</p>
+          <p className={styles.commentary}>&ldquo;{report.posterCommentary}&rdquo;</p>
+          <p className={styles.commentaryNote}>{t('reportView.commentaryNote')}</p>
+        </div>
+      ) : null}
+
       {report.keyTakeaways && report.keyTakeaways.length > 0 ? (
         <div className={styles.takeawaysContainer}>
           <p className={styles.sectionLabel}>📌 Idei Cheie (Executive Summary)</p>

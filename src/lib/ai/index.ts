@@ -81,6 +81,12 @@ export async function generateAIAnalysis(context: AIAnalysisContext): Promise<st
  * If that fails too the error propagates, and the orchestrator falls back to a
  * factual summary of the layers (see verifyContent).
  */
+// A second, equally cheap OpenRouter model to retry on before giving up. Keeping
+// the fallback inside OpenRouter (rather than the direct Gemini SDK, which needs
+// its own often-misconfigured key) is why a slow primary no longer strands the
+// report without an AI section.
+const OPENROUTER_FALLBACK_MODEL = 'deepseek/deepseek-chat';
+
 async function requestAnalysis(context: AIAnalysisContext): Promise<string> {
   const provider = resolveProvider();
 
@@ -88,14 +94,15 @@ async function requestAnalysis(context: AIAnalysisContext): Promise<string> {
     try {
       return await generateOpenRouterAnalysis(context);
     } catch (error) {
-      logger.warn('OpenRouter analysis failed, falling back to Gemini', {
+      logger.warn('Primary OpenRouter analysis model failed, retrying with fallback model', {
         service: 'ai',
         error: String(error),
       });
-      return geminiAnalysis(context);
+      return generateOpenRouterAnalysis(context, undefined, OPENROUTER_FALLBACK_MODEL);
     }
   }
 
+  // provider === 'gemini' — only when explicitly configured with a valid key.
   try {
     return await geminiAnalysis(context);
   } catch (error) {

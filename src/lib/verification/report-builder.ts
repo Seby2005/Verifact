@@ -179,6 +179,8 @@ const DEFAULT_UNAVAILABLE_LAYER4: Layer4Result = { status: 'unavailable', result
 export function buildReport(params: ReportBuilderParams): VerificationReport {
   const {
     input,
+    verifiedClaim,
+    posterCommentary,
     layer1,
     layer2,
     layer3,
@@ -187,6 +189,10 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
     aiAnalysis,
     processingTime,
   } = params;
+
+  // The verdict, summary and takeaways describe the cleaned claim when one was
+  // extracted; `inputText` still holds exactly what the reader submitted.
+  const claimText = verifiedClaim ?? input.text;
 
   const breakdown = scoreBreakdown || DEFAULT_SCORE_BREAKDOWN;
   const score = breakdown.finalScore;
@@ -201,12 +207,14 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
   const sources = buildCombinedSources(params);
   const rawAnalysis = typeof aiAnalysis === 'object' ? aiAnalysis.summary : (aiAnalysis ?? '');
   const executiveSummary = extractExecutiveSummary(rawAnalysis);
-  const keyTakeaways = generateKeyTakeaways(input.text, executiveSummary, sources, score);
+  const keyTakeaways = generateKeyTakeaways(claimText, executiveSummary, sources, score);
 
   return {
     id: crypto.randomUUID(),
-    claim: input.text,
+    claim: claimText,
     inputText: input.text,
+    verifiedClaim,
+    posterCommentary,
     inputType: input.inputType,
     language: input.language,
     verdict,

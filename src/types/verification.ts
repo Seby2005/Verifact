@@ -198,6 +198,18 @@ export interface VerificationReport {
   id: string;
   claim?: string;
   inputText: string;
+  /**
+   * When the submitted text was noisy (a screenshot of a social post plus the
+   * sharer's own caption), the core factual claim that was actually searched
+   * and scored — as opposed to `inputText`, which is the raw submission.
+   */
+  verifiedClaim?: string;
+  /**
+   * The sharer's own opinion/interpretation, separated from the factual claim
+   * above. Lets the report say "the shared post is true, but the added take is
+   * not" instead of scoring the two together.
+   */
+  posterCommentary?: string;
   inputType: InputType;
   userId?: string;
   verdict: Verdict;
@@ -236,6 +248,8 @@ export interface VerificationReport {
 export interface AIAnalysisContext {
   claim?: string;
   inputText?: string;
+  /** The sharer's separated opinion, so the analysis can address it apart from the claim. */
+  commentary?: string;
   language?: Language;
   layers?: {
     layer1?: Layer1Result;
@@ -252,6 +266,10 @@ export interface AIAnalysisContext {
 
 export interface ReportBuilderParams {
   input: VerificationInput;
+  /** The cleaned core claim actually verified, when it differs from input.text. */
+  verifiedClaim?: string;
+  /** The sharer's separated opinion/interpretation, if any. */
+  posterCommentary?: string;
   layers?: {
     layer1: Layer1Result;
     layer2: Layer2Result;
