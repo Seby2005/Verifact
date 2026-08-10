@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Callout } from '@/components/ui';
 import { useLanguage } from '@/i18n';
+import { ContactModal } from '@/components/contact/ContactModal';
 import shell from '../page-shell.module.css';
 import styles from './page.module.css';
 
@@ -43,6 +44,7 @@ function CellMark({ value, included, excluded }: { value: Cell; included: string
           stroke="currentColor"
           strokeWidth="1.6"
           strokeLinecap="round"
+          strokeLinejoin="round"
         />
       </svg>
       <span className={styles.srOnly}>{excluded}</span>
@@ -57,6 +59,7 @@ export default function PreturiPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -296,7 +299,7 @@ export default function PreturiPage() {
               <p className={styles.forWho}>{c.business.tagline}</p>
             </div>
             <div className={styles.planCta}>
-              <Button variant="secondary" size="md" fullWidth href={`mailto:${BUSINESS_EMAIL}`}>
+              <Button variant="secondary" size="md" fullWidth onClick={() => setContactOpen(true)}>
                 {c.business.cta}
               </Button>
             </div>
@@ -341,13 +344,19 @@ export default function PreturiPage() {
         <div className={shell.sectionRule}>
           <p className={styles.footnote}>
             {c.footnotePrefix}
-            <a href={`mailto:${BUSINESS_EMAIL}`} className={styles.textLink}>
+            <button
+              type="button"
+              className={styles.textLink}
+              onClick={() => setContactOpen(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
               {BUSINESS_EMAIL}
-            </a>
+            </button>
             .
           </p>
         </div>
       </div>
+      <ContactModal isOpen={contactOpen} onClose={() => setContactOpen(false)} />
     </div>
   );
 }
