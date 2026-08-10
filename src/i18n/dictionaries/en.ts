@@ -11,6 +11,7 @@ export const en: Translations = {
       transparency: 'Transparency',
       pricing: 'Pricing',
       account: 'Account',
+      home: 'Home',
       ariaNav: 'Main navigation',
       menuOpen: 'Open menu',
       menuClose: 'Close menu',

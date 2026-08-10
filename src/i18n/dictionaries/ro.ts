@@ -10,6 +10,7 @@ export const ro = {
       transparency: 'Transparență',
       pricing: 'Prețuri',
       account: 'Cont',
+      home: 'Acasă',
       ariaNav: 'Navigare principală',
       menuOpen: 'Deschide meniul',
       menuClose: 'Închide meniul',

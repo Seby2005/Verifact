@@ -10,6 +10,7 @@ import { Logo } from '../Logo';
 import styles from './Header.module.css';
 
 const NAV_ITEMS = [
+  { href: '/', key: 'header.nav.home' },
   { href: '/despre-dezinformare', key: 'header.nav.disinformation' },
   { href: '/transparenta', key: 'header.nav.transparency' },
   { href: '/preturi', key: 'header.nav.pricing' },

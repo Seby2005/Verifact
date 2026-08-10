@@ -80,6 +80,14 @@ const csp = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // The PDF route (/api/report/pdf) reads the report fonts from
+  // process.cwd()/public/fonts at render time. `public/` is served by the CDN
+  // but is NOT in a serverless function's filesystem by default, so without
+  // this the font read throws in production and the download 500s. Trace the
+  // fonts into that one function's bundle.
+  outputFileTracingIncludes: {
+    '/api/report/pdf': ['./public/fonts/**'],
+  },
   experimental: {
     workerThreads: false,
     cpus: 1,
