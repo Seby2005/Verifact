@@ -110,9 +110,9 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
   const t = STRINGS[locale];
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  const reg = await doc.embedFont(dataUriToBytes(interRegular), { subset: true });
-  const bold = await doc.embedFont(dataUriToBytes(interBold), { subset: true });
-  const serif = await doc.embedFont(dataUriToBytes(sourceSerif), { subset: true });
+  const reg = await doc.embedFont(dataUriToBytes(interRegular), { subset: false });
+  const bold = await doc.embedFont(dataUriToBytes(interBold), { subset: false });
+  const serif = await doc.embedFont(dataUriToBytes(sourceSerif), { subset: false });
 
   let page = doc.addPage([PAGE_W, PAGE_H]);
   let y = PAGE_H - MARGIN;
