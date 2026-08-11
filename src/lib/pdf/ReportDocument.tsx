@@ -13,6 +13,7 @@ import type { VerificationReport, Verdict } from '@/types/verification';
 import type { ReportSynthesis } from '@/lib/ai/report-synthesis';
 import { sourceHref } from '@/components/verify/ReportView/sourceLink';
 import { stripMarkdown } from '@/lib/utils/romanian-text';
+import { interRegular, interBold, sourceSerif } from './font-data';
 
 /**
  * The downloadable PDF report. Rendered server-side with @react-pdf so it is a
@@ -20,24 +21,25 @@ import { stripMarkdown } from '@/lib/utils/romanian-text';
  * Romanian diacritics, and keeps every source link clickable.
  */
 
-import path from 'path';
-
+// Fonts are embedded as base64 data URIs (see font-data.ts). A Vercel
+// serverless function has neither the /public filesystem (fs read failed) nor a
+// dependable self-URL to fetch from (the domain 308-redirects www<->naked, which
+// the font loader won't follow) — a data URI needs nothing external, so this is
+// the one approach that renders in every environment.
 let fontsRegistered = false;
 function ensureFonts(): void {
   if (fontsRegistered) return;
-  const fontsDir = path.join(process.cwd(), 'public', 'fonts');
 
   Font.register({
     family: 'Inter',
     fonts: [
-      { src: path.join(fontsDir, 'Inter-Regular.ttf'), fontWeight: 400 },
-      { src: path.join(fontsDir, 'Inter-SemiBold.ttf'), fontWeight: 600 },
-      { src: path.join(fontsDir, 'Inter-Bold.ttf'), fontWeight: 700 },
+      { src: interRegular, fontWeight: 400 },
+      { src: interBold, fontWeight: 700 },
     ],
   });
   Font.register({
     family: 'SourceSerif',
-    fonts: [{ src: path.join(fontsDir, 'SourceSerif-Regular.ttf'), fontWeight: 400 }],
+    fonts: [{ src: sourceSerif, fontWeight: 400 }],
   });
   // Long URLs and Romanian words should not be hyphenated mid-word.
   Font.registerHyphenationCallback((word) => [word]);
