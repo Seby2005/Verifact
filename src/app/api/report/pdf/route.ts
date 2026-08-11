@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { hasUnlimitedUsage } from '@/lib/usage/limits';
 import { synthesisFromReport } from '@/lib/ai/report-synthesis';
-import { renderReportPdf } from '@/lib/pdf/ReportDocument';
+import { renderReportPdf, getReportFilename } from '@/lib/pdf/ReportDocument';
 import { logger } from '@/lib/utils/logger';
 import type { VerificationReport } from '@/types/verification';
 
@@ -56,12 +56,15 @@ export async function POST(request: Request): Promise<Response> {
     const synthesis = synthesisFromReport(report, locale);
     const pdf = await renderReportPdf({ report, synthesis, locale });
 
-    const safeId = String(report.id ?? 'raport').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || 'raport';
+    const filename = getReportFilename(report);
+    const asciiFilename = filename.replace(/[^\x20-\x7E]/g, '_');
+    const encodedFilename = encodeURIComponent(filename);
+
     return new Response(new Uint8Array(pdf), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="raport-verifact-${safeId}.pdf"`,
+        'Content-Disposition': `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodedFilename}`,
         'Cache-Control': 'no-store',
       },
     });

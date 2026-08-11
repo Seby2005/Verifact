@@ -1,4 +1,4 @@
-import { renderReportPdf, verdictWordFor } from '@/lib/pdf/ReportDocument';
+import { renderReportPdf, verdictWordFor, getReportFilename } from '@/lib/pdf/ReportDocument';
 import type { VerificationReport } from '@/types/verification';
 import type { ReportSynthesis } from '@/lib/ai/report-synthesis';
 
@@ -46,6 +46,26 @@ const mockSynthesis: ReportSynthesis = {
     { index: 1, stance: 'context', takeaway: 'Sursă utilă' }
   ]
 };
+
+describe('getReportFilename', () => {
+  it('formats filename with verified claim title', () => {
+    const filename = getReportFilename(mockReport);
+    expect(filename).toBe('Raport Verifact - Afirmație de test pentru verificare PDF.pdf');
+  });
+
+  it('strips invalid characters and truncates long claims', () => {
+    const report: VerificationReport = {
+      ...mockReport,
+      verifiedClaim: 'Atacuri cu drone asupra rafinăriilor de petrol din Rusia / Ucraina: detalii complete?'
+    };
+    const filename = getReportFilename(report);
+    expect(filename).not.toContain('/');
+    expect(filename).not.toContain(':');
+    expect(filename).not.toContain('?');
+    expect(filename.startsWith('Raport Verifact - ')).toBe(true);
+    expect(filename.endsWith('.pdf')).toBe(true);
+  });
+});
 
 describe('verdictWordFor', () => {
   it('returns correct localized verdict words', () => {

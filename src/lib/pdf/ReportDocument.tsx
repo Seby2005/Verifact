@@ -22,6 +22,29 @@ export function verdictWordFor(verdict: Verdict, locale: 'ro' | 'en'): string {
   return VERDICT_WORD[locale][verdict];
 }
 
+/**
+ * Generates a human-friendly filename for the report PDF download,
+ * e.g., "Raport Verifact - Ukrainian military attacks on Russian energy.pdf".
+ */
+export function getReportFilename(report: VerificationReport): string {
+  const rawClaim = report.verifiedClaim || report.claim || report.inputText || '';
+  let cleanClaim = rawClaim
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .trim();
+
+  if (cleanClaim.length > 50) {
+    cleanClaim = cleanClaim.slice(0, 50).replace(/\s+\S*$/, '').trim();
+  }
+
+  if (!cleanClaim) {
+    const shortId = report.id ? String(report.id).slice(0, 8) : 'export';
+    return `Raport Verifact - ${shortId}.pdf`;
+  }
+
+  return `Raport Verifact - ${cleanClaim}.pdf`;
+}
+
 const INK = rgb(0.09, 0.078, 0.059);
 const INK_SEC = rgb(0.322, 0.302, 0.267);
 const INK_MUTED = rgb(0.541, 0.518, 0.471);
