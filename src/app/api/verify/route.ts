@@ -138,7 +138,7 @@ export async function POST(request: Request): Promise<Response> {
       .eq('id', user.id)
       .single();
     const typedProfile = profile as { role?: string | null; tier?: string | null } | null;
-    const isAdmin = hasUnlimitedUsage(typedProfile?.role);
+    const isAdmin = hasUnlimitedUsage(typedProfile?.role, user.email);
 
     if (!isAdmin) {
       const reservation = await reserveUsageSlot(supabase);

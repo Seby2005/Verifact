@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { hasUnlimitedUsage } from '@/lib/usage/limits';
-import { synthesizeReport } from '@/lib/ai/report-synthesis';
-import { renderReportPdf, verdictWordFor } from '@/lib/pdf/ReportDocument';
+import { synthesisFromReport } from '@/lib/ai/report-synthesis';
+import { renderReportPdf } from '@/lib/pdf/ReportDocument';
 import { logger } from '@/lib/utils/logger';
 import type { VerificationReport } from '@/types/verification';
 
@@ -45,15 +45,15 @@ export async function POST(request: Request): Promise<Response> {
     .single();
   const typed = profile as { tier?: string | null; role?: string | null } | null;
   const isPremium =
-    hasUnlimitedUsage(typed?.role) || typed?.tier === 'pro' || typed?.tier === 'business';
+    hasUnlimitedUsage(typed?.role, user.email) || typed?.tier === 'pro' || typed?.tier === 'business';
   if (!isPremium) {
     return Response.json({ error: 'Raportul PDF este disponibil pentru planul Pro.' }, { status: 403 });
   }
 
   try {
     const locale: 'ro' | 'en' = report.language === 'en' ? 'en' : 'ro';
-    const verdictWord = verdictWordFor(report.verdict, locale);
-    const synthesis = await synthesizeReport(report, verdictWord, locale);
+    // Instant: reuse what the verification already computed, no fresh AI call.
+    const synthesis = synthesisFromReport(report, locale);
     const pdf = await renderReportPdf({ report, synthesis, locale });
 
     const safeId = String(report.id ?? 'raport').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || 'raport';

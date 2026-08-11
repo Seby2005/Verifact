@@ -38,7 +38,15 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremiu
       });
 
       if (!res.ok) {
-        // Free user, unauthenticated, 403, or server error: show the preview modal!
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        if (res.status === 401) {
+          notify('Trebuie să fii conectat în cont pentru a descărca raportul PDF.', 'error');
+          return;
+        }
+        if (res.status === 500) {
+          notify(data?.error || 'Nu am putut genera fișierul PDF. Reîncearcă în câteva momente.', 'error');
+          return;
+        }
         setPreviewOpen(true);
         return;
       }
@@ -53,20 +61,26 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremiu
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch {
-      setPreviewOpen(true);
+      notify('Nu s-a putut conecta la server pentru generarea PDF-ului.', 'error');
     } finally {
       setDownloading(false);
     }
   };
 
   const handleClick = async () => {
-    // Resolve the tier authoritatively before deciding, so a Pro user who clicks
-    // on first render (isPremium still on its free default) is not shown the
-    // paywall.
     const premium = ready ? isPremium : await fetchIsPremium();
     if (premium) {
       await handleDownload();
     } else {
+      try {
+        const usageRes = await fetch('/api/user/usage');
+        if (usageRes.status === 401) {
+          notify('Conectează-te în contul tău pentru a descărca raportul PDF.', 'error');
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
       setPreviewOpen(true);
     }
   };

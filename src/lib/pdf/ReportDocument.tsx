@@ -12,6 +12,7 @@ import {
 import type { VerificationReport, Verdict } from '@/types/verification';
 import type { ReportSynthesis } from '@/lib/ai/report-synthesis';
 import { sourceHref } from '@/components/verify/ReportView/sourceLink';
+import { stripMarkdown } from '@/lib/utils/romanian-text';
 
 /**
  * The downloadable PDF report. Rendered server-side with @react-pdf so it is a
@@ -265,7 +266,7 @@ function ReportPdf({ report, synthesis, locale }: DocProps): React.ReactElement 
         {synthesis.verdictRationale ? (
           <View style={styles.section}>
             <Text style={styles.label}>{t.rationaleLabel}</Text>
-            <Text style={styles.body}>{synthesis.verdictRationale}</Text>
+            <Text style={styles.body}>{stripMarkdown(synthesis.verdictRationale)}</Text>
           </View>
         ) : null}
 
@@ -275,7 +276,7 @@ function ReportPdf({ report, synthesis, locale }: DocProps): React.ReactElement 
             {synthesis.whatToRemember.map((item, i) => (
               <View style={styles.bullet} key={i}>
                 <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.body}>{item}</Text>
+                <Text style={styles.body}>{stripMarkdown(item)}</Text>
               </View>
             ))}
           </View>
@@ -287,13 +288,13 @@ function ReportPdf({ report, synthesis, locale }: DocProps): React.ReactElement 
             {synthesis.agreements ? (
               <Text style={[styles.body, styles.consensusRow]}>
                 <Text style={styles.consensusKey}>{t.agreementsLabel}: </Text>
-                {synthesis.agreements}
+                {stripMarkdown(synthesis.agreements)}
               </Text>
             ) : null}
             {synthesis.contradictions ? (
               <Text style={[styles.body, styles.consensusRow]}>
                 <Text style={styles.consensusKey}>{t.contradictionsLabel}: </Text>
-                {synthesis.contradictions}
+                {stripMarkdown(synthesis.contradictions)}
               </Text>
             ) : null}
           </View>
@@ -323,7 +324,7 @@ function ReportPdf({ report, synthesis, locale }: DocProps): React.ReactElement 
                           </Text>
                         ) : null}
                       </Text>
-                      {insight?.takeaway ? <Text style={styles.takeaway}>{insight.takeaway}</Text> : null}
+                      {insight?.takeaway ? <Text style={styles.takeaway}>{stripMarkdown(insight.takeaway)}</Text> : null}
                       {source.excerpt ? (
                         <Text style={styles.quote}>&ldquo;{source.excerpt.slice(0, 260)}&rdquo;</Text>
                       ) : null}

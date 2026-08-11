@@ -19,3 +19,19 @@ const CEDILLA_TO_COMMA: Record<string, string> = {
 export function normalizeRomanianDiacritics(text: string): string {
   return text.replace(/[ŞşŢţ]/g, (char) => CEDILLA_TO_COMMA[char]);
 }
+
+/**
+ * Strips markdown symbols (###, ##, #, **, *, __) and section header prefixes
+ * (Rezumat:, Context:, Concluzie:) from AI generated text to produce clean plain text.
+ */
+export function stripMarkdown(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/^#+\s*/gm, '')
+    .replace(/#+/g, '')
+    .replace(/\*{1,3}/g, '')
+    .replace(/_{1,3}/g, '')
+    .replace(/^(?:Raport de Verificare a Faptelor|Rezumat|Analiză Factuală|Summary|Concluzie|Context)\s*:?\s*/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
