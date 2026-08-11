@@ -165,6 +165,7 @@ export const ro = {
     analyzedIn: 'analizat în {seconds}s',
     layersWithEvidence: '{count}/4 straturi cu dovezi',
     claimLabel: 'Afirmația verificată',
+    keyIdeasLabel: 'Idei cheie',
     commentaryLabel: 'Comentariul distribuitorului',
     commentaryNote:
       'Aceasta este opinia persoanei care a distribuit conținutul, nu afirmația verificată. Verdictul se referă la afirmația factuală de mai sus, nu la această interpretare.',

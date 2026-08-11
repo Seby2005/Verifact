@@ -121,9 +121,9 @@ DOVEZI GĂSITE PRIN CĂUTARE (pot fi goale):
 ${evidence || '(nicio dovadă găsită prin căutare)'}
 
 REGULI:
-1. Bazează-te ÎNTÂI pe dovezile de mai sus. Dacă lipsesc, folosește cunoștințe factuale bine stabilite.
-2. Dacă afirmația este o opinie, o predicție sau nu poate fi verificată factual, întoarce verdict "insufficient".
-3. Dacă nu ești sigur și nu ai dovezi, întoarce "insufficient" cu confidence mic. NU ghici.
+1. Bazează-te ÎNTÂI pe dovezile de mai sus. Când lipsesc, dar afirmația ține de fapte binecunoscute (geografie, istorie, apartenențe/funcții publice, evenimente majore), evaluează pe baza cunoștințelor factuale stabilite — "supports" pentru un adevăr clar, "contradicts" pentru o falsitate clară.
+2. Folosește "insufficient" DOAR pentru afirmații cu adevărat obscure, opinii, predicții sau ce nu se poate verifica factual — NU pentru fapte de bază.
+3. Când ești sigur, folosește confidence mare (0.7–1.0) și un scor extrem: aproape de 0 pentru un fals clar, aproape de 100 pentru un adevăr clar. Nu ghici pe ce e obscur (atunci "insufficient", confidence mic).
 4. Nu lua poziții politice.
 
 Întoarce EXCLUSIV un obiect JSON cu exact aceste chei:

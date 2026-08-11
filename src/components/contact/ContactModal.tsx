@@ -48,9 +48,9 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
   };
 
   const handleCopyEmail = () => {
-    navigator.clipboard.writeText('contact@verifact.ro');
+    navigator.clipboard.writeText('verifactro@gmail.com');
     setCopied(true);
-    notify(isRo ? 'Adresa contact@verifact.ro a fost copiată!' : 'contact@verifact.ro copied!', 'success');
+    notify(isRo ? 'Adresa verifactro@gmail.com a fost copiată!' : 'verifactro@gmail.com copied!', 'success');
     setTimeout(() => setCopied(false), 3000);
   };
 
@@ -100,7 +100,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
     onClose();
   };
 
-  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=contact@verifact.ro&su=${encodeURIComponent(
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=verifactro@gmail.com&su=${encodeURIComponent(
     isRo ? 'Solicitare Verifact Business' : 'Verifact Business Inquiry'
   )}&body=${encodeURIComponent(
     `${isRo ? 'Nume' : 'Name'}: ${name}\n${isRo ? 'Rol' : 'Role'}: ${selectedRole}\n${isRo ? 'Interese' : 'Interests'}: ${selectedInterests.join(
@@ -252,7 +252,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
                 <p className={styles.altLabel}>{isRo ? 'Sau contactează-ne direct:' : 'Or reach us directly:'}</p>
                 <div className={styles.altButtons}>
                   <button type="button" className={styles.altBtn} onClick={handleCopyEmail}>
-                    📋 {copied ? (isRo ? 'Copiat!' : 'Copied!') : 'contact@verifact.ro'}
+                    📋 {copied ? (isRo ? 'Copiat!' : 'Copied!') : 'verifactro@gmail.com'}
                   </button>
                   <a href={gmailUrl} target="_blank" rel="noreferrer noopener" className={styles.altBtn}>
                     ✉️ {isRo ? 'Deschide în Gmail' : 'Open in Gmail'}
