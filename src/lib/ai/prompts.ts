@@ -111,12 +111,13 @@ Scor calculat al surselor: ${data.calculatedScore}% (din ${data.availableLayers}
 INSTRUCIUNI STRICTE:
 1. redactează raportul în LIMBA ROMÂNĂ.
 2. Structura raportului trebuie să conțină:
-   - **Rezumat**: 1-2 propoziții condensate care oferă verdictul direct și motivul principal.
-   - **Analiza Factuală**: Explicație detaliată a dovezilor găsite sau a lipsei acestora.
-   - **Context**: De unde provine știrea/afirmația și cum s-a răspândit.
-   - **Concluzie**: Sinteză finală despre veridicitate.
+   - Rezumat: 1-2 propoziții condensate care oferă verdictul direct și motivul principal.
+   - Analiza Factuală: Explicație detaliată a dovezilor găsite sau a lipsei acestora.
+   - Context: De unde provine știrea/afirmația și cum s-a răspândit.
+   - Concluzie: Sinteză finală despre veridicitate.
 3. Fii neutru, obiectiv și folosește limbaj probabilistic când este cazul ("indică", "sugerează").
-4. NU inventa surse sau citate care nu apar în datele de mai sus.${data.commentary ? `\n5. Verdictul se referă DOAR la afirmația factuală. Într-un paragraf scurt, evaluează SEPARAT comentariul celui care a distribuit: spune dacă interpretarea/concluzia lui este susținută de dovezi (de ex. afirmația de bază poate fi adevărată, dar concluzia trasă din ea poate fi falsă sau exagerată).` : ''}`;
+4. NU inventa surse sau citate care nu apar în datele de mai sus.
+5. NU folosi marcaje Markdown precum ###, ##, # sau bolding. Scrie în text simplu.${data.commentary ? `\n6. Verdictul se referă DOAR la afirmația factuală. Într-un paragraf scurt, evaluează SEPARAT comentariul celui care a distribuit: spune dacă interpretarea/concluzia lui este susținută de dovezi (de ex. afirmația de bază poate fi adevărată, dar concluzia trasă din ea poate fi falsă sau exagerată).` : ''}`;
 }
 
 function buildEnglishPrompt(data: PromptData): string {
@@ -144,10 +145,11 @@ Calculated source score: ${data.calculatedScore}% (across ${data.availableLayers
 STRICT INSTRUCTIONS:
 1. Write the report in ENGLISH.
 2. Report Structure:
-   - **Summary**: 1-2 condensed sentences giving the direct verdict and key reason.
-   - **Factual Analysis**: Detailed evaluation of evidence found.
-   - **Context**: Provenance and viral context of the claim.
-   - **Conclusion**: Final synthesis.
+   - Summary: 1-2 condensed sentences giving the direct verdict and key reason.
+   - Factual Analysis: Detailed evaluation of evidence found.
+   - Context: Provenance and viral context of the claim.
+   - Conclusion: Final synthesis.
 3. Be neutral and objective.
-4. DO NOT invent sources or citations.${data.commentary ? `\n5. The verdict concerns ONLY the factual claim. In a short paragraph, assess the sharer's commentary SEPARATELY: say whether their interpretation/conclusion is supported by the evidence (e.g. the underlying claim may be true, yet the conclusion drawn from it false or exaggerated).` : ''}`;
+4. DO NOT invent sources or citations.
+5. DO NOT use markdown headers (###, ##, #) or bold formatting. Write plain text.${data.commentary ? `\n6. The verdict concerns ONLY the factual claim. In a short paragraph, assess the sharer's commentary SEPARATELY: say whether their interpretation/conclusion is supported by the evidence (e.g. the underlying claim may be true, yet the conclusion drawn from it false or exaggerated).` : ''}`;
 }

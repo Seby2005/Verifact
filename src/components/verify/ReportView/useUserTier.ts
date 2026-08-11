@@ -18,7 +18,8 @@ export async function fetchIsPremium(): Promise<boolean> {
     if (!res.ok) return false;
     const data = await res.json();
     const tier = data?.usage?.tier as UserTier | undefined;
-    return tier ? isPremiumTier(tier) : false;
+    const unlimited = Boolean(data?.usage?.unlimited);
+    return unlimited || (tier ? isPremiumTier(tier) : false);
   } catch {
     return false;
   }
@@ -33,6 +34,7 @@ export async function fetchIsPremium(): Promise<boolean> {
  */
 export function useUserTier(): { tier: UserTier; isPremium: boolean; ready: boolean } {
   const [tier, setTier] = useState<UserTier>('free');
+  const [unlimited, setUnlimited] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -42,6 +44,7 @@ export function useUserTier(): { tier: UserTier; isPremium: boolean; ready: bool
       .then((data) => {
         if (!active) return;
         if (data?.usage?.tier) setTier(data.usage.tier as UserTier);
+        if (data?.usage?.unlimited) setUnlimited(Boolean(data.usage.unlimited));
       })
       .catch(() => {
         /* Stay on the free default. */
@@ -54,5 +57,5 @@ export function useUserTier(): { tier: UserTier; isPremium: boolean; ready: bool
     };
   }, []);
 
-  return { tier, isPremium: isPremiumTier(tier), ready };
+  return { tier, isPremium: unlimited || isPremiumTier(tier), ready };
 }

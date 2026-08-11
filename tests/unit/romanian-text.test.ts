@@ -1,4 +1,4 @@
-import { normalizeRomanianDiacritics } from '@/lib/utils/romanian-text';
+import { normalizeRomanianDiacritics, stripMarkdown } from '@/lib/utils/romanian-text';
 
 describe('normalizeRomanianDiacritics', () => {
   it('rewrites cedilla forms to the Romanian comma forms', () => {
@@ -20,5 +20,20 @@ describe('normalizeRomanianDiacritics', () => {
     expect(normalizeRomanianDiacritics('instrucţiuni și instrucțiuni')).toBe(
       'instrucțiuni și instrucțiuni'
     );
+  });
+});
+
+describe('stripMarkdown', () => {
+  it('removes ### headers and heading labels without deleting text content', () => {
+    expect(stripMarkdown('### Rezumat: Afirmația este falsă.')).toBe('Afirmația este falsă.');
+    expect(stripMarkdown('### 1. Punct cheie de reținut')).toBe('1. Punct cheie de reținut');
+  });
+
+  it('removes bold and italic markdown syntax', () => {
+    expect(stripMarkdown('**Afirmația** este *falsă*.')).toBe('Afirmația este falsă.');
+  });
+
+  it('handles empty input gracefully', () => {
+    expect(stripMarkdown('')).toBe('');
   });
 });

@@ -127,6 +127,18 @@ Răspunde EXCLUSIV cu un obiect JSON, cu textele în limba ${lang}:
   }
 }
 
+/**
+ * The synthesis built purely from the report's already-computed fields — no AI
+ * call, so it is instant. The verification already ran the model (analysis,
+ * takeaways, source excerpts); regenerating a fresh synthesis on every PDF
+ * download just re-paid for that work and made the download slow. The PDF route
+ * uses this instead of synthesizeReport.
+ */
+export function synthesisFromReport(report: VerificationReport, locale: 'ro' | 'en'): ReportSynthesis {
+  const sources = (report.sources ?? []).slice(0, MAX_SOURCES);
+  return buildFallbackSynthesis(report, sources, locale);
+}
+
 function str(value: unknown): string {
   return typeof value === 'string' ? stripMarkdown(value) : '';
 }

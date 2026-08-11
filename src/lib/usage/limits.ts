@@ -16,8 +16,16 @@ interface ProfileRecord {
  * display (this module) and the enforcement path (/api/verify) call this so the
  * rule can never drift between the two.
  */
-export function hasUnlimitedUsage(role?: string | null): boolean {
-  return role === 'admin';
+export function hasUnlimitedUsage(role?: string | null, email?: string | null): boolean {
+  if (role === 'admin') return true;
+  if (email) {
+    const norm = email.trim().toLowerCase();
+    if (process.env.ADMIN_EMAILS) {
+      const adminEmails = process.env.ADMIN_EMAILS.split(',').map((e) => e.trim().toLowerCase());
+      if (adminEmails.includes(norm)) return true;
+    }
+  }
+  return false;
 }
 
 function getFirstOfNextMonth(): string {
@@ -29,6 +37,8 @@ function getFirstOfNextMonth(): string {
 
 export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> {
   const supabase = await createServerClient();
+  const { data: authData } = await supabase.auth.getUser();
+  const userEmail = authData?.user?.email;
 
   const { data, error } = await supabase
     .from('profiles')
@@ -62,6 +72,7 @@ export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> 
       resetDate: today,
       tier: 'free',
       percentageUsed: 0,
+      unlimited: hasUnlimitedUsage(null, userEmail),
     };
   }
 
@@ -85,7 +96,7 @@ export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> 
 
   // Admins are uncapped — report it as such rather than as a number the panel
   // would otherwise render as "N of 3".
-  if (hasUnlimitedUsage(profile.role)) {
+  if (hasUnlimitedUsage(profile.role, userEmail)) {
     return {
       allowed: true,
       current: currentCount,
