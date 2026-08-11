@@ -86,6 +86,10 @@ const csp = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // @react-pdf/renderer ships native/WASM assets (yoga-layout). Bundling it with
+  // webpack mangles those and the renderer throws at runtime on Vercel; marking
+  // it external keeps it a real node_module so its assets are traced intact.
+  serverExternalPackages: ['@react-pdf/renderer'],
   // The PDF route (/api/report/pdf) reads the report fonts from
   // process.cwd()/public/fonts at render time. `public/` is served by the CDN
   // but is NOT in a serverless function's filesystem by default, so without

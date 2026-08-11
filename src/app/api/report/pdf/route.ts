@@ -67,6 +67,9 @@ export async function POST(request: Request): Promise<Response> {
     });
   } catch (error) {
     logger.error('PDF report generation failed', { service: 'api/report/pdf', error });
-    return Response.json({ error: 'Nu am putut genera raportul PDF.' }, { status: 500 });
+    // TEMPORARY: surface the real error in the response so a failing production
+    // download can be diagnosed from the toast. Revert to a generic message.
+    const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    return Response.json({ error: `PDF error: ${detail}` }, { status: 500 });
   }
 }
