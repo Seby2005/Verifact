@@ -1,6 +1,7 @@
 import { logger } from '@/lib/utils/logger';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { fetchWithRetry } from '@/lib/utils/retry';
+import { stripMarkdown } from '@/lib/utils/romanian-text';
 import type { VerificationReport } from '@/types/verification';
 
 /**
@@ -86,7 +87,7 @@ Răspunde EXCLUSIV cu un obiect JSON, cu textele în limba ${lang}:
             'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
             'X-Title': 'Verifact Report Synthesis',
           },
-          signal: AbortSignal.timeout(18000),
+          signal: AbortSignal.timeout(12000),
           body: JSON.stringify({
             model: MODEL,
             messages: [{ role: 'user', content: prompt }],
@@ -127,7 +128,7 @@ Răspunde EXCLUSIV cu un obiect JSON, cu textele în limba ${lang}:
 }
 
 function str(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof value === 'string' ? stripMarkdown(value) : '';
 }
 
 function normalizeInsights(value: unknown, count: number): SourceInsight[] | null {
@@ -153,16 +154,16 @@ function buildFallbackSynthesis(
 ): ReportSynthesis {
   const ro = locale === 'ro';
   return {
-    verdictRationale: report.executiveSummary || (ro ? 'Vezi sursele citate pentru context.' : 'See the cited sources for context.'),
+    verdictRationale: stripMarkdown(report.executiveSummary) || (ro ? 'Vezi sursele citate pentru context.' : 'See the cited sources for context.'),
     whatToRemember:
       report.keyTakeaways && report.keyTakeaways.length > 0
-        ? report.keyTakeaways
-        : [report.executiveSummary].filter(Boolean),
+        ? report.keyTakeaways.map(stripMarkdown).filter(Boolean)
+        : [stripMarkdown(report.executiveSummary)].filter(Boolean),
     agreements: '',
     contradictions: '',
     sourceInsights: sources.map((s, i) => ({
       index: i + 1,
-      takeaway: (s.excerpt ?? '').slice(0, 200) || s.title,
+      takeaway: stripMarkdown((s.excerpt ?? '').slice(0, 200) || s.title),
       stance: s.supports === true ? (ro ? 'confirmă' : 'confirms') : s.supports === false ? (ro ? 'contrazice' : 'contradicts') : 'context',
     })),
     commentaryAssessment: '',
