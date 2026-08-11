@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Button, Modal, VerdictLabel, useToast } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import type { VerificationReport } from '@/types/verification';
+import { getReportFilename } from '@/lib/pdf/ReportDocument';
 import { sourceHref } from './sourceLink';
 import { fetchIsPremium } from './useUserTier';
 import styles from './DownloadButton.module.css';
@@ -55,7 +56,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremiu
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `raport-verifact-${report.id}.pdf`;
+      anchor.download = getReportFilename(report);
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
