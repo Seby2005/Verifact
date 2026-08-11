@@ -10,6 +10,7 @@ import { DownloadButton } from './DownloadButton';
 import { StickyVerdict } from './StickyVerdict';
 import { useUserTier } from './useUserTier';
 import { sourceHref } from './sourceLink';
+import { stripMarkdown } from '@/lib/utils/romanian-text';
 import styles from './ReportView.module.css';
 
 export interface ReportViewProps {
@@ -95,11 +96,11 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
 
       {report.keyTakeaways && report.keyTakeaways.length > 0 ? (
         <div className={styles.takeawaysContainer}>
-          <p className={styles.sectionLabel}>📌 IDEI CHEIE</p>
+          <p className={styles.sectionLabel}>{t('reportView.keyIdeasLabel')}</p>
           <ul className={styles.takeawaysList}>
             {report.keyTakeaways.map((item, idx) => (
               <li key={idx} className={styles.takeawayItem}>
-                {item.replace(/#+\s*/g, '').replace(/\*+/g, '').trim()}
+                {stripMarkdown(item)}
               </li>
             ))}
           </ul>
@@ -115,15 +116,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
       {isPremium && report.executiveSummary ? (
         <div>
           <p className={styles.sectionLabel}>{t('reportView.summaryLabel')}</p>
-          <p className={styles.summary}>
-            {report.executiveSummary
-              .replace(/^#+\s*.*$/gm, '')
-              .replace(/#+/g, '')
-              .replace(/\*+/g, '')
-              .replace(/^(?:Raport de Verificare a Faptelor|Rezumat|Summary|Concluzie)\s*:?\s*/gi, '')
-              .replace(/\s+/g, ' ')
-              .trim()}
-          </p>
+          <p className={styles.summary}>{stripMarkdown(report.executiveSummary)}</p>
         </div>
       ) : null}
 

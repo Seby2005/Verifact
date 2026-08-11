@@ -24,13 +24,31 @@ export const Modal: React.FC<ModalProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
 
+  // Focus + scroll lock: keyed ONLY on isOpen, so a parent re-render (e.g. the
+  // caller passing a fresh onClose while the user types in a field) never
+  // re-runs this and yanks focus back to the first element (the close button).
   useEffect(() => {
+    if (!isOpen) return;
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    document.body.style.overflow = 'hidden';
+    const firstFocusable = contentRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    (firstFocusable ?? contentRef.current)?.focus();
+
+    return () => {
+      document.body.style.overflow = '';
+      previouslyFocused.current?.focus();
+    };
+  }, [isOpen]);
+
+  // Escape-to-close + Tab focus trap. Re-subscribing when onClose changes is
+  // harmless here (it moves no focus), so it can track the live onClose.
+  useEffect(() => {
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
         return;
       }
-
       if (e.key !== 'Tab' || !contentRef.current) return;
 
       const focusable = Array.from(
@@ -50,22 +68,8 @@ export const Modal: React.FC<ModalProps> = ({
       }
     };
 
-    if (isOpen) {
-      previouslyFocused.current = document.activeElement as HTMLElement | null;
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
-
-      const firstFocusable = contentRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
-      (firstFocusable ?? contentRef.current)?.focus();
-    }
-
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKeyDown);
-      if (isOpen) {
-        previouslyFocused.current?.focus();
-      }
-    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;

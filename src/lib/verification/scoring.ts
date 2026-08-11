@@ -12,7 +12,10 @@ const WEIGHTS = {
   layer2: 0.30,
   layer3: 0.25,
   layer4: 0.10,
-  ai: 0.10,
+  // The AI assessment gets a real voice (was 0.10): on well-known facts the
+  // model is often the most reliable signal, and under-weighting it left true
+  // claims stuck in "partially true" even when every layer agreed.
+  ai: 0.22,
 } as const;
 
 /**
@@ -127,17 +130,15 @@ export function calculateScore(layers: {
     // Nothing found anywhere and no usable AI assessment.
     rawScore = 0.5;
   } else if (searchLayersWithEvidence === 0 && available.ai) {
-    // The model's own judgement, with nothing found anywhere to corroborate
-    // it. It still sets the direction, but it must not reach a verdict that
-    // reads as verified: "Probabil adevărat · 100%" printed above an empty
-    // source list is the exact kind of confident, unsourced claim this tool
-    // exists to distrust — and "Probabil fals" on no evidence is the same
-    // overreach pointed the other way. Capping just inside the outer bands
-    // leaves 'unclear' and 'partial' reachable and rules out both definitive
-    // labels, without flattening every unsearchable claim back to 50.
-    const floor = VERDICT_THRESHOLD.unclear / 100;
-    const ceiling = (VERDICT_THRESHOLD.true - 1) / 100;
-    rawScore = Math.min(ceiling, Math.max(floor, aiScore01));
+    // Search found nothing to corroborate, so defer to the model's assessment.
+    // It is only trusted here because it already cleared the confidence gate
+    // (>= 0.3) above — an unsure model returns 'insufficient' with low
+    // confidence, which drops out and lands the claim at a neutral 50. The old
+    // behaviour clamped every unsearchable claim into 40–84%, which is exactly
+    // what made a fabrication ("X started a war") read as ~50% "half true" and a
+    // notorious fact ("Romania joined the EU in 2007") stall at 75%. A confident
+    // model now reads false as false and a well-known truth as true.
+    rawScore = aiScore01;
   } else {
     // Weighted average over the components that carry evidence, with the
     // weights of the empty ones redistributed proportionally.

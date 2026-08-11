@@ -11,25 +11,24 @@ import type {
 import { scoreToVerdict, scoreToConfidence } from './scoring';
 import { assignSourceTier } from './ai-source-filter';
 
+import { stripMarkdown } from '@/lib/utils/romanian-text';
+
 export function extractExecutiveSummary(aiAnalysis: string): string {
   if (!aiAnalysis) return '';
 
-  let clean = aiAnalysis
-    .replace(/^#+\s*.*$/gm, '') // Remove markdown heading lines like ### Raport de Verificare
-    .replace(/#+/g, '') // Remove leftover hashes
-    .replace(/\*+/g, '') // Remove asterisks
-    .replace(/^(?:Raport de Verificare a Faptelor|Rezumat|Summary|Concluzie)\s*:?\s*/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const headingMatch = aiAnalysis.match(
+    /(?:^|\n)#*\s*\*?\*?(?:Raport de Verificare a Faptelor|Rezumat|Summary)\*?\*?\s*:?\s*([\s\S]*?)(?=(?:\n#*\s*\*?\*?(?:Analiz|Context|Concluz|Source|Sources|Fact|Detail)\*?\*?|\n\n#+|$))/i
+  );
+
+  let clean = '';
+  if (headingMatch && headingMatch[1].trim().length > 0) {
+    clean = stripMarkdown(headingMatch[1]);
+  }
 
   if (!clean || clean.length < 25) {
-    const rawClean = aiAnalysis
-      .replace(/#+\s*/g, '')
-      .replace(/\*+/g, '')
-      .replace(/^(?:Raport de Verificare a Faptelor|Rezumat|Summary|Concluzie)\s*:?\s*/gi, '')
-      .trim();
-    const sentences = rawClean.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 15);
-    clean = sentences.slice(0, 2).join(' ').trim();
+    const fullClean = stripMarkdown(aiAnalysis);
+    const sentences = fullClean.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 15);
+    clean = (sentences.length > 0 ? sentences.slice(0, 2) : [fullClean]).join(' ').trim();
   }
 
   return clean;
@@ -39,25 +38,51 @@ export function generateKeyTakeaways(
   claim: string,
   summary: string,
   sources: CombinedSource[],
-  score: number
+  score: number,
+  locale: 'ro' | 'en' = 'ro'
 ): string[] {
+  const ro = locale !== 'en';
   const takeaways: string[] = [];
 
   if (score >= 70) {
-    takeaways.push(`Afirmația este susținută de dovezile și sursele identificate (Scor veridicitate: ${score}%).`);
+    takeaways.push(
+      ro
+        ? `Afirmația este susținută de dovezile și sursele identificate (scor de veridicitate: ${score}%).`
+        : `The claim is supported by the evidence and sources found (veracity score: ${score}%).`
+    );
   } else if (score <= 30) {
-    takeaways.push(`Afirmația s-a dovedit a fi falsă sau înșelătoare pe baza verificărilor (Scor veridicitate: ${score}%).`);
+    takeaways.push(
+      ro
+        ? `Afirmația s-a dovedit falsă sau înșelătoare pe baza verificărilor (scor de veridicitate: ${score}%).`
+        : `The claim was found to be false or misleading based on the checks (veracity score: ${score}%).`
+    );
   } else {
-    takeaways.push(`Afirmația conține informații mixte, scoase din context sau neconfirmate (Scor: ${score}%).`);
+    takeaways.push(
+      ro
+        ? `Afirmația conține informații mixte, scoase din context sau neconfirmate (scor: ${score}%).`
+        : `The claim contains mixed, out-of-context or unconfirmed information (score: ${score}%).`
+    );
   }
 
   const tier1Count = sources.filter((s) => s.tier === 1).length;
   if (tier1Count > 0) {
-    takeaways.push(`Au fost identificate ${tier1Count} surse de înaltă autoritate (fact-checkeri oficiali / instituții).`);
+    takeaways.push(
+      ro
+        ? `Au fost identificate ${tier1Count} surse de înaltă autoritate (fact-checkeri / instituții oficiale).`
+        : `${tier1Count} high-authority sources were found (official fact-checkers / institutions).`
+    );
   } else if (sources.length > 0) {
-    takeaways.push(`Au fost analizate ${sources.length} surse din presă și mediu digital.`);
+    takeaways.push(
+      ro
+        ? `Au fost analizate ${sources.length} surse din presă și mediu digital.`
+        : `${sources.length} sources from the press and digital media were analysed.`
+    );
   } else {
-    takeaways.push('Nu au fost găsite înregistrări directe în bazele de date publice de fact-checking.');
+    takeaways.push(
+      ro
+        ? 'Nu au fost găsite înregistrări directe în bazele publice de fact-checking.'
+        : 'No direct records were found in public fact-checking databases.'
+    );
   }
 
   return takeaways;
@@ -208,7 +233,13 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
   const sources = buildCombinedSources(params);
   const rawAnalysis = typeof aiAnalysis === 'object' ? aiAnalysis.summary : (aiAnalysis ?? '');
   const executiveSummary = extractExecutiveSummary(rawAnalysis);
-  const keyTakeaways = generateKeyTakeaways(claimText, executiveSummary, sources, score);
+  const keyTakeaways = generateKeyTakeaways(
+    claimText,
+    executiveSummary,
+    sources,
+    score,
+    input.language === 'en' ? 'en' : 'ro'
+  );
 
   return {
     id: crypto.randomUUID(),

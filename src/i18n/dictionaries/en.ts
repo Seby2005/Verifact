@@ -166,6 +166,7 @@ export const en: Translations = {
     analyzedIn: 'analyzed in {seconds}s',
     layersWithEvidence: '{count}/4 layers with evidence',
     claimLabel: 'Verified claim',
+    keyIdeasLabel: 'Key takeaways',
     commentaryLabel: "The sharer's commentary",
     commentaryNote:
       "This is the opinion of the person who shared the content, not the verified claim. The verdict concerns the factual claim above, not this interpretation.",
