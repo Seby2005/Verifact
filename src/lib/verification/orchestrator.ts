@@ -23,7 +23,7 @@ import { expandClaimQueries } from './query-expander';
 import { decomposeAndAssessRisk } from '@/lib/ai/claim-decomposer';
 import { extractClaim, shouldExtractClaim, type ExtractedClaim } from '@/lib/ai/claim-extractor';
 
-const LAYER_TIMEOUT_MS = 6_000; // 6 seconds per layer (fast search)
+const LAYER_TIMEOUT_MS = 5_000; // 5 seconds per layer (fast search)
 
 function buildFallbackSummary(
   layers: { layer1: Layer1Result; layer2: Layer2Result; layer3: Layer3Result; layer4: Layer4Result },
@@ -239,7 +239,7 @@ export async function verifyContent(
     (l) => l.status === 'success' && l.results.length > 0
   ).length;
 
-  if (layersWithData >= 2 && aiAvailable) {
+  if ((layersWithData >= 1 || rawLayer1.results.length > 0) && aiAvailable) {
     void setCached(contentHash, report);
   }
 

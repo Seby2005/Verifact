@@ -48,6 +48,9 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro'),
+  alternates: {
+    canonical: './',
+  },
   title: {
     default: 'Verifact — Verificare independentă a informației',
     template: '%s — Verifact',

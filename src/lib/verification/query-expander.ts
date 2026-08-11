@@ -100,7 +100,8 @@ function buildFallbackQueries(text: string): ExpandedQueries {
 }
 
 export async function expandClaimQueries(text: string): Promise<ExpandedQueries> {
-  if (!text || text.trim().length < 10) {
+  // Short claims (< 80 chars) are processed instantly via algorithmic extraction (0ms latency)
+  if (!text || text.trim().length < 80) {
     return buildFallbackQueries(text);
   }
 
