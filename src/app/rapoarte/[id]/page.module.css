@@ -1,0 +1,155 @@
+.reportPage {
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-12);
+}
+
+.reportHeader {
+  max-width: 800px;
+  margin: 0 auto var(--space-8);
+  text-align: left;
+}
+
+.badgeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.verdictBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-jetbrains);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.badgeTrue {
+  background-color: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+  border: 1px solid rgba(22, 163, 74, 0.25);
+}
+
+.badgeFalse {
+  background-color: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+.badgePartial {
+  background-color: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.badgeUnclear {
+  background-color: rgba(107, 114, 128, 0.12);
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.25);
+}
+
+.scoreBadge {
+  font-family: var(--font-jetbrains);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+}
+
+.claimTitle {
+  font-family: var(--font-zodiak);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+
+.metaText {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.reportCard {
+  max-width: 800px;
+  margin: 0 auto var(--space-8);
+  padding: var(--space-6);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.sectionTitle {
+  font-family: var(--font-general);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-3);
+}
+
+.analysisText {
+  font-family: var(--font-general);
+  font-size: var(--text-base);
+  line-height: 1.7;
+  color: var(--color-text);
+  white-space: pre-line;
+}
+
+.sourcesList {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sourceItem {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+
+.sourceLink {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.sourceLink:hover {
+  text-decoration: underline;
+}
+
+.ctaBox {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-6);
+  text-align: center;
+  background-color: var(--color-bg-subtle);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.ctaTitle {
+  font-family: var(--font-zodiak);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.ctaText {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+}
