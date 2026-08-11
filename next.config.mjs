@@ -86,10 +86,10 @@ const csp = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // @react-pdf/renderer ships native/WASM assets (yoga-layout). Bundling it with
-  // webpack mangles those and the renderer throws at runtime on Vercel; marking
-  // it external keeps it a real node_module so its assets are traced intact.
-  serverExternalPackages: ['@react-pdf/renderer'],
+  // @react-pdf/renderer must stay BUNDLED (not external): marking it external
+  // made it resolve a second React instance, which threw React error #31 in the
+  // PDF route. Its layout engine (yoga) is WebAssembly, so enable async WASM in
+  // the build below so the bundled module can load it.
   // The PDF route (/api/report/pdf) reads the report fonts from
   // process.cwd()/public/fonts at render time. `public/` is served by the CDN
   // but is NOT in a serverless function's filesystem by default, so without
@@ -101,6 +101,12 @@ const nextConfig = {
   experimental: {
     workerThreads: false,
     cpus: 1,
+  },
+  // @react-pdf's yoga layout engine is WebAssembly; allow the bundled module to
+  // load it in the server build.
+  webpack: (config) => {
+    config.experiments = { ...config.experiments, asyncWebAssembly: true };
+    return config;
   },
   async headers() {
     return [
