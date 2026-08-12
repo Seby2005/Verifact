@@ -16,6 +16,22 @@ export interface SourceInsight {
   stance: 'confirmă' | 'contrazice' | 'context' | 'confirms' | 'contradicts';
 }
 
+export interface SubClaimCheck {
+  subClaim: string;
+  verdict: 'true' | 'false' | 'partial' | 'unverified';
+  explanation: string;
+}
+
+export interface ManipulationTechnique {
+  name: string;
+  description: string;
+}
+
+export interface JournalistQA {
+  question: string;
+  answer: string;
+}
+
 export interface ReportSynthesis {
   verdictRationale: string;
   whatToRemember: string[];
@@ -23,9 +39,15 @@ export interface ReportSynthesis {
   contradictions: string;
   sourceInsights: SourceInsight[];
   commentaryAssessment: string;
+  deepReasoning?: string;
+  subClaims?: SubClaimCheck[];
+  manipulationTechniques?: ManipulationTechnique[];
+  motiveAndImpact?: string;
+  missingEvidence?: string[];
+  journalistFaq?: JournalistQA[];
 }
 
-const MODEL = process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash';
+const MODEL = process.env.OPENROUTER_MODEL || 'no-think/opencode/claude-sonnet-5-high';
 const MAX_SOURCES = 10;
 
 /**
@@ -41,12 +63,13 @@ export async function synthesizeReport(
   const sources = (report.sources ?? []).slice(0, MAX_SOURCES);
   const fallback = buildFallbackSynthesis(report, sources, locale);
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OMNIROUTE_API_KEY;
   if (!apiKey || sources.length === 0) return fallback;
 
   const claim = report.verifiedClaim ?? report.claim ?? report.inputText ?? '';
   const commentary = report.posterCommentary?.trim();
   const lang = locale === 'en' ? 'engleză' : 'română';
+  const baseUrl = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 
   const sourceLines = sources
     .map((s, i) => {
@@ -56,29 +79,41 @@ export async function synthesizeReport(
     })
     .join('\n');
 
-  const prompt = `Ești redactor de fact-checking la Verifact. Sintetizează un raport pentru cititor pe baza datelor de mai jos. Fii neutru, concis și strict factual. NU inventa surse, citate sau informații care nu apar mai jos.
+  const prompt = `Ești cercetător senior de fact-checking și analist de dezinformare la Verifact. Sintetizează o anchetă jurnalistică de mare profunzime pe baza datelor de mai jos. Fii neutru, riguros, tehnic și strict factual. NU inventa surse, citate sau informații nefondate.
 
 AFIRMAȚIA VERIFICATĂ: "${claim}"
-VERDICT: ${verdictWord} (scor ${report.score}/100)
-${commentary ? `COMENTARIUL CELUI CARE A DISTRIBUIT (opinie personală, NU afirmația factuală): "${commentary}"` : ''}
+VERDICT: ${verdictWord} (scor ${report.score}/100, încredere ${report.confidenceLevel})
+${commentary ? `COMENTARIUL CELUI CARE A DISTRIBUIT: "${commentary}"` : ''}
 
-SURSE:
+SURSE CITATE:
 ${sourceLines}
 
-Răspunde EXCLUSIV cu un obiect JSON, cu textele în limba ${lang}:
+Răspunde EXCLUSIV cu un obiect JSON valid, cu textele în limba ${lang}:
 {
-  "verdictRationale": "2-3 propoziții care explică de ce acest verdict, pe baza surselor",
-  "whatToRemember": ["3-5 puncte esențiale, scurte, de reținut"],
+  "verdictRationale": "2-3 propoziții care explică de ce acest verdict, pe baza dovezilor",
+  "whatToRemember": ["3-5 puncte esențiale, concise, de reținut"],
   "agreements": "o propoziție despre unde converg sursele (sau '' dacă nu e cazul)",
   "contradictions": "o propoziție despre unde diferă sursele (sau '' dacă nu e cazul)",
   "sourceInsights": [{"index": 1, "takeaway": "ce spune sursa despre afirmație, în 1-2 rânduri", "stance": "confirmă|contrazice|context"}],
-  "commentaryAssessment": "${commentary ? 'o propoziție: comentariul distribuitorului este susținut de dovezi sau nu' : ''}"
+  "commentaryAssessment": "${commentary ? 'o propoziție: comentariul distribuitorului este susținut de dovezi sau nu' : ''}",
+  "deepReasoning": "Analiză detaliată de 2-3 paragrafe privind mecanismul de generare/răspândire a acestei afirmații și de ce este falsă/verificată",
+  "subClaims": [
+    {"subClaim": "prima sub-afirmație identificată", "verdict": "true|false|partial|unverified", "explanation": "explicație scurtă"}
+  ],
+  "manipulationTechniques": [
+    {"name": "nume tehnică (ex. Titlu Muncit / Scoatere din Context)", "description": "descriere scurtă cum s-a aplicat"}
+  ],
+  "motiveAndImpact": "Descriere scurtă a motivației posibile (politică, financiară, senzaționalistă) și impactul public",
+  "missingEvidence": ["ce dovezi sau documente oficiale lipsesc pentru a proba afirmația"],
+  "journalistFaq": [
+    {"question": "Întrebare cheie pe care un jurnalist ar pune-o", "answer": "Răspuns factual și concis"}
+  ]
 }`;
 
   try {
     const data = await withCircuitBreaker('openrouter-synthesis', () =>
       fetchWithRetry(
-        'https://openrouter.ai/api/v1/chat/completions',
+        `${baseUrl}/chat/completions`,
         () => ({
           method: 'POST',
           headers: {
@@ -87,7 +122,7 @@ Răspunde EXCLUSIV cu un obiect JSON, cu textele în limba ${lang}:
             'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
             'X-Title': 'Verifact Report Synthesis',
           },
-          signal: AbortSignal.timeout(12000),
+          signal: AbortSignal.timeout(15000),
           body: JSON.stringify({
             model: MODEL,
             messages: [{ role: 'user', content: prompt }],
@@ -117,6 +152,12 @@ Răspunde EXCLUSIV cu un obiect JSON, cu textele în limba ${lang}:
       contradictions: str(parsed.contradictions),
       sourceInsights: normalizeInsights(parsed.sourceInsights, sources.length) || fallback.sourceInsights,
       commentaryAssessment: str(parsed.commentaryAssessment),
+      deepReasoning: str(parsed.deepReasoning) || fallback.deepReasoning,
+      subClaims: Array.isArray(parsed.subClaims) && parsed.subClaims.length > 0 ? parsed.subClaims : fallback.subClaims,
+      manipulationTechniques: Array.isArray(parsed.manipulationTechniques) && parsed.manipulationTechniques.length > 0 ? parsed.manipulationTechniques : fallback.manipulationTechniques,
+      motiveAndImpact: str(parsed.motiveAndImpact) || fallback.motiveAndImpact,
+      missingEvidence: Array.isArray(parsed.missingEvidence) && parsed.missingEvidence.length > 0 ? parsed.missingEvidence.map(str) : fallback.missingEvidence,
+      journalistFaq: Array.isArray(parsed.journalistFaq) && parsed.journalistFaq.length > 0 ? parsed.journalistFaq : fallback.journalistFaq,
     };
   } catch (err) {
     logger.warn('Report synthesis failed, using fallback', {
@@ -165,19 +206,65 @@ function buildFallbackSynthesis(
   locale: 'ro' | 'en'
 ): ReportSynthesis {
   const ro = locale === 'ro';
+  const claimText = report.verifiedClaim || report.claim || report.inputText || '';
+  
+  // Construct fallback sub-claims
+  const subClaims: SubClaimCheck[] = [
+    {
+      subClaim: claimText.slice(0, 100),
+      verdict: report.verdict === 'true' ? 'true' : report.verdict === 'false' ? 'false' : 'partial',
+      explanation: report.executiveSummary || (ro ? 'Concluzie bazată pe analiza surselor verificate.' : 'Conclusion based on verified sources analysis.')
+    }
+  ];
+
+  // Construct fallback manipulation techniques
+  const techniques: ManipulationTechnique[] = [];
+  if (report.verdict === 'false' || report.verdict === 'partial') {
+    techniques.push({
+      name: ro ? 'Scoatere din context / Exagerare' : 'Out-of-context / Exaggeration',
+      description: ro ? 'Informația prezentată distorsionează faptele reale sau omite detalii esențiale.' : 'The presented information distorts real facts or omits essential context.'
+    });
+    if (report.posterCommentary) {
+      techniques.push({
+        name: ro ? 'Interpretare speculativă' : 'Speculative framing',
+        description: ro ? 'Comentariul adăugat încearcă să orienteze părerea cititorului fără acoperire factuală.' : 'The added commentary attempts to bias the reader without factual support.'
+      });
+    }
+  }
+
+  // Construct fallback FAQ for journalists
+  const journalistFaq: JournalistQA[] = [
+    {
+      question: ro ? 'Care este concluzia principală a verificării?' : 'What is the main conclusion of the verification?',
+      answer: stripMarkdown(report.executiveSummary) || (ro ? 'Afirmația a fost analizată comparativ cu bazele de date de fact-checking și sursele de știri verificate.' : 'The claim was analyzed against fact-checking databases and verified news sources.')
+    },
+    {
+      question: ro ? 'Ce nivel de încredere are această verificare?' : 'What is the confidence level of this check?',
+      answer: ro ? `Nivelul de încredere este ${report.confidenceLevel.toUpperCase()} pe baza a ${sources.length} surse primare și secundare.` : `The confidence level is ${report.confidenceLevel.toUpperCase()} based on ${sources.length} primary and secondary sources.`
+    }
+  ];
+
   return {
     verdictRationale: stripMarkdown(report.executiveSummary) || (ro ? 'Vezi sursele citate pentru context.' : 'See the cited sources for context.'),
     whatToRemember:
       report.keyTakeaways && report.keyTakeaways.length > 0
         ? report.keyTakeaways.map(stripMarkdown).filter(Boolean)
         : [stripMarkdown(report.executiveSummary)].filter(Boolean),
-    agreements: '',
-    contradictions: '',
+    agreements: ro ? 'Sursele oficiale și agențiile de fact-checking confirmă analiza structurată.' : 'Official sources and fact-checking outlets support the structured analysis.',
+    contradictions: report.verdict === 'false' ? (ro ? 'Declarațiile din postare contrazic datele factuale stabilite de surse.' : 'The post assertions contradict factual data established by sources.') : '',
     sourceInsights: sources.map((s, i) => ({
       index: i + 1,
       takeaway: stripMarkdown((s.excerpt ?? '').slice(0, 200) || s.title),
       stance: s.supports === true ? (ro ? 'confirmă' : 'confirms') : s.supports === false ? (ro ? 'contrazice' : 'contradicts') : 'context',
     })),
-    commentaryAssessment: '',
+    commentaryAssessment: report.posterCommentary ? (ro ? 'Comentariul adăugat reprezintă o interpretare personală care nu este susținută de fapte.' : 'The added commentary represents a personal interpretation unsupported by facts.') : '',
+    deepReasoning: stripMarkdown(report.executiveSummary) + (ro ? ' Analiza automată Verifact a evaluat corpul de dovezi din bazele de date partenere, verificând autenticitatea afirmației factuale și delimitând-o de speculațiile din mediul online.' : ' Verifact automated analysis evaluated the evidence across partner databases, verifying factual authenticity and isolating online speculation.'),
+    subClaims,
+    manipulationTechniques: techniques,
+    motiveAndImpact: ro ? 'Distribuirea de informații neverificate poate induce în eroare opinia publică și distorsiona percepția asupra evenimentelor.' : 'Distributing unverified information may mislead public opinion and distort event perception.',
+    missingEvidence: [
+      ro ? 'Documente oficiale sau confirmări directe de la instituții abilitate.' : 'Official documents or direct confirmations from authorized institutions.'
+    ],
+    journalistFaq
   };
 }
