@@ -108,6 +108,41 @@ import { LanguageProvider } from '@/i18n';
 import { ToastProvider } from '@/components/ui';
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 import { THEME_SCRIPT } from '@/components/layout/ThemeToggle/theme-script';
+import { JsonLd } from '@/components/JsonLd';
+
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Verifact',
+  url: 'https://www.verifact.ro',
+  logo: 'https://www.verifact.ro/logo/verifact-v-logo-transparent.png',
+  sameAs: [],
+};
+
+const webSiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Verifact',
+  url: 'https://www.verifact.ro',
+  inLanguage: 'ro-RO',
+};
+
+const webApplicationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'Verifact',
+  url: process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
+  applicationCategory: 'FactCheckingApplication',
+  operatingSystem: 'All',
+  description:
+    'Platformă AI independentă de verificare a știrilor și informațiilor din mediul online.',
+  inLanguage: 'ro-RO',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'RON',
+  },
+};
 
 export default function RootLayout({
   children,
@@ -131,27 +166,7 @@ export default function RootLayout({
             the wrong one. Runs ahead of hydration and is deliberately tiny;
             THEME_SCRIPT is a constant string, never user input. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'WebApplication',
-              name: 'Verifact',
-              url: process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
-              applicationCategory: 'FactCheckingApplication',
-              operatingSystem: 'All',
-              description:
-                'Platformă AI independentă de verificare a știrilor și informațiilor din mediul online.',
-              inLanguage: 'ro-RO',
-              offers: {
-                '@type': 'Offer',
-                price: '0',
-                priceCurrency: 'RON',
-              },
-            }),
-          }}
-        />
+        <JsonLd data={[organizationSchema, webSiteSchema, webApplicationSchema]} />
       </head>
       <body>
         <LanguageProvider>

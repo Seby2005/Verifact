@@ -1,0 +1,91 @@
+.termCard {
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+  transition: border-color var(--transition-fast);
+}
+
+.termCard:hover {
+  border-color: var(--color-line-strong);
+}
+
+.termTitle {
+  font-family: var(--font-family-serif);
+  font-size: var(--font-size-h3);
+  color: var(--color-ink);
+  margin-bottom: var(--space-3);
+  scroll-margin-top: 5rem;
+}
+
+.termAnchor {
+  color: inherit;
+  text-decoration: none;
+}
+
+.termAnchor:hover {
+  color: var(--color-accent);
+}
+
+.termDefinition {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  color: var(--color-ink-secondary);
+}
+
+.quickNav {
+  background-color: var(--color-surface-hover);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-8);
+}
+
+.quickNavTitle {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label-tight);
+  color: var(--color-ink-muted);
+  margin-bottom: var(--space-3);
+}
+
+.quickNavList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.quickNavLink {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink);
+  text-decoration: none;
+  border-bottom: var(--border-width-hairline) solid var(--color-line-strong);
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.quickNavLink:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.closing {
+  font-size: var(--font-size-body);
+  color: var(--color-ink-secondary);
+}
+
+.textLink {
+  color: var(--color-ink);
+  border-bottom: var(--border-width-hairline) solid var(--color-line-strong);
+  padding-bottom: 2px;
+  text-decoration: none;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.textLink:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
