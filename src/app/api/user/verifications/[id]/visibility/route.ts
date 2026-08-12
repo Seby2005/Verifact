@@ -11,22 +11,26 @@ export async function PATCH(
   const user = await getAuthenticatedUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: { isPublic?: boolean };
+  let body: { isPublic?: boolean; is_public?: boolean; showAuthor?: boolean; show_author?: boolean };
   try {
     body = await request.json();
   } catch {
     return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  if (typeof body.isPublic !== 'boolean') {
+  const isPublic = typeof body.isPublic === 'boolean' ? body.isPublic : body.is_public;
+  if (typeof isPublic !== 'boolean') {
     return Response.json({ error: 'isPublic must be a boolean' }, { status: 400 });
   }
+
+  const showAuthor = typeof body.showAuthor === 'boolean' ? body.showAuthor : body.show_author;
 
   const { setReportVisibility } = await import('@/lib/verification/public-reports');
   const result = await setReportVisibility({
     verificationId: id,
     userId: user.id,
-    isPublic: body.isPublic,
+    isPublic,
+    showAuthor,
   });
 
   if (!result.success) {
@@ -38,6 +42,7 @@ export async function PATCH(
     success: true,
     isPublic: result.isPublic,
     visibilityStatus: result.visibilityStatus,
+    showAuthor: result.showAuthor,
     message: result.message,
   });
 }

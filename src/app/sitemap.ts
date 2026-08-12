@@ -1,10 +1,12 @@
 import type { MetadataRoute } from 'next';
 import { RESOURCE_ARTICLES } from '@/content/resurse';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro';
   const currentDate = new Date();
 
+  // Static resource articles
   const resourceEntries: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}/resurse`,
@@ -20,6 +22,32 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   ];
 
+  // Dynamic public verifications reports from Supabase
+  let publicReportEntries: MetadataRoute.Sitemap = [];
+  try {
+    const supabase = await createServerClient();
+    const { data } = await supabase
+      .from('verifications')
+      .select('id, published_at, created_at')
+      .eq('visibility_status', 'public')
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .limit(1000);
+
+    const verifications = data as Array<{ id: string; published_at: string | null; created_at: string }> | null;
+
+    if (verifications && verifications.length > 0) {
+      publicReportEntries = verifications.map((v) => ({
+        url: `${baseUrl}/rapoarte/${v.id}`,
+        lastModified: new Date(v.published_at || v.created_at),
+        changeFrequency: 'monthly' as const,
+        priority: 0.7,
+      }));
+    }
+  } catch {
+    // If DB is unreachable during sitemap build, return empty public reports list gracefully
+    publicReportEntries = [];
+  }
+
   return [
     {
       url: baseUrl,
@@ -28,12 +56,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
+      url: `${baseUrl}/rapoarte`,
+      lastModified: currentDate,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/despre-dezinformare`,
       lastModified: currentDate,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     ...resourceEntries,
+    ...publicReportEntries,
     {
       url: `${baseUrl}/preturi`,
       lastModified: currentDate,

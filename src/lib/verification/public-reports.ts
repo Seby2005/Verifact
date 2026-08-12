@@ -182,6 +182,7 @@ export interface SetVisibilityParams {
   verificationId: string;
   userId: string;
   isPublic: boolean;
+  showAuthor?: boolean;
 }
 
 export type SetVisibilityResult =
@@ -189,6 +190,7 @@ export type SetVisibilityResult =
       success: true;
       isPublic: boolean;
       visibilityStatus: VisibilityStatus;
+      showAuthor?: boolean;
       message: string;
     }
   | {
@@ -198,22 +200,28 @@ export type SetVisibilityResult =
     };
 
 /**
- * Main helper to toggle report visibility according to business rules.
+ * Main helper to toggle report visibility and author attribution according to business rules.
  */
 export async function setReportVisibility({
   verificationId,
   userId,
   isPublic,
+  showAuthor,
 }: SetVisibilityParams): Promise<SetVisibilityResult> {
   const supabase = await createServerClient();
 
   if (!isPublic) {
+    const unpublishPayload: Record<string, unknown> = {
+      is_public: false,
+      visibility_status: 'private',
+    };
+    if (typeof showAuthor === 'boolean') {
+      unpublishPayload.show_author = showAuthor;
+    }
+
     const { error } = await supabase
       .from('verifications')
-      .update({
-        is_public: false,
-        visibility_status: 'private',
-      } as never)
+      .update(unpublishPayload as never)
       .eq('id', verificationId)
       .eq('user_id', userId);
 
@@ -226,6 +234,7 @@ export async function setReportVisibility({
       success: true,
       isPublic: false,
       visibilityStatus: 'private',
+      showAuthor: typeof showAuthor === 'boolean' ? showAuthor : false,
       message: 'Raportul a fost marcat ca privat.',
     };
   }
@@ -245,13 +254,18 @@ export async function setReportVisibility({
   const targetIsPublic = targetStatus === 'public';
   const publishedAt = targetStatus === 'public' ? new Date().toISOString() : null;
 
+  const publishPayload: Record<string, unknown> = {
+    is_public: targetIsPublic,
+    visibility_status: targetStatus,
+    published_at: publishedAt,
+  };
+  if (typeof showAuthor === 'boolean') {
+    publishPayload.show_author = showAuthor;
+  }
+
   const { error: updateError } = await supabase
     .from('verifications')
-    .update({
-      is_public: targetIsPublic,
-      visibility_status: targetStatus,
-      published_at: publishedAt,
-    } as never)
+    .update(publishPayload as never)
     .eq('id', verificationId)
     .eq('user_id', userId);
 
@@ -264,6 +278,7 @@ export async function setReportVisibility({
     success: true,
     isPublic: targetIsPublic,
     visibilityStatus: targetStatus,
+    showAuthor: typeof showAuthor === 'boolean' ? showAuthor : false,
     message: eligibility.message,
   };
 }
