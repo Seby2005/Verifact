@@ -158,6 +158,14 @@ export default function DespreDezinformarePage() {
             <Link href="/transparenta" className={styles.textLink}>
               {content.methodologyLink}
             </Link>
+            . Consultă și{' '}
+            <Link href="/resurse/glosar-dezinformare" className={styles.textLink}>
+              Glosarul de dezinformare
+            </Link>{' '}
+            sau alte{' '}
+            <Link href="/resurse" className={styles.textLink}>
+              resurse educaționale
+            </Link>
             .
           </p>
         </section>

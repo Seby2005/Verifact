@@ -138,6 +138,10 @@ export default function HomePage() {
           <p className={styles.trustLine}>{t('home.trust.line')}</p>
           <Logo className={styles.trustMark} />
           <p className={styles.trustLinks}>
+            <Link href="/resurse" className={styles.textLink}>
+              Resurse & Glosar
+            </Link>
+            <span className={styles.trustDot}>·</span>
             <Link href="/transparenta" className={styles.textLink}>
               {t('home.callout.methodologyLink')}
             </Link>
