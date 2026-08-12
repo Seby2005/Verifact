@@ -121,6 +121,11 @@ BEGIN
 
   v_caller_role := public.current_profile_role();
 
+  -- Rule 1: Authenticated user required and user must own the verification (unless admin)
+  IF v_caller_role IS DISTINCT FROM 'admin' AND OLD.user_id IS DISTINCT FROM auth.uid() THEN
+    RAISE EXCEPTION 'Cannot modify visibility of a report belonging to another user';
+  END IF;
+
   -- Synchronize boolean is_public flag with visibility_status
   IF NEW.visibility_status = 'public' THEN
     NEW.is_public := TRUE;
