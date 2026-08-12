@@ -75,6 +75,17 @@ export interface FactCheckResult {
   relevanceScore: number;
 }
 
+export interface StateMediaInfo {
+  domain: string;
+  name: string;
+  country: string;
+  countryCode: string;
+  controlLevel: 'state_controlled' | 'state_funded' | 'public_broadcaster';
+  ownership: string;
+  description: string;
+  badgeLabel: string;
+}
+
 export interface NewsArticle {
   title: string;
   source: string;
@@ -85,6 +96,7 @@ export interface NewsArticle {
   snippet: string;
   credibilityScore: number;
   sentiment?: 'neutral' | 'positive' | 'negative' | 'unrelated' | 'confirms' | 'contradicts';
+  stateMediaInfo?: StateMediaInfo;
 }
 
 export interface OfficialSource {
@@ -192,6 +204,17 @@ export interface CombinedSource {
   relevance: number;
   tier?: 1 | 2 | 3;
   excerpt?: string;
+  stateMediaInfo?: StateMediaInfo;
+}
+
+export interface MultiPerspectiveAnalysis {
+  topicContext?: string;
+  sideALabel?: string;
+  sideBLabel?: string;
+  sideAClaims?: string[];
+  sideBClaims?: string[];
+  verifiedFacts?: string[];
+  stateMediaSummary?: string;
 }
 
 export interface VerificationReport {
@@ -243,6 +266,7 @@ export interface VerificationReport {
   language: Language;
   fromCache?: boolean;
   aiAvailable?: boolean;
+  multiPerspectiveAnalysis?: MultiPerspectiveAnalysis;
 }
 
 export interface AIAnalysisContext {

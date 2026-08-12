@@ -10,6 +10,7 @@ import type {
 } from '@/types/verification';
 import { scoreToVerdict, scoreToConfidence } from './scoring';
 import { assignSourceTier } from './ai-source-filter';
+import { getStateMediaInfo } from './state-media';
 
 import { stripMarkdown } from '@/lib/utils/romanian-text';
 
@@ -100,6 +101,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
       const url = r.reviewUrl || r.url;
       if (!url) continue;
       const claimText = r.claimReviewed || r.title || '';
+      const stateMedia = getStateMediaInfo(url);
       sources.push({
         title: `Fact-check: ${claimText.slice(0, 80)}${claimText.length > 80 ? '...' : ''}`,
         url,
@@ -109,6 +111,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
         relevance: r.relevanceScore,
         supports: (r.ratingValue ?? 0.5) > 0.6 ? true : (r.ratingValue ?? 0.5) < 0.4 ? false : null,
         tier: assignSourceTier(url, r.publisher),
+        ...(stateMedia ? { stateMediaInfo: stateMedia } : {}),
       });
     }
   }
@@ -117,6 +120,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
     for (const a of layer2.results) {
       const url = a.articleUrl || a.url;
       if (!url) continue;
+      const stateMedia = a.stateMediaInfo || getStateMediaInfo(url);
       sources.push({
         title: a.title,
         url,
@@ -130,6 +134,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
           : null,
         excerpt: a.snippet,
         tier: assignSourceTier(url, a.source),
+        ...(stateMedia ? { stateMediaInfo: stateMedia } : {}),
       });
     }
   }
@@ -138,6 +143,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
     for (const o of layer3.results) {
       const url = o.documentUrl || o.url;
       if (!url) continue;
+      const stateMedia = getStateMediaInfo(url);
       sources.push({
         title: o.title,
         url,
@@ -151,6 +157,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
           : null,
         excerpt: o.relevantQuote ?? o.snippet,
         tier: assignSourceTier(url, o.organization || o.publisher),
+        ...(stateMedia ? { stateMediaInfo: stateMedia } : {}),
       });
     }
   }
@@ -160,6 +167,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
       const url = p.postUrl || p.url;
       if (!url) continue;
       const text = p.content || p.text || '';
+      const stateMedia = getStateMediaInfo(url);
       sources.push({
         title: `${p.author || 'User'}: "${text.slice(0, 60)}${text.length > 60 ? '...' : ''}"`,
         url,
@@ -170,6 +178,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
         supports: null,
         excerpt: text,
         tier: assignSourceTier(url, p.platform),
+        ...(stateMedia ? { stateMediaInfo: stateMedia } : {}),
       });
     }
   }

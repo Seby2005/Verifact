@@ -12,6 +12,7 @@ import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { isRelevantToClaim } from './relevance';
 import { matchesAnyPhrase } from './keyword-match';
 import type { ExpandedQueries } from './query-expander';
+import { getStateMediaInfo } from './state-media';
 
 // ─── Internal API types ───────────────────────────────────────
 
@@ -129,6 +130,7 @@ async function fetchFromNewsAPI(query: string, language: Language): Promise<News
     return data.articles.map((article): NewsArticle => {
       const credibilityScore = getCredibilityScore(article.url);
       const sentiment = detectSentiment(article.title, article.description ?? '', query, credibilityScore);
+      const stateMedia = getStateMediaInfo(article.url);
 
       return {
         title: article.title,
@@ -139,6 +141,7 @@ async function fetchFromNewsAPI(query: string, language: Language): Promise<News
         snippet: article.description ?? '',
         sentiment,
         credibilityScore,
+        ...(stateMedia ? { stateMediaInfo: stateMedia } : {}),
       };
     });
   } catch {
@@ -182,6 +185,7 @@ async function fetchFromTavily(query: string, rawInputText: string): Promise<New
       const credibilityScore = getCredibilityScore(item.url);
       const domain = extractDomain(item.url);
       const sentiment = detectSentiment(item.title, item.content, rawInputText, credibilityScore);
+      const stateMedia = getStateMediaInfo(item.url);
 
       return {
         title: item.title,
@@ -192,6 +196,7 @@ async function fetchFromTavily(query: string, rawInputText: string): Promise<New
         snippet: item.content,
         sentiment,
         credibilityScore,
+        ...(stateMedia ? { stateMediaInfo: stateMedia } : {}),
       };
     });
   } catch {
@@ -255,6 +260,8 @@ async function fetchFromGDELT(query: string, rawInputText: string): Promise<News
         const url = a.url as string;
         const credibilityScore = getCredibilityScore(url);
         const sentiment = detectSentiment(a.title ?? '', '', rawInputText, credibilityScore);
+        const stateMedia = getStateMediaInfo(url);
+
         return {
           title: a.title ?? '',
           source: a.domain ?? extractDomain(url),
@@ -264,6 +271,7 @@ async function fetchFromGDELT(query: string, rawInputText: string): Promise<News
           snippet: a.title ?? '',
           sentiment,
           credibilityScore,
+          ...(stateMedia ? { stateMediaInfo: stateMedia } : {}),
         };
       });
   } catch {

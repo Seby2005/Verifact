@@ -32,6 +32,16 @@ export interface JournalistQA {
   answer: string;
 }
 
+export interface MultiPerspectiveAnalysis {
+  topicContext?: string;
+  sideALabel?: string;
+  sideBLabel?: string;
+  sideAClaims?: string[];
+  sideBClaims?: string[];
+  verifiedFacts?: string[];
+  stateMediaSummary?: string;
+}
+
 export interface ReportSynthesis {
   verdictRationale: string;
   whatToRemember: string[];
@@ -45,6 +55,7 @@ export interface ReportSynthesis {
   motiveAndImpact?: string;
   missingEvidence?: string[];
   journalistFaq?: JournalistQA[];
+  multiPerspectiveAnalysis?: MultiPerspectiveAnalysis;
 }
 
 const MODEL = process.env.OPENROUTER_MODEL || 'no-think/opencode/claude-sonnet-5-high';
@@ -75,7 +86,8 @@ export async function synthesizeReport(
     .map((s, i) => {
       const stance = s.supports === true ? 'confirmă' : s.supports === false ? 'contrazice' : 'context';
       const excerpt = (s.excerpt ?? '').slice(0, 260).replace(/\s+/g, ' ').trim();
-      return `[${i + 1}] ${s.publisher} — ${s.title} — poziție: ${stance}${excerpt ? ` — extras: "${excerpt}"` : ''}`;
+      const stateMediaTag = s.stateMediaInfo ? ` [MEDIA DE STAT: ${s.stateMediaInfo.badgeLabel}]` : '';
+      return `[${i + 1}] ${s.publisher}${stateMediaTag} — ${s.title} — poziție: ${stance}${excerpt ? ` — extras: "${excerpt}"` : ''}`;
     })
     .join('\n');
 
@@ -107,7 +119,15 @@ Răspunde EXCLUSIV cu un obiect JSON valid, cu textele în limba ${lang}:
   "missingEvidence": ["ce dovezi sau documente oficiale lipsesc pentru a proba afirmația"],
   "journalistFaq": [
     {"question": "Întrebare cheie pe care un jurnalist ar pune-o", "answer": "Răspuns factual și concis"}
-  ]
+  ],
+  "multiPerspectiveAnalysis": {
+    "sideALabel": "Numele primei tabere / perspective (ex. Poziția Oficială sau Susținătorii)",
+    "sideBLabel": "Numele taberei opuse (ex. Poziția Contrapărții sau Media de Stat)",
+    "sideAClaims": ["1-2 afirmații cheie făcute de prima parte"],
+    "sideBClaims": ["1-2 afirmații cheie făcute de a doua parte"],
+    "verifiedFacts": ["1-2 fapte confirmate independent de surse terțe neutre (OSINT / Reuters / FactCheck)"],
+    "stateMediaSummary": "O scurtă propoziție privind rolul surselor media de stat identificate în răspândirea narativei"
+  }
 }`;
 
   try {
@@ -158,6 +178,7 @@ Răspunde EXCLUSIV cu un obiect JSON valid, cu textele în limba ${lang}:
       motiveAndImpact: str(parsed.motiveAndImpact) || fallback.motiveAndImpact,
       missingEvidence: Array.isArray(parsed.missingEvidence) && parsed.missingEvidence.length > 0 ? parsed.missingEvidence.map(str) : fallback.missingEvidence,
       journalistFaq: Array.isArray(parsed.journalistFaq) && parsed.journalistFaq.length > 0 ? parsed.journalistFaq : fallback.journalistFaq,
+      multiPerspectiveAnalysis: parsed.multiPerspectiveAnalysis ?? fallback.multiPerspectiveAnalysis,
     };
   } catch (err) {
     logger.warn('Report synthesis failed, using fallback', {

@@ -42,6 +42,22 @@ function renderTierBadge(tier?: 1 | 2 | 3): React.ReactNode {
   return <span className={styles.tier2Badge}>Tier 2: Presă Generală</span>;
 }
 
+function renderStateMediaBadge(info?: VerificationReport['sources'][number]['stateMediaInfo']): React.ReactNode {
+  if (!info) return null;
+  const badgeClass =
+    info.controlLevel === 'state_controlled'
+      ? styles.stateControlledBadge
+      : info.controlLevel === 'state_funded'
+      ? styles.stateFundedBadge
+      : styles.publicBroadcasterBadge;
+
+  return (
+    <span className={badgeClass} title={info.description}>
+      {info.badgeLabel}
+    </span>
+  );
+}
+
 export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interactive = true }) => {
   const { locale, t } = useLanguage();
   const { isPremium, ready } = useUserTier();
@@ -120,6 +136,46 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </div>
       ) : null}
 
+      {report.multiPerspectiveAnalysis ? (
+        <div className={styles.perspectiveSection}>
+          <p className={styles.sectionLabel}>Perspective &amp; Analiză Multi-Sursă (360°)</p>
+          <div className={styles.perspectiveGrid}>
+            {report.multiPerspectiveAnalysis.sideAClaims && report.multiPerspectiveAnalysis.sideAClaims.length > 0 ? (
+              <div className={styles.perspectiveCard}>
+                <p className={styles.perspectiveTitle}>{report.multiPerspectiveAnalysis.sideALabel || 'Perspectiva A'}</p>
+                <ul className={styles.perspectiveList}>
+                  {report.multiPerspectiveAnalysis.sideAClaims.map((claimItem: string, idx: number) => (
+                    <li key={idx}>{claimItem}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {report.multiPerspectiveAnalysis.sideBClaims && report.multiPerspectiveAnalysis.sideBClaims.length > 0 ? (
+              <div className={styles.perspectiveCard}>
+                <p className={styles.perspectiveTitle}>{report.multiPerspectiveAnalysis.sideBLabel || 'Perspectiva B'}</p>
+                <ul className={styles.perspectiveList}>
+                  {report.multiPerspectiveAnalysis.sideBClaims.map((claimItem: string, idx: number) => (
+                    <li key={idx}>{claimItem}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+
+          {report.multiPerspectiveAnalysis.verifiedFacts && report.multiPerspectiveAnalysis.verifiedFacts.length > 0 ? (
+            <div className={styles.perspectiveCard} style={{ marginTop: '0.5rem' }}>
+              <p className={styles.perspectiveTitle}>Fapte Confirmate Independent (OSINT / Terți)</p>
+              <ul className={styles.perspectiveList}>
+                {report.multiPerspectiveAnalysis.verifiedFacts.map((fact: string, idx: number) => (
+                  <li key={idx}>{fact}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       <div>
         <p className={styles.sectionLabel}>
           {t('reportView.sourcesLabel', { count: report.sources.length })}
@@ -139,6 +195,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
                     {source.title}
                   </a>
                   {renderTierBadge(source.tier)}
+                  {renderStateMediaBadge(source.stateMediaInfo)}
                 </div>
                 <span className={styles.sourceMeta}>
                   {source.publisher}

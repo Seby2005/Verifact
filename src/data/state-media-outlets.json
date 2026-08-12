@@ -1,0 +1,398 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "description": "Registru internațional de entități media de stat, finanțate de stat și radiodifuzori publici pentru Verifact AI Fact-Checker.",
+  "updatedAt": "2026-08-12",
+  "outlets": [
+    {
+      "domain": "rt.com",
+      "name": "RT (Russia Today)",
+      "country": "Rusia",
+      "countryCode": "RU",
+      "controlLevel": "state_controlled",
+      "ownership": "Guvernul Federației Ruse / ANO TV-Novosti",
+      "description": "Rețea internațională de televiziune finanțată și direct controlată de statul rus.",
+      "badgeLabel": "State-Controlled Media (Rusia)"
+    },
+    {
+      "domain": "sputniknews.com",
+      "name": "Sputnik News",
+      "country": "Rusia",
+      "countryCode": "RU",
+      "controlLevel": "state_controlled",
+      "ownership": "Agenția de Stat Rossiya Segodnya",
+      "description": "Agenție internațională de știri și radio operată de statul rus.",
+      "badgeLabel": "State-Controlled Media (Rusia)"
+    },
+    {
+      "domain": "tass.com",
+      "name": "TASS",
+      "country": "Rusia",
+      "countryCode": "RU",
+      "controlLevel": "state_controlled",
+      "ownership": "Guvernul Federației Ruse",
+      "description": "Agenție oficială de știri a statului rus.",
+      "badgeLabel": "State-Controlled Media (Rusia)"
+    },
+    {
+      "domain": "tass.ru",
+      "name": "TASS (Rusia)",
+      "country": "Rusia",
+      "countryCode": "RU",
+      "controlLevel": "state_controlled",
+      "ownership": "Guvernul Federației Ruse",
+      "description": "Agenție oficială de știri a statului rus.",
+      "badgeLabel": "State-Controlled Media (Rusia)"
+    },
+    {
+      "domain": "ria.ru",
+      "name": "RIA Novosti",
+      "country": "Rusia",
+      "countryCode": "RU",
+      "controlLevel": "state_controlled",
+      "ownership": "Rossiya Segodnya",
+      "description": "Agenție de știri de stat din Rusia.",
+      "badgeLabel": "State-Controlled Media (Rusia)"
+    },
+    {
+      "domain": "rg.ru",
+      "name": "Rossiyskaya Gazeta",
+      "country": "Rusia",
+      "countryCode": "RU",
+      "controlLevel": "state_controlled",
+      "ownership": "Guvernul Federației Ruse",
+      "description": "Ziarul oficial al Guvernului Federației Ruse.",
+      "badgeLabel": "State-Controlled Media (Rusia)"
+    },
+    {
+      "domain": "tvzvezda.ru",
+      "name": "TV Zvezda",
+      "country": "Rusia",
+      "countryCode": "RU",
+      "controlLevel": "state_controlled",
+      "ownership": "Ministerul Apărării al Federației Ruse",
+      "description": "Canal TV militar operat de Ministerul Apărării din Rusia.",
+      "badgeLabel": "State-Controlled Media (Rusia)"
+    },
+    {
+      "domain": "1tv.ru",
+      "name": "Channel One Russia",
+      "country": "Rusia",
+      "countryCode": "RU",
+      "controlLevel": "state_controlled",
+      "ownership": "Statul Rus / Acționari Majori de Stat",
+      "description": "Primul canal TV național din Rusia, controlat de stat.",
+      "badgeLabel": "State-Controlled Media (Rusia)"
+    },
+    {
+      "domain": "ukrinform.net",
+      "name": "Ukrinform",
+      "country": "Ucraina",
+      "countryCode": "UA",
+      "controlLevel": "state_controlled",
+      "ownership": "Guvernul Ucrainei",
+      "description": "Agenție Națională de Știri a Ucrainei.",
+      "badgeLabel": "State-Controlled Media (Ucraina)"
+    },
+    {
+      "domain": "ukrinform.ua",
+      "name": "Ukrinform (UA)",
+      "country": "Ucraina",
+      "countryCode": "UA",
+      "controlLevel": "state_controlled",
+      "ownership": "Guvernul Ucrainei",
+      "description": "Agenție Națională de Știri a Ucrainei.",
+      "badgeLabel": "State-Controlled Media (Ucraina)"
+    },
+    {
+      "domain": "suspilne.media",
+      "name": "Suspilne Ukraine",
+      "country": "Ucraina",
+      "countryCode": "UA",
+      "controlLevel": "public_broadcaster",
+      "ownership": "Compania Națională de Radiodifuziune Publică a Ucrainei",
+      "description": "Radiodifuzor public independent din Ucraina.",
+      "badgeLabel": "Public Broadcaster (Ucraina)"
+    },
+    {
+      "domain": "armyinform.com.ua",
+      "name": "ArmyInform Ukraine",
+      "country": "Ucraina",
+      "countryCode": "UA",
+      "controlLevel": "state_controlled",
+      "ownership": "Ministerul Apărării al Ucrainei",
+      "description": "Agenție de știri militare a Ministerului Apărării din Ucraina.",
+      "badgeLabel": "State-Controlled Media (Ucraina)"
+    },
+    {
+      "domain": "presstv.ir",
+      "name": "Press TV",
+      "country": "Iran",
+      "countryCode": "IR",
+      "controlLevel": "state_controlled",
+      "ownership": "IRIB (Radiodifuziunea Republicii Islamice Iran)",
+      "description": "Canal internațional de știri de stat din Iran.",
+      "badgeLabel": "State-Controlled Media (Iran)"
+    },
+    {
+      "domain": "irna.ir",
+      "name": "IRNA (Islamic Republic News Agency)",
+      "country": "Iran",
+      "countryCode": "IR",
+      "controlLevel": "state_controlled",
+      "ownership": "Guvernul Republicii Islamice Iran",
+      "description": "Agenție oficială de știri a statului iranian.",
+      "badgeLabel": "State-Controlled Media (Iran)"
+    },
+    {
+      "domain": "farsnews.ir",
+      "name": "FARS News Agency",
+      "country": "Iran",
+      "countryCode": "IR",
+      "controlLevel": "state_controlled",
+      "ownership": "Gărzile Revoluționare Islamice (IRGC)",
+      "description": "Agenție semi-oficială afiliată armatei/Gărzilor Revoluționare din Iran.",
+      "badgeLabel": "State-Controlled Media (Iran)"
+    },
+    {
+      "domain": "tasnimnews.com",
+      "name": "Tasnim News",
+      "country": "Iran",
+      "countryCode": "IR",
+      "controlLevel": "state_controlled",
+      "ownership": "Gărzile Revoluționare Islamice (IRGC)",
+      "description": "Agenție de știri din Iran afiliată IRGC.",
+      "badgeLabel": "State-Controlled Media (Iran)"
+    },
+    {
+      "domain": "tehrantimes.com",
+      "name": "Tehran Times",
+      "country": "Iran",
+      "countryCode": "IR",
+      "controlLevel": "state_controlled",
+      "ownership": "Ideology Dissemination Organization (Iran)",
+      "description": "Ziar în limba engleză controlat de statul iranian.",
+      "badgeLabel": "State-Controlled Media (Iran)"
+    },
+    {
+      "domain": "kan.org.il",
+      "name": "KAN (Israeli Public Broadcasting)",
+      "country": "Israel",
+      "countryCode": "IL",
+      "controlLevel": "public_broadcaster",
+      "ownership": "Corporate de Radiodifuziune Israeliene (Kan)",
+      "description": "Radiodifuzor public de stat din Israel cu independență editorială prevăzută prin lege.",
+      "badgeLabel": "Public Broadcaster (Israel)"
+    },
+    {
+      "domain": "idf.il",
+      "name": "IDF Official",
+      "country": "Israel",
+      "countryCode": "IL",
+      "controlLevel": "state_controlled",
+      "ownership": "Forțele de Apărare ale Israelului",
+      "description": "Canal militar oficial al Forțelor de Apărare ale Israelului.",
+      "badgeLabel": "State-Controlled (Israel)"
+    },
+    {
+      "domain": "ina.iq",
+      "name": "INA (Iraqi News Agency)",
+      "country": "Irak",
+      "countryCode": "IQ",
+      "controlLevel": "state_controlled",
+      "ownership": "Guvernul Irakului",
+      "description": "Agenția oficială de știri a statului irakian.",
+      "badgeLabel": "State-Controlled Media (Irak)"
+    },
+    {
+      "domain": "cgtn.com",
+      "name": "CGTN (China Global Television Network)",
+      "country": "China",
+      "countryCode": "CN",
+      "controlLevel": "state_controlled",
+      "ownership": "CCTV / Partidul Comunist Chinez (CMG)",
+      "description": "Rețea media internațională de stat din Republica Populară Chineză.",
+      "badgeLabel": "State-Controlled Media (China)"
+    },
+    {
+      "domain": "cctv.com",
+      "name": "CCTV (China Central Television)",
+      "country": "China",
+      "countryCode": "CN",
+      "controlLevel": "state_controlled",
+      "ownership": "China Media Group / Guvernul Chinez",
+      "description": "Televiziunea Centrală a Chinei.",
+      "badgeLabel": "State-Controlled Media (China)"
+    },
+    {
+      "domain": "xinhuanet.com",
+      "name": "Xinhua News Agency",
+      "country": "China",
+      "countryCode": "CN",
+      "controlLevel": "state_controlled",
+      "ownership": "Consiliul de Stat al Republicii Populare Chineze",
+      "description": "Agenția de știri oficială a statului chinez.",
+      "badgeLabel": "State-Controlled Media (China)"
+    },
+    {
+      "domain": "globaltimes.cn",
+      "name": "Global Times",
+      "country": "China",
+      "countryCode": "CN",
+      "controlLevel": "state_controlled",
+      "ownership": "People's Daily / Partidul Comunist Chinez",
+      "description": "Ziar de stat chinez axat pe afaceri internaționale.",
+      "badgeLabel": "State-Controlled Media (China)"
+    },
+    {
+      "domain": "cna.com.tw",
+      "name": "CNA Taiwan (Central News Agency)",
+      "country": "Taiwan",
+      "countryCode": "TW",
+      "controlLevel": "public_broadcaster",
+      "ownership": "Agenția Centrală de Știri din Taiwan",
+      "description": "Agenția națională de știri din Taiwan.",
+      "badgeLabel": "Public Broadcaster (Taiwan)"
+    },
+    {
+      "domain": "voanews.com",
+      "name": "Voice of America (VOA)",
+      "country": "Statele Unite",
+      "countryCode": "US",
+      "controlLevel": "state_funded",
+      "ownership": "US Agency for Global Media (USAGM / Guvernul SUA)",
+      "description": "Radiodifuzor internațional finanțat de guvernul SUA.",
+      "badgeLabel": "State-Funded Media (USA)"
+    },
+    {
+      "domain": "rferl.org",
+      "name": "Radio Free Europe / Radio Liberty",
+      "country": "Statele Unite",
+      "countryCode": "US",
+      "controlLevel": "state_funded",
+      "ownership": "USAGM (Guvernul SUA)",
+      "description": "Organizație media internațională finanțată de Congresul SUA.",
+      "badgeLabel": "State-Funded Media (USA)"
+    },
+    {
+      "domain": "rfa.org",
+      "name": "Radio Free Asia",
+      "country": "Statele Unite",
+      "countryCode": "US",
+      "controlLevel": "state_funded",
+      "ownership": "USAGM (Guvernul SUA)",
+      "description": "Serviciu de știri finanțat de statul american pentru Asia.",
+      "badgeLabel": "State-Funded Media (USA)"
+    },
+    {
+      "domain": "bbc.com",
+      "name": "BBC News",
+      "country": "Marea Britanie",
+      "countryCode": "GB",
+      "controlLevel": "public_broadcaster",
+      "ownership": "British Broadcasting Corporation (Statul Britanic - TV License)",
+      "description": "Radiodifuzor public din Marea Britanie cu independență editorială stabilită prin Carta Regală.",
+      "badgeLabel": "Public Broadcaster (UK)"
+    },
+    {
+      "domain": "bbc.co.uk",
+      "name": "BBC UK",
+      "country": "Marea Britanie",
+      "countryCode": "GB",
+      "controlLevel": "public_broadcaster",
+      "ownership": "BBC",
+      "description": "Radiodifuzor public britanic.",
+      "badgeLabel": "Public Broadcaster (UK)"
+    },
+    {
+      "domain": "dw.com",
+      "name": "Deutsche Welle",
+      "country": "Germania",
+      "countryCode": "DE",
+      "controlLevel": "public_broadcaster",
+      "ownership": "Statul Federal German",
+      "description": "Radiodifuzor public internațional al Germaniei.",
+      "badgeLabel": "Public Broadcaster (Germania)"
+    },
+    {
+      "domain": "france24.com",
+      "name": "France 24",
+      "country": "Franța",
+      "countryCode": "FR",
+      "controlLevel": "public_broadcaster",
+      "ownership": "France Médias Monde (Statul Francez)",
+      "description": "Canal internațional de știri finanțat de statul francez.",
+      "badgeLabel": "Public Broadcaster (Franța)"
+    },
+    {
+      "domain": "aljazeera.com",
+      "name": "Al Jazeera",
+      "country": "Qatar",
+      "countryCode": "QA",
+      "controlLevel": "state_funded",
+      "ownership": "Al Jazeera Media Network (Statul Qatar)",
+      "description": "Rețea de televiziune finanțată de statul Qatar.",
+      "badgeLabel": "State-Funded Media (Qatar)"
+    },
+    {
+      "domain": "alarabiya.net",
+      "name": "Al Arabiya",
+      "country": "Arabia Saudită",
+      "countryCode": "SA",
+      "controlLevel": "state_funded",
+      "ownership": "MBC Group / Guvernul Arabiei Saudite",
+      "description": "Canal de știri finanțat de Arabia Saudită.",
+      "badgeLabel": "State-Funded Media (Arabia Saudită)"
+    },
+    {
+      "domain": "trtworld.com",
+      "name": "TRT World",
+      "country": "Turcia",
+      "countryCode": "TR",
+      "controlLevel": "state_controlled",
+      "ownership": "Corporatistul de Radio și Televiziune din Turcia (TRT)",
+      "description": "Canal internațional de știri de stat din Turcia.",
+      "badgeLabel": "State-Controlled Media (Turcia)"
+    },
+    {
+      "domain": "aa.com.tr",
+      "name": "Anadolu Agency",
+      "country": "Turcia",
+      "countryCode": "TR",
+      "controlLevel": "state_controlled",
+      "ownership": "Guvernul Turciei",
+      "description": "Agenție internațională de știri administrată de statul turc.",
+      "badgeLabel": "State-Controlled Media (Turcia)"
+    },
+    {
+      "domain": "kcna.kp",
+      "name": "KCNA (Korean Central News Agency)",
+      "country": "Coreea de Nord",
+      "countryCode": "KP",
+      "controlLevel": "state_controlled",
+      "ownership": "Guvernul Republicii Populare Democrate Coreene",
+      "description": "Agenția de știri de stat din Coreea de Nord.",
+      "badgeLabel": "State-Controlled Media (Coreea de Nord)"
+    },
+    {
+      "domain": "belta.by",
+      "name": "BelTA",
+      "country": "Belarus",
+      "countryCode": "BY",
+      "controlLevel": "state_controlled",
+      "ownership": "Guvernul Republicii Belarus",
+      "description": "Agenția oficială de știri a statului Belarus.",
+      "badgeLabel": "State-Controlled Media (Belarus)"
+    },
+    {
+      "domain": "sana.sy",
+      "name": "SANA (Syrian Arab News Agency)",
+      "country": "Siria",
+      "countryCode": "SY",
+      "controlLevel": "state_controlled",
+      "ownership": "Ministerul Informațiilor din Siria",
+      "description": "Agenția de știri de stat din Siria.",
+      "badgeLabel": "State-Controlled Media (Siria)"
+    }
+  ]
+}

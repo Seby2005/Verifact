@@ -206,6 +206,87 @@
   color: var(--color-ink-muted);
 }
 
+/* State Media Badges */
+.stateControlledBadge {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--verdict-false);
+  background: color-mix(in srgb, var(--verdict-false) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--verdict-false) 30%, transparent);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.stateFundedBadge {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--verdict-partial);
+  background: color-mix(in srgb, var(--verdict-partial) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--verdict-partial) 30%, transparent);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.publicBroadcasterBadge {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: #2563eb;
+  background: color-mix(in srgb, #2563eb 12%, transparent);
+  border: 1px solid color-mix(in srgb, #2563eb 25%, transparent);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+/* Perspective Analysis Section inside Report */
+.perspectiveSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-paper-shade);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.perspectiveGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .perspectiveGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.perspectiveCard {
+  padding: var(--space-3);
+  background: var(--color-paper);
+  border-radius: var(--radius-sm);
+  border: var(--border-width-hairline) solid var(--color-line);
+}
+
+.perspectiveTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink);
+  margin-bottom: var(--space-2);
+}
+
+.perspectiveList {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-secondary);
+}
+
+.perspectiveList li {
+  margin-bottom: 4px;
+}
+
 .sourceExcerpt {
   font-size: var(--font-size-caption);
   color: var(--color-ink-secondary);
