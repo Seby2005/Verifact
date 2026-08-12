@@ -41,6 +41,7 @@ export interface Verification {
   report_json: Record<string, unknown> | null;
   is_public: boolean;
   visibility_status: VisibilityStatus;
+  show_author: boolean;
   flagged_count: number;
   published_at: string | null;
   reviewed_at: string | null;
