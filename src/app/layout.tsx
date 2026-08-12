@@ -69,10 +69,11 @@ export const metadata: Metadata = {
   ],
   icons: {
     icon: [
+      { url: '/favicon.ico', sizes: 'any' },
       { url: '/logo/verifact-v-logo-red.svg', type: 'image/svg+xml' },
-      { url: '/logo/verifact-v-logo-red.png', type: 'image/png' },
+      { url: '/logo/verifact-v-logo-red.png', type: 'image/png', sizes: '192x192' },
     ],
-    shortcut: '/logo/verifact-v-logo-red.svg',
+    shortcut: '/favicon.ico',
     apple: '/logo/verifact-v-logo-red.png',
   },
   openGraph: {
