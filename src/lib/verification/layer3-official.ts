@@ -2,6 +2,7 @@ import type { OfficialSource, Language, Layer3Result } from '@/types/verificatio
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import type { ExpandedQueries } from './query-expander';
+import { runAcademicLayer } from './layer-academic';
 
 interface TavilySearchResult {
   title: string;
@@ -43,7 +44,7 @@ const KNOWN_ORGANIZATIONS: Record<string, { name: string; type: string }> = {
   'ec.europa.eu': { name: 'Comisia Europeană', type: 'international_org' },
   'cdc.gov': { name: 'Centers for Disease Control and Prevention', type: 'health_org' },
   'fda.gov': { name: 'Food and Drug Administration', type: 'regulator' },
-  'un.org': { name: 'Organizația Națiunilor Unite', type: 'international_org' },
+  'un.org': { name: 'Organizația Națiunilor Unește', type: 'international_org' },
   'nato.int': { name: 'NATO', type: 'international_org' },
 };
 
@@ -121,7 +122,6 @@ interface WikiSearchResponse {
   pages?: Array<{ key: string; title: string; excerpt?: string; description?: string }>;
 }
 
-/** Search excerpts arrive with <span class="searchmatch"> markup and entities. */
 function stripHtml(value: string): string {
   return value
     .replace(/<[^>]+>/g, '')
@@ -132,13 +132,6 @@ function stripHtml(value: string): string {
     .trim();
 }
 
-/**
- * Wikipedia — encyclopedic grounding for the entities and events in a claim, no
- * key (a User-Agent is required). Added as reference *context*: its entries are
- * marked 'neutral' and, being organizationType 'encyclopedia', are excluded from
- * the verdict score (see calculateLayer3Score) so they enrich the report's
- * citations without diluting a real official signal.
- */
 async function fetchWikipedia(queryStr: string, lang: 'ro' | 'en'): Promise<OfficialSource[]> {
   const q = queryStr.trim();
   if (q.length < 3) return [];
@@ -183,8 +176,6 @@ async function fetchWikipedia(queryStr: string, lang: 'ro' | 'en'): Promise<Offi
 }
 
 export function calculateLayer3Score(sources: OfficialSource[]): number {
-  // Encyclopedic entries are context, not a verdict signal — keep them out of
-  // the score so they cannot dilute a genuine official confirm/deny.
   const scored = sources.filter((s) => s.organizationType !== 'encyclopedia');
   if (scored.length === 0) return 0.5;
 
@@ -218,14 +209,13 @@ export async function runLayer3(
   const roQuery = expandedQueries?.romanianQuery || text;
   const enQuery = expandedQueries?.englishQuery || text;
 
-  // Official-domain search (Tavily) plus Wikipedia grounding, in parallel.
-  // Wikipedia needs no key, so this layer still contributes reference context
-  // even when the official search provider isn't configured.
-  const [roItems, enItems, wikiRo, wikiEn] = await Promise.all([
+  // Official search + Wikipedia grounding + Academic/Scientific Research search in parallel
+  const [roItems, enItems, wikiRo, wikiEn, academicItems] = await Promise.all([
     apiKey ? fetchOfficialTavily(roQuery) : Promise.resolve([]),
     apiKey ? fetchOfficialTavily(enQuery) : Promise.resolve([]),
     fetchWikipedia(roQuery, 'ro'),
     fetchWikipedia(enQuery, 'en'),
+    runAcademicLayer(text),
   ]);
 
   const seen = new Set<string>();
@@ -249,14 +239,21 @@ export async function runLayer3(
       };
     });
 
+  const academicSources = academicItems.filter((s) => {
+    const link = s.url || s.documentUrl || s.title;
+    if (seen.has(link)) return false;
+    seen.add(link);
+    return true;
+  });
+
   const wikiSources = [...wikiRo, ...wikiEn].filter((s) => {
     if (!s.documentUrl || seen.has(s.documentUrl)) return false;
     seen.add(s.documentUrl);
     return true;
   });
 
-  // Official sources lead (they carry the verdict signal); Wikipedia follows.
-  const sources = [...officialSources, ...wikiSources];
+  // Official and Academic research sources lead; Wikipedia follows.
+  const sources = [...officialSources, ...academicSources, ...wikiSources];
 
   if (sources.length === 0 && !apiKey) {
     return {
@@ -271,9 +268,9 @@ export async function runLayer3(
 
   return {
     status: 'success',
-    sources: sources.slice(0, 8),
-    results: sources.slice(0, 8),
-    summary: `${sources.length} official/reference documents found`,
+    sources: sources.slice(0, 10),
+    results: sources.slice(0, 10),
+    summary: `${sources.length} official/academic/reference documents found`,
     layerScore: calculateLayer3Score(sources),
     processingTime: Date.now() - startTime,
   };
