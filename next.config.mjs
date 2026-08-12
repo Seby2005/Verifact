@@ -86,6 +86,12 @@ const csp = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  compress: true,
+  productionBrowserSourceMaps: true,
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
+  },
   // @react-pdf/renderer must stay BUNDLED (not external): marking it external
   // made it resolve a second React instance, which threw React error #31 in the
   // PDF route. Its layout engine (yoga) is WebAssembly, so enable async WASM in
@@ -101,6 +107,7 @@ const nextConfig = {
   experimental: {
     workerThreads: false,
     cpus: 1,
+    optimizePackageImports: ['@sentry/nextjs'],
   },
   // @react-pdf's yoga layout engine is WebAssembly; allow the bundled module to
   // load it in the server build.
@@ -136,5 +143,4 @@ const nextConfig = {
 export default withSentryConfig(nextConfig, {
   silent: true,
   disableLogger: true,
-  sourcemaps: { disable: true },
 });
