@@ -18,6 +18,7 @@ export const FOOTER_SECTIONS: ReadonlyArray<{ title: string; links: ReadonlyArra
     title: 'Produs',
     links: [
       { href: '/', label: 'Verifică o afirmație' },
+      { href: '/rapoarte', label: 'Rapoarte publice' },
       { href: '/preturi', label: 'Prețuri' },
       { href: '/cont', label: 'Cont' },
     ],

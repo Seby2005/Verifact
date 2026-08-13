@@ -2,7 +2,7 @@ import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { listPublicReports } from '@/lib/verification/public-reports-query';
-import type { Verdict } from '@/types/verification';
+import { PublicReportCard } from '@/components/reports/PublicReportCard';
 import styles from './page.module.css';
 
 export const revalidate = 60; // ISR revalidation every 60s for public feed
@@ -27,19 +27,7 @@ interface PageProps {
   searchParams: Promise<{ page?: string }>;
 }
 
-function getVerdictInfo(verdict: Verdict | null): { label: string; badgeClass: string } {
-  switch (verdict) {
-    case 'true':
-      return { label: 'Probabil Adevărat', badgeClass: styles.badgeTrue };
-    case 'false':
-      return { label: 'Probabil Fals', badgeClass: styles.badgeFalse };
-    case 'partial':
-      return { label: 'Parțial Adevărat', badgeClass: styles.badgePartial };
-    case 'unclear':
-    default:
-      return { label: 'Neclar', badgeClass: styles.badgeUnclear };
-  }
-}
+
 
 export default async function PublicReportsPage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
@@ -70,39 +58,9 @@ export default async function PublicReportsPage({ searchParams }: PageProps) {
       ) : (
         <>
           <div className={styles.reportsGrid}>
-            {reports.map((report) => {
-              const verdictInfo = getVerdictInfo(report.verdict);
-              const displayDate = report.publishedAt || report.createdAt;
-              const formattedDate = new Date(displayDate).toLocaleDateString('ro-RO', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              });
-
-              return (
-                <Link key={report.id} href={`/rapoarte/${report.id}`} className={styles.reportCard}>
-                  <div className={styles.cardHeader}>
-                    <span className={`${styles.verdictBadge} ${verdictInfo.badgeClass}`}>
-                      {verdictInfo.label}
-                    </span>
-                    {typeof report.score === 'number' && (
-                      <span className={styles.scoreBadge}>{report.score}%</span>
-                    )}
-                  </div>
-                  <h2 className={styles.claimSnippet}>&ldquo;{report.inputText}&rdquo;</h2>
-                  <div className={styles.cardFooter}>
-                    <span className={styles.authorText}>
-                      {report.showAuthor && report.authorName
-                        ? `@${report.authorName}`
-                        : 'Verificat pe Verifact'}
-                    </span>
-                    <time className={styles.dateText} dateTime={displayDate}>
-                      {formattedDate}
-                    </time>
-                  </div>
-                </Link>
-              );
-            })}
+            {reports.map((report) => (
+              <PublicReportCard key={report.id} report={report} variant="feed" />
+            ))}
           </div>
 
           {totalPages > 1 && (
