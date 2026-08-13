@@ -9,6 +9,9 @@ import { PublicReportCard } from '@/components/reports/PublicReportCard';
 import shell from '../../page-shell.module.css';
 import styles from './page.module.css';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

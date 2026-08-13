@@ -3,14 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button, Modal, Callout } from '@/components/ui';
+import { useLanguage } from '@/i18n';
 import type { VerificationReport } from '@/types/verification';
 import { createClient } from '@/lib/supabase/client';
+import { isScoreDecisive } from '@/lib/verification/public-reports';
 
 export interface PublishReportButtonProps {
   report: VerificationReport;
 }
 
 export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report }) => {
+  const { t } = useLanguage();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
   const [showAuthor, setShowAuthor] = useState(false);
@@ -119,24 +122,22 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
       <Modal isOpen={isOpen} onClose={close} title="Publică acest raport în galeria publică">
         {result?.success ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <Callout label="Publicare inițiată" tone="plain">
+            <Callout label={result.visibilityStatus === 'public' ? 'Publicat' : 'Moderare'} tone="plain">
               {result.visibilityStatus === 'public' ? (
                 <>
-                  Raportul a fost publicat cu succes! Este acum accesibil în galeria publică de rapoarte.
+                  {t('publicReports.publishedSuccess')}
                   <div style={{ marginTop: '0.75rem' }}>
                     <Link href={`/rapoarte/${report.id}`} style={{ textDecoration: 'underline', fontWeight: 600 }}>
-                      Deschide pagina publică a raportului &rarr;
+                      {t('publicReports.openPublicPage')} &rarr;
                     </Link>
                   </div>
                 </>
               ) : (
-                <>
-                  Raportul a fost trimis spre moderare (pending review) deoarece contul tău este recent sau are mai puțin de 2 verificări efectuate.
-                </>
+                <>{t('publicReports.pendingNotice')}</>
               )}
             </Callout>
             <Button type="button" variant="ghost" onClick={close} fullWidth>
-              Închide
+              {t('common.close')}
             </Button>
           </div>
         ) : (

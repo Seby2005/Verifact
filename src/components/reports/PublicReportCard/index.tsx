@@ -1,5 +1,8 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { useLanguage } from '@/i18n';
 import type { PublicReportSummary, PublicReportDetail } from '@/lib/verification/public-reports-query';
 import type { Verdict, CombinedSource } from '@/types/verification';
 import styles from './PublicReportCard.module.css';
@@ -9,39 +12,40 @@ export interface PublicReportCardProps {
   variant?: 'feed' | 'detail';
 }
 
-function getVerdictInfo(verdict: Verdict | null, score?: number | null): { label: string; badgeClass: string } {
+function getVerdictInfo(verdict: Verdict | null, score?: number | null, t?: (k: string) => string): { label: string; badgeClass: string } {
   if (typeof score === 'number') {
     if (score >= 85) {
-      return { label: 'Probabil Adevărat', badgeClass: styles.badgeTrue };
+      return { label: t ? t('publicReports.verdictTrue') : 'Probabil Adevărat', badgeClass: styles.badgeTrue };
     }
     if (score <= 39) {
-      return { label: 'Probabil Fals', badgeClass: styles.badgeFalse };
+      return { label: t ? t('publicReports.verdictFalse') : 'Probabil Fals', badgeClass: styles.badgeFalse };
     }
   }
 
   switch (verdict) {
     case 'true':
-      return { label: 'Probabil Adevărat', badgeClass: styles.badgeTrue };
+      return { label: t ? t('publicReports.verdictTrue') : 'Probabil Adevărat', badgeClass: styles.badgeTrue };
     case 'false':
-      return { label: 'Probabil Fals', badgeClass: styles.badgeFalse };
+      return { label: t ? t('publicReports.verdictFalse') : 'Probabil Fals', badgeClass: styles.badgeFalse };
     case 'partial':
-      return { label: 'Parțial Adevărat', badgeClass: styles.badgePartial };
+      return { label: t ? t('publicReports.verdictPartial') : 'Parțial Adevărat', badgeClass: styles.badgePartial };
     case 'unclear':
     default:
-      return { label: 'Neclar', badgeClass: styles.badgeUnclear };
+      return { label: t ? t('publicReports.verdictUnclear') : 'Neclar', badgeClass: styles.badgeUnclear };
   }
 }
 
 export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, variant = 'feed' }) => {
-  const verdictInfo = getVerdictInfo(report.verdict, report.score);
+  const { locale, t } = useLanguage();
+  const verdictInfo = getVerdictInfo(report.verdict, report.score, t);
   const displayDate = report.publishedAt || report.createdAt;
-  const formattedDate = new Date(displayDate).toLocaleDateString('ro-RO', {
+  const formattedDate = new Date(displayDate).toLocaleDateString(locale === 'en' ? 'en-US' : 'ro-RO', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   });
 
-  const authorLabel = report.showAuthor && report.authorName ? `@${report.authorName}` : 'Verificat de un utilizator Verifact';
+  const authorLabel = report.showAuthor && report.authorName ? `@${report.authorName}` : t('publicReports.authorDefault');
 
   // Extract sources if reportDetail is passed
   const reportDetail = 'reportJson' in report ? report.reportJson : null;
@@ -74,7 +78,7 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
         <div className={styles.badgeGroup}>
           <span className={`${styles.verdictBadge} ${verdictInfo.badgeClass}`}>{verdictInfo.label}</span>
           {typeof report.score === 'number' && (
-            <span className={styles.scoreBadge}>Scor veridicitate: {report.score}%</span>
+            <span className={styles.scoreBadge}>{t('publicReports.scoreLabel', { score: String(report.score) })}</span>
           )}
         </div>
       </div>
@@ -88,7 +92,7 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
 
       {analysisText && (
         <div className={styles.analysisBlock}>
-          <div className={styles.analysisTitle}>Analiză Factuală &amp; Context</div>
+          <div className={styles.analysisTitle}>{t('publicReports.analysisTitle')}</div>
           <div className={styles.analysisText}>{analysisText}</div>
         </div>
       )}
@@ -96,7 +100,7 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
       {/* HTML native <details> / <summary> elements for SEO Crawler accessibility */}
       {sources && sources.length > 0 && (
         <details className={styles.sourcesDetails} open>
-          <summary className={styles.sourcesSummary}>Surse citate ({sources.length})</summary>
+          <summary className={styles.sourcesSummary}>{t('publicReports.sourcesCount', { count: String(sources.length) })}</summary>
           <ul className={styles.sourcesList}>
             {sources.map((src, idx) => (
               <li key={idx} className={styles.sourceItem}>
