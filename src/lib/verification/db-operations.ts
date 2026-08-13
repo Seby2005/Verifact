@@ -1,18 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { VerificationReport } from '@/types/verification';
 import type { Database } from '@/types/database';
 import { logger } from '@/lib/utils/logger';
 
 /**
  * Saves a verification report to the Supabase 'verifications' table.
- * Returns whether the write succeeded so callers can decide whether the
- * usage slot charged for it should be kept or released.
+ * Uses createAdminClient to ensure backend-generated verifications are always
+ * saved safely, bypassing client RLS restrictions.
  */
 export async function saveVerification(
   report: VerificationReport,
-  supabase: SupabaseClient<Database>,
+  _userClient?: SupabaseClient<Database>,
   anonymousHash?: string
 ): Promise<boolean> {
+  const adminClient = createAdminClient();
   const insertData = {
     id: report.id,
     user_id: report.userId ?? null,
@@ -28,7 +30,7 @@ export async function saveVerification(
     processing_time_ms: report.processingTime,
   };
 
-  const { error } = await (supabase.from('verifications') as unknown as {
+  const { error } = await (adminClient.from('verifications') as unknown as {
     insert: (data: typeof insertData) => Promise<{ error: { message: string } | null }>;
   }).insert(insertData);
 
