@@ -45,7 +45,7 @@ export async function PATCH(
   const user = await getAuthenticatedUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: { is_public?: boolean; isPublic?: boolean };
+  let body: { is_public?: boolean; isPublic?: boolean; show_author?: boolean; showAuthor?: boolean };
   try {
     body = await request.json();
   } catch {
@@ -57,20 +57,28 @@ export async function PATCH(
     return Response.json({ error: 'is_public must be a boolean' }, { status: 400 });
   }
 
-  const supabase = await createServerClient();
-  const { data: updated, error } = await supabase
-    .from('verifications')
-    .update({ is_public: isPublic } as never)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+  const showAuthor = typeof body.show_author === 'boolean' ? body.show_author : body.showAuthor;
 
-  if (error || !updated) {
-    return Response.json({ error: 'Failed to update visibility' }, { status: 500 });
+  const { setReportVisibility } = await import('@/lib/verification/public-reports');
+  const result = await setReportVisibility({
+    verificationId: id,
+    userId: user.id,
+    isPublic,
+    showAuthor,
+  });
+
+  if (!result.success) {
+    const status = result.code === 'FORBIDDEN' ? 403 : result.code === 'REPORT_NOT_FOUND' ? 404 : 400;
+    return Response.json({ error: result.error, code: result.code }, { status });
   }
 
-  return Response.json({ report: updated, success: true });
+  return Response.json({
+    success: true,
+    isPublic: result.isPublic,
+    visibilityStatus: result.visibilityStatus,
+    showAuthor: result.showAuthor,
+    message: result.message,
+  });
 }
 
 export async function DELETE(

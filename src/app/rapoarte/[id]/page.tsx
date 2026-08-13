@@ -2,8 +2,9 @@ import React from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { createClient as createServerClient } from '@/lib/supabase/server';
-import type { VerificationReport, Verdict } from '@/types/verification';
+import { getPublicReportById } from '@/lib/verification/public-reports-query';
+import type { Verdict } from '@/types/verification';
+import { FlagReportButton } from '@/components/public-reports/FlagReportButton';
 import shell from '../../page-shell.module.css';
 import styles from './page.module.css';
 
@@ -11,35 +12,7 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-interface VerificationRow {
-  id: string;
-  input_text: string;
-  verdict: Verdict;
-  score: number;
-  is_public: boolean;
-  language: string;
-  created_at: string;
-  report_json: VerificationReport;
-}
-
-async function getPublicReport(id: string): Promise<VerificationRow | null> {
-  try {
-    const supabase = await createServerClient();
-    const { data, error } = await supabase
-      .from('verifications')
-      .select('*')
-      .eq('id', id)
-      .eq('is_public', true)
-      .single();
-
-    if (error || !data) return null;
-    return data as VerificationRow;
-  } catch {
-    return null;
-  }
-}
-
-function getVerdictLabel(verdict: Verdict): { label: string; badgeClass: string; ratingValue: number } {
+function getVerdictLabel(verdict: Verdict | null): { label: string; badgeClass: string; ratingValue: number } {
   switch (verdict) {
     case 'true':
       return { label: 'Probabil Adevărat', badgeClass: styles.badgeTrue, ratingValue: 5 };
@@ -55,7 +28,8 @@ function getVerdictLabel(verdict: Verdict): { label: string; badgeClass: string;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const data = await getPublicReport(id);
+  // Consume central helper (single source of truth)
+  const data = await getPublicReportById(id);
 
   if (!data) {
     return {
@@ -65,9 +39,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const verdictInfo = getVerdictLabel(data.verdict);
-  const claimSnippet = data.input_text.slice(0, 100);
+  const claimSnippet = data.inputText.slice(0, 100);
   const title = `[${verdictInfo.label}] "${claimSnippet}..." — Verifact`;
-  const description = `Raport de verificare independentă a informației: Scor de veridicitate ${data.score}%. Vezi analiza detaliată și sursele citate pe Verifact.`;
+  const description = `Raport de verificare independentă a informației: Scor de veridicitate ${data.score ?? 'N/A'}%. Vezi analiza detaliată și sursele citate pe Verifact.`;
   const canonicalUrl = `https://verifact.ro/rapoarte/${id}`;
 
   return {
@@ -94,22 +68,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PublicReportPage({ params }: PageProps) {
   const { id } = await params;
-  const data = await getPublicReport(id);
+  // Consume central helper (single source of truth)
+  const data = await getPublicReportById(id);
 
+  // Return HTTP 404 (notFound) if report does not exist or is not public
   if (!data) {
     notFound();
   }
 
   const verdictInfo = getVerdictLabel(data.verdict);
-  const report = data.report_json;
+  const report = data.reportJson;
+  const displayDate = data.publishedAt || data.createdAt;
+  const authorLabel = data.showAuthor && data.authorName ? `@${data.authorName}` : 'Verificat pe Verifact';
 
-  // Schema.org ClaimReview JSON-LD for Google Fact Check Carousel
+  // Schema.org ClaimReview JSON-LD for Google Fact Check Carousel & Rich Results
   const claimReviewLdJson = {
     '@context': 'https://schema.org',
     '@type': 'ClaimReview',
     url: `https://verifact.ro/rapoarte/${id}`,
-    datePublished: data.created_at,
-    claimReviewed: data.input_text,
+    datePublished: displayDate,
+    claimReviewed: data.inputText,
     author: {
       '@type': 'Organization',
       name: 'Verifact',
@@ -124,7 +102,8 @@ export default async function PublicReportPage({ params }: PageProps) {
     },
     itemReviewed: {
       '@type': 'Claim',
-      datePublished: data.created_at,
+      datePublished: data.createdAt,
+      author: data.showAuthor && data.authorName ? { '@type': 'Person', name: data.authorName } : undefined,
     },
   };
 
@@ -141,11 +120,13 @@ export default async function PublicReportPage({ params }: PageProps) {
           <span className={`${styles.verdictBadge} ${verdictInfo.badgeClass}`}>
             {verdictInfo.label}
           </span>
-          <span className={styles.scoreBadge}>Scor veridicitate: {data.score}%</span>
+          {typeof data.score === 'number' && (
+            <span className={styles.scoreBadge}>Scor veridicitate: {data.score}%</span>
+          )}
         </div>
-        <h1 className={styles.claimTitle}>&ldquo;{data.input_text}&rdquo;</h1>
+        <h1 className={styles.claimTitle}>&ldquo;{data.inputText}&rdquo;</h1>
         <p className={styles.metaText}>
-          Verificat automat pe baza surselor publice • {new Date(data.created_at).toLocaleDateString('ro-RO')}
+          {authorLabel} • Verificat automat pe baza surselor publice • {new Date(displayDate).toLocaleDateString('ro-RO')}
         </p>
       </header>
 
@@ -156,6 +137,28 @@ export default async function PublicReportPage({ params }: PageProps) {
             (typeof report?.aiAnalysis === 'string' ? report.aiAnalysis : report?.aiAnalysis?.summary) ||
             'Analiza factuală este bazată pe interogarea surselor publice disponibile.'}
         </div>
+
+        {report?.sources && report.sources.length > 0 && (
+          <div style={{ marginTop: '2rem' }}>
+            <h3 className={styles.sectionTitle}>Surse Citate</h3>
+            <ul className={styles.sourcesList}>
+              {report.sources.map((src, idx) => (
+                <li key={idx} className={styles.sourceItem}>
+                  <a href={src.url} target="_blank" rel="noopener noreferrer" className={styles.sourceLink}>
+                    {src.publisher || src.title}
+                  </a>
+                  {src.title && src.publisher && (
+                    <span style={{ color: 'var(--color-ink-muted)', marginLeft: '0.5rem' }}>
+                      — {src.title}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <FlagReportButton reportId={id} />
       </main>
 
       <div className={styles.ctaBox}>
