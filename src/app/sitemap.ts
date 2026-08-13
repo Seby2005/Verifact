@@ -1,10 +1,12 @@
 import type { MetadataRoute } from 'next';
 import { RESOURCE_ARTICLES } from '@/content/resurse';
+import { listPublicReports } from '@/lib/verification/public-reports-query';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro';
   const currentDate = new Date();
 
+  // Static resource articles
   const resourceEntries: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}/resurse`,
@@ -20,6 +22,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   ];
 
+  // Dynamic public verifications reports using central helper
+  let publicReportEntries: MetadataRoute.Sitemap = [];
+  try {
+    const { reports } = await listPublicReports({ page: 1, limit: 1000 });
+    publicReportEntries = reports.map((v) => ({
+      url: `${baseUrl}/rapoarte/${v.id}`,
+      lastModified: new Date(v.publishedAt || v.createdAt),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }));
+  } catch {
+    publicReportEntries = [];
+  }
+
   return [
     {
       url: baseUrl,
@@ -28,12 +44,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
+      url: `${baseUrl}/rapoarte`,
+      lastModified: currentDate,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/despre-dezinformare`,
       lastModified: currentDate,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     ...resourceEntries,
+    ...publicReportEntries,
     {
       url: `${baseUrl}/preturi`,
       lastModified: currentDate,

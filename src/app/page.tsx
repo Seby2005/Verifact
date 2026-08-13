@@ -2,12 +2,20 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Reveal } from '@/components/ui';
 import { VerifyTool } from '@/components/verify';
-import { AnimatedDemo } from '@/components/verify/AnimatedDemo';
 import { useLanguage } from '@/i18n';
 import { Logo } from '@/components/layout/Logo';
 import styles from './page.module.css';
+
+const AnimatedDemo = dynamic(
+  () => import('@/components/verify/AnimatedDemo').then((mod) => mod.AnimatedDemo),
+  {
+    ssr: false,
+    loading: () => <div style={{ minHeight: '320px' }} />,
+  }
+);
 
 // A quiet, slowly-drifting wall of duotone news photography behind the hero —
 // the "claims in circulation" the tool cuts through. Public-domain placeholders
@@ -20,14 +28,24 @@ const HERO_ROWS = [
 
 function heroFrames(order: number[]): React.ReactNode {
   // Rendered twice so the marquee can translate -50% and loop seamlessly.
-  return [...order, ...order].map((i, k) => (
-    <span className={styles.heroFrame} key={`${i}-${k}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/hero/${HERO_PHOTOS[i]}.jpg`} alt="" loading="lazy" decoding="async" />
-      <span className={styles.heroLo} />
-      <span className={styles.heroHi} />
-    </span>
-  ));
+  // Initial visible images (k < 2) are loaded eagerly with high fetch priority for LCP optimization.
+  return [...order, ...order].map((i, k) => {
+    const isInitialVisible = k < 2;
+    return (
+      <span className={styles.heroFrame} key={`${i}-${k}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/hero/${HERO_PHOTOS[i]}.jpg`}
+          alt=""
+          loading={isInitialVisible ? 'eager' : 'lazy'}
+          fetchPriority={isInitialVisible ? 'high' : 'auto'}
+          decoding="async"
+        />
+        <span className={styles.heroLo} />
+        <span className={styles.heroHi} />
+      </span>
+    );
+  });
 }
 
 /**

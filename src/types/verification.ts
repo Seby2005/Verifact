@@ -240,6 +240,10 @@ export interface VerificationReport {
   sources: CombinedSource[];
   createdAt: string;
   isPublic: boolean;
+  visibilityStatus?: 'private' | 'pending_review' | 'public' | 'taken_down' | 'rejected';
+  showAuthor?: boolean;
+  flaggedCount?: number;
+  publishedAt?: string;
   language: Language;
   fromCache?: boolean;
   aiAvailable?: boolean;
