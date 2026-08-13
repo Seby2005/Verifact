@@ -94,12 +94,12 @@ export async function checkPublishEligibility({
     };
   }
 
-  // Rule 2: Decisive score check
-  if (!isScoreDecisive(verification.score)) {
+  // Rule 2: Valid score check (must have a completed score)
+  if (verification.score === null || verification.score === undefined) {
     return {
       eligible: false,
       reason: 'SCORE_NOT_DECISIVE',
-      message: `Raportul nu poate fi făcut public deoarece scorul de încredere este ambiguu (${verification.score ?? 'N/A'}). Doar verificările decisive (scor >= 85 sau <= 39) pot fi publicate.`,
+      message: 'Raportul nu poate fi făcut public deoarece nu are un scor de verificare calculat.',
     };
   }
 
@@ -163,29 +163,6 @@ export async function checkPublishEligibility({
         message: 'Ai atins limita de 4 rapoarte publice pentru luna aceasta.',
       };
     }
-  }
-
-  // Rule 4: Account age (<48h) or low verifications count (<2 total)
-  const createdAtTime = new Date(profile.created_at).getTime();
-  const now = Date.now();
-  const hoursSinceRegistration = (now - createdAtTime) / (1000 * 60 * 60);
-
-  // Count total verifications user has saved
-  const { count: totalVerificationsCount } = await supabase
-    .from('verifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId);
-
-  const totalCount = totalVerificationsCount ?? profile.verifications_count ?? 0;
-  const isRecentAccount = hoursSinceRegistration < 48;
-  const hasLowActivity = totalCount < 2;
-
-  if (isRecentAccount || hasLowActivity) {
-    return {
-      eligible: true,
-      requiresPendingReview: true,
-      message: 'Raportul a fost trimis spre moderare (pending review) deoarece contul este recent sau are mai puțin de 2 verificări.',
-    };
   }
 
   return {

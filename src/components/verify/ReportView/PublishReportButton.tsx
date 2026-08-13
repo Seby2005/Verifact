@@ -39,9 +39,7 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
     return null;
   }
 
-  // Score is decisive if >= 85 or <= 39
   const score = report.score;
-  const decisive = typeof score === 'number' && (score >= 85 || score <= 39);
   const isAlreadyPublic = report.isPublic || report.visibilityStatus === 'public';
 
   const close = () => {
@@ -100,19 +98,11 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
 
   return (
     <>
-      <div
-        style={{ display: 'inline-block' }}
-        title={
-          !decisive
-            ? 'Raportul nu poate fi făcut public deoarece scorul de încredere este ambiguu. Doar verificările decisive (scor >= 85 sau <= 39) pot fi publicate.'
-            : undefined
-        }
-      >
+      <div style={{ display: 'inline-block' }}>
         <Button
           type="button"
           variant="primary"
           size="sm"
-          disabled={!decisive}
           onClick={() => setIsOpen(true)}
         >
           Fă public acest raport

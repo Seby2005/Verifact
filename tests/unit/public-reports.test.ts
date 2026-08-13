@@ -105,14 +105,14 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
       }
     });
 
-    it('returns SCORE_NOT_DECISIVE when report score is in ambiguous range (e.g. 50)', async () => {
+    it('returns SCORE_NOT_DECISIVE when report score is null', async () => {
       mockServerFrom.mockImplementation((table: string) => {
         if (table === 'verifications') {
           return {
             select: jest.fn().mockReturnThis(),
             eq: jest.fn().mockReturnThis(),
             single: jest.fn().mockResolvedValue({
-              data: { id: 'v1', user_id: 'user-1', score: 50, is_public: false, visibility_status: 'private' },
+              data: { id: 'v1', user_id: 'user-1', score: null, is_public: false, visibility_status: 'private' },
               error: null,
             }),
           };
@@ -214,7 +214,7 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
       }
     });
 
-    it('returns requiresPendingReview = true for new account (<48h)', async () => {
+    it('returns requiresPendingReview = false for eligible account', async () => {
       const recentCreatedAt = new Date(Date.now() - 12 * 3600 * 1000).toISOString(); // 12h old
 
       mockServerFrom.mockImplementation((table: string) => {
@@ -257,7 +257,7 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
       const result = await checkPublishEligibility({ verificationId: 'v1', userId: 'user-recent' });
       expect(result.eligible).toBe(true);
       if (result.eligible) {
-        expect(result.requiresPendingReview).toBe(true);
+        expect(result.requiresPendingReview).toBe(false);
       }
     });
 
@@ -396,8 +396,8 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.isPublic).toBe(false);
-        expect(result.visibilityStatus).toBe('pending_review');
+        expect(result.isPublic).toBe(true);
+        expect(result.visibilityStatus).toBe('public');
       }
     });
   });
