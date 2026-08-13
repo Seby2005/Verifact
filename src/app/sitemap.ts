@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { RESOURCE_ARTICLES } from '@/content/resurse';
-import { createClient as createServerClient } from '@/lib/supabase/server';
+import { listPublicReports } from '@/lib/verification/public-reports-query';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro';
@@ -22,29 +22,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  // Dynamic public verifications reports from Supabase
+  // Dynamic public verifications reports using central helper
   let publicReportEntries: MetadataRoute.Sitemap = [];
   try {
-    const supabase = await createServerClient();
-    const { data } = await supabase
-      .from('verifications')
-      .select('id, published_at, created_at')
-      .eq('visibility_status', 'public')
-      .order('published_at', { ascending: false, nullsFirst: false })
-      .limit(1000);
-
-    const verifications = data as Array<{ id: string; published_at: string | null; created_at: string }> | null;
-
-    if (verifications && verifications.length > 0) {
-      publicReportEntries = verifications.map((v) => ({
-        url: `${baseUrl}/rapoarte/${v.id}`,
-        lastModified: new Date(v.published_at || v.created_at),
-        changeFrequency: 'monthly' as const,
-        priority: 0.7,
-      }));
-    }
+    const { reports } = await listPublicReports({ page: 1, limit: 1000 });
+    publicReportEntries = reports.map((v) => ({
+      url: `${baseUrl}/rapoarte/${v.id}`,
+      lastModified: new Date(v.publishedAt || v.createdAt),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }));
   } catch {
-    // If DB is unreachable during sitemap build, return empty public reports list gracefully
     publicReportEntries = [];
   }
 

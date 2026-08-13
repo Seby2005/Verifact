@@ -1,8 +1,8 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient as createServerClient } from '@/lib/supabase/server';
-import type { VerdictType } from '@/types/database';
+import { listPublicReports } from '@/lib/verification/public-reports-query';
+import type { Verdict } from '@/types/verification';
 import styles from './page.module.css';
 
 export const revalidate = 60; // ISR revalidation every 60s for public feed
@@ -23,24 +23,11 @@ export const metadata: Metadata = {
   },
 };
 
-interface PublicReportItem {
-  id: string;
-  input_text: string;
-  verdict: VerdictType | null;
-  score: number | null;
-  created_at: string;
-  published_at: string | null;
-  show_author: boolean;
-  author_name?: string | null;
-}
-
 interface PageProps {
   searchParams: Promise<{ page?: string }>;
 }
 
-const PAGE_SIZE = 12;
-
-function getVerdictInfo(verdict: VerdictType | null): { label: string; badgeClass: string } {
+function getVerdictInfo(verdict: Verdict | null): { label: string; badgeClass: string } {
   switch (verdict) {
     case 'true':
       return { label: 'Probabil Adevărat', badgeClass: styles.badgeTrue };
@@ -54,50 +41,12 @@ function getVerdictInfo(verdict: VerdictType | null): { label: string; badgeClas
   }
 }
 
-async function getPublicReports(page: number): Promise<{ reports: PublicReportItem[]; totalCount: number }> {
-  try {
-    const supabase = await createServerClient();
-    const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-
-    // Query ONLY public verifications with explicit public-safe fields + optional profile username
-    const { data, count, error } = await supabase
-      .from('verifications')
-      .select('id, input_text, verdict, score, created_at, published_at, show_author, profiles(username)', { count: 'exact' })
-      .eq('visibility_status', 'public')
-      .order('published_at', { ascending: false, nullsFirst: false })
-      .range(from, to);
-
-    if (error || !data) {
-      return { reports: [], totalCount: 0 };
-    }
-
-    const reports: PublicReportItem[] = data.map((item: Record<string, unknown>) => {
-      const profile = item.profiles as { username: string | null } | null;
-      const showAuthor = Boolean(item.show_author);
-      return {
-        id: String(item.id),
-        input_text: String(item.input_text || ''),
-        verdict: item.verdict as VerdictType | null,
-        score: typeof item.score === 'number' ? item.score : null,
-        created_at: String(item.created_at),
-        published_at: item.published_at ? String(item.published_at) : null,
-        show_author: showAuthor,
-        author_name: showAuthor && profile?.username ? profile.username : null,
-      };
-    });
-
-    return { reports, totalCount: count || 0 };
-  } catch {
-    return { reports: [], totalCount: 0 };
-  }
-}
-
 export default async function PublicReportsPage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
   const currentPage = Math.max(1, parseInt(resolvedSearchParams.page || '1', 10) || 1);
-  const { reports, totalCount } = await getPublicReports(currentPage);
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE) || 1;
+
+  // Consume central helper (single source of truth)
+  const { reports, totalPages } = await listPublicReports({ page: currentPage, limit: 12 });
 
   return (
     <div className={`container ${styles.feedPage}`}>
@@ -123,7 +72,7 @@ export default async function PublicReportsPage({ searchParams }: PageProps) {
           <div className={styles.reportsGrid}>
             {reports.map((report) => {
               const verdictInfo = getVerdictInfo(report.verdict);
-              const displayDate = report.published_at || report.created_at;
+              const displayDate = report.publishedAt || report.createdAt;
               const formattedDate = new Date(displayDate).toLocaleDateString('ro-RO', {
                 day: 'numeric',
                 month: 'short',
@@ -140,11 +89,11 @@ export default async function PublicReportsPage({ searchParams }: PageProps) {
                       <span className={styles.scoreBadge}>{report.score}%</span>
                     )}
                   </div>
-                  <h2 className={styles.claimSnippet}>&ldquo;{report.input_text}&rdquo;</h2>
+                  <h2 className={styles.claimSnippet}>&ldquo;{report.inputText}&rdquo;</h2>
                   <div className={styles.cardFooter}>
                     <span className={styles.authorText}>
-                      {report.show_author && report.author_name
-                        ? `@${report.author_name}`
+                      {report.showAuthor && report.authorName
+                        ? `@${report.authorName}`
                         : 'Verificat pe Verifact'}
                     </span>
                     <time className={styles.dateText} dateTime={displayDate}>
