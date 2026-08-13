@@ -26,18 +26,14 @@ describe('Public Reports Query Helper & show_author Security Tests', () => {
           return {
             select: jest.fn().mockImplementation((_cols, options) => {
               if (options?.count === 'exact') {
-                return {
-                  eq: jest.fn().mockImplementation((field, val) => {
-                    if (field === 'user_id' && val === 'user-owner') {
-                      return Promise.resolve({ count: 5, error: null });
-                    }
-                    return {
-                      neq: jest.fn().mockReturnThis(),
-                      in: jest.fn().mockReturnThis(),
-                      gte: jest.fn().mockResolvedValue({ count: 0, error: null }),
-                    };
-                  }),
+                const chain = {
+                  eq: jest.fn().mockReturnThis(),
+                  neq: jest.fn().mockReturnThis(),
+                  in: jest.fn().mockReturnThis(),
+                  gte: jest.fn().mockResolvedValue({ count: 0, error: null }),
+                  then: (cb: any) => Promise.resolve({ count: 0, error: null }).then(cb),
                 };
+                return chain;
               }
               return {
                 eq: jest.fn().mockReturnThis(),

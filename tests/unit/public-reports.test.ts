@@ -127,7 +127,7 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
       }
     });
 
-    it('returns MONTHLY_LIMIT_EXCEEDED for free tier user with 4+ public reports this month', async () => {
+    it('returns MONTHLY_LIMIT_EXCEEDED for pro/premium tier user with 4+ public reports this month', async () => {
       mockServerFrom.mockImplementation((table: string) => {
         if (table === 'verifications') {
           return {
@@ -138,6 +138,49 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
                   neq: jest.fn().mockReturnThis(),
                   in: jest.fn().mockReturnThis(),
                   gte: jest.fn().mockResolvedValue({ count: 4, error: null }),
+                };
+              }
+              return {
+                eq: jest.fn().mockReturnThis(),
+                single: jest.fn().mockResolvedValue({
+                  data: { id: 'v1', user_id: 'user-pro', score: 90, is_public: false, visibility_status: 'private' },
+                  error: null,
+                }),
+              };
+            }),
+          };
+        }
+        if (table === 'profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({
+              data: { tier: 'pro', created_at: new Date(Date.now() - 100 * 3600 * 1000).toISOString(), verifications_count: 5 },
+              error: null,
+            }),
+          };
+        }
+        throw new Error(`Unexpected table ${table}`);
+      });
+
+      const result = await checkPublishEligibility({ verificationId: 'v1', userId: 'user-pro' });
+      expect(result.eligible).toBe(false);
+      if (!result.eligible) {
+        expect(result.reason).toBe('MONTHLY_LIMIT_EXCEEDED');
+        expect(result.message).toContain('limita de 4 rapoarte publice');
+      }
+    });
+
+    it('returns MONTHLY_LIMIT_EXCEEDED for free tier user with 1+ total public reports lifetime', async () => {
+      mockServerFrom.mockImplementation((table: string) => {
+        if (table === 'verifications') {
+          return {
+            select: jest.fn().mockImplementation((_cols, options) => {
+              if (options?.count === 'exact') {
+                return {
+                  eq: jest.fn().mockReturnThis(),
+                  neq: jest.fn().mockReturnThis(),
+                  in: jest.fn().mockResolvedValue({ count: 1, error: null }),
                 };
               }
               return {
@@ -167,6 +210,7 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
       expect(result.eligible).toBe(false);
       if (!result.eligible) {
         expect(result.reason).toBe('MONTHLY_LIMIT_EXCEEDED');
+        expect(result.message).toContain('Contul gratuit permite un singur raport public');
       }
     });
 
@@ -178,18 +222,14 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
           return {
             select: jest.fn().mockImplementation((_cols, options) => {
               if (options?.count === 'exact') {
-                return {
-                  eq: jest.fn().mockImplementation((field, val) => {
-                    if (field === 'user_id' && val === 'user-recent') {
-                      return Promise.resolve({ count: 5, error: null });
-                    }
-                    return {
-                      neq: jest.fn().mockReturnThis(),
-                      in: jest.fn().mockReturnThis(),
-                      gte: jest.fn().mockResolvedValue({ count: 0, error: null }),
-                    };
-                  }),
+                const chain: any = {
+                  eq: jest.fn().mockReturnThis(),
+                  neq: jest.fn().mockReturnThis(),
+                  in: jest.fn().mockReturnThis(),
+                  gte: jest.fn().mockResolvedValue({ count: 0, error: null }),
+                  then: (cb: any) => Promise.resolve({ count: 5, error: null }).then(cb),
                 };
+                return chain;
               }
               return {
                 eq: jest.fn().mockReturnThis(),
@@ -229,18 +269,19 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
           return {
             select: jest.fn().mockImplementation((_cols, options) => {
               if (options?.count === 'exact') {
-                return {
+                const chain: any = {
                   eq: jest.fn().mockImplementation((field, val) => {
                     if (field === 'user_id' && val === 'user-mature') {
-                      return Promise.resolve({ count: 10, error: null });
+                      return chain;
                     }
-                    return {
-                      neq: jest.fn().mockReturnThis(),
-                      in: jest.fn().mockReturnThis(),
-                      gte: jest.fn().mockResolvedValue({ count: 0, error: null }),
-                    };
+                    return chain;
                   }),
+                  neq: jest.fn().mockReturnThis(),
+                  in: jest.fn().mockReturnThis(),
+                  gte: jest.fn().mockResolvedValue({ count: 0, error: null }),
+                  then: (cb: any) => Promise.resolve({ count: 10, error: null }).then(cb),
                 };
+                return chain;
               }
               return {
                 eq: jest.fn().mockReturnThis(),
@@ -314,18 +355,14 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
           return {
             select: jest.fn().mockImplementation((_cols, options) => {
               if (options?.count === 'exact') {
-                return {
-                  eq: jest.fn().mockImplementation((field, val) => {
-                    if (field === 'user_id' && val === 'user-recent') {
-                      return Promise.resolve({ count: 5, error: null });
-                    }
-                    return {
-                      neq: jest.fn().mockReturnThis(),
-                      in: jest.fn().mockReturnThis(),
-                      gte: jest.fn().mockResolvedValue({ count: 0, error: null }),
-                    };
-                  }),
+                const chain: any = {
+                  eq: jest.fn().mockReturnThis(),
+                  neq: jest.fn().mockReturnThis(),
+                  in: jest.fn().mockReturnThis(),
+                  gte: jest.fn().mockResolvedValue({ count: 0, error: null }),
+                  then: (cb: any) => Promise.resolve({ count: 5, error: null }).then(cb),
                 };
+                return chain;
               }
               return {
                 eq: jest.fn().mockReturnThis(),
