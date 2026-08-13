@@ -7,6 +7,7 @@ import { useLanguage } from '@/i18n';
 import { CiteButton } from './CiteButton';
 import { DisputeButton } from './DisputeButton';
 import { DownloadButton } from './DownloadButton';
+import { PublishReportButton } from './PublishReportButton';
 import { StickyVerdict } from './StickyVerdict';
 import { useUserTier } from './useUserTier';
 import { sourceHref } from './sourceLink';
@@ -159,6 +160,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </Callout>
         {interactive ? (
           <div className={styles.footerActions} data-print-hide>
+            <PublishReportButton report={report} />
             <CiteButton report={report} />
             <DownloadButton report={report} isPremium={isPremium} ready={ready} />
             <DisputeButton reportId={report.id} />
