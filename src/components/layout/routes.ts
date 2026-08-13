@@ -7,6 +7,7 @@ export interface NavLink {
 
 /** Primary nav — kept to three items so the header stays a masthead, not a menu. */
 export const NAV_LINKS: ReadonlyArray<NavLink> = [
+  { href: '/rapoarte', label: 'Rapoarte' },
   { href: '/despre-dezinformare', label: 'Dezinformare' },
   { href: '/transparenta', label: 'Transparență' },
   { href: '/preturi', label: 'Prețuri' },

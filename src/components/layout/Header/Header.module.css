@@ -30,7 +30,13 @@
 .nav {
   display: flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-4);
+}
+
+@media (max-width: 1024px) {
+  .nav {
+    gap: var(--space-3);
+  }
 }
 
 /* Right-hand cluster: the nav, the theme toggle, and (on mobile) the menu
