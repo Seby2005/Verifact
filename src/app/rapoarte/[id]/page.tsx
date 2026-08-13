@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getPublicReportById } from '@/lib/verification/public-reports-query';
 import type { Verdict } from '@/types/verification';
 import { FlagReportButton } from '@/components/public-reports/FlagReportButton';
+import { PublicReportCard } from '@/components/reports/PublicReportCard';
 import shell from '../../page-shell.module.css';
 import styles from './page.module.css';
 
@@ -115,51 +116,13 @@ export default async function PublicReportPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(claimReviewLdJson) }}
       />
 
-      <header className={styles.reportHeader}>
-        <div className={styles.badgeRow}>
-          <span className={`${styles.verdictBadge} ${verdictInfo.badgeClass}`}>
-            {verdictInfo.label}
-          </span>
-          {typeof data.score === 'number' && (
-            <span className={styles.scoreBadge}>Scor veridicitate: {data.score}%</span>
-          )}
-        </div>
-        <h1 className={styles.claimTitle}>&ldquo;{data.inputText}&rdquo;</h1>
-        <p className={styles.metaText}>
-          {authorLabel} • Verificat automat pe baza surselor publice • {new Date(displayDate).toLocaleDateString('ro-RO')}
-        </p>
-      </header>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <PublicReportCard report={data} variant="detail" />
+      </div>
 
-      <main className={styles.reportCard}>
-        <h2 className={styles.sectionTitle}>Analiză Factuală &amp; Context</h2>
-        <div className={styles.analysisText}>
-          {report?.executiveSummary ||
-            (typeof report?.aiAnalysis === 'string' ? report.aiAnalysis : report?.aiAnalysis?.summary) ||
-            'Analiza factuală este bazată pe interogarea surselor publice disponibile.'}
-        </div>
-
-        {report?.sources && report.sources.length > 0 && (
-          <div style={{ marginTop: '2rem' }}>
-            <h3 className={styles.sectionTitle}>Surse Citate</h3>
-            <ul className={styles.sourcesList}>
-              {report.sources.map((src, idx) => (
-                <li key={idx} className={styles.sourceItem}>
-                  <a href={src.url} target="_blank" rel="noopener noreferrer" className={styles.sourceLink}>
-                    {src.publisher || src.title}
-                  </a>
-                  {src.title && src.publisher && (
-                    <span style={{ color: 'var(--color-ink-muted)', marginLeft: '0.5rem' }}>
-                      — {src.title}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
         <FlagReportButton reportId={id} />
-      </main>
+      </div>
 
       <div className={styles.ctaBox}>
         <h3 className={styles.ctaTitle}>Vrei să verifici și tu o informație?</h3>
