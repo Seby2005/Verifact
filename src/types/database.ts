@@ -11,6 +11,7 @@ export type InputType = 'text' | 'screenshot' | 'url';
 export type VerdictType = 'true' | 'partial' | 'unclear' | 'false';
 export type LanguageType = 'ro' | 'en';
 export type VerificationStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type VisibilityStatus = 'private' | 'pending_review' | 'public' | 'taken_down' | 'rejected';
 export type DisputeStatus = 'open' | 'reviewing' | 'resolved_kept' | 'resolved_hidden' | 'resolved_edited' | 'rejected';
 export type SubscriptionStatus = 'pending_manual' | 'active' | 'past_due' | 'canceled';
 
@@ -39,6 +40,12 @@ export interface Verification {
   score: number | null;
   report_json: Record<string, unknown> | null;
   is_public: boolean;
+  visibility_status: VisibilityStatus;
+  show_author: boolean;
+  flagged_count: number;
+  published_at: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
   language: LanguageType;
   processing_time_ms: number | null;
   status: VerificationStatus;
@@ -68,6 +75,14 @@ export interface Dispute {
   resolution_note: string | null;
   created_at: string;
   resolved_at: string | null;
+}
+
+export interface VerificationFlag {
+  id: string;
+  verification_id: string;
+  reporter_user_id: string;
+  reason: string | null;
+  created_at: string;
 }
 
 export interface ApiCallLog {
@@ -113,12 +128,25 @@ export interface Database {
       };
       verifications: {
         Row: Verification;
-        Insert: Omit<Verification, 'id' | 'created_at' | 'disputed'> & {
+        Insert: Omit<Verification, 'id' | 'created_at' | 'disputed' | 'visibility_status' | 'flagged_count'> & {
           id?: string;
           created_at?: string;
           disputed?: boolean;
+          visibility_status?: VisibilityStatus;
+          flagged_count?: number;
+          published_at?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
         };
         Update: Partial<Verification>;
+      };
+      verification_flags: {
+        Row: VerificationFlag;
+        Insert: Omit<VerificationFlag, 'id' | 'created_at'> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<VerificationFlag>;
       };
       cached_results: {
         Row: CachedResult;
