@@ -125,8 +125,25 @@ export async function checkPublishEligibility({
     };
   }
 
-  // Rule 3: Free tier limit (1 per calendar month)
+  // Rule 3: Tier-differentiated publication limits
   if (profile.tier === 'free') {
+    // Free tier: 1 public report TOTAL lifetime (no monthly reset)
+    const { count, error: countError } = await supabase
+      .from('verifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .neq('id', verificationId)
+      .in('visibility_status', ['public', 'pending_review']);
+
+    if (!countError && count !== null && count >= 1) {
+      return {
+        eligible: false,
+        reason: 'MONTHLY_LIMIT_EXCEEDED',
+        message: 'Contul gratuit permite un singur raport public, în total. Treci la premium pentru mai multe.',
+      };
+    }
+  } else {
+    // Non-free tier (pro/business/premium): 4 public reports per calendar month
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -143,7 +160,7 @@ export async function checkPublishEligibility({
       return {
         eligible: false,
         reason: 'MONTHLY_LIMIT_EXCEEDED',
-        message: 'Ați atins limita de 4 rapoarte publice pe lună pentru contul gratuit. Treceți la Pro pentru publicare nelimitată.',
+        message: 'Ai atins limita de 4 rapoarte publice pentru luna aceasta.',
       };
     }
   }
