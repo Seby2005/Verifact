@@ -1,10 +1,11 @@
 -- =============================================================================
--- Migration 013: Fix public reports publication rules
+-- Migration 013: Fix public reports publication rules & input_type restrictions
 -- =============================================================================
 -- 1. Authenticated users can publish reports directly without forced pending_review.
--- 2. All completed verifications (text, screenshot, url) with valid score/verdict can be published.
--- 3. Sets published_at timestamp and sets visibility_status = 'public' / is_public = true.
--- 4. Allows authenticated users to claim and publish verifications with NULL user_id.
+-- 2. Only input_type = 'text' or input_type = 'url' can be made public.
+-- 3. input_type = 'screenshot' is strictly forbidden from being published.
+-- 4. Sets published_at timestamp and sets visibility_status = 'public' / is_public = true.
+-- 5. Allows authenticated users to claim and publish verifications with NULL user_id.
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.enforce_verification_public_rules()
@@ -48,9 +49,9 @@ BEGIN
 
   -- If user is requesting to publish (moving to 'public' or setting is_public = true)
   IF NEW.visibility_status IN ('public', 'pending_review') OR (NEW.is_public = TRUE AND OLD.is_public = FALSE) THEN
-    -- Ensure user_id is set
-    IF NEW.user_id IS NULL AND auth.uid() IS NOT NULL THEN
-      NEW.user_id := auth.uid();
+    -- Rule 0: Screenshot verifications CANNOT be made public
+    IF NEW.input_type = 'screenshot' THEN
+      RAISE EXCEPTION 'Rapoartele din screenshot-uri nu pot fi făcute publice.';
     END IF;
 
     -- Rule 1: Authenticated user required
