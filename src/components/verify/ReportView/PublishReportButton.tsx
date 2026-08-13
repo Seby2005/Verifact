@@ -43,6 +43,7 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
 
   const score = report.score;
   const isAlreadyPublic = report.isPublic || report.visibilityStatus === 'public';
+  const isScreenshot = report.inputType === 'screenshot' || (report as unknown as Record<string, unknown>).input_type === 'screenshot';
 
   const close = () => {
     setIsOpen(false);
@@ -96,6 +97,19 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
           Vezi raportul public &rarr;
         </Button>
       </Link>
+    );
+  }
+
+  if (isScreenshot) {
+    return (
+      <div style={{ display: 'inline-flex', flexDirection: 'column', gap: '0.25rem' }} title="Rapoartele din screenshot-uri nu pot fi făcute publice momentan">
+        <Button type="button" variant="secondary" size="sm" disabled>
+          Fă public acest raport
+        </Button>
+        <span style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted, #71717a)' }}>
+          Rapoartele din screenshot nu pot fi publicate public momentan
+        </span>
+      </div>
     );
   }
 

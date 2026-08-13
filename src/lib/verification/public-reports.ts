@@ -32,7 +32,7 @@ export type PublishEligibilityResult =
     }
   | {
       eligible: false;
-      reason: 'UNAUTHENTICATED' | 'SCORE_NOT_DECISIVE' | 'REPORT_NOT_FOUND' | 'FORBIDDEN' | 'MONTHLY_LIMIT_EXCEEDED';
+      reason: 'UNAUTHENTICATED' | 'SCORE_NOT_DECISIVE' | 'REPORT_NOT_FOUND' | 'FORBIDDEN' | 'MONTHLY_LIMIT_EXCEEDED' | 'SCREENSHOT_NOT_PUBLISHABLE';
       message: string;
     };
 
@@ -60,17 +60,20 @@ export async function checkPublishEligibility({
     };
   }
 
-  const supabase = await createServerClient();
+  const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createAdminClient()
+    : await createServerClient();
 
   // Fetch report
   const { data: verification, error: verificationError } = (await supabase
     .from('verifications')
-    .select('id, user_id, score, is_public, visibility_status')
+    .select('id, user_id, input_type, score, is_public, visibility_status')
     .eq('id', verificationId)
     .single()) as unknown as {
     data: {
       id: string;
       user_id: string | null;
+      input_type: string;
       score: number | null;
       is_public: boolean;
       visibility_status: VisibilityStatus;
@@ -91,6 +94,15 @@ export async function checkPublishEligibility({
       eligible: false,
       reason: 'FORBIDDEN',
       message: 'Nu puteți modifica vizibilitatea unui raport care nu vă aparține.',
+    };
+  }
+
+  // Rule: Only 'text' or 'url' input_type can be made public. 'screenshot' is forbidden.
+  if ((verification as Record<string, unknown>).input_type === 'screenshot') {
+    return {
+      eligible: false,
+      reason: 'SCREENSHOT_NOT_PUBLISHABLE',
+      message: 'Rapoartele din screenshot-uri nu pot fi făcute publice momentan.',
     };
   }
 

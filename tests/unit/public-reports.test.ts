@@ -105,6 +105,28 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
       }
     });
 
+    it('returns SCREENSHOT_NOT_PUBLISHABLE when report input_type is screenshot', async () => {
+      mockServerFrom.mockImplementation((table: string) => {
+        if (table === 'verifications') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({
+              data: { id: 'v1', user_id: 'user-1', input_type: 'screenshot', score: 90, is_public: false, visibility_status: 'private' },
+              error: null,
+            }),
+          };
+        }
+        throw new Error(`Unexpected table ${table}`);
+      });
+
+      const result = await checkPublishEligibility({ verificationId: 'v1', userId: 'user-1' });
+      expect(result.eligible).toBe(false);
+      if (!result.eligible) {
+        expect(result.reason).toBe('SCREENSHOT_NOT_PUBLISHABLE');
+      }
+    });
+
     it('returns SCORE_NOT_DECISIVE when report score is null', async () => {
       mockServerFrom.mockImplementation((table: string) => {
         if (table === 'verifications') {
