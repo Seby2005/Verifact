@@ -7,6 +7,7 @@ export const en: Translations = {
   },
   header: {
     nav: {
+      reports: 'Reports',
       disinformation: 'Disinformation',
       transparency: 'Transparency',
       pricing: 'Pricing',
