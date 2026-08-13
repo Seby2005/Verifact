@@ -100,9 +100,6 @@ export const metadata: Metadata = {
       'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile.',
     images: ['/og-image.png'],
   },
-  other: {
-    google: 'notranslate',
-  },
 };
 
 import { LanguageProvider } from '@/i18n';
@@ -151,21 +148,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // The inline THEME_SCRIPT in <head> resolves and sets data-theme before
-    // hydration to avoid a flash of the wrong theme; that intentionally makes
-    // the server and client <html> attributes differ, so suppressHydrationWarning
-    // silences the expected mismatch on this element.
     <html
       lang="ro"
-      translate="no"
       suppressHydrationWarning
       className={`${generalSans.variable} ${zodiak.variable} ${boska.variable} ${jetbrainsMono.variable}`}
     >
       <head>
-        <meta name="google" content="notranslate" />
-        {/* Resolves the theme before first paint, so the page never flashes
-            the wrong one. Runs ahead of hydration and is deliberately tiny;
-            THEME_SCRIPT is a constant string, never user input. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <JsonLd data={[organizationSchema, webSiteSchema, webApplicationSchema]} />
       </head>

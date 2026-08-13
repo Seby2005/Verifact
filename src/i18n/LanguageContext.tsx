@@ -47,7 +47,6 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const initial = getInitialLocale();
     setLocaleState(initial);
     document.documentElement.lang = initial;
-    document.documentElement.setAttribute('translate', 'no');
   }, []);
 
   const setLocale = (nextLocale: Locale) => {
@@ -58,7 +57,6 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         document.cookie = `${COOKIE_NAME}=${nextLocale}; path=/; max-age=31536000; SameSite=Lax`;
         localStorage.setItem(LOCAL_STORAGE_KEY, nextLocale);
         document.documentElement.lang = nextLocale;
-        document.documentElement.setAttribute('translate', 'no');
       } catch {
         // Ignore storage write errors
       }

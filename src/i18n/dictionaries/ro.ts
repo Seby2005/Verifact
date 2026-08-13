@@ -42,6 +42,9 @@ export const ro = {
     pendingNotice: 'Raportul tău a fost trimis spre verificare și va apărea public în curând.',
     publishedSuccess: 'Raportul a fost publicat cu succes! Este acum accesibil în galeria publică de rapoarte.',
     openPublicPage: 'Deschide pagina publică a raportului',
+    ctaTitle: 'Vrei să verifici și tu o informație?',
+    ctaText: 'Introdu un text, un link sau încarcă un screenshot pentru o verificare rapidă cu surse transparente.',
+    ctaBtn: 'Verifică o informație gratuit',
   },
   verdict: {
     copy: {

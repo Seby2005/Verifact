@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/i18n';
 import type { PublicReportSummary, PublicReportDetail } from '@/lib/verification/public-reports-query';
@@ -50,9 +50,44 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
   // Extract sources if reportDetail is passed
   const reportDetail = 'reportJson' in report ? report.reportJson : null;
   const sources: CombinedSource[] = reportDetail?.sources || [];
-  const analysisText =
+  const rawAnalysisText =
     reportDetail?.executiveSummary ||
     (typeof reportDetail?.aiAnalysis === 'string' ? reportDetail.aiAnalysis : reportDetail?.aiAnalysis?.summary);
+
+  const [claimText, setClaimText] = useState<string>(report.inputText);
+  const [analysisText, setAnalysisText] = useState<string>(rawAnalysisText || '');
+
+  // Automatic translation effect when user toggles RO <-> EN
+  useEffect(() => {
+    let isMounted = true;
+    const reportLang = ('language' in report && report.language) ? report.language : 'ro';
+
+    if (locale === reportLang) {
+      setClaimText(report.inputText);
+      setAnalysisText(rawAnalysisText || '');
+      return;
+    }
+
+    Promise.all([
+      fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: report.inputText, targetLang: locale }),
+      }).then(r => r.json()).then(d => d.translatedText).catch(() => report.inputText),
+      rawAnalysisText ? fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: rawAnalysisText, targetLang: locale }),
+      }).then(r => r.json()).then(d => d.translatedText).catch(() => rawAnalysisText) : Promise.resolve(''),
+    ]).then(([claimRes, analysisRes]) => {
+      if (isMounted) {
+        if (claimRes) setClaimText(claimRes);
+        if (analysisRes) setAnalysisText(analysisRes);
+      }
+    });
+
+    return () => { isMounted = false; };
+  }, [locale, report.inputText, rawAnalysisText, 'language' in report ? (report as PublicReportDetail).language : 'ro']);
 
   if (variant === 'feed') {
     return (
@@ -63,7 +98,7 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
             {typeof report.score === 'number' && <span className={styles.scoreBadge}>{report.score}%</span>}
           </div>
         </div>
-        <h2 className={`${styles.claimTitle} ${styles.feedTitle}`}>&ldquo;{report.inputText}&rdquo;</h2>
+        <h2 className={`${styles.claimTitle} ${styles.feedTitle}`}>&ldquo;{claimText}&rdquo;</h2>
         <div className={styles.metaRow}>
           <span className={styles.authorText}>{authorLabel}</span>
           <time dateTime={displayDate}>{formattedDate}</time>
@@ -83,7 +118,7 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
         </div>
       </div>
 
-      <h1 className={styles.claimTitle}>&ldquo;{report.inputText}&rdquo;</h1>
+      <h1 className={styles.claimTitle}>&ldquo;{claimText}&rdquo;</h1>
 
       <div className={styles.metaRow}>
         <span className={styles.authorText}>{authorLabel}</span>
