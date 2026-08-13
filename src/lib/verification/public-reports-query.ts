@@ -1,4 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import type { Verdict, VerificationReport } from '@/types/verification';
 
 /**
@@ -76,7 +77,7 @@ export async function getPublicReportById(id: string): Promise<PublicReportDetai
     const supabase = await createServerClient();
     const { data, error } = await supabase
       .from('verifications')
-      .select('id, input_text, verdict, score, visibility_status, show_author, language, created_at, published_at, report_json, profiles(username)')
+      .select('id, input_text, verdict, score, visibility_status, show_author, language, created_at, published_at, report_json, profiles!verifications_user_id_fkey(username)')
       .eq('id', id)
       .eq('visibility_status', 'public')
       .single();
@@ -104,7 +105,8 @@ export async function getPublicReportById(id: string): Promise<PublicReportDetai
     };
 
     return detail;
-  } catch {
+  } catch (err) {
+    logger.error('Failed to get public report by id', { id, error: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }
@@ -127,12 +129,15 @@ export async function listPublicReports({
 
     const { data, count, error } = await supabase
       .from('verifications')
-      .select('id, input_text, verdict, score, created_at, published_at, show_author, profiles(username)', { count: 'exact' })
+      .select('id, input_text, verdict, score, created_at, published_at, show_author, profiles!verifications_user_id_fkey(username)', { count: 'exact' })
       .eq('visibility_status', 'public')
       .order('published_at', { ascending: false, nullsFirst: false })
       .range(from, to);
 
     if (error || !data) {
+      if (error) {
+        logger.error('Failed to list public reports from database', { error: error.message });
+      }
       return { reports: [], totalCount: 0, page: safePage, limit: safeLimit, totalPages: 0 };
     }
 
@@ -144,7 +149,7 @@ export async function listPublicReports({
       return {
         id: String(item.id),
         inputText: String(item.input_text || ''),
-        verdict: (item.verdict as Verdict) || null,
+        verdict: (row => (row as Verdict) || null)(item.verdict),
         score: typeof item.score === 'number' ? item.score : null,
         publishedAt: String(item.published_at || item.created_at),
         createdAt: String(item.created_at),
@@ -163,7 +168,8 @@ export async function listPublicReports({
       limit: safeLimit,
       totalPages,
     };
-  } catch {
+  } catch (err) {
+    logger.error('Failed to list public reports', { error: err instanceof Error ? err.message : String(err) });
     return { reports: [], totalCount: 0, page: safePage, limit: safeLimit, totalPages: 0 };
   }
 }

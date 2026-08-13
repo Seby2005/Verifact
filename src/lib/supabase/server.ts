@@ -3,7 +3,12 @@ import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
 
 export async function createClient() {
-  const cookieStore = await cookies();
+  let cookieStore: Awaited<ReturnType<typeof cookies>> | null = null;
+  try {
+    cookieStore = await cookies();
+  } catch {
+    // Called outside Next.js request scope (e.g. CLI, tests, or background tasks)
+  }
 
   const supabaseUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -13,12 +18,13 @@ export async function createClient() {
   return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
-        return cookieStore.getAll();
+        return cookieStore ? cookieStore.getAll() : [];
       },
       setAll(cookiesToSet) {
+        if (!cookieStore) return;
         try {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
+            cookieStore?.set(name, value, options)
           );
         } catch {
           // The `setAll` method was called from a Server Component.
