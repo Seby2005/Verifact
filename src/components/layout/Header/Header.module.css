@@ -30,10 +30,10 @@
 .nav {
   display: flex;
   align-items: center;
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .nav {
     gap: var(--space-3);
   }
