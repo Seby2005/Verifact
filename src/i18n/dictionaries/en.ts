@@ -43,6 +43,9 @@ export const en: Translations = {
     pendingNotice: 'Your report has been submitted for review and will appear publicly soon.',
     publishedSuccess: 'Report published successfully! It is now accessible in the public reports gallery.',
     openPublicPage: 'Open report public page',
+    ctaTitle: 'Want to verify information yourself?',
+    ctaText: 'Enter a claim text, a link, or upload a screenshot for a fast verification with transparent sources.',
+    ctaBtn: 'Verify a claim for free',
   },
   verdict: {
     copy: {

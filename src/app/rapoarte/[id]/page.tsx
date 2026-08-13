@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getPublicReportById } from '@/lib/verification/public-reports-query';
 import type { Verdict } from '@/types/verification';
 import { FlagReportButton } from '@/components/public-reports/FlagReportButton';
+import { ReportPageCta } from '@/components/public-reports/ReportPageCta';
 import { PublicReportCard } from '@/components/reports/PublicReportCard';
 import shell from '../../page-shell.module.css';
 import styles from './page.module.css';
@@ -127,15 +128,7 @@ export default async function PublicReportPage({ params }: PageProps) {
         <FlagReportButton reportId={id} />
       </div>
 
-      <div className={styles.ctaBox}>
-        <h3 className={styles.ctaTitle}>Vrei să verifici și tu o informație?</h3>
-        <p className={styles.ctaText}>
-          Introdu un text, un link sau încarcă un screenshot pentru o verificare rapidă cu surse transparente.
-        </p>
-        <Link href="/" className={shell.primaryBtn}>
-          Verifică o știre gratuit
-        </Link>
-      </div>
+      <ReportPageCta />
     </div>
   );
 }
