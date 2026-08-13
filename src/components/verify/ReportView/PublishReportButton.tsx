@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button, Modal, Callout } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import type { VerificationReport } from '@/types/verification';
@@ -13,6 +14,7 @@ export interface PublishReportButtonProps {
 }
 
 export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report }) => {
+  const router = useRouter();
   const { t } = useLanguage();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -75,6 +77,7 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
           visibilityStatus: data.visibilityStatus,
           message: data.message,
         });
+        router.refresh();
       }
     } catch {
       setResult({
