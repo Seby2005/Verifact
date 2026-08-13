@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/i18n';
 import type { PublicReportSummary, PublicReportDetail } from '@/lib/verification/public-reports-query';
 import type { Verdict, CombinedSource } from '@/types/verification';
+import { AdminDeleteReportButton } from '@/components/public-reports/AdminDeleteReportButton';
 import styles from './PublicReportCard.module.css';
 
 export interface PublicReportCardProps {
@@ -97,6 +98,7 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
             <span className={`${styles.verdictBadge} ${verdictInfo.badgeClass}`}>{verdictInfo.label}</span>
             {typeof report.score === 'number' && <span className={styles.scoreBadge}>{report.score}%</span>}
           </div>
+          <AdminDeleteReportButton reportId={report.id} variant="icon" />
         </div>
         <h2 className={`${styles.claimTitle} ${styles.feedTitle}`}>&ldquo;{claimText}&rdquo;</h2>
         <div className={styles.metaRow}>
@@ -116,6 +118,7 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
             <span className={styles.scoreBadge}>{t('publicReports.scoreLabel', { score: String(report.score) })}</span>
           )}
         </div>
+        <AdminDeleteReportButton reportId={report.id} variant="button" />
       </div>
 
       <h1 className={styles.claimTitle}>&ldquo;{claimText}&rdquo;</h1>

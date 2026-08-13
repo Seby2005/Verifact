@@ -89,16 +89,48 @@ export async function DELETE(
   const user = await getAuthenticatedUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = await createServerClient();
-  const { error } = await supabase
-    .from('verifications')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+  const { createAdminClient } = await import('@/lib/supabase/admin');
+  const adminClient = createAdminClient();
 
-  if (error) {
-    return Response.json({ error: 'Failed to delete report' }, { status: 500 });
+  // Check if user is owner or admin (sebi.iancu23@gmail.com or role === admin)
+  const { data: profile } = await (adminClient as any)
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const isAdmin = (profile as { role?: string } | null)?.role === 'admin' || user.email?.toLowerCase() === 'sebi.iancu23@gmail.com';
+
+  if (!isAdmin) {
+    const { data: verification } = await (adminClient as any)
+      .from('verifications')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!verification || (verification as { user_id: string }).user_id !== user.id) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
   }
 
-  return Response.json({ success: true });
+  // Set visibility_status to taken_down and is_public to false
+  const { error } = await (adminClient as any)
+    .from('verifications')
+    .update({
+      is_public: false,
+      visibility_status: 'taken_down',
+    })
+    .eq('id', id);
+
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+
+  // Purge Next.js cache on Vercel
+  const { revalidatePath } = await import('next/cache');
+  revalidatePath('/rapoarte');
+  revalidatePath(`/rapoarte/${id}`);
+  revalidatePath('/sitemap.xml');
+
+  return Response.json({ success: true, message: 'Raport șters cu succes de administrator.' });
 }
