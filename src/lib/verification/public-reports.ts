@@ -181,7 +181,7 @@ export async function checkPublishEligibility({
 export interface SetVisibilityParams {
   verificationId: string;
   userId: string;
-  isPublic: boolean;
+  isPublic?: boolean;
   showAuthor?: boolean;
 }
 
@@ -209,6 +209,30 @@ export async function setReportVisibility({
   showAuthor,
 }: SetVisibilityParams): Promise<SetVisibilityResult> {
   const supabase = await createServerClient();
+
+  // If isPublic is omitted but showAuthor is provided, update showAuthor independently
+  if (typeof isPublic !== 'boolean' && typeof showAuthor === 'boolean') {
+    const { data: updatedData, error } = await supabase
+      .from('verifications')
+      .update({ show_author: showAuthor } as never)
+      .eq('id', verificationId)
+      .eq('user_id', userId)
+      .select('is_public, visibility_status, show_author')
+      .single();
+
+    if (error || !updatedData) {
+      return { success: false, error: 'Raportul nu a fost găsit sau nu aparține acestui utilizator.', code: 'FORBIDDEN' };
+    }
+
+    const row = updatedData as Record<string, unknown>;
+    return {
+      success: true,
+      isPublic: Boolean(row.is_public),
+      visibilityStatus: row.visibility_status as VisibilityStatus,
+      showAuthor: Boolean(row.show_author),
+      message: `Atribuirea autorului a fost actualizată.`,
+    };
+  }
 
   if (!isPublic) {
     const unpublishPayload: Record<string, unknown> = {

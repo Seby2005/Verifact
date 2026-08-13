@@ -18,12 +18,12 @@ export async function PATCH(
     return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const isPublic = typeof body.isPublic === 'boolean' ? body.isPublic : body.is_public;
-  if (typeof isPublic !== 'boolean') {
-    return Response.json({ error: 'isPublic must be a boolean' }, { status: 400 });
-  }
+  const isPublic = typeof body.isPublic === 'boolean' ? body.isPublic : typeof body.is_public === 'boolean' ? body.is_public : undefined;
+  const showAuthor = typeof body.showAuthor === 'boolean' ? body.showAuthor : typeof body.show_author === 'boolean' ? body.show_author : undefined;
 
-  const showAuthor = typeof body.showAuthor === 'boolean' ? body.showAuthor : body.show_author;
+  if (typeof isPublic !== 'boolean' && typeof showAuthor !== 'boolean') {
+    return Response.json({ error: 'At puțin un parametru (isPublic/is_public sau showAuthor/show_author) este obligatoriu' }, { status: 400 });
+  }
 
   const { setReportVisibility } = await import('@/lib/verification/public-reports');
   const result = await setReportVisibility({
