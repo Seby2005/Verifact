@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { getAuthenticatedUser } from '@/lib/supabase/auth-helpers';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 
@@ -37,6 +38,11 @@ export async function PATCH(
     const status = result.code === 'FORBIDDEN' ? 403 : result.code === 'REPORT_NOT_FOUND' ? 404 : 400;
     return Response.json({ error: result.error, code: result.code }, { status });
   }
+
+  // Purge Next.js cache on Vercel for public reports feed and detail page
+  revalidatePath('/rapoarte');
+  revalidatePath(`/rapoarte/${id}`);
+  revalidatePath('/sitemap.xml');
 
   return Response.json({
     success: true,
