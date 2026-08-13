@@ -86,7 +86,7 @@ export async function checkPublishEligibility({
     };
   }
 
-  if (verification.user_id !== userId) {
+  if (verification.user_id !== null && verification.user_id !== userId) {
     return {
       eligible: false,
       reason: 'FORBIDDEN',
@@ -273,6 +273,7 @@ export async function setReportVisibility({
   const publishedAt = targetStatus === 'public' ? new Date().toISOString() : null;
 
   const publishPayload: Record<string, unknown> = {
+    user_id: userId,
     is_public: targetIsPublic,
     visibility_status: targetStatus,
     published_at: publishedAt,
@@ -284,8 +285,7 @@ export async function setReportVisibility({
   const { error: updateError } = await supabase
     .from('verifications')
     .update(publishPayload as never)
-    .eq('id', verificationId)
-    .eq('user_id', userId);
+    .eq('id', verificationId);
 
   if (updateError) {
     logger.error('Failed to publish report', { service: 'PublicReports', error: updateError.message });

@@ -4,6 +4,7 @@
 -- 1. Authenticated users can publish reports directly without forced pending_review.
 -- 2. All completed verifications (text, screenshot, url) with valid score/verdict can be published.
 -- 3. Sets published_at timestamp and sets visibility_status = 'public' / is_public = true.
+-- 4. Allows authenticated users to claim and publish verifications with NULL user_id.
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.enforce_verification_public_rules()
@@ -19,9 +20,14 @@ DECLARE
 BEGIN
   v_caller_role := public.current_profile_role();
 
-  -- Rule 1 (Defense-in-depth): Caller must own the verification (unless admin)
-  IF v_caller_role IS DISTINCT FROM 'admin' AND OLD.user_id IS DISTINCT FROM auth.uid() THEN
+  -- If OLD.user_id is set and caller is not owner and not admin, reject
+  IF v_caller_role IS DISTINCT FROM 'admin' AND OLD.user_id IS NOT NULL AND OLD.user_id IS DISTINCT FROM auth.uid() THEN
     RAISE EXCEPTION 'Cannot modify a report belonging to another user';
+  END IF;
+
+  -- If OLD.user_id was NULL, allow authenticated caller to claim ownership
+  IF OLD.user_id IS NULL AND auth.uid() IS NOT NULL THEN
+    NEW.user_id := auth.uid();
   END IF;
 
   -- If visibility is not changing and is_public is unchanged, pass through
@@ -42,9 +48,14 @@ BEGIN
 
   -- If user is requesting to publish (moving to 'public' or setting is_public = true)
   IF NEW.visibility_status IN ('public', 'pending_review') OR (NEW.is_public = TRUE AND OLD.is_public = FALSE) THEN
+    -- Ensure user_id is set
+    IF NEW.user_id IS NULL AND auth.uid() IS NOT NULL THEN
+      NEW.user_id := auth.uid();
+    END IF;
+
     -- Rule 1: Authenticated user required
     IF NEW.user_id IS NULL THEN
-      RAISE EXCEPTION 'Anonymous verifications cannot be made public';
+      RAISE EXCEPTION 'Anonymous verifications cannot be made public without authentication';
     END IF;
 
     -- Rule 2: Must have a completed score/verdict
@@ -59,7 +70,8 @@ BEGIN
       WHERE id = NEW.user_id;
 
     IF NOT FOUND THEN
-      RAISE EXCEPTION 'User profile not found';
+      -- Default to free tier if profile row is missing
+      v_user_tier := 'free';
     END IF;
 
     -- Rule 3: Tier-differentiated publication limits
