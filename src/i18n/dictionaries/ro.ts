@@ -6,6 +6,7 @@ export const ro = {
   },
   header: {
     nav: {
+      reports: 'Rapoarte',
       disinformation: 'Dezinformare',
       transparency: 'Transparență',
       pricing: 'Prețuri',
