@@ -178,22 +178,27 @@
 .emptyState {
   text-align: center;
   padding: var(--space-16, 4rem) var(--space-6, 1.5rem);
-  background-color: var(--color-surface-subtle, #f8fafc);
+  background-color: var(--color-paper-shade, #ece9e1);
   border-radius: 12px;
-  border: 1px dashed var(--color-line, #cbd5e1);
+  border: 1px dashed var(--color-line-strong, #cbd5e1);
   margin-bottom: var(--space-12);
 }
 
 .emptyTitle {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-ink, #0f172a);
-  margin-bottom: var(--space-2);
+  font-family: var(--font-family-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-ink, #17140f);
+  margin-bottom: var(--space-3);
 }
 
 .emptyText {
-  color: var(--color-ink-muted, #64748b);
+  font-size: 1.05rem;
+  color: var(--color-ink-secondary, #524d44);
   margin-bottom: var(--space-6);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 @media (max-width: 640px) {
