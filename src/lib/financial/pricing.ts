@@ -14,6 +14,7 @@ export const USD_TO_RON_RATE = 4.577;
 export const STANDARD_PRO_PRICE_EUR = 3.99;
 
 export const DEFAULT_MODEL_PRICING: Record<string, ModelPricing> = {
+  // Google Gemini Direct Models
   'gemini-2.0-flash': {
     pricePerMillionInputTokens: 0.10,
     pricePerMillionOutputTokens: 0.40,
@@ -34,9 +35,28 @@ export const DEFAULT_MODEL_PRICING: Record<string, ModelPricing> = {
     pricePerMillionOutputTokens: 5.00,
     currency: 'USD',
   },
+
+  // OpenRouter — DeepSeek
   'deepseek/deepseek-chat': {
     pricePerMillionInputTokens: 0.14,
     pricePerMillionOutputTokens: 0.28,
+    currency: 'USD',
+  },
+  'deepseek/deepseek-r1': {
+    pricePerMillionInputTokens: 0.55,
+    pricePerMillionOutputTokens: 2.19,
+    currency: 'USD',
+  },
+  'deepseek/deepseek-r1:free': {
+    pricePerMillionInputTokens: 0.0,
+    pricePerMillionOutputTokens: 0.0,
+    currency: 'USD',
+  },
+
+  // OpenRouter — Google Gemini via OpenRouter
+  'google/gemini-2.0-flash-001': {
+    pricePerMillionInputTokens: 0.10,
+    pricePerMillionOutputTokens: 0.40,
     currency: 'USD',
   },
   'google/gemini-2.0-flash-lite-001:free': {
@@ -44,17 +64,74 @@ export const DEFAULT_MODEL_PRICING: Record<string, ModelPricing> = {
     pricePerMillionOutputTokens: 0.0,
     currency: 'USD',
   },
+  'google/gemini-2.0-pro-exp-02-05:free': {
+    pricePerMillionInputTokens: 0.0,
+    pricePerMillionOutputTokens: 0.0,
+    currency: 'USD',
+  },
+
+  // OpenRouter — Meta Llama
+  'meta-llama/llama-3.3-70b-instruct': {
+    pricePerMillionInputTokens: 0.12,
+    pricePerMillionOutputTokens: 0.30,
+    currency: 'USD',
+  },
   'meta-llama/llama-3.3-70b-instruct:free': {
     pricePerMillionInputTokens: 0.0,
     pricePerMillionOutputTokens: 0.0,
     currency: 'USD',
   },
+
+  // OpenRouter — Anthropic Claude
+  'anthropic/claude-3.5-sonnet': {
+    pricePerMillionInputTokens: 3.00,
+    pricePerMillionOutputTokens: 15.00,
+    currency: 'USD',
+  },
+  'anthropic/claude-3.5-haiku': {
+    pricePerMillionInputTokens: 0.80,
+    pricePerMillionOutputTokens: 4.00,
+    currency: 'USD',
+  },
+
+  // OpenRouter — OpenAI
+  'openai/gpt-4o-mini': {
+    pricePerMillionInputTokens: 0.15,
+    pricePerMillionOutputTokens: 0.60,
+    currency: 'USD',
+  },
+  'openai/gpt-4o': {
+    pricePerMillionInputTokens: 2.50,
+    pricePerMillionOutputTokens: 10.00,
+    currency: 'USD',
+  },
+
+  // OpenRouter — Qwen & Mistral
+  'qwen/qwen-2.5-72b-instruct': {
+    pricePerMillionInputTokens: 0.35,
+    pricePerMillionOutputTokens: 0.40,
+    currency: 'USD',
+  },
+  'mistralai/mistral-large-2411': {
+    pricePerMillionInputTokens: 2.00,
+    pricePerMillionOutputTokens: 6.00,
+    currency: 'USD',
+  },
+
+  // Default fallback
   'openrouter-default': {
     pricePerMillionInputTokens: 0.15,
     pricePerMillionOutputTokens: 0.60,
     currency: 'USD',
   },
 };
+
+/**
+ * Baseline average token consumption per verification pipeline run:
+ * (query expansion: ~250 in, ~100 out; extraction: ~300 in, ~100 out; assessment: ~750 in, ~150 out; analysis: ~1200 in, ~400 out)
+ */
+export const ESTIMATED_BASELINE_INPUT_TOKENS = 2100;
+export const ESTIMATED_BASELINE_OUTPUT_TOKENS = 550;
 
 /**
  * Calculates raw cost in the pricing currency for given input & output tokens.

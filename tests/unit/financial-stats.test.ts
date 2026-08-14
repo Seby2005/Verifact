@@ -41,11 +41,13 @@ describe('financial/stats', () => {
     ];
 
     const mockProfiles = [
-      { tier: 'free' },
-      { tier: 'free' },
-      { tier: 'pro' },
-      { tier: 'pro' },
-      { tier: 'business' },
+      { tier: 'free', role: 'user' },
+      { tier: 'free', role: 'user' },
+      { tier: 'pro', role: 'user' },
+      { tier: 'pro', role: 'user' },
+      { tier: 'business', role: 'user' },
+      { tier: 'pro', role: 'admin' }, // Admin account should NOT be counted as paying customer
+      { tier: 'pro', role: 'moderator' }, // Moderator account should NOT be counted
     ];
 
     const now = new Date().toISOString();
@@ -139,7 +141,7 @@ describe('financial/stats', () => {
     const metrics = await calculateFinancialMetrics(mockClient);
 
     expect(metrics).toBeDefined();
-    // Subscribers: 2 pro + 1 business = 3 active premium
+    // Subscribers: 2 pro + 1 business = 3 active premium (admin and moderator excluded!)
     expect(metrics.subscribers.proCount).toBe(2);
     expect(metrics.subscribers.businessCount).toBe(1);
     expect(metrics.subscribers.totalActivePremium).toBe(3);
@@ -157,6 +159,46 @@ describe('financial/stats', () => {
     // Break-even
     expect(metrics.breakEven.breakEvenSubscribersNeeded).toBeGreaterThan(0);
     expect(metrics.breakEven.currentSubscribers).toBe(3);
+  });
+
+  it('handles historical verifications without tokens by estimating realistic baseline', async () => {
+    const mockVerifications = [
+      {
+        id: 'v_old_1',
+        created_at: new Date().toISOString(),
+        input_text: 'Text vechi neverificat cu loguri',
+        verdict: 'false',
+        input_tokens: 0,
+        output_tokens: 0,
+      },
+    ];
+
+    const mockClient = {
+      from: jest.fn().mockImplementation((table: string) => {
+        if (table === 'verifications') {
+          return {
+            select: jest.fn().mockReturnValue({
+              order: jest.fn().mockReturnValue({
+                limit: jest.fn().mockResolvedValue({ data: mockVerifications, error: null }),
+              }),
+            }),
+          };
+        }
+        return {
+          select: jest.fn().mockReturnValue({
+            order: jest.fn().mockReturnValue({
+              limit: jest.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        };
+      }),
+    } as unknown as SupabaseClient<Database>;
+
+    const metrics = await calculateFinancialMetrics(mockClient);
+    expect(metrics.variableCosts.allTime.verificationsCount).toBe(1);
+    expect(metrics.variableCosts.averageCostPerVerificationEur).toBeGreaterThan(0);
+    expect(metrics.recentVerifications[0].isEstimated).toBe(true);
+    expect(metrics.recentVerifications[0].inputTokens).toBeGreaterThan(1000);
   });
 
   it('handles empty database gracefully with 0 division protection', async () => {

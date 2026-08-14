@@ -18,11 +18,12 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
 }) => {
   const [metrics, setMetrics] = useState<FinancialMetrics>(initialMetrics);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(new Date());
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
-  const refreshData = useCallback(async () => {
-    setIsRefreshing(true);
+  const refreshData = useCallback(async (silent = false) => {
+    if (!silent) setIsRefreshing(true);
     setRefreshError(null);
     try {
       const res = await fetch('/api/admin/financial/summary');
@@ -37,11 +38,22 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
         setLastRefreshedAt(new Date());
       }
     } catch {
-      setRefreshError('Eroare de rețea la actualizarea datelor.');
+      if (!silent) setRefreshError('Eroare de rețea la actualizarea datelor.');
     } finally {
-      setIsRefreshing(false);
+      if (!silent) setIsRefreshing(false);
     }
   }, []);
+
+  // Real-time automatic polling every 10 seconds
+  React.useEffect(() => {
+    if (!autoRefreshEnabled) return;
+
+    const interval = setInterval(() => {
+      void refreshData(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [autoRefreshEnabled, refreshData]);
 
   return (
     <div className={styles.container}>
@@ -54,6 +66,17 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
             </svg>
             Zonă Securizată Admin
           </span>
+
+          <button
+            type="button"
+            className={`${styles.liveBadge} ${!autoRefreshEnabled ? styles.liveBadgePaused : ''}`}
+            onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
+            title={autoRefreshEnabled ? 'Apasă pentru a pune pe pauză sincronizarea automată' : 'Apasă pentru a activa sincronizarea automată'}
+          >
+            <span className={`${styles.liveDot} ${!autoRefreshEnabled ? styles.liveDotPaused : ''}`} />
+            <span>{autoRefreshEnabled ? 'Live Auto-Sync (10s)' : 'Sincronizare pe pauză'}</span>
+          </button>
+
           <span className={styles.lastUpdated}>
             Actualizat la {lastRefreshedAt.toLocaleTimeString('ro-RO')}
           </span>
@@ -63,7 +86,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
           type="button"
           disabled={isRefreshing}
           className={styles.refreshButton}
-          onClick={refreshData}
+          onClick={() => refreshData(false)}
         >
           <svg
             width="14"
@@ -80,7 +103,7 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({
           >
             <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
           </svg>
-          {isRefreshing ? 'Se actualizează...' : 'Reîmprospătează Datele'}
+          {isRefreshing ? 'Se actualizează...' : 'Reîmprospătează Acum'}
         </button>
       </div>
 

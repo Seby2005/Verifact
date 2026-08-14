@@ -14,7 +14,13 @@ export async function saveVerification(
   userClient?: SupabaseClient<Database>,
   anonymousHash?: string
 ): Promise<boolean> {
-  const client = userClient || createAdminClient();
+  let client: SupabaseClient<Database>;
+  try {
+    client = createAdminClient();
+  } catch {
+    client = (userClient || createAdminClient()) as SupabaseClient<Database>;
+  }
+
   const insertData = {
     id: report.id,
     user_id: report.userId ?? null,

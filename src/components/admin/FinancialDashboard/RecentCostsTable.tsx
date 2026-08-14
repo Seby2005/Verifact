@@ -83,6 +83,15 @@ export const RecentCostsTable: React.FC<RecentCostsTableProps> = ({
                     <td>{item.outputTokens.toLocaleString('ro-RO')}</td>
                     <td>
                       <strong>{(item.inputTokens + item.outputTokens).toLocaleString('ro-RO')}</strong>
+                      {item.isEstimated ? (
+                        <span style={{ fontSize: '0.7rem', color: '#64748b', marginLeft: '4px' }} title="Calculat pe baza consumului mediu al fluxului de verificare">
+                          (est.)
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.7rem', color: '#16a34a', fontWeight: 600, marginLeft: '4px' }} title="Tokeni reali contorizați prin API">
+                          (real)
+                        </span>
+                      )}
                     </td>
                     <td>${item.costUsd < 0.0001 && item.costUsd > 0 ? item.costUsd.toFixed(6) : item.costUsd.toFixed(4)}</td>
                     <td>

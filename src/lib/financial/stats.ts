@@ -6,6 +6,8 @@ import {
   calculateTokenCost,
   convertToEur,
   STANDARD_PRO_PRICE_EUR,
+  ESTIMATED_BASELINE_INPUT_TOKENS,
+  ESTIMATED_BASELINE_OUTPUT_TOKENS,
 } from './pricing';
 
 export interface VariableCostSummary {
@@ -61,6 +63,7 @@ export interface FinancialMetrics {
     outputTokens: number;
     costUsd: number;
     costEur: number;
+    isEstimated?: boolean;
   }>;
 }
 
@@ -74,7 +77,9 @@ interface RawVerificationRow {
 }
 
 interface RawProfileRow {
-  tier: string;
+  id?: string;
+  tier?: string | null;
+  role?: string | null;
 }
 
 export async function calculateFinancialMetrics(
@@ -96,7 +101,7 @@ export async function calculateFinancialMetrics(
   ] = await Promise.allSettled([
     adminClient.from('api_pricing').select('*').order('provider', { ascending: true }),
     adminClient.from('fixed_costs').select('*').order('monthly_amount', { ascending: false }),
-    adminClient.from('profiles').select('tier'),
+    adminClient.from('profiles').select('id, tier, role'),
     adminClient
       .from('verifications')
       .select('id, created_at, input_text, verdict, input_tokens, output_tokens')
@@ -152,13 +157,14 @@ export async function calculateFinancialMetrics(
     costByVerificationId.set(c.verification_id, existing);
   }
 
-  // Calculate per-verification cost (using detailed costs if available, else summary columns on verification)
+  // Calculate per-verification cost (using detailed costs, summary columns, or realistic baseline for historical data)
   const evaluatedVerifications = verifications.map((v) => {
     const detailed = costByVerificationId.get(v.id);
     let inTokens = v.input_tokens || 0;
     let outTokens = v.output_tokens || 0;
     let costUsd = 0;
     let costEur = 0;
+    let isEstimated = false;
 
     if (detailed && (detailed.costUsd > 0 || detailed.inTokens > 0)) {
       costUsd = detailed.costUsd;
@@ -166,6 +172,13 @@ export async function calculateFinancialMetrics(
       inTokens = detailed.inTokens;
       outTokens = detailed.outTokens;
     } else if (inTokens > 0 || outTokens > 0) {
+      costUsd = calculateTokenCost(inTokens, outTokens, defaultGeminiPricing);
+      costEur = convertToEur(costUsd, defaultGeminiPricing.currency);
+    } else {
+      // Historical verification before token tracking was active -> realistic pipeline estimate
+      isEstimated = true;
+      inTokens = Math.max(1200, Math.round((v.input_text?.length || 100) * 4 + ESTIMATED_BASELINE_INPUT_TOKENS));
+      outTokens = ESTIMATED_BASELINE_OUTPUT_TOKENS;
       costUsd = calculateTokenCost(inTokens, outTokens, defaultGeminiPricing);
       costEur = convertToEur(costUsd, defaultGeminiPricing.currency);
     }
@@ -179,6 +192,7 @@ export async function calculateFinancialMetrics(
       outputTokens: outTokens,
       costUsd,
       costEur,
+      isEstimated,
     };
   });
 
@@ -196,7 +210,6 @@ export async function calculateFinancialMetrics(
   const monthBucket = createBucket();
   const allTimeBucket = createBucket();
 
-  let verificationsWithTokensCount = 0;
   let totalInputTokensAll = 0;
   let totalOutputTokensAll = 0;
 
@@ -210,11 +223,8 @@ export async function calculateFinancialMetrics(
     allTimeBucket.inputTokens += item.inputTokens;
     allTimeBucket.outputTokens += item.outputTokens;
 
-    if (item.inputTokens > 0 || item.outputTokens > 0) {
-      verificationsWithTokensCount += 1;
-      totalInputTokensAll += item.inputTokens;
-      totalOutputTokensAll += item.outputTokens;
-    }
+    totalInputTokensAll += item.inputTokens;
+    totalOutputTokensAll += item.outputTokens;
 
     // Today
     if (itemDate >= todayStart) {
@@ -245,11 +255,11 @@ export async function calculateFinancialMetrics(
   }
 
   // Averages calculation (protect against 0 division)
-  const divisor = verificationsWithTokensCount > 0 ? verificationsWithTokensCount : Math.max(1, allTimeBucket.verificationsCount);
+  const divisor = Math.max(1, allTimeBucket.verificationsCount);
   const avgCostUsd = allTimeBucket.verificationsCount > 0 ? allTimeBucket.costUsd / divisor : 0;
   const avgCostEur = allTimeBucket.verificationsCount > 0 ? allTimeBucket.costEur / divisor : 0;
-  const avgInTokens = verificationsWithTokensCount > 0 ? Math.round(totalInputTokensAll / verificationsWithTokensCount) : 0;
-  const avgOutTokens = verificationsWithTokensCount > 0 ? Math.round(totalOutputTokensAll / verificationsWithTokensCount) : 0;
+  const avgInTokens = allTimeBucket.verificationsCount > 0 ? Math.round(totalInputTokensAll / divisor) : 0;
+  const avgOutTokens = allTimeBucket.verificationsCount > 0 ? Math.round(totalOutputTokensAll / divisor) : 0;
 
   // Projections
   const projectedCostPer100Eur = avgCostEur * 100;
@@ -271,13 +281,20 @@ export async function calculateFinancialMetrics(
     totalFixedMonthlyEur += convertToEur(amount, fc.currency);
   }
 
-  // 3. Subscribers & MRR
+  // 3. Subscribers & MRR (Excluding admin and moderator staff)
   let freeCount = 0;
   let proCount = 0;
   let businessCount = 0;
 
   for (const p of profiles) {
+    const role = (p.role || 'user').toLowerCase();
     const tier = (p.tier || 'free').toLowerCase();
+
+    // Do not count internal admin or moderator accounts as external paying subscribers
+    if (role === 'admin' || role === 'moderator') {
+      continue;
+    }
+
     if (tier === 'pro') proCount += 1;
     else if (tier === 'business') businessCount += 1;
     else freeCount += 1;
@@ -334,6 +351,6 @@ export async function calculateFinancialMetrics(
       targetProgressPercentage,
     },
     apiPricing,
-    recentVerifications: evaluatedVerifications.slice(0, 20),
+    recentVerifications: evaluatedVerifications.slice(0, 25),
   };
 }

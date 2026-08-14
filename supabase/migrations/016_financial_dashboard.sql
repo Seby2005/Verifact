@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS public.api_pricing (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
--- Seed initial standard pricing
+-- Seed initial standard pricing with top models
 INSERT INTO public.api_pricing (provider, model, price_per_million_input_tokens, price_per_million_output_tokens, currency)
 VALUES
   ('gemini', 'gemini-2.0-flash', 0.10, 0.40, 'USD'),
@@ -45,10 +45,24 @@ VALUES
   ('gemini', 'gemini-1.5-flash', 0.075, 0.30, 'USD'),
   ('gemini', 'gemini-1.5-pro', 1.25, 5.00, 'USD'),
   ('openrouter', 'deepseek/deepseek-chat', 0.14, 0.28, 'USD'),
+  ('openrouter', 'deepseek/deepseek-r1', 0.55, 2.19, 'USD'),
+  ('openrouter', 'deepseek/deepseek-r1:free', 0.00, 0.00, 'USD'),
+  ('openrouter', 'google/gemini-2.0-flash-001', 0.10, 0.40, 'USD'),
   ('openrouter', 'google/gemini-2.0-flash-lite-001:free', 0.00, 0.00, 'USD'),
+  ('openrouter', 'google/gemini-2.0-pro-exp-02-05:free', 0.00, 0.00, 'USD'),
+  ('openrouter', 'meta-llama/llama-3.3-70b-instruct', 0.12, 0.30, 'USD'),
   ('openrouter', 'meta-llama/llama-3.3-70b-instruct:free', 0.00, 0.00, 'USD'),
+  ('openrouter', 'anthropic/claude-3.5-sonnet', 3.00, 15.00, 'USD'),
+  ('openrouter', 'anthropic/claude-3.5-haiku', 0.80, 4.00, 'USD'),
+  ('openrouter', 'openai/gpt-4o-mini', 0.15, 0.60, 'USD'),
+  ('openrouter', 'openai/gpt-4o', 2.50, 10.00, 'USD'),
+  ('openrouter', 'qwen/qwen-2.5-72b-instruct', 0.35, 0.40, 'USD'),
+  ('openrouter', 'mistralai/mistral-large-2411', 2.00, 6.00, 'USD'),
   ('openrouter', 'default', 0.15, 0.60, 'USD')
-ON CONFLICT (model) DO NOTHING;
+ON CONFLICT (model) DO UPDATE SET
+  price_per_million_input_tokens = EXCLUDED.price_per_million_input_tokens,
+  price_per_million_output_tokens = EXCLUDED.price_per_million_output_tokens,
+  updated_at = NOW();
 
 -- 4. Table: fixed_costs (Monthly recurring infrastructure/tooling subscriptions)
 CREATE TABLE IF NOT EXISTS public.fixed_costs (
