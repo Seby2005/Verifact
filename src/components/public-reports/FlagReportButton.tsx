@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useLanguage } from '@/i18n';
 import styles from './FlagReportButton.module.css';
 
 interface FlagReportButtonProps {
@@ -8,6 +9,7 @@ interface FlagReportButtonProps {
 }
 
 export function FlagReportButton({ reportId }: FlagReportButtonProps) {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,9 +32,9 @@ export function FlagReportButton({ reportId }: FlagReportButtonProps) {
 
       if (!res.ok) {
         if (res.status === 401) {
-          setErrorMsg('Trebuie să fii autentificat pentru a semnala un raport.');
+          setErrorMsg(t('flagReportModal.authRequiredError'));
         } else {
-          setErrorMsg(data.error || 'A apărut o eroare la trimiterea semnalării.');
+          setErrorMsg(data.error || t('flagReportModal.genericError'));
         }
         setIsSubmitting(false);
         return;
@@ -42,7 +44,7 @@ export function FlagReportButton({ reportId }: FlagReportButtonProps) {
       setIsSubmitting(false);
       setIsOpen(false);
     } catch {
-      setErrorMsg('A apărut o eroare de rețea. Te rugăm să reîncerci.');
+      setErrorMsg(t('flagReportModal.networkError'));
       setIsSubmitting(false);
     }
   };
@@ -51,7 +53,7 @@ export function FlagReportButton({ reportId }: FlagReportButtonProps) {
     return (
       <div className={styles.flagContainer}>
         <span className={styles.successMessage}>
-          ✓ Raportul a fost semnalat echipei de moderare. Mulțumim!
+          {t('flagReportModal.successMsg')}
         </span>
       </div>
     );
@@ -63,27 +65,27 @@ export function FlagReportButton({ reportId }: FlagReportButtonProps) {
         type="button"
         onClick={() => setIsOpen(true)}
         className={styles.flagBtn}
-        aria-label="Semnalează acest raport"
+        aria-label={t('flagReportModal.btnLabel')}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
           <line x1="4" y1="22" x2="4" y2="15" />
         </svg>
-        Semnalează acest raport
+        {t('flagReportModal.btnLabel')}
       </button>
 
       {isOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsOpen(false)}>
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <h3 className={styles.modalTitle}>Semnalează un raport public</h3>
+            <h3 className={styles.modalTitle}>{t('flagReportModal.modalTitle')}</h3>
             <p className={styles.modalText}>
-              Dacă consideri că acest raport încalcă regulile platformei, conține date personale sau informații abuzive, trimite o semnalare echipei noastre.
+              {t('flagReportModal.lead')}
             </p>
 
             <form onSubmit={handleSubmit}>
               <textarea
                 className={styles.textarea}
-                placeholder="Motivul semnalării (opțional)..."
+                placeholder={t('flagReportModal.reasonPlaceholder')}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 maxLength={500}
@@ -98,10 +100,10 @@ export function FlagReportButton({ reportId }: FlagReportButtonProps) {
                   onClick={() => setIsOpen(false)}
                   disabled={isSubmitting}
                 >
-                  Anulează
+                  {t('flagReportModal.cancelBtn')}
                 </button>
                 <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
-                  {isSubmitting ? 'Se trimite...' : 'Trimite semnalarea'}
+                  {isSubmitting ? t('flagReportModal.submittingBtn') : t('flagReportModal.submitBtn')}
                 </button>
               </div>
             </form>

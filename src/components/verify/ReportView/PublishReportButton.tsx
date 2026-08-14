@@ -94,7 +94,7 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
     return (
       <Link href={`/rapoarte/${report.id}`} style={{ textDecoration: 'none' }}>
         <Button type="button" variant="secondary" size="sm">
-          Vezi raportul public &rarr;
+          {t('publishModal.seePublicBtn')}
         </Button>
       </Link>
     );
@@ -102,12 +102,12 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
 
   if (isScreenshot) {
     return (
-      <div style={{ display: 'inline-flex', flexDirection: 'column', gap: '0.25rem' }} title="Rapoartele din screenshot-uri nu pot fi făcute publice momentan">
+      <div style={{ display: 'inline-flex', flexDirection: 'column', gap: '0.25rem' }} title={t('publishModal.screenshotDisabledTitle')}>
         <Button type="button" variant="secondary" size="sm" disabled>
-          Fă public acest raport
+          {t('publishModal.makePublicBtn')}
         </Button>
         <span style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted, #71717a)' }}>
-          Rapoartele din screenshot nu pot fi publicate public momentan
+          {t('publishModal.screenshotDisabledNote')}
         </span>
       </div>
     );
@@ -122,11 +122,11 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
           size="sm"
           onClick={() => setIsOpen(true)}
         >
-          Fă public acest raport
+          {t('publishModal.makePublicBtn')}
         </Button>
       </div>
 
-      <Modal isOpen={isOpen} onClose={close} title="Publică acest raport în galeria publică">
+      <Modal isOpen={isOpen} onClose={close} title={t('publishModal.title')}>
         {result?.success ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <Callout label={result.visibilityStatus === 'public' ? 'Publicat' : 'Moderare'} tone="plain">
@@ -150,7 +150,7 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <p style={{ fontSize: '0.95rem', color: 'var(--color-ink-secondary)', lineHeight: 1.5 }}>
-              Prin publicarea acestui raport, verificarea va fi disponibilă oricărui vizitator și va putea fi indexată de motoarele de căutare.
+              {t('publishModal.lead')}
             </p>
 
             <label
@@ -169,21 +169,21 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
                 onChange={(e) => setShowAuthor(e.target.checked)}
                 style={{ width: '18px', height: '18px', cursor: 'pointer' }}
               />
-              <span>Afișează numele meu la acest raport (implicit anonim)</span>
+              <span>{t('publishModal.showAuthor')}</span>
             </label>
 
             {result?.error && (
-              <Callout label="Eroare publicare" tone="plain">
+              <Callout label={t('publishModal.errorLabel')} tone="plain">
                 <span style={{ color: 'var(--color-danger)' }}>{result.error}</span>
               </Callout>
             )}
 
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
               <Button type="button" variant="ghost" onClick={close} disabled={isSubmitting} fullWidth>
-                Anulează
+                {t('publishModal.cancelBtn')}
               </Button>
               <Button type="button" variant="primary" onClick={handlePublish} isLoading={isSubmitting} fullWidth>
-                Confirmă publicarea
+                {t('publishModal.confirmBtn')}
               </Button>
             </div>
           </div>

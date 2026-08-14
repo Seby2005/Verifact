@@ -49,4 +49,22 @@ describe('i18n core and dictionaries', () => {
 
     expect(roKeys).toEqual(enKeys);
   });
+
+  it('should translate glossary and resource keys in both RO and EN', () => {
+    expect(getTranslation(ro, 'glossaryPage.title')).toBe('Glosar de dezinformare');
+    expect(getTranslation(en, 'glossaryPage.title')).toBe('Disinformation Glossary');
+
+    expect(getTranslation(ro, 'glossaryPage.terms.0.title')).toBe(
+      'Dezinformare (vs. misinformare, vs. malinformare)'
+    );
+    expect(getTranslation(en, 'glossaryPage.terms.0.title')).toBe(
+      'Disinformation (vs. misinformation vs. malinformation)'
+    );
+
+    expect(getTranslation(ro, 'resourcesPage.title')).toBe('Ghiduri și resurse educaționale');
+    expect(getTranslation(en, 'resourcesPage.title')).toBe('Educational Guides & Resources');
+
+    expect(getTranslation(ro, 'publishModal.title')).toBe('Publică acest raport în galeria publică');
+    expect(getTranslation(en, 'publishModal.title')).toBe('Publish this report to public gallery');
+  });
 });
