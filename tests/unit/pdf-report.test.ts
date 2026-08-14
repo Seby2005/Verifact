@@ -26,7 +26,7 @@ const mockReport: VerificationReport = {
     layer4Weight: 0.1,
     availableLayers: 2,
     adjustedForAvailability: false,
-    weights: { factCheck: 0.35, news: 0.3, official: 0.25, social: 0.1, ai: 0.1 }
+    weights: { factCheck: 0.35, news: 0.3, official: 0.25, social: 0.1, ai: 0.22 }
   },
   sources: [
     { title: 'Sursă de test', url: 'https://example.com/test', publisher: 'test.com', sourceType: 'news', relevance: 0.9, excerpt: 'Pasaj de test' }

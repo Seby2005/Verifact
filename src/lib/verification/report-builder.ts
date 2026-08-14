@@ -194,7 +194,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
 const DEFAULT_SCORE_BREAKDOWN: ScoreBreakdown = {
   finalScore: 50,
   availableLayers: 0,
-  weights: { factCheck: 0.35, news: 0.3, official: 0.25, social: 0.1 },
+  weights: { factCheck: 0.35, news: 0.3, official: 0.25, social: 0.1, ai: 0.22 },
 };
 
 const DEFAULT_UNAVAILABLE_LAYER1: Layer1Result = { status: 'unavailable', results: [], summary: '', layerScore: 0.5 };

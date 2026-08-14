@@ -70,12 +70,12 @@ function hasEvidence(layer: { status: string; results?: unknown[]; layerScore: n
 /**
  * Calculates the final veracity score (0-100) using a weighted average.
  *
- * Formula (all 4 layers available):
- *   Score = (L1 * 0.35 + L2 * 0.30 + L3 * 0.25 + L4 * 0.10) * 100
+ * Formula (all search layers + AI available):
+ *   Score = (L1 * 0.35 + L2 * 0.30 + L3 * 0.25 + L4 * 0.10 + AI * 0.22) / 1.22 * 100
  *
- * Adjustment for unavailable layers:
- *   If a layer is 'unavailable' or 'error', its weight is redistributed
- *   proportionally among the available layers.
+ * Adjustment for unavailable layers / thin evidence:
+ *   Weights are adjusted for corroboration; missing or neutral layers have their
+ *   weights redistributed proportionally among the available layers.
  *
  * Score → Verdict mapping:
  *   85-100 → true
@@ -164,7 +164,7 @@ export function calculateScore(layers: {
       news: 0.30,
       official: 0.25,
       social: 0.10,
-      ai: 0.10,
+      ai: 0.22,
     },
     aiScore: layers.ai?.score,
     layer1Weight: 0.35,

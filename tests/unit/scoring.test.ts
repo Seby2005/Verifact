@@ -35,6 +35,13 @@ describe('calculateScore', () => {
     expect(result.finalScore).toBe(19);
     expect(result.availableLayers).toBe(4);
     expect(result.adjustedForAvailability).toBe(false);
+    expect(result.weights).toEqual({
+      factCheck: 0.35,
+      news: 0.30,
+      official: 0.25,
+      social: 0.10,
+      ai: 0.22,
+    });
     expect(scoreToVerdict(result.finalScore)).toBe('false');
     expect(scoreToConfidence(result.availableLayers)).toBe('high');
   });

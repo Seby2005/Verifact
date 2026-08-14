@@ -481,9 +481,9 @@ export const ro = {
       {
         number: '05',
         title: 'Analiză contextuală AI',
-        weight: '10%',
+        weight: '22%',
         text:
-          'Un model AI evaluează afirmația față de dovezile de mai sus și semnalează contextul lipsă. Ponderea nominală e mică, dar când căutările nu găsesc nimic, ponderile lor se redistribuie și evaluarea AI ajunge să cântărească mult mai mult — până la a purta singură scorul.',
+          'Un model AI evaluează afirmația față de dovezile de mai sus și semnalează contextul lipsă. Ponderea nominală e de 22%, dar când căutările nu găsesc nimic, ponderile lor se redistribuie și evaluarea AI ajunge să cântărească mult mai mult — până la a purta singură scorul.',
       },
     ],
     scoreTitle: 'Ce înseamnă scorul',

@@ -481,9 +481,9 @@ export const en: Translations = {
       {
         number: '05',
         title: 'AI Contextual Analysis',
-        weight: '10%',
+        weight: '22%',
         text:
-          'An AI model assesses the claim against the evidence above and flags missing context. Its nominal weight is small, but when the searches find nothing their weight is redistributed and the AI assessment counts for far more — up to carrying the score on its own.',
+          'An AI model assesses the claim against the evidence above and flags missing context. Its nominal weight is 22%, but when the searches find nothing their weight is redistributed and the AI assessment counts for far more — up to carrying the score on its own.',
       },
     ],
     scoreTitle: 'What the Score Means',

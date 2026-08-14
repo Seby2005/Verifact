@@ -21,7 +21,7 @@ Atât în `.env.local` cât și pe **Vercel** (producție):
 ```env
 CREEM_API_KEY=creem_xxxxx
 CREEM_WEBHOOK_SECRET=whsec_xxxxx
-NEXT_PUBLIC_CREEM_PRO_PRODUCT_ID=prod_dQMs5ZfLQFgVoKERSEGnQ
+NEXT_PUBLIC_CREEM_PRO_PRODUCT_ID=prod_xxxxx
 ```
 
 Variabilele au fost adăugate și în `.env.example` cu valori placeholder.
@@ -83,7 +83,7 @@ Adăugată secțiunea Creem Payment Processor cu valori placeholder.
 
 ### Produs
 - **Nume**: Pro
-- **Product ID**: `prod_dQMs5ZfLQFgVoKERSEGnQ`
+- **Product ID**: `prod_xxxxx`
 
 ### Webhook
 - **URL**: `https://www.verifact.ro/api/webhooks/creem`
@@ -209,3 +209,42 @@ export const TIER_CONFIG = {
 - [ ] Nu s-a implementat `subscription_id` pe profil — webhook-ul salvează doar tier-ul, nu și ID-ul abonamentului.
 - [ ] Nu există încă un plan yearly vs monthly diferențiat în Creem (un singur produs creat).
 - [ ] Webhook-ul nu loghează evenimentele într-un tabel de audit (doar console.error la erori).
+
+---
+
+## 9. Procedura de Rotație a Secretelor (Secret Rotation)
+
+Dacă secretele Creem au fost expuse sau invalidate, urmează acești pași obligatorii:
+
+### Pasul 1: Rotirea cheilor în Creem Dashboard
+1. Intră în [Creem Dashboard](https://dashboard.creem.io).
+2. Mergi la **Developers / API Keys** → Generează o cheie API nouă (`CREEM_API_KEY`).
+3. Revocă/șterge cheia veche compromisă.
+4. Mergi la **Webhooks** → Configurează un nou endpoint sau generează un nou **Signing Secret** (`CREEM_WEBHOOK_SECRET`).
+
+### Pasul 2: Actualizare variabile locale
+Actualizează `.env.local` cu noile chei:
+```env
+CREEM_API_KEY=creem_noua_cheie
+CREEM_WEBHOOK_SECRET=whsec_noul_secret
+NEXT_PUBLIC_CREEM_PRO_PRODUCT_ID=prod_id_produs
+```
+
+### Pasul 3: Actualizare variabile în producție (Vercel)
+Actualizează variabilele direct în Vercel:
+```bash
+# Sau din Vercel Dashboard -> Project Settings -> Environment Variables
+vercel env add CREEM_API_KEY production
+vercel env add CREEM_WEBHOOK_SECRET production
+vercel env add NEXT_PUBLIC_CREEM_PRO_PRODUCT_ID production
+```
+Apoi declanșează un redeploy pentru a propaga noile variabile.
+
+### Pasul 4: Sincronizare Git și Force Push
+După curățarea istoricului Git local (`git filter-branch` / `git-filter-repo`), istoricul curat trebuie împins pe GitHub cu suprascriere:
+```bash
+git push origin --force --all
+git push origin --force --tags
+```
+> [!WARNING]
+> Force push-ul suprascrie istoricul pe remote. Toți colaboratorii vor trebui să facă `git fetch && git reset --hard origin/<branch>`.
