@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button, Tabs, Textarea, Input, Callout, type TabItem } from '@/components/ui';
 import type {
   InputType,
@@ -41,6 +42,7 @@ export interface VerifyToolProps {
 
 export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
   const { locale, t } = useLanguage();
+  const searchParams = useSearchParams();
   const [kind, setKind] = useState<VerificationInputKind>('text');
   const [text, setText] = useState('');
   const [url, setUrl] = useState('');
@@ -49,6 +51,16 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
   // Per-layer progress streamed from the server while a verification runs.
   const [liveSteps, setLiveSteps] = useState<LiveSteps>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Pre-fill input if claim query parameter is passed (e.g. from /admin/oportunitati)
+  useEffect(() => {
+    const claimParam = searchParams?.get('claim') || searchParams?.get('q') || searchParams?.get('text');
+    if (claimParam && claimParam.trim().length > 0) {
+      setText(claimParam.trim());
+      setKind('text');
+      setStatus({ state: 'idle' });
+    }
+  }, [searchParams]);
 
   const tabs: ReadonlyArray<TabItem<VerificationInputKind>> = [
     { id: 'text', label: t('verifyTool.tabs.text') },
