@@ -18,3 +18,4 @@ export {
   type VerdictLabelProps,
   type VerdictKind,
 } from './VerdictLabel';
+export { Turnstile, type TurnstileProps, type TurnstileRef } from './Turnstile';

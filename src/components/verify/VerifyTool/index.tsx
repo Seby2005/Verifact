@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button, Tabs, Textarea, Input, Callout, type TabItem } from '@/components/ui';
+import { Button, Tabs, Textarea, Input, Callout, Turnstile, type TabItem, type TurnstileRef } from '@/components/ui';
 import type {
   InputType,
   VerificationReport,
@@ -47,10 +47,12 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
   const [text, setText] = useState('');
   const [url, setUrl] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>({ state: 'idle' });
   // Per-layer progress streamed from the server while a verification runs.
   const [liveSteps, setLiveSteps] = useState<LiveSteps>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const turnstileRef = useRef<TurnstileRef>(null);
 
   // Pre-fill input if claim query parameter is passed (e.g. from /admin/oportunitati)
   useEffect(() => {
@@ -130,12 +132,15 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
           inputType: kind,
           language: locale,
           isPublic: false,
+          turnstileToken: turnstileToken ?? undefined,
         }),
       });
 
-      // Pre-flight failures (validation, rate limit, usage) come back as plain
+      // Pre-flight failures (validation, rate limit, usage, captcha) come back as plain
       // JSON with a real status code; a started verification streams NDJSON.
       if (!res.ok || !res.body) {
+        turnstileRef.current?.reset();
+        setTurnstileToken(null);
         const err = (await res.json().catch(() => null)) as VerifyAPIError | null;
         setStatus({
           state: err?.code === 'ALL_LAYERS_FAILED' ? 'unavailable' : 'error',
@@ -145,7 +150,11 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
       }
 
       await consumeStream(res.body);
+      turnstileRef.current?.reset();
+      setTurnstileToken(null);
     } catch {
+      turnstileRef.current?.reset();
+      setTurnstileToken(null);
       setStatus({
         state: 'error',
         message: t('verifyTool.errors.network'),
@@ -341,6 +350,13 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
               />
             </div>
           ) : null}
+
+          <Turnstile
+            ref={turnstileRef}
+            action="verify"
+            onVerify={setTurnstileToken}
+            onExpire={() => setTurnstileToken(null)}
+          />
 
           <div className={styles.actions}>
             <Button type="submit" variant="primary" size="lg" isLoading={status.state === 'loading'}>

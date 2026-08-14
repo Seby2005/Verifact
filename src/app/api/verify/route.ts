@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { verifyContent } from '@/lib/verification/orchestrator';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
+import { validateTurnstileToken } from '@/lib/security/turnstile';
 import { saveVerification, reserveUsageSlot, releaseUsageSlot } from '@/lib/verification/db-operations';
 import { checkAnonymousLimit } from '@/lib/usage/anonymous-limit';
 import { hasUnlimitedUsage } from '@/lib/usage/limits';
@@ -109,6 +110,22 @@ export async function POST(request: Request): Promise<Response> {
       code: 'RATE_LIMIT',
     };
     return Response.json(err, { status: 429 });
+  }
+
+  // 2b. Bot protection via Cloudflare Turnstile
+  const rawBody = body as Record<string, unknown>;
+  const turnstileToken =
+    (typeof rawBody.turnstileToken === 'string' ? rawBody.turnstileToken : undefined) ??
+    (typeof rawBody['cf-turnstile-response'] === 'string' ? rawBody['cf-turnstile-response'] : undefined);
+
+  const turnstileResult = await validateTurnstileToken(turnstileToken, ip);
+  if (!turnstileResult.success) {
+    const err: VerifyAPIError = {
+      success: false,
+      error: turnstileResult.error ?? 'Verificarea de securitate a eșuat.',
+      code: 'INPUT_INVALID',
+    };
+    return Response.json(err, { status: 403 });
   }
 
   // 3. Auth check and usage limits.

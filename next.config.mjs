@@ -41,6 +41,7 @@ const formbricksOrigin = originOf(process.env.NEXT_PUBLIC_FORMBRICKS_APP_URL);
 // its script, opens its popup in an iframe, and posts the ID token — all on
 // accounts.google.com. Only widened when a Google Client ID is configured.
 const googleAuthOrigin = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? 'https://accounts.google.com' : '';
+const turnstileOrigin = 'https://challenges.cloudflare.com';
 
 const connectSrc = [
   "'self'",
@@ -50,6 +51,7 @@ const connectSrc = [
   glitchtipOrigin,
   formbricksOrigin,
   googleAuthOrigin,
+  turnstileOrigin,
 ]
   .filter(Boolean)
   .join(' ');
@@ -63,18 +65,20 @@ const connectSrc = [
 // looser one, scoped by NODE_ENV rather than hand-toggled.
 const isDev = process.env.NODE_ENV !== 'production';
 
+const frameSources = [googleAuthOrigin, turnstileOrigin].filter(Boolean).join(' ') || "'none'";
+
 const csp = [
   "default-src 'self'",
   // Next.js's App Router hydration payload ships as inline <script> tags
   // (no nonce plumbing set up yet) — 'unsafe-inline' is required for the
   // app to boot, not an oversight. Tightening this to a nonce-based policy
   // is tracked as follow-up work, not part of this pass.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''} ${turnstileOrigin}`,
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data:${googleAuthOrigin ? ' https://*.googleusercontent.com' : ''}`,
   "font-src 'self'",
   `connect-src ${connectSrc}`,
-  `frame-src ${googleAuthOrigin || "'none'"}`,
+  `frame-src ${frameSources}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -129,6 +133,12 @@ const nextConfig = {
             value: 'camera=(), microphone=(), geolocation=(), payment=(), browsing-topics=()',
           },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
+        ],
+      },
+      {
+        source: '/fonts/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
     ];
