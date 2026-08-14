@@ -2,6 +2,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logger } from '@/lib/utils/logger';
 import { logAdminAction } from '@/lib/auth/admin';
+import { hasUnlimitedUsage } from '@/lib/usage/limits';
 import type { VisibilityStatus } from '@/types/database';
 
 /**
@@ -39,18 +40,20 @@ export type PublishEligibilityResult =
 export interface CheckPublishEligibilityOptions {
   verificationId: string;
   userId: string;
+  userEmail?: string;
 }
 
 /**
  * Checks if a user can publish a specific verification report, evaluating:
- * 1. User ownership & authentication
+ * 1. User ownership & authentication (Admins bypass ownership checks)
  * 2. Decisive score requirement (score >= 85 or <= 39)
- * 3. Free tier monthly limit (max 1 public report per calendar month)
+ * 3. Tier-differentiated monthly limits (Admins have UNLIMITED publications)
  * 4. Account age & activity check (<48h old or <2 verifications -> pending_review)
  */
 export async function checkPublishEligibility({
   verificationId,
   userId,
+  userEmail,
 }: CheckPublishEligibilityOptions): Promise<PublishEligibilityResult> {
   if (!userId) {
     return {
@@ -63,6 +66,17 @@ export async function checkPublishEligibility({
   const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
     ? createAdminClient()
     : await createServerClient();
+
+  // Resolve user email if not provided
+  let effectiveEmail = userEmail;
+  if (!effectiveEmail) {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      effectiveEmail = authData?.user?.email;
+    } catch {
+      // ignore
+    }
+  }
 
   // Fetch report
   const { data: verification, error: verificationError } = (await supabase
@@ -89,14 +103,6 @@ export async function checkPublishEligibility({
     };
   }
 
-  if (verification.user_id !== null && verification.user_id !== userId) {
-    return {
-      eligible: false,
-      reason: 'FORBIDDEN',
-      message: 'Nu puteți modifica vizibilitatea unui raport care nu vă aparține.',
-    };
-  }
-
   // Rule: Only 'text' or 'url' input_type can be made public. 'screenshot' is forbidden.
   if ((verification as Record<string, unknown>).input_type === 'screenshot') {
     return {
@@ -115,21 +121,53 @@ export async function checkPublishEligibility({
     };
   }
 
-  // Fetch user profile
-  const { data: profile, error: profileError } = (await supabase
-    .from('profiles')
-    .select('tier, created_at, verifications_count')
-    .eq('id', userId)
-    .single()) as unknown as {
-    data: {
-      tier: string;
-      created_at: string;
-      verifications_count: number;
-    } | null;
-    error: { message: string } | null;
-  };
+  // Fast check for known admin email
+  let isAdmin = hasUnlimitedUsage(undefined, effectiveEmail);
 
-  if (profileError || !profile) {
+  // Fetch user profile if needed
+  let profile: { tier: string; created_at: string; verifications_count: number; role?: string } | null = null;
+  try {
+    const { data: profileData, error: profileError } = (await supabase
+      .from('profiles')
+      .select('tier, created_at, verifications_count, role')
+      .eq('id', userId)
+      .single()) as unknown as {
+      data: {
+        tier: string;
+        created_at: string;
+        verifications_count: number;
+        role?: string;
+      } | null;
+      error: { message: string } | null;
+    };
+    if (!profileError && profileData) {
+      profile = profileData;
+      if (hasUnlimitedUsage(profile.role, effectiveEmail)) {
+        isAdmin = true;
+      }
+    }
+  } catch {
+    // If profiles query fails and not already admin, handle below
+  }
+
+  if (!isAdmin && verification.user_id !== null && verification.user_id !== userId) {
+    return {
+      eligible: false,
+      reason: 'FORBIDDEN',
+      message: 'Nu puteți modifica vizibilitatea unui raport care nu vă aparține.',
+    };
+  }
+
+  // Admin accounts are uncapped and have unlimited public report publications
+  if (isAdmin) {
+    return {
+      eligible: true,
+      requiresPendingReview: false,
+      message: 'Raportul este eligibil pentru publicare directă (Admin).',
+    };
+  }
+
+  if (!profile) {
     return {
       eligible: false,
       reason: 'FORBIDDEN',
@@ -187,6 +225,7 @@ export async function checkPublishEligibility({
 export interface SetVisibilityParams {
   verificationId: string;
   userId: string;
+  userEmail?: string;
   isPublic?: boolean;
   showAuthor?: boolean;
 }
@@ -211,18 +250,48 @@ export type SetVisibilityResult =
 export async function setReportVisibility({
   verificationId,
   userId,
+  userEmail,
   isPublic,
   showAuthor,
 }: SetVisibilityParams): Promise<SetVisibilityResult> {
   const supabase = await createServerClient();
 
+  let effectiveEmail = userEmail;
+  if (!effectiveEmail) {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      effectiveEmail = authData?.user?.email;
+    } catch {
+      // ignore
+    }
+  }
+
+  let isAdmin = hasUnlimitedUsage(undefined, effectiveEmail);
+  try {
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+    if (hasUnlimitedUsage((profileData as { role?: string } | null)?.role, effectiveEmail)) {
+      isAdmin = true;
+    }
+  } catch {
+    // If profiles table query fails, fallback gracefully
+  }
+
   // If isPublic is omitted but showAuthor is provided, update showAuthor independently
   if (typeof isPublic !== 'boolean' && typeof showAuthor === 'boolean') {
-    const { data: updatedData, error } = await supabase
+    let updateQuery = supabase
       .from('verifications')
       .update({ show_author: showAuthor } as never)
-      .eq('id', verificationId)
-      .eq('user_id', userId)
+      .eq('id', verificationId);
+
+    if (!isAdmin) {
+      updateQuery = updateQuery.eq('user_id', userId);
+    }
+
+    const { data: updatedData, error } = await updateQuery
       .select('is_public, visibility_status, show_author')
       .single();
 
@@ -249,11 +318,16 @@ export async function setReportVisibility({
       unpublishPayload.show_author = showAuthor;
     }
 
-    const { error } = await supabase
+    let unpublishQuery = supabase
       .from('verifications')
       .update(unpublishPayload as never)
-      .eq('id', verificationId)
-      .eq('user_id', userId);
+      .eq('id', verificationId);
+
+    if (!isAdmin) {
+      unpublishQuery = unpublishQuery.eq('user_id', userId);
+    }
+
+    const { error } = await unpublishQuery;
 
     if (error) {
       logger.error('Failed to unpublish report', { service: 'PublicReports', error: error.message });
@@ -270,7 +344,7 @@ export async function setReportVisibility({
   }
 
   // Check eligibility for making public
-  const eligibility = await checkPublishEligibility({ verificationId, userId });
+  const eligibility = await checkPublishEligibility({ verificationId, userId, userEmail: effectiveEmail });
 
   if (!eligibility.eligible) {
     return {

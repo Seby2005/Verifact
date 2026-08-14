@@ -30,6 +30,7 @@ export async function PATCH(
   const result = await setReportVisibility({
     verificationId: id,
     userId: user.id,
+    userEmail: user.email,
     isPublic,
     showAuthor,
   });
