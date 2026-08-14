@@ -100,6 +100,9 @@ export const metadata: Metadata = {
       'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile.',
     images: ['/og-image.png'],
   },
+  other: {
+    google: 'notranslate',
+  },
 };
 
 import { LanguageProvider } from '@/i18n';
@@ -150,6 +153,7 @@ export default function RootLayout({
   return (
     <html
       lang="ro"
+      translate="no"
       suppressHydrationWarning
       className={`${generalSans.variable} ${zodiak.variable} ${boska.variable} ${jetbrainsMono.variable}`}
     >
