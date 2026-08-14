@@ -31,8 +31,8 @@ describe('calculateScore', () => {
 
     // layer3 (2 results) and layer4 (1) fall short of CORROBORATION_TARGET, so
     // the part of their weight they have not earned abstains at 0.5:
-    // (0.1*0.35 + 0.2*0.30 + 0.15*0.167 + 0.6*0.033 + 0.1*0.10 + 0.5*0.15) / 1.10 * 100 ≈ 20.5
-    expect(result.finalScore).toBe(20);
+    // (0.1*0.35 + 0.2*0.30 + 0.15*0.167 + 0.6*0.033 + 0.1*0.22 + 0.5*0.15) / 1.22 * 100 ≈ 19.3
+    expect(result.finalScore).toBe(19);
     expect(result.availableLayers).toBe(4);
     expect(result.adjustedForAvailability).toBe(false);
     expect(scoreToVerdict(result.finalScore)).toBe('false');
@@ -127,8 +127,8 @@ describe('calculateScore', () => {
         ai: { score: 100, confidence: 0.9 },
       });
 
-      expect(result.finalScore).toBe(52);
-      expect(scoreToVerdict(result.finalScore)).toBe('unclear');
+      expect(result.finalScore).toBe(65);
+      expect(scoreToVerdict(result.finalScore)).toBe('partial');
     });
 
     it('gives the same layer its full say once it is corroborated', () => {
@@ -140,9 +140,9 @@ describe('calculateScore', () => {
         ai: { score: 100, confidence: 0.9 },
       });
 
-      // 0*0.25 + 1.0*0.10, over 0.35 — nothing abstains any more.
-      expect(result.finalScore).toBe(29);
-      expect(scoreToVerdict(result.finalScore)).toBe('false');
+      // 0*0.25 + 1.0*0.22, over 0.47 — nothing abstains any more.
+      expect(result.finalScore).toBe(47);
+      expect(scoreToVerdict(result.finalScore)).toBe('unclear');
     });
 
     it('scales between the two as corroboration builds', () => {
