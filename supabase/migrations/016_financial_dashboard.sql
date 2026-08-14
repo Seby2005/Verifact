@@ -76,6 +76,7 @@ ALTER TABLE public.verification_costs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.api_pricing ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.fixed_costs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins can view verification costs" ON public.verification_costs;
 CREATE POLICY "Admins can view verification costs"
   ON public.verification_costs FOR SELECT
   TO authenticated
@@ -86,6 +87,7 @@ CREATE POLICY "Admins can view verification costs"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can manage api pricing" ON public.api_pricing;
 CREATE POLICY "Admins can manage api pricing"
   ON public.api_pricing FOR ALL
   TO authenticated
@@ -102,6 +104,7 @@ CREATE POLICY "Admins can manage api pricing"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can manage fixed costs" ON public.fixed_costs;
 CREATE POLICY "Admins can manage fixed costs"
   ON public.fixed_costs FOR ALL
   TO authenticated
