@@ -51,6 +51,10 @@ export default async function DynamicArticlePage({ params }: DynamicArticleProps
     notFound();
   }
 
+  if (article.externalHref) {
+    redirect(article.externalHref);
+  }
+
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'Article',

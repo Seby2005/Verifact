@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Modal } from '@/components/ui';
+import { useLanguage } from '@/i18n';
 import { createClient } from '@/lib/supabase/client';
 
 export interface AdminDeleteReportButtonProps {
@@ -17,6 +18,7 @@ export const AdminDeleteReportButton: React.FC<AdminDeleteReportButtonProps> = (
   variant = 'button',
 }) => {
   const router = useRouter();
+  const { t } = useLanguage();
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
@@ -61,7 +63,7 @@ export const AdminDeleteReportButton: React.FC<AdminDeleteReportButtonProps> = (
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || 'A apărut o eroare la ștergerea raportului.');
+        setError(data.error || t('adminDeleteModal.errorGeneric'));
       } else {
         setIsOpen(false);
         if (onDeleted) {
@@ -71,7 +73,7 @@ export const AdminDeleteReportButton: React.FC<AdminDeleteReportButtonProps> = (
         }
       }
     } catch {
-      setError('A apărut o eroare de rețea. Reîncearcă.');
+      setError(t('adminDeleteModal.errorGeneric'));
     } finally {
       setIsDeleting(false);
     }
@@ -87,7 +89,7 @@ export const AdminDeleteReportButton: React.FC<AdminDeleteReportButtonProps> = (
             e.stopPropagation();
             setIsOpen(true);
           }}
-          title="Șterge raport (Admin)"
+          title={t('adminDeleteModal.iconTitle')}
           style={{
             background: 'rgba(220, 38, 38, 0.15)',
             color: '#ef4444',
@@ -102,7 +104,7 @@ export const AdminDeleteReportButton: React.FC<AdminDeleteReportButtonProps> = (
             gap: '4px',
           }}
         >
-          🗑️ Șterge (Admin)
+          {t('adminDeleteModal.iconLabel')}
         </button>
       ) : (
         <Button
@@ -120,18 +122,18 @@ export const AdminDeleteReportButton: React.FC<AdminDeleteReportButtonProps> = (
             backgroundColor: 'rgba(220, 38, 38, 0.08)',
           }}
         >
-          🗑️ Șterge raport (Admin)
+          {t('adminDeleteModal.buttonLabel')}
         </Button>
       )}
 
       <Modal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        title="Confirmă ștergerea raportului (Admin)"
+        title={t('adminDeleteModal.modalTitle')}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <p style={{ fontSize: '0.95rem', color: 'var(--color-ink-secondary)' }}>
-            Ești sigur că vrei să ștergi acest raport din galeria publică? Vizitatorii nu îl vor mai putea accesa.
+            {t('adminDeleteModal.lead')}
           </p>
 
           {error && <p style={{ color: '#ef4444', fontSize: '0.85rem' }}>{error}</p>}
@@ -148,7 +150,7 @@ export const AdminDeleteReportButton: React.FC<AdminDeleteReportButtonProps> = (
               disabled={isDeleting}
               fullWidth
             >
-              Anulează
+              {t('adminDeleteModal.cancelBtn')}
             </Button>
             <Button
               type="button"
@@ -158,7 +160,7 @@ export const AdminDeleteReportButton: React.FC<AdminDeleteReportButtonProps> = (
               fullWidth
               style={{ backgroundColor: '#dc2626', borderColor: '#b91c1c', color: '#ffffff' }}
             >
-              Șterge definitiv
+              {t('adminDeleteModal.confirmBtn')}
             </Button>
           </div>
         </div>
