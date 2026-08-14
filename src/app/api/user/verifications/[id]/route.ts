@@ -5,9 +5,9 @@ export const dynamic = 'force-dynamic';
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
-  const { id } = await params;
+  const { id } = await Promise.resolve(params);
   const user = await getAuthenticatedUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 

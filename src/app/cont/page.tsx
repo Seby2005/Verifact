@@ -1,18 +1,91 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AuthPanel } from '@/components/auth';
+import { DashboardView } from '@/components/dashboard';
 import { Callout } from '@/components/ui';
+import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/i18n';
 import shell from '../page-shell.module.css';
 import styles from './page.module.css';
+
+interface UserSession {
+  id: string;
+  email: string | null;
+}
 
 function ContContent() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const oauthError = searchParams.get('error') === 'oauth_failed';
 
+  const [session, setSession] = useState<UserSession | null | undefined>(undefined);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setSession({ id: data.user.id, email: data.user.email ?? null });
+      } else {
+        setSession(null);
+      }
+    });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (newSession?.user) {
+        setSession({ id: newSession.user.id, email: newSession.user.email ?? null });
+      } else {
+        setSession(null);
+      }
+    });
+
+    return () => subscription.subscription.unsubscribe();
+  }, []);
+
+  // Initial loading state
+  if (session === undefined) {
+    return (
+      <div className={`container ${shell.page}`}>
+        <header className={shell.head}>
+          <p className="eyebrow">{t('contPage.eyebrow')}</p>
+          <h1 className={shell.title}>{t('contPage.title')}</h1>
+          <p className={shell.lead}>{t('contPage.lead')}</p>
+        </header>
+        <div className={shell.body}>
+          <div
+            style={{
+              height: '320px',
+              background: 'var(--color-surface)',
+              border: 'var(--border-width-hairline) solid var(--color-line)',
+              borderRadius: 'var(--radius-lg)',
+              animation: 'pulse 1.5s infinite ease-in-out',
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated Dashboard View
+  if (session) {
+    return (
+      <div className={`container ${shell.page}`}>
+        <header className={shell.head}>
+          <p className="eyebrow">{t('dashboard.eyebrow')}</p>
+          <h1 className={shell.title}>{t('dashboard.title')}</h1>
+          <p className={shell.lead}>{t('dashboard.lead')}</p>
+        </header>
+
+        <div className={shell.body}>
+          <DashboardView user={session} onSignOut={() => setSession(null)} />
+        </div>
+      </div>
+    );
+  }
+
+  // Unauthenticated Auth View
   return (
     <div className={`container ${shell.page}`}>
       <header className={shell.head}>
