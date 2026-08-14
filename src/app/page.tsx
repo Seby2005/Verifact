@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Reveal } from '@/components/ui';
@@ -119,7 +119,9 @@ export default function HomePage() {
           </Reveal>
 
           <Reveal delay={210} className={styles.stageTool}>
-            <VerifyTool examples={examples} />
+            <Suspense fallback={<div style={{ minHeight: '180px' }} />}>
+              <VerifyTool examples={examples} />
+            </Suspense>
           </Reveal>
         </div>
       </section>

@@ -288,6 +288,14 @@ export const AuthPanel: React.FC = () => {
             <span className={styles.accountLabel}>{t('auth.session.verificationsThisMonth')}</span>
             <span className={styles.accountValue}>{usageValue}</span>
           </div>
+          {usage?.unlimited ? (
+            <div className={styles.accountRow}>
+              <span className={styles.accountLabel}>Panou Admin</span>
+              <a href="/admin/oportunitati" className={styles.textLink}>
+                Oportunități de conținut →
+              </a>
+            </div>
+          ) : null}
         </div>
 
         {showProLimitWarning ? (
