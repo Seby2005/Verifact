@@ -14,6 +14,7 @@ export type VerificationStatus = 'pending' | 'processing' | 'completed' | 'faile
 export type VisibilityStatus = 'private' | 'pending_review' | 'public' | 'taken_down' | 'rejected';
 export type DisputeStatus = 'open' | 'reviewing' | 'resolved_kept' | 'resolved_hidden' | 'resolved_edited' | 'rejected';
 export type SubscriptionStatus = 'pending_manual' | 'active' | 'past_due' | 'canceled';
+export type OpportunityStatus = 'new' | 'reviewed' | 'dismissed' | 'used';
 
 export interface Profile {
   id: string;
@@ -118,6 +119,16 @@ export interface AdminAction {
   created_at: string;
 }
 
+export interface ContentOpportunity {
+  id: string;
+  title: string;
+  source_url: string;
+  source_name: string;
+  trend_rank: number | null;
+  fetched_at: string;
+  status: OpportunityStatus;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -192,6 +203,15 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<AdminAction>;
+      };
+      content_opportunities: {
+        Row: ContentOpportunity;
+        Insert: Omit<ContentOpportunity, 'id' | 'fetched_at' | 'status'> & {
+          id?: string;
+          fetched_at?: string;
+          status?: OpportunityStatus;
+        };
+        Update: Partial<ContentOpportunity>;
       };
     };
     Views: Record<string, never>;
