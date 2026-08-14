@@ -17,7 +17,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html lang="ro">
+    <html lang="ro" translate="no">
       <body>
         <h2>A apărut o eroare neașteptată. Reîncarcă pagina.</h2>
       </body>
