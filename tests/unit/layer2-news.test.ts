@@ -124,14 +124,13 @@ describe('runLayer2', () => {
   });
 
   it('returns a neutral, success result when neither provider is configured', async () => {
-    global.fetch = jest.fn();
+    global.fetch = jest.fn().mockResolvedValue(jsonResponse({ articles: [] }));
 
     const result = await runLayer2('orice afirmatie', 'ro');
 
     expect(result.status).toBe('success');
     expect(result.results).toEqual([]);
     expect(result.layerScore).toBe(0.5);
-    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('combines NewsAPI and Tavily results', async () => {

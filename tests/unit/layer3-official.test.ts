@@ -16,12 +16,18 @@ function jsonResponse(body: unknown, ok = true, status = 200) {
 describe('runLayer3', () => {
   const originalFetch = global.fetch;
 
+  beforeEach(() => {
+    delete process.env.TAVILY_API_KEY;
+  });
+
   afterEach(() => {
     global.fetch = originalFetch;
     delete process.env.TAVILY_API_KEY;
   });
 
-  it('returns unavailable with a clear error when TAVILY_API_KEY is not configured', async () => {
+  it('returns unavailable with a clear error when TAVILY_API_KEY is not configured and no public sources found', async () => {
+    global.fetch = jest.fn().mockResolvedValue(jsonResponse({ results: [], pages: [] }));
+
     const result = await runLayer3('orice afirmatie oficiala', 'ro');
 
     expect(result.status).toBe('unavailable');

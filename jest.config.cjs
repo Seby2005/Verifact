@@ -18,7 +18,7 @@ const config = {
   // stale copies of the repo (and its tests) that would run as phantom
   // duplicates against old code. CI has no such worktree, so this is a no-op
   // there and a correctness fix locally.
-  testPathIgnorePatterns: ['/node_modules/', '/\\.claude/', '/\\.next/'],
+  testPathIgnorePatterns: ['/node_modules/', '/\\.claude/', '/\\.freebuff/', '/\\.next/'],
   collectCoverageFrom: ['src/lib/**/*.ts'],
   // `global` here is already scoped to src/lib, since that's all
   // collectCoverageFrom measures. statements/lines/functions are held at

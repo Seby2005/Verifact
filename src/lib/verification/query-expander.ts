@@ -1,11 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { logger } from '@/lib/utils/logger';
+import type { TokenUsageDetail } from '@/types/verification';
 
 export interface ExpandedQueries {
   romanianQuery: string;
   englishQuery: string;
   keywords: string[];
   namedEntities: string[];
+  tokenUsage?: TokenUsageDetail;
 }
 
 const STOP_WORDS = new Set([
@@ -113,8 +115,9 @@ export async function expandClaimQueries(text: string): Promise<ExpandedQueries>
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
+    const modelName = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_MODEL ?? 'gemini-2.0-flash',
+      model: modelName,
     });
 
     const prompt = `Analizează afirmația de mai jos și extrage interogări de căutare optimizate pentru motoare de căutare și baze de fact-checking.
@@ -146,11 +149,23 @@ Răspunde EXCLUSIV cu un obiect JSON valid având această structură exactă:
     const parsed = JSON.parse(responseText) as Partial<ExpandedQueries>;
 
     if (parsed.romanianQuery && parsed.englishQuery) {
+      const usage = result.response.usageMetadata;
+      const tokenUsage: TokenUsageDetail | undefined = usage
+        ? {
+            provider: 'gemini',
+            model: modelName,
+            step: 'query_expansion',
+            inputTokens: usage.promptTokenCount ?? 0,
+            outputTokens: usage.candidatesTokenCount ?? 0,
+          }
+        : undefined;
+
       return {
         romanianQuery: String(parsed.romanianQuery).trim(),
         englishQuery: String(parsed.englishQuery).trim(),
         keywords: Array.isArray(parsed.keywords) ? parsed.keywords.map(String) : [],
         namedEntities: Array.isArray(parsed.namedEntities) ? parsed.namedEntities.map(String) : [],
+        tokenUsage,
       };
     }
   } catch (error) {

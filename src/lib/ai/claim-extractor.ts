@@ -1,7 +1,7 @@
 import { logger } from '@/lib/utils/logger';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { fetchWithRetry } from '@/lib/utils/retry';
-import type { Language } from '@/types/verification';
+import type { Language, TokenUsageDetail } from '@/types/verification';
 
 /**
  * The result of pulling a checkable claim out of noisy input.
@@ -19,6 +19,7 @@ export interface ExtractedClaim {
   commentary: string;
   /** A short provenance note when evident ("postare Facebook pe TikTok"); else ''. */
   sourceContext: string;
+  tokenUsage?: TokenUsageDetail;
 }
 
 const OPENROUTER_MODELS = [
@@ -93,7 +94,10 @@ Răspunde EXCLUSIV cu un obiect JSON:
           { label: `Extract ${model}` }
         ).then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json() as Promise<{ choices?: Array<{ message?: { content?: string } }> }>;
+          return res.json() as Promise<{
+            choices?: Array<{ message?: { content?: string } }>;
+            usage?: { prompt_tokens?: number; completion_tokens?: number };
+          }>;
         })
       );
 
@@ -107,10 +111,19 @@ Răspunde EXCLUSIV cu un obiect JSON:
       // original text rather than searching on a fragment.
       if (primaryClaim.length < 12) return fallback;
 
+      const tokenUsage: TokenUsageDetail = {
+        provider: 'openrouter',
+        model,
+        step: 'claim_extraction',
+        inputTokens: data.usage?.prompt_tokens ?? 0,
+        outputTokens: data.usage?.completion_tokens ?? 0,
+      };
+
       return {
         primaryClaim,
         commentary: typeof parsed.commentary === 'string' ? parsed.commentary.trim() : '',
         sourceContext: typeof parsed.sourceContext === 'string' ? parsed.sourceContext.trim() : '',
+        tokenUsage,
       };
     } catch (err) {
       logger.warn(`Claim extractor model ${model} failed, trying fallback`, {

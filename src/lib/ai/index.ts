@@ -8,9 +8,9 @@ import {
 import { logger } from '@/lib/utils/logger';
 import { normalizeRomanianDiacritics } from '@/lib/utils/romanian-text';
 import type { AIAnalysisContext } from '@/types/verification';
-import type { AIAssessment } from './gemini';
+import type { AIAssessment, AIAnalysisResult } from './gemini';
 
-export type { AIAssessment };
+export type { AIAssessment, AIAnalysisResult };
 export type { SourceCandidate };
 
 type Provider = 'openrouter' | 'gemini';
@@ -71,8 +71,14 @@ export async function generateAIAssessment(context: AIAnalysisContext): Promise<
  * derives the executive summary from this same string, and a report that
  * spells "instrucţiuni" next to "instrucțiuni" reads as sloppy.
  */
-export async function generateAIAnalysis(context: AIAnalysisContext): Promise<string> {
-  return normalizeRomanianDiacritics(await requestAnalysis(context));
+export async function generateAIAnalysis(context: AIAnalysisContext): Promise<AIAnalysisResult> {
+  const result = await requestAnalysis(context);
+  const rawText = typeof result === 'string' ? result : result?.text ?? '';
+  const tokenUsage = typeof result === 'string' ? undefined : result?.tokenUsage;
+  return {
+    text: normalizeRomanianDiacritics(rawText),
+    tokenUsage,
+  };
 }
 
 /**
@@ -87,7 +93,7 @@ export async function generateAIAnalysis(context: AIAnalysisContext): Promise<st
 // report without an AI section.
 const OPENROUTER_FALLBACK_MODEL = 'deepseek/deepseek-chat';
 
-async function requestAnalysis(context: AIAnalysisContext): Promise<string> {
+async function requestAnalysis(context: AIAnalysisContext): Promise<AIAnalysisResult> {
   const provider = resolveProvider();
 
   if (provider === 'openrouter') {

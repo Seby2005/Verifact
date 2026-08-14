@@ -52,6 +52,8 @@ export interface Verification {
   status: VerificationStatus;
   error_message: string | null;
   disputed: boolean;
+  input_tokens?: number | null;
+  output_tokens?: number | null;
   created_at: string;
 }
 
@@ -96,6 +98,42 @@ export interface ApiCallLog {
   success: boolean;
   estimated_cost_usd: number | null;
   created_at: string;
+}
+
+export interface VerificationCost {
+  id: string;
+  verification_id: string;
+  provider: string;
+  model: string;
+  step: string;
+  input_tokens: number;
+  output_tokens: number;
+  estimated_cost_usd: number | null;
+  created_at: string;
+}
+
+export interface ApiPricing {
+  id: string;
+  provider: string;
+  model: string;
+  price_per_million_input_tokens: number;
+  price_per_million_output_tokens: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FixedCostCategory = 'hosting' | 'ai_tools' | 'infrastructure' | 'domain' | 'other';
+
+export interface FixedCost {
+  id: string;
+  name: string;
+  category: FixedCostCategory | string;
+  monthly_amount: number;
+  currency: string;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Subscription {
@@ -148,8 +186,36 @@ export interface Database {
           published_at?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
+          input_tokens?: number | null;
+          output_tokens?: number | null;
         };
         Update: Partial<Verification>;
+      };
+      verification_costs: {
+        Row: VerificationCost;
+        Insert: Omit<VerificationCost, 'id' | 'created_at'> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<VerificationCost>;
+      };
+      api_pricing: {
+        Row: ApiPricing;
+        Insert: Omit<ApiPricing, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<ApiPricing>;
+      };
+      fixed_costs: {
+        Row: FixedCost;
+        Insert: Omit<FixedCost, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<FixedCost>;
       };
       verification_flags: {
         Row: VerificationFlag;

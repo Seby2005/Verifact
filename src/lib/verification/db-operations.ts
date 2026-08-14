@@ -11,10 +11,10 @@ import { logger } from '@/lib/utils/logger';
  */
 export async function saveVerification(
   report: VerificationReport,
-  _userClient?: SupabaseClient<Database>,
+  userClient?: SupabaseClient<Database>,
   anonymousHash?: string
 ): Promise<boolean> {
-  const adminClient = createAdminClient();
+  const client = userClient || createAdminClient();
   const insertData = {
     id: report.id,
     user_id: report.userId ?? null,
@@ -28,9 +28,11 @@ export async function saveVerification(
     is_public: report.isPublic,
     language: report.language || 'ro',
     processing_time_ms: report.processingTime,
+    input_tokens: report.tokenUsage?.inputTokens ?? 0,
+    output_tokens: report.tokenUsage?.outputTokens ?? 0,
   };
 
-  const { error } = await (adminClient.from('verifications') as unknown as {
+  const { error } = await (client.from('verifications') as unknown as {
     insert: (data: typeof insertData) => Promise<{ error: { message: string } | null }>;
   }).insert(insertData);
 
@@ -42,6 +44,30 @@ export async function saveVerification(
       error: error.message,
     });
     return false;
+  }
+
+  // Insert per-call verification cost details if present
+  if (report.tokenUsage?.details && report.tokenUsage.details.length > 0) {
+    const costRows = report.tokenUsage.details.map((d) => ({
+      verification_id: report.id,
+      provider: d.provider,
+      model: d.model,
+      step: d.step,
+      input_tokens: d.inputTokens,
+      output_tokens: d.outputTokens,
+    }));
+
+    const { error: costError } = await (client.from('verification_costs') as unknown as {
+      insert: (data: typeof costRows) => Promise<{ error: { message: string } | null }>;
+    }).insert(costRows);
+
+    if (costError) {
+      logger.warn('Failed to insert verification_costs log', {
+        service: 'db-operations',
+        reportId: report.id,
+        error: costError.message,
+      });
+    }
   }
 
   return true;
