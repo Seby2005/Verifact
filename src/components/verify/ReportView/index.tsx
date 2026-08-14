@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { VerdictLabel, Callout } from '@/components/ui';
 import type { VerificationReport } from '@/types/verification';
 import { useLanguage } from '@/i18n';
+import { ReportDeepDive } from '@/components/report/ReportDeepDive';
 import { CiteButton } from './CiteButton';
 import { DisputeButton } from './DisputeButton';
 import { DownloadButton } from './DownloadButton';
@@ -153,6 +154,8 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
           ))}
         </ol>
       </div>
+
+      {interactive ? <ReportDeepDive report={report} /> : null}
 
       <div className={styles.footer}>
         <Callout label={t('reportView.disclaimerLabel')} tone="plain">

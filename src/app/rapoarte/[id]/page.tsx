@@ -1,13 +1,12 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { getPublicReportById } from '@/lib/verification/public-reports-query';
 import type { Verdict } from '@/types/verification';
 import { FlagReportButton } from '@/components/public-reports/FlagReportButton';
 import { ReportPageCta } from '@/components/public-reports/ReportPageCta';
+import { ReportDeepDive } from '@/components/report/ReportDeepDive';
 import { PublicReportCard } from '@/components/reports/PublicReportCard';
-import shell from '../../page-shell.module.css';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -84,7 +83,6 @@ export default async function PublicReportPage({ params }: PageProps) {
   const verdictInfo = getVerdictLabel(data.verdict);
   const report = data.reportJson;
   const displayDate = data.publishedAt || data.createdAt;
-  const authorLabel = data.showAuthor && data.authorName ? `@${data.authorName}` : 'Verificat pe Verifact';
 
   // Schema.org ClaimReview JSON-LD for Google Fact Check Carousel & Rich Results
   const claimReviewLdJson = {
@@ -127,6 +125,8 @@ export default async function PublicReportPage({ params }: PageProps) {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
         <FlagReportButton reportId={id} />
       </div>
+
+      {report ? <ReportDeepDive report={report} /> : null}
 
       <ReportPageCta />
     </div>
