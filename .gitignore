@@ -178,3 +178,4 @@ graphify-out/
 .impeccable/
 # Claude Code local worktrees
 .claude/worktrees/
+.freebuff/
