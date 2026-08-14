@@ -216,6 +216,46 @@ export const ro = {
     /** Shown only on the printed page, which loses the site header. */
     printId: 'ID raport',
   },
+  reportDeepDive: {
+    title: 'Deep Dive AI',
+    teaserLead: 'Aprofundează analiza cu Deep Dive',
+    teaserText:
+      'Pune întrebări raportului, cere contra-argumentele, detectează tehnicile de manipulare sau o explicație simplă, fără jargon. Analiza aprofundată și întrebările interactive sunt incluse în planul Pro.',
+    unlockBtn: 'Deblochează cu Pro',
+    presets: {
+      explain_simple: {
+        label: 'Explică simplu',
+        description: 'Același verdict, fără jargon.',
+      },
+      counter_arguments: {
+        label: 'Contra-argumente',
+        description: 'Cele mai solide perspective alternative.',
+      },
+      manipulation_techniques: {
+        label: 'Tehnici de manipulare',
+        description: 'Eristică, propagandă și trucuri de framing.',
+      },
+    },
+    customLabel: 'Întreabă raportul',
+    customPlaceholder: 'De exemplu: ce context lipsește pentru a judeca această afirmație?',
+    customHelper: 'Răspuns strict pe baza raportului și a surselor citate.',
+    askBtn: 'Întreabă',
+    askBtnLoading: 'Se analizează…',
+    loading: 'Analizăm raportul și sursele…',
+    answerCustomLabel: 'Răspuns',
+    copyBtn: 'Copiază răspunsul',
+    copied: 'Copiat',
+    copyFailed: 'Nu am putut copia răspunsul. Selectează textul manual.',
+    askAgain: 'Pune altă întrebare',
+    errorLabel: 'Nu a funcționat',
+    errorGeneric: 'Nu am putut genera analiza. Încearcă din nou.',
+    errorNetwork: 'Nu am putut contacta serverul. Verifică conexiunea și încearcă din nou.',
+    errorAuth: 'Autentifică-te pentru a folosi Deep Dive AI.',
+    questionTooShort: 'Întrebarea este prea scurtă. Scrie cel puțin câteva cuvinte.',
+    questionTooLong: 'Întrebarea este prea lungă. Scurteaz-o sub 300 de caractere.',
+    footnote:
+      'Răspunsul este generat de AI pe baza acestui raport și a surselor citate și poate conține erori.',
+  },
   cite: {
     button: 'Copiază citarea',
     copiedShort: 'Copiat',
