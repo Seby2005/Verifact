@@ -1,9 +1,9 @@
-import type { AIAnalysisContext } from '@/types/verification';
+import type { AIAnalysisContext, TokenUsageDetail } from '@/types/verification';
 import { buildAnalysisPrompt } from './prompts';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { logger } from '@/lib/utils/logger';
-import type { AIAssessment } from './gemini';
+import type { AIAssessment, AIAnalysisResult } from './gemini';
 
 // When AI_GATEWAY_BASE_URL is set — a self-hosted, OpenAI-compatible gateway
 // (LiteLLM in the compose stack, or OmniRoute; see docs/tools/omniroute.md) —
@@ -135,7 +135,10 @@ REGULI:
 }`;
 
   try {
-    const data = await withRetry<{ choices?: Array<{ message?: { content?: string } }> }>(
+    const data = await withRetry<{
+      choices?: Array<{ message?: { content?: string } }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    }>(
       () => ({
         method: 'POST',
         headers: {
@@ -155,9 +158,18 @@ REGULI:
       'assessment'
     );
 
+    const tokenUsage: TokenUsageDetail = {
+      provider: 'openrouter',
+      model,
+      step: 'assessment',
+      inputTokens: data.usage?.prompt_tokens ?? 0,
+      outputTokens: data.usage?.completion_tokens ?? 0,
+    };
+
     const content = data.choices?.[0]?.message?.content ?? '';
     const parsed = parseAssessment(content);
-    return parsed ?? ASSESSMENT_FALLBACK;
+    if (parsed) return { ...parsed, tokenUsage };
+    return { ...ASSESSMENT_FALLBACK, tokenUsage };
   } catch (error) {
     logger.error('OpenRouter assessment failed, using fallback', { service: 'openrouter', error });
     return ASSESSMENT_FALLBACK;
@@ -239,7 +251,10 @@ REGULI:
 {"relevant": ["id1", "id2"]}`;
 
   try {
-    const data = await withRetry<{ choices?: Array<{ message?: { content?: string } }> }>(
+    const data = await withRetry<{
+      choices?: Array<{ message?: { content?: string } }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    }>(
       () => ({
         method: 'POST',
         headers: {
@@ -301,7 +316,7 @@ export async function generateOpenRouterAnalysis(
   context: AIAnalysisContext,
   apiKey?: string,
   modelName?: string
-): Promise<string> {
+): Promise<AIAnalysisResult> {
   const key = apiKey || process.env.OPENROUTER_API_KEY;
   if (!key) {
     throw new Error('OPENROUTER_API_KEY is not configured');
@@ -321,7 +336,10 @@ export async function generateOpenRouterAnalysis(
 
   const prompt = buildAnalysisPrompt(safeContext);
 
-  const data = await withRetry<{ choices?: Array<{ message?: { content?: string } }> }>(
+  const data = await withRetry<{
+    choices?: Array<{ message?: { content?: string } }>;
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+  }>(
     () => ({
       method: 'POST',
       headers: {
@@ -346,5 +364,14 @@ export async function generateOpenRouterAnalysis(
     throw new Error('OpenRouter returned empty or too-short analysis');
   }
 
-  return text;
+  return {
+    text,
+    tokenUsage: {
+      provider: 'openrouter',
+      model,
+      step: 'analysis',
+      inputTokens: data.usage?.prompt_tokens ?? 0,
+      outputTokens: data.usage?.completion_tokens ?? 0,
+    },
+  };
 }

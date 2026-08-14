@@ -208,7 +208,8 @@ export async function verifyContent(
   let aiAnalysis: string;
   let aiAvailable = true;
   if (analysisResult.status === 'fulfilled') {
-    aiAnalysis = analysisResult.value;
+    const analysisVal = analysisResult.value;
+    aiAnalysis = typeof analysisVal === 'string' ? analysisVal : analysisVal.text;
   } else {
     aiAvailable = false;
     logger.error('AI analysis unavailable, falling back to a factual summary', {
@@ -232,6 +233,28 @@ export async function verifyContent(
     processingTime: Date.now() - startTime,
   });
 
+  // Collect real token usage from all executed AI steps
+  const tokenDetails = [];
+  if (extraction?.tokenUsage) tokenDetails.push(extraction.tokenUsage);
+  if (queries?.tokenUsage) tokenDetails.push(queries.tokenUsage);
+  if (decomposed?.tokenUsage) tokenDetails.push(decomposed.tokenUsage);
+  if (assessment?.tokenUsage) tokenDetails.push(assessment.tokenUsage);
+  if (analysisResult.status === 'fulfilled') {
+    const analysisVal = analysisResult.value;
+    if (typeof analysisVal !== 'string' && analysisVal.tokenUsage) {
+      tokenDetails.push(analysisVal.tokenUsage);
+    }
+  }
+
+  const totalInputTokens = tokenDetails.reduce((sum, d) => sum + d.inputTokens, 0);
+  const totalOutputTokens = tokenDetails.reduce((sum, d) => sum + d.outputTokens, 0);
+
+  report.tokenUsage = {
+    inputTokens: totalInputTokens,
+    outputTokens: totalOutputTokens,
+    details: tokenDetails,
+  };
+
   report.riskLevel = decomposed.riskLevel;
   report.aiAvailable = aiAvailable;
 
@@ -239,7 +262,7 @@ export async function verifyContent(
     (l) => l.status === 'success' && l.results.length > 0
   ).length;
 
-  if ((layersWithData >= 1 || rawLayer1.results.length > 0) && aiAvailable) {
+  if (layersWithData >= 2 && aiAvailable) {
     void setCached(contentHash, report);
   }
 

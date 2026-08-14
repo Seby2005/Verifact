@@ -167,19 +167,19 @@ describe('calculateScore', () => {
       layer4: layer4(0.5, 0, 'unavailable'),
     };
 
-    it('never reaches a "true" verdict on the AI assessment alone', () => {
+    it('allows a confident AI assessment to return a "true" verdict when no search layer found evidence', () => {
       const result = calculateScore({ ...NOTHING_FOUND, ai: { score: 100, confidence: 0.95 } });
 
-      expect(result.finalScore).toBe(84);
-      expect(scoreToVerdict(result.finalScore)).toBe('partial');
+      expect(result.finalScore).toBe(100);
+      expect(scoreToVerdict(result.finalScore)).toBe('true');
       expect(result.availableLayers).toBe(0);
     });
 
-    it('never reaches a "false" verdict on the AI assessment alone', () => {
+    it('allows a confident AI assessment to return a "false" verdict when no search layer found evidence', () => {
       const result = calculateScore({ ...NOTHING_FOUND, ai: { score: 0, confidence: 0.95 } });
 
-      expect(result.finalScore).toBe(40);
-      expect(scoreToVerdict(result.finalScore)).toBe('unclear');
+      expect(result.finalScore).toBe(0);
+      expect(scoreToVerdict(result.finalScore)).toBe('false');
     });
 
     it('leaves an assessment inside the band untouched', () => {

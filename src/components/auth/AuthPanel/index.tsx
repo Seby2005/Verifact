@@ -289,12 +289,20 @@ export const AuthPanel: React.FC = () => {
             <span className={styles.accountValue}>{usageValue}</span>
           </div>
           {usage?.unlimited ? (
-            <div className={styles.accountRow}>
-              <span className={styles.accountLabel}>Panou Admin</span>
-              <a href="/admin/oportunitati" className={styles.textLink}>
-                Oportunități de conținut →
-              </a>
-            </div>
+            <>
+              <div className={styles.accountRow}>
+                <span className={styles.accountLabel}>Panou Admin</span>
+                <a href="/admin/oportunitati" className={styles.textLink}>
+                  Oportunități de conținut →
+                </a>
+              </div>
+              <div className={styles.accountRow}>
+                <span className={styles.accountLabel}>Financiar</span>
+                <a href="/admin/financiar" className={styles.textLink}>
+                  Dashboard Financiar & Costuri →
+                </a>
+              </div>
+            </>
           ) : null}
         </div>
 

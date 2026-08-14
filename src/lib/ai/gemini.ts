@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { AIAnalysisContext } from '@/types/verification';
+import type { AIAnalysisContext, TokenUsageDetail } from '@/types/verification';
 import { buildAnalysisPrompt } from './prompts';
 import { withRetry as sharedWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
@@ -97,6 +97,12 @@ export interface AIAssessment {
   /** 0-1 — how confident the model is in its own assessment. */
   confidence: number;
   reasoning: string;
+  tokenUsage?: TokenUsageDetail;
+}
+
+export interface AIAnalysisResult {
+  text: string;
+  tokenUsage?: TokenUsageDetail;
 }
 
 const ASSESSMENT_FALLBACK: AIAssessment = {
@@ -194,8 +200,19 @@ REGULI:
 
   try {
     const result = await withRetry(() => model.generateContent(prompt), 'assessment');
+    const usage = result.response.usageMetadata;
+    const tokenUsage: TokenUsageDetail = {
+      provider: 'gemini',
+      model: MODEL_ID,
+      step: 'assessment',
+      inputTokens: usage?.promptTokenCount ?? 0,
+      outputTokens: usage?.candidatesTokenCount ?? 0,
+    };
     const parsed = parseAssessment(result.response.text() ?? '');
-    return parsed ?? ASSESSMENT_FALLBACK;
+    if (parsed) {
+      return { ...parsed, tokenUsage };
+    }
+    return { ...ASSESSMENT_FALLBACK, tokenUsage };
   } catch (error) {
     logger.error('AI assessment failed, using fallback', { service: 'gemini', error });
     return ASSESSMENT_FALLBACK;
@@ -228,7 +245,7 @@ function summariseEvidence(context: AIAnalysisContext): string {
  * - topP: 0.8 (reduces probability of unlikely tokens)
  * - maxOutputTokens: 1024 (caps analysis length)
  */
-export async function generateAIAnalysis(context: AIAnalysisContext): Promise<string> {
+export async function generateAIAnalysis(context: AIAnalysisContext): Promise<AIAnalysisResult> {
   const genAI = createGenAIClient();
 
   const model = genAI.getGenerativeModel({
@@ -253,5 +270,18 @@ export async function generateAIAnalysis(context: AIAnalysisContext): Promise<st
   // Validate output for hallucinated URLs
   validateAIOutput(text, context);
 
-  return text;
+  const usage = response.usageMetadata;
+  const inputTokens = usage?.promptTokenCount ?? 0;
+  const outputTokens = usage?.candidatesTokenCount ?? 0;
+
+  return {
+    text,
+    tokenUsage: {
+      provider: 'gemini',
+      model: MODEL_ID,
+      step: 'analysis',
+      inputTokens,
+      outputTokens,
+    },
+  };
 }

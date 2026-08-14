@@ -247,6 +247,21 @@ export interface VerificationReport {
   language: Language;
   fromCache?: boolean;
   aiAvailable?: boolean;
+  tokenUsage?: ReportTokenUsage;
+}
+
+export interface TokenUsageDetail {
+  provider: string;
+  model: string;
+  step: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface ReportTokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  details: TokenUsageDetail[];
 }
 
 export interface AIAnalysisContext {

@@ -86,7 +86,7 @@ describe('OpenRouter AI Integration', () => {
       json: async () => mockResponse,
     });
 
-    const text = await generateOpenRouterAnalysis(dummyContext);
-    expect(text).toContain('analiză detaliată');
+    const result = await generateOpenRouterAnalysis(dummyContext);
+    expect(result.text).toContain('analiză detaliată');
   });
 });

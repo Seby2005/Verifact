@@ -1,6 +1,7 @@
 import { logger } from '@/lib/utils/logger';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { fetchWithRetry } from '@/lib/utils/retry';
+import type { TokenUsageDetail } from '@/types/verification';
 
 export type HarmRiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
@@ -10,6 +11,7 @@ export interface DecomposedClaim {
   riskLevel: HarmRiskLevel;
   riskReasoning: string;
   category: 'health' | 'finance_scam' | 'election_politics' | 'conspiracy' | 'general';
+  tokenUsage?: TokenUsageDetail;
 }
 
 const DEFAULT_DECOMPOSITION: DecomposedClaim = {
@@ -80,7 +82,10 @@ Răspunde EXCLUSIV cu un obiect JSON structurat:
           { label: `Decompose ${model}` }
         ).then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json() as Promise<{ choices?: Array<{ message?: { content?: string } }> }>;
+          return res.json() as Promise<{
+            choices?: Array<{ message?: { content?: string } }>;
+            usage?: { prompt_tokens?: number; completion_tokens?: number };
+          }>;
         })
       );
 
@@ -88,12 +93,21 @@ Răspunde EXCLUSIV cu un obiect JSON structurat:
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]) as Partial<DecomposedClaim>;
+        const tokenUsage: TokenUsageDetail = {
+          provider: 'openrouter',
+          model,
+          step: 'claim_decomposition',
+          inputTokens: data.usage?.prompt_tokens ?? 0,
+          outputTokens: data.usage?.completion_tokens ?? 0,
+        };
+
         return {
           originalText: text,
           subClaims: Array.isArray(parsed.subClaims) && parsed.subClaims.length > 0 ? parsed.subClaims : [text],
           riskLevel: validateRiskLevel(parsed.riskLevel),
           riskReasoning: parsed.riskReasoning || 'Evaluare efectuată prin analiză contextuală.',
           category: parsed.category || 'general',
+          tokenUsage,
         };
       }
     } catch (err) {

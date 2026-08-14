@@ -12,10 +12,7 @@ const WEIGHTS = {
   layer2: 0.30,
   layer3: 0.25,
   layer4: 0.10,
-  // The AI assessment gets a real voice (was 0.10): on well-known facts the
-  // model is often the most reliable signal, and under-weighting it left true
-  // claims stuck in "partially true" even when every layer agreed.
-  ai: 0.22,
+  ai: 0.10,
 } as const;
 
 /**
