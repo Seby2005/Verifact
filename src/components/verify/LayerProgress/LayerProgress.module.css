@@ -140,12 +140,6 @@
   color: var(--color-ink);
 }
 
-.weight {
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-caption);
-  color: var(--color-ink-muted);
-}
-
 /* Per-component bar --------------------------------------------------------- */
 
 .bar {

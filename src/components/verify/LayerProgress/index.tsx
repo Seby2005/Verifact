@@ -30,11 +30,11 @@ export interface LayerProgressProps {
 // row, mapped to the streamed `analysis` step and, once resolved, to the score
 // on the report rather than to report.layers.
 const LAYERS = [
-  { key: 'layer1', liveKey: 'layer1', labelKey: 'transparentaPage.layers.0.title', weight: '35%' },
-  { key: 'layer2', liveKey: 'layer2', labelKey: 'transparentaPage.layers.1.title', weight: '30%' },
-  { key: 'layer3', liveKey: 'layer3', labelKey: 'transparentaPage.layers.2.title', weight: '25%' },
-  { key: 'layer4', liveKey: 'layer4', labelKey: 'transparentaPage.layers.3.title', weight: '10%' },
-  { key: 'ai', liveKey: 'analysis', labelKey: 'transparentaPage.layers.4.title', weight: '10%' },
+  { key: 'layer1', liveKey: 'layer1', labelKey: 'transparentaPage.layers.0.title' },
+  { key: 'layer2', liveKey: 'layer2', labelKey: 'transparentaPage.layers.1.title' },
+  { key: 'layer3', liveKey: 'layer3', labelKey: 'transparentaPage.layers.2.title' },
+  { key: 'layer4', liveKey: 'layer4', labelKey: 'transparentaPage.layers.3.title' },
+  { key: 'ai', liveKey: 'analysis', labelKey: 'transparentaPage.layers.4.title' },
 ] as const;
 
 type RowState = 'pending' | 'ok' | 'empty' | 'failed';
@@ -137,9 +137,6 @@ export const LayerProgress: React.FC<LayerProgressProps> = ({ phase, report, liv
               <span className={styles.body}>
                 <span className={styles.head}>
                   <span className={styles.name}>{t(layer.labelKey)}</span>
-                  <span className={styles.weight}>
-                    {t('transparentaPage.layersWeight', { weight: layer.weight })}
-                  </span>
                 </span>
                 {/* One bar per component: indeterminate while pending, then a
                     filled bar coloured by the outcome. */}
