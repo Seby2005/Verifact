@@ -12,7 +12,7 @@ interface OpportunitiesListProps {
 interface ToastMessage {
   id: string;
   text: string;
-  opportunity: ContentOpportunity;
+  opportunity?: ContentOpportunity;
 }
 
 function formatDateGroup(dateString: string): string {
@@ -65,6 +65,7 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
   const [loadingIds, setLoadingIds] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [fetchingTab, setFetchingTab] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Switch status tab (fetch opportunities with that status)
   const handleTabChange = async (status: OpportunityStatus) => {
@@ -80,6 +81,42 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
       // Fallback to local filter if fetch fails
     } finally {
       setFetchingTab(false);
+    }
+  };
+
+  // Manual on-demand aggregation from Google Trends & Google News
+  const handleSyncNow = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await fetch('/api/admin/oportunitati', { method: 'POST' });
+      if (res.ok) {
+        const data = (await res.json()) as {
+          success: boolean;
+          opportunities: ContentOpportunity[];
+          result?: { inserted: number; totalFetched: number };
+        };
+        setOpportunities(data.opportunities ?? []);
+        setCurrentStatus('new');
+        setToast({
+          id: 'sync-success',
+          text: `S-au sincronizat ${data.result?.totalFetched ?? 0} subiecte trending (${data.result?.inserted ?? 0} noi adăugate).`,
+        });
+      } else {
+        setToast({
+          id: 'sync-error',
+          text: 'A apărut o eroare la agregarea subiectelor trending.',
+        });
+      }
+    } catch {
+      setToast({
+        id: 'sync-error',
+        text: 'Eroare de conexiune la server.',
+      });
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => {
+        setToast((prev) => (prev?.id.startsWith('sync-') ? null : prev));
+      }, 5000);
     }
   };
 
@@ -177,7 +214,7 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
   };
 
   const handleUndoDismiss = async () => {
-    if (!toast) return;
+    if (!toast || !toast.opportunity) return;
     const item = toast.opportunity;
     setToast(null);
 
@@ -189,7 +226,7 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
 
   return (
     <div className={styles.container}>
-      {/* Controls: status tabs, search & source filter */}
+      {/* Controls: status tabs, search, source filter & manual sync */}
       <div className={styles.controlsBar}>
         <nav className={styles.statusTabs} aria-label="Filtrare status oportunități">
           <button
@@ -219,6 +256,16 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
         </nav>
 
         <div className={styles.filterGroup}>
+          <button
+            type="button"
+            className={styles.syncBtn}
+            onClick={handleSyncNow}
+            disabled={isSyncing}
+            aria-label="Actualizează oportunitățile acum din Google Trends"
+          >
+            {isSyncing ? 'Se agregă...' : '🔄 Actualizează acum'}
+          </button>
+
           <input
             type="search"
             className={styles.searchInput}
@@ -244,9 +291,13 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
       </div>
 
       {/* Content list */}
-      {fetchingTab ? (
+      {fetchingTab || isSyncing ? (
         <div className={styles.emptyState}>
-          <p className={styles.emptyText}>Se încarcă oportunitățile...</p>
+          <p className={styles.emptyText}>
+            {isSyncing
+              ? 'Se agregă cele mai recente căutări din Google Trends & Google News...'
+              : 'Se încarcă oportunitățile...'}
+          </p>
         </div>
       ) : groupedByDay.length === 0 ? (
         <div className={styles.emptyState}>
@@ -255,9 +306,19 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
             {searchQuery || sourceFilter !== 'all'
               ? 'Niciun subiect nu corespunde filtrelor selectate.'
               : currentStatus === 'new'
-                ? 'Nu există oportunități noi neprocesate. Sistemul agregă automat noi subiecte trending în fiecare dimineață la ora 06:00.'
+                ? 'Nu există oportunități noi neprocesate în baza de date. Apasă butonul de mai jos pentru a agrega subiectele trending chiar acum.'
                 : `Nu există oportunități marcate ca ${currentStatus === 'reviewed' ? 'verificate' : 'ignorate'}.`}
           </p>
+          {currentStatus === 'new' && !searchQuery && sourceFilter === 'all' && (
+            <button
+              type="button"
+              className={styles.verifyBtn}
+              onClick={handleSyncNow}
+              disabled={isSyncing}
+            >
+              {isSyncing ? 'Se agregă...' : '⚡ Agregă acum subiectele de azi'}
+            </button>
+          )}
         </div>
       ) : (
         groupedByDay.map((group) => (
@@ -352,13 +413,15 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
         ))
       )}
 
-      {/* Floating toast notification for Undo action */}
+      {/* Floating toast notification for Undo action & sync feedback */}
       {toast && (
         <div className={styles.toastNotice} role="status" aria-live="polite">
           <span>{toast.text}</span>
-          <button type="button" className={styles.toastUndoBtn} onClick={handleUndoDismiss}>
-            Anulează
-          </button>
+          {toast.opportunity && (
+            <button type="button" className={styles.toastUndoBtn} onClick={handleUndoDismiss}>
+              Anulează
+            </button>
+          )}
         </div>
       )}
     </div>

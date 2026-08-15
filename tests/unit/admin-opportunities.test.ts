@@ -1,7 +1,8 @@
-import { GET } from '@/app/api/admin/oportunitati/route';
+import { GET, POST } from '@/app/api/admin/oportunitati/route';
 import { PATCH } from '@/app/api/admin/oportunitati/[id]/route';
 import { requireAdmin, AuthorizationError } from '@/lib/auth/admin';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { aggregateDailyOpportunities, saveOpportunities } from '@/lib/opportunities/trends-service';
 
 jest.mock('@/lib/auth/admin', () => ({
   requireAdmin: jest.fn(),
@@ -16,6 +17,11 @@ jest.mock('@/lib/auth/admin', () => ({
 
 jest.mock('@/lib/supabase/admin', () => ({
   createAdminClient: jest.fn(),
+}));
+
+jest.mock('@/lib/opportunities/trends-service', () => ({
+  aggregateDailyOpportunities: jest.fn(),
+  saveOpportunities: jest.fn(),
 }));
 
 describe('Admin Opportunities API Routes', () => {
@@ -70,6 +76,61 @@ describe('Admin Opportunities API Routes', () => {
       expect(data.opportunities).toHaveLength(1);
       expect(data.opportunities[0].title).toBe('Alegeri 2026');
       expect(mockEq).toHaveBeenCalledWith('status', 'new');
+    });
+  });
+
+  describe('POST /api/admin/oportunitati', () => {
+    it('returns 403 when caller is not admin', async () => {
+      (requireAdmin as jest.Mock).mockRejectedValue(
+        new AuthorizationError('Admin privileges required', 403)
+      );
+
+      const response = await POST();
+      expect(response.status).toBe(403);
+    });
+
+    it('triggers aggregation and returns updated opportunities for admin', async () => {
+      (requireAdmin as jest.Mock).mockResolvedValue({
+        user: { id: 'admin-123' },
+        role: 'admin',
+      });
+
+      (aggregateDailyOpportunities as jest.Mock).mockResolvedValue([
+        { title: 'Trend Nou', source_url: 'https://trends.google.com', source_name: 'Google Trends', trend_rank: 1 },
+      ]);
+      (saveOpportunities as jest.Mock).mockResolvedValue({
+        success: true,
+        totalFetched: 1,
+        inserted: 1,
+        skippedDuplicates: 0,
+        errors: [],
+      });
+
+      const mockOpportunities = [
+        {
+          id: 'opp-2',
+          title: 'Trend Nou',
+          source_name: 'Google Trends',
+          trend_rank: 1,
+          status: 'new',
+        },
+      ];
+
+      const mockOrder2 = jest.fn().mockResolvedValue({ data: mockOpportunities, error: null });
+      const mockOrder1 = jest.fn().mockReturnValue({ order: mockOrder2 });
+      const mockEq = jest.fn().mockReturnValue({ order: mockOrder1 });
+      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+      const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
+
+      (createAdminClient as jest.Mock).mockReturnValue({ from: mockFrom });
+
+      const response = await POST();
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.success).toBe(true);
+      expect(data.opportunities).toHaveLength(1);
+      expect(aggregateDailyOpportunities).toHaveBeenCalledTimes(1);
+      expect(saveOpportunities).toHaveBeenCalledTimes(1);
     });
   });
 
