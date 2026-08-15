@@ -3,8 +3,10 @@ import {
   SOURCE_CREDIBILITY,
   CONTRADICTION_KEYWORDS_RO,
   CONTRADICTION_KEYWORDS_EN,
+  CONTRADICTION_KEYWORDS_FR,
   CONFIRMATION_KEYWORDS_RO,
   CONFIRMATION_KEYWORDS_EN,
+  CONFIRMATION_KEYWORDS_FR,
   DEBUNK_MARKERS,
 } from './constants';
 import { fetchWithRetry } from '@/lib/utils/retry';
@@ -79,11 +81,13 @@ export function detectSentiment(
 
   const hasContradictionRo = matchesAnyPhrase(combinedText, CONTRADICTION_KEYWORDS_RO);
   const hasContradictionEn = matchesAnyPhrase(combinedText, CONTRADICTION_KEYWORDS_EN);
-  if (hasContradictionRo || hasContradictionEn) return 'contradicts';
+  const hasContradictionFr = matchesAnyPhrase(combinedText, CONTRADICTION_KEYWORDS_FR);
+  if (hasContradictionRo || hasContradictionEn || hasContradictionFr) return 'contradicts';
 
   const hasConfirmationRo = matchesAnyPhrase(combinedText, CONFIRMATION_KEYWORDS_RO);
   const hasConfirmationEn = matchesAnyPhrase(combinedText, CONFIRMATION_KEYWORDS_EN);
-  if (hasConfirmationRo || hasConfirmationEn) return 'confirms';
+  const hasConfirmationFr = matchesAnyPhrase(combinedText, CONFIRMATION_KEYWORDS_FR);
+  if (hasConfirmationRo || hasConfirmationEn || hasConfirmationFr) return 'confirms';
 
   return 'neutral';
 }
@@ -102,7 +106,7 @@ async function fetchFromNewsAPI(query: string, language: Language): Promise<News
   const apiKey = process.env.NEWS_API_KEY;
   if (!apiKey || !query.trim()) return [];
 
-  const lang = language === 'ro' ? 'ro' : 'en';
+  const lang = language === 'ro' ? 'ro' : language === 'fr' ? 'fr' : 'en';
   const params = new URLSearchParams({
     q: query.slice(0, 100),
     language: lang,

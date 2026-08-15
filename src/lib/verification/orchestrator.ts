@@ -22,29 +22,74 @@ import { logger } from '@/lib/utils/logger';
 import { expandClaimQueries } from './query-expander';
 import { decomposeAndAssessRisk } from '@/lib/ai/claim-decomposer';
 import { extractClaim, shouldExtractClaim, type ExtractedClaim } from '@/lib/ai/claim-extractor';
+import { synthesizeReport } from '@/lib/ai/report-synthesis';
 
 const LAYER_TIMEOUT_MS = 5_000; // 5 seconds per layer (fast search)
 
 function buildFallbackSummary(
   layers: { layer1: Layer1Result; layer2: Layer2Result; layer3: Layer3Result; layer4: Layer4Result },
-  finalScore: number
+  finalScore: number,
+  language: string = 'ro'
 ): string {
+  const isRo = language === 'ro';
+  const isFr = language === 'fr';
+
+  if (isFr) {
+    const counts = [
+      { label: 'vérifications dans les bases de fact-checking', n: layers.layer1.results?.length ?? 0 },
+      { label: 'articles de presse', n: layers.layer2.results?.length ?? 0 },
+      { label: 'documents officiels', n: layers.layer3.results?.length ?? 0 },
+      { label: 'déclarations publiques', n: layers.layer4.results?.length ?? 0 },
+    ].filter((c) => c.n > 0);
+
+    const found = counts.length
+      ? `Nous avons identifié ${counts.map((c) => `${c.n} ${c.label}`).join(', ')}.`
+      : 'Aucune source pertinente trouvée pour cette affirmation.';
+
+    return [
+      'L’analyse automatique en langage naturel est momentanément indisponible ; le rapport présente les données brutes issues des sources.',
+      found,
+      `Le score de véracité calculé sur la base des sources est de ${finalScore}%.`,
+      'Consultez les sources citées pour un contexte complet.',
+    ].join(' ');
+  }
+
+  if (isRo) {
+    const counts = [
+      { label: 'verificări din baze de fact-checking', n: layers.layer1.results?.length ?? 0 },
+      { label: 'articole de presă', n: layers.layer2.results?.length ?? 0 },
+      { label: 'documente din surse oficiale', n: layers.layer3.results?.length ?? 0 },
+      { label: 'declarații publice', n: layers.layer4.results?.length ?? 0 },
+    ].filter((c) => c.n > 0);
+
+    const found = counts.length
+      ? `Am găsit ${counts.map((c) => `${c.n} ${c.label}`).join(', ')}.`
+      : 'Nu am găsit surse relevante pentru această afirmație.';
+
+    return [
+      'Analiza automată în limbaj natural nu este disponibilă momentan, așa că mai jos este doar rezultatul căutării în surse.',
+      found,
+      `Scorul de veridicitate calculat pe baza surselor este ${finalScore}%.`,
+      'Citește sursele citate pentru context complet.',
+    ].join(' ');
+  }
+
   const counts = [
-    { label: 'verificări din baze de fact-checking', n: layers.layer1.results?.length ?? 0 },
-    { label: 'articole de presă', n: layers.layer2.results?.length ?? 0 },
-    { label: 'documente din surse oficiale', n: layers.layer3.results?.length ?? 0 },
-    { label: 'declarații publice', n: layers.layer4.results?.length ?? 0 },
+    { label: 'fact-checking reviews', n: layers.layer1.results?.length ?? 0 },
+    { label: 'news articles', n: layers.layer2.results?.length ?? 0 },
+    { label: 'official documents', n: layers.layer3.results?.length ?? 0 },
+    { label: 'public statements', n: layers.layer4.results?.length ?? 0 },
   ].filter((c) => c.n > 0);
 
   const found = counts.length
-    ? `Am găsit ${counts.map((c) => `${c.n} ${c.label}`).join(', ')}.`
-    : 'Nu am găsit surse relevante pentru această afirmație.';
+    ? `Found ${counts.map((c) => `${c.n} ${c.label}`).join(', ')}.`
+    : 'No relevant sources found for this claim.';
 
   return [
-    'Analiza automată în limbaj natural nu este disponibilă momentan, așa că mai jos este doar rezultatul căutării în surse.',
+    'Automated AI analysis is currently unavailable; displaying direct search layer results below.',
     found,
-    `Scorul de veridicitate calculat pe baza surselor este ${finalScore}%.`,
-    'Citește sursele citate pentru context complet.',
+    `Calculated veracity score based on sources is ${finalScore}%.`,
+    'Read the cited sources for full context.',
   ].join(' ');
 }
 
@@ -216,7 +261,11 @@ export async function verifyContent(
       service: 'orchestrator',
       error: (analysisResult as PromiseRejectedResult).reason,
     });
-    aiAnalysis = buildFallbackSummary({ layer1, layer2, layer3, layer4 }, scoreBreakdown.finalScore);
+    aiAnalysis = buildFallbackSummary(
+      { layer1, layer2, layer3, layer4 },
+      scoreBreakdown.finalScore,
+      input.language
+    );
   }
 
   const report = buildReport({
@@ -257,6 +306,30 @@ export async function verifyContent(
 
   report.riskLevel = decomposed.riskLevel;
   report.aiAvailable = aiAvailable;
+
+  // Enrich Pro Synthesis with AI deep analysis if available
+  if (aiAvailable && report.sources.length > 0) {
+    try {
+      const locale: 'ro' | 'en' | 'fr' =
+        input.language === 'fr' ? 'fr' : input.language === 'en' ? 'en' : 'ro';
+      const verdictWord =
+        locale === 'fr'
+          ? (report.verdict === 'true' ? 'Probablement vrai' : report.verdict === 'false' ? 'Probablement faux' : 'Partiellement vrai')
+          : locale === 'en'
+          ? (report.verdict === 'true' ? 'Likely true' : report.verdict === 'false' ? 'Likely false' : 'Partially true')
+          : (report.verdict === 'true' ? 'Probabil adevărat' : report.verdict === 'false' ? 'Probabil fals' : 'Parțial adevărat');
+      const enrichedSynthesis = await withTimeout(
+        synthesizeReport(report, verdictWord, locale),
+        6000,
+        'proSynthesis'
+      );
+      if (enrichedSynthesis) {
+        report.proSynthesis = enrichedSynthesis;
+      }
+    } catch {
+      // Deterministic fallback attached by buildReport is preserved
+    }
+  }
 
   const layersWithData = [layer1, layer2, layer3, layer4].filter(
     (l) => l.status === 'success' && l.results.length > 0

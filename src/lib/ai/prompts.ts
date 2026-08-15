@@ -40,6 +40,8 @@ export function buildAnalysisPrompt(context: AIAnalysisContext): string {
         .join('\n')
     : language === 'ro'
       ? 'Niciun fact-check anterior găsit pentru această afirmație.'
+      : language === 'fr'
+      ? 'Aucune vérification préalable trouvée pour cette affirmation.'
       : 'No previous fact-checks found for this claim.';
 
   // Format layer 2 results
@@ -49,6 +51,8 @@ export function buildAnalysisPrompt(context: AIAnalysisContext): string {
         .join('\n')
     : language === 'ro'
       ? 'Niciun articol de știri relevant găsit.'
+      : language === 'fr'
+      ? 'Aucun article de presse pertinent trouvé.'
       : 'No relevant news articles found.';
 
   // Format layer 3 results
@@ -58,6 +62,8 @@ export function buildAnalysisPrompt(context: AIAnalysisContext): string {
         .join('\n')
     : language === 'ro'
       ? 'Nicio sursă oficială găsită.'
+      : language === 'fr'
+      ? 'Aucune source officielle trouvée.'
       : 'No official sources found.';
 
   // Format layer 4 results
@@ -67,6 +73,8 @@ export function buildAnalysisPrompt(context: AIAnalysisContext): string {
         .join('\n')
     : language === 'ro'
       ? 'Nicio declarație publică relevantă găsită.'
+      : language === 'fr'
+      ? 'Aucune déclaration publique pertinente trouvée.'
       : 'No relevant public statements found.';
 
   const data: PromptData = {
@@ -82,6 +90,9 @@ export function buildAnalysisPrompt(context: AIAnalysisContext): string {
 
   if (language === 'ro') {
     return buildRomanianPrompt(data);
+  }
+  if (language === 'fr') {
+    return buildFrenchPrompt(data);
   }
   return buildEnglishPrompt(data);
 }
@@ -108,8 +119,8 @@ ${data.socialPosts}
 
 Scor calculat al surselor: ${data.calculatedScore}% (din ${data.availableLayers} straturi disponibile)
 
-INSTRUCIUNI STRICTE:
-1. redactează raportul în LIMBA ROMÂNĂ.
+INSTRUCȚIUNI STRICTE:
+1. Redactează raportul în LIMBA ROMÂNĂ.
 2. Structura raportului trebuie să conțină:
    - Rezumat: 1-2 propoziții condensate care oferă verdictul direct și motivul principal.
    - Analiza Factuală: Explicație detaliată a dovezilor găsite sau a lipsei acestora.
@@ -118,6 +129,40 @@ INSTRUCIUNI STRICTE:
 3. Fii neutru, obiectiv și folosește limbaj probabilistic când este cazul ("indică", "sugerează").
 4. NU inventa surse sau citate care nu apar în datele de mai sus.
 5. NU folosi marcaje Markdown precum ###, ##, # sau bolding. Scrie în text simplu.${data.commentary ? `\n6. Verdictul se referă DOAR la afirmația factuală. Într-un paragraf scurt, evaluează SEPARAT comentariul celui care a distribuit: spune dacă interpretarea/concluzia lui este susținută de dovezi (de ex. afirmația de bază poate fi adevărată, dar concluzia trasă din ea poate fi falsă sau exagerată).` : ''}`;
+}
+
+function buildFrenchPrompt(data: PromptData): string {
+  return `Vous êtes un journaliste d’investigation senior et expert en fact-checking chez Verifact. Votre mission est d’analyser une affirmation sur la base des données probantes recueillies à travers 4 niveaux de recherche (bases de fact-checking, presse de référence, sources officielles, réseaux sociaux) et de rédiger un rapport clair, objectif et rigoureusement structuré.
+
+AFFIRMATION À VÉRIFIER :
+"${data.inputText}"
+${data.commentary ? `\nCOMMENTAIRE DU DIFFUSEUR (son opinion / interprétation personnelle — NE FAIT PAS partie de l’affirmation factuelle ci-dessus) :\n"${data.commentary}"\n` : ''}
+DONNÉES COLLECTÉES PAR LES NIVEAUX DE RECHERCHE :
+
+Niveau 1 (Bases de Fact-Checking certifiées) :
+${data.factChecks}
+
+Niveau 2 (Presse et médias d’information) :
+${data.newsArticles}
+
+Niveau 3 (Sources Officielles - gouvernements, institutions, rapports) :
+${data.officialDocs}
+
+Niveau 4 (Réseaux Sociaux et déclarations publiques) :
+${data.socialPosts}
+
+Score calculé des sources : ${data.calculatedScore}% (sur ${data.availableLayers} niveaux disponibles)
+
+INSTRUCTIONS STRICTES :
+1. Rédigez le rapport en FRANÇAIS.
+2. Structure obligatoire du rapport :
+   - Résumé : 1-2 phrases concises énonçant directement le verdict et la raison principale.
+   - Analyse Factuelle : Explication détaillée des preuves identifiées ou de leur absence.
+   - Contexte : Origine de l’affirmation et modalités de propagation en ligne.
+   - Conclusion : Synthèse finale sur la véracité.
+3. Conservez un ton neutre, objectif et probabiliste lorsque pertinent (« suggère », « indique »).
+4. N’inventez AUCUNE source ni citation non présente ci-dessus.
+5. N’utilisez AUCUN balisage Markdown tel que ###, ##, # ou de mise en gras. Rédigez en texte brut.${data.commentary ? `\n6. Le verdict porte UNIQUEMENT sur l’affirmation factuelle. Évaluez SÉPARÉMENT dans un court paragraphe le commentaire du diffuseur : précisez si son interprétation est étayée par les faits.` : ''}`;
 }
 
 function buildEnglishPrompt(data: PromptData): string {

@@ -110,7 +110,8 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'Raportul nu a fost găsit.' }, { status: 404 });
   }
 
-  const locale: 'ro' | 'en' = report.language === 'en' ? 'en' : 'ro';
+  const locale: 'ro' | 'en' | 'fr' =
+    report.language === 'fr' ? 'fr' : report.language === 'en' ? 'en' : 'ro';
 
   try {
     const { answer } = await generateDeepDiveAnswer({

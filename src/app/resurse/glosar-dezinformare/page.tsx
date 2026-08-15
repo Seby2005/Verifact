@@ -53,7 +53,7 @@ export default function GlosarPage() {
     url: `${baseUrl}/resurse/glosar-dezinformare`,
     datePublished: '2026-08-12',
     dateModified: '2026-08-12',
-    inLanguage: locale === 'en' ? 'en-US' : 'ro-RO',
+    inLanguage: locale === 'en' ? 'en-US' : locale === 'fr' ? 'fr-FR' : 'ro-RO',
     author: {
       '@type': 'Organization',
       name: 'Verifact',

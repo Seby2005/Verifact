@@ -21,6 +21,14 @@ const COPY = {
     verdict: 'Likely false',
     summary: 'Antibiotics act on bacteria, not viruses. Colds and flu are caused by viruses.',
   },
+  fr: {
+    claim: 'Les antibiotiques soignent la grippe.',
+    label: 'Affirmation',
+    steps: ['Recherche des sources…', 'Recoupement des preuves…', 'Formulation du verdict…'],
+    layers: ['Fact-checking', 'Presse de référence', 'Sources officielles', 'Déclarations publiques'],
+    verdict: 'Probablement faux',
+    summary: 'Les antibiotiques ciblent les bactéries, non les virus. Le rhume et la grippe sont causés par des virus.',
+  },
 } as const;
 
 const BAR_SCALES = [0.96, 0.88, 0.92, 0.74];
@@ -32,7 +40,7 @@ const BAR_SCALES = [0.96, 0.88, 0.92, 0.74];
  */
 export const AnimatedDemo: React.FC = () => {
   const { locale } = useLanguage();
-  const copy = COPY[locale === 'en' ? 'en' : 'ro'];
+  const copy = COPY[locale] ?? COPY.ro;
 
   const rootRef = useRef<HTMLDivElement>(null);
   const typedRef = useRef<HTMLSpanElement>(null);

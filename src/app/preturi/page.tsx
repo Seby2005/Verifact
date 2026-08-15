@@ -96,104 +96,157 @@ export default function PreturiPage() {
 
       window.location.href = data.checkoutUrl;
     } catch {
-      setCheckoutError(isEn ? 'A network error occurred.' : 'A apărut o eroare de rețea. Te rugăm să reîncerci.');
+      const errMsg = isEn
+        ? 'A network error occurred.'
+        : locale === 'fr'
+        ? 'Une erreur réseau est survenue. Veuillez réessayer.'
+        : 'A apărut o eroare de rețea. Te rugăm să reîncerci.';
+      setCheckoutError(errMsg);
       setIsSubmitting(false);
     }
   };
 
-  const c = isEn
-    ? {
-        eyebrow: 'Pricing',
-        title: 'Free for everyday checks. Paid when you check a lot.',
-        billing: { monthly: 'Monthly', yearly: 'Yearly', save: 'Save 25%', aria: 'Billing period' },
-        recommended: 'Recommended',
-        perMonth: '/mo',
-        billedYearly: 'billed €35.90 a year',
-        successTitle: 'Subscription Active!',
-        successMsg: 'Your Pro subscription is now active! You have full Pro access.',
-        free: {
-          name: 'Free',
-          price: 'Free',
-          tagline: 'For anyone who wants to check what they see in their feed.',
-          checks: '3 verifications a month',
-          cta: 'Start free',
-        },
-        pro: {
-          name: 'Pro',
-          priceMonthly: '€3.99',
-          priceYearly: '€2.99',
-          tagline: 'For journalists, researchers, and anyone who checks daily.',
-          checks: 'Over 10× more checks than the free plan.',
-          cta: isSubmitting ? 'Connecting to Creem...' : 'Choose Pro',
-        },
-        business: {
-          name: 'Business',
-          price: 'Contact',
-          tagline: 'For newsrooms, NGOs, and teams.',
-          checks: 'Custom volume and features',
-          cta: 'Get in touch',
-        },
-        compareTitle: 'Compare the plans',
-        included: 'Included',
-        excluded: 'Not included',
-        rows: [
-          { label: 'Verifications per month', free: '3', pro: 'Over 10×', business: 'Custom' },
-          { label: 'Text, screenshot, and URL checks', free: true, pro: true, business: true },
-          { label: 'Verdict, score, and cited sources', free: true, pro: true, business: true },
-          { label: 'Download the report as PDF', free: false, pro: true, business: true },
-          { label: 'Exact link to the sentence in each source', free: false, pro: true, business: true },
-          { label: 'Priority support', free: false, pro: true, business: true },
-          { label: 'API access', free: false, pro: false, business: true },
-          { label: 'Team billing and seats', free: false, pro: false, business: true },
-        ],
-        footnotePrefix: 'No card needed for the free plan. For anything custom, write to ',
-      }
-    : {
-        eyebrow: 'Prețuri',
-        title: 'Gratuit pentru verificări de zi cu zi. Plătit când verifici mult.',
-        billing: { monthly: 'Lunar', yearly: 'Anual', save: 'Economisești 25%', aria: 'Perioadă de facturare' },
-        recommended: 'Recomandat',
-        perMonth: '/lună',
-        billedYearly: 'facturat €35,90 pe an',
-        successTitle: 'Abonament Activat!',
-        successMsg: 'Abonamentul tău Pro a fost activat cu succes! Ai acum acces la toate funcțiile Pro.',
-        free: {
-          name: 'Free',
-          price: 'Gratuit',
-          tagline: 'Pentru oricine vrea să verifice ce vede în feed.',
-          checks: '3 verificări pe lună',
-          cta: 'Începe gratuit',
-        },
-        pro: {
-          name: 'Pro',
-          priceMonthly: '€3,99',
-          priceYearly: '€2,99',
-          tagline: 'Pentru jurnaliști, cercetători și oricine verifică zilnic.',
-          checks: 'De peste 10× mai multe verificări ca planul gratuit.',
-          cta: isSubmitting ? 'Se conectează la Creem...' : 'Alege Pro',
-        },
-        business: {
-          name: 'Business',
-          price: 'Contact',
-          tagline: 'Pentru redacții, ONG-uri și echipe.',
-          checks: 'Volum și funcții la cerere',
-          cta: 'Scrie-ne',
-        },
-        compareTitle: 'Compară planurile',
-        included: 'Inclus',
-        excluded: 'Neinclus',
-        rows: [
-          { label: 'Verificări pe lună', free: '3', pro: 'Peste 10×', business: 'La cerere' },
-          { label: 'Verificare din text, screenshot și URL', free: true, pro: true, business: true },
-          { label: 'Verdict, scor și surse citate', free: true, pro: true, business: true },
-          { label: 'Descarcă raportul ca PDF', free: false, pro: true, business: true },
-          { label: 'Link exact la propoziția din fiecare sursă', free: false, pro: true, business: true },
-          { label: 'Suport prioritar', free: false, pro: true, business: true },
-          { label: 'Acces API', free: false, pro: false, business: true },
-          { label: 'Facturare și locuri pentru echipă', free: false, pro: false, business: true },
-        ],
-        footnotePrefix: 'Fără card pentru planul gratuit. Pentru orice nevoie aparte, scrie-ne la ',
-      };
+  const c =
+    locale === 'fr'
+      ? {
+          eyebrow: 'Tarifs',
+          title: 'Gratuit au quotidien. Accessible pour les usages intensifs.',
+          billing: { monthly: 'Mensuel', yearly: 'Annuel', save: 'Économisez 25%', aria: 'Période de facturation' },
+          recommended: 'Recommandé',
+          perMonth: '/mois',
+          billedYearly: 'facturé 35,90 € par an',
+          successTitle: 'Abonnement activé !',
+          successMsg: 'Votre abonnement Pro est actif ! Vous bénéficiez de toutes les fonctionnalités avancées.',
+          free: {
+            name: 'Gratuit',
+            price: 'Gratuit',
+            tagline: 'Pour vérifier facilement les publications de votre fil d’actualité.',
+            checks: '3 vérifications par mois',
+            cta: 'Commencer gratuitement',
+          },
+          pro: {
+            name: 'Pro',
+            priceMonthly: '3,99 €',
+            priceYearly: '2,99 €',
+            tagline: 'Pour journalistes, chercheurs et utilisateurs quotidiens.',
+            checks: 'Plus de 10× plus de vérifications que l’offre gratuite.',
+            cta: isSubmitting ? 'Connexion à Creem...' : 'Choisir Pro',
+          },
+          business: {
+            name: 'Business',
+            price: 'Sur devis',
+            tagline: 'Pour rédactions, ONG et équipes professionnelles.',
+            checks: 'Volume sur-mesure et fonctionnalités dédiées',
+            cta: 'Nous contacter',
+          },
+          compareTitle: 'Comparatif des forfaits',
+          included: 'Inclus',
+          excluded: 'Non inclus',
+          rows: [
+            { label: 'Vérifications mensuelles', free: '3', pro: 'Plus de 10×', business: 'Sur devis' },
+            { label: 'Vérification texte, capture et URL', free: true, pro: true, business: true },
+            { label: 'Verdict, score et sources citées', free: true, pro: true, business: true },
+            { label: 'Téléchargement du rapport en PDF', free: false, pro: true, business: true },
+            { label: 'Lien direct vers la phrase citée', free: false, pro: true, business: true },
+            { label: 'Support prioritaire', free: false, pro: true, business: true },
+            { label: 'Accès API & intégrations', free: false, pro: false, business: true },
+            { label: 'Comptes d’équipe & licences multiples', free: false, pro: false, business: true },
+          ],
+          footnotePrefix: 'Aucune carte bancaire requise pour le forfait gratuit. Pour toute demande sur-mesure, écrivez à ',
+        }
+      : isEn
+      ? {
+          eyebrow: 'Pricing',
+          title: 'Free for everyday checks. Paid when you check a lot.',
+          billing: { monthly: 'Monthly', yearly: 'Yearly', save: 'Save 25%', aria: 'Billing period' },
+          recommended: 'Recommended',
+          perMonth: '/mo',
+          billedYearly: 'billed €35.90 a year',
+          successTitle: 'Subscription Active!',
+          successMsg: 'Your Pro subscription is now active! You have full Pro access.',
+          free: {
+            name: 'Free',
+            price: 'Free',
+            tagline: 'For anyone who wants to check what they see in their feed.',
+            checks: '3 verifications a month',
+            cta: 'Start free',
+          },
+          pro: {
+            name: 'Pro',
+            priceMonthly: '€3.99',
+            priceYearly: '€2.99',
+            tagline: 'For journalists, researchers, and anyone who checks daily.',
+            checks: 'Over 10× more checks than the free plan.',
+            cta: isSubmitting ? 'Connecting to Creem...' : 'Choose Pro',
+          },
+          business: {
+            name: 'Business',
+            price: 'Contact',
+            tagline: 'For newsrooms, NGOs, and teams.',
+            checks: 'Custom volume and features',
+            cta: 'Get in touch',
+          },
+          compareTitle: 'Compare the plans',
+          included: 'Included',
+          excluded: 'Not included',
+          rows: [
+            { label: 'Verifications per month', free: '3', pro: 'Over 10×', business: 'Custom' },
+            { label: 'Text, screenshot, and URL checks', free: true, pro: true, business: true },
+            { label: 'Verdict, score, and cited sources', free: true, pro: true, business: true },
+            { label: 'Download the report as PDF', free: false, pro: true, business: true },
+            { label: 'Exact link to the sentence in each source', free: false, pro: true, business: true },
+            { label: 'Priority support', free: false, pro: true, business: true },
+            { label: 'API access', free: false, pro: false, business: true },
+            { label: 'Team billing and seats', free: false, pro: false, business: true },
+          ],
+          footnotePrefix: 'No card needed for the free plan. For anything custom, write to ',
+        }
+      : {
+          eyebrow: 'Prețuri',
+          title: 'Gratuit pentru verificări de zi cu zi. Plătit când verifici mult.',
+          billing: { monthly: 'Lunar', yearly: 'Anual', save: 'Economisești 25%', aria: 'Perioadă de facturare' },
+          recommended: 'Recomandat',
+          perMonth: '/lună',
+          billedYearly: 'facturat €35,90 pe an',
+          successTitle: 'Abonament Activat!',
+          successMsg: 'Abonamentul tău Pro a fost activat cu succes! Ai acum acces la toate funcțiile Pro.',
+          free: {
+            name: 'Free',
+            price: 'Gratuit',
+            tagline: 'Pentru oricine vrea să verifice ce vede în feed.',
+            checks: '3 verificări pe lună',
+            cta: 'Începe gratuit',
+          },
+          pro: {
+            name: 'Pro',
+            priceMonthly: '€3,99',
+            priceYearly: '€2,99',
+            tagline: 'Pentru jurnaliști, cercetători și oricine verifică zilnic.',
+            checks: 'De peste 10× mai multe verificări ca planul gratuit.',
+            cta: isSubmitting ? 'Se conectează la Creem...' : 'Alege Pro',
+          },
+          business: {
+            name: 'Business',
+            price: 'Contact',
+            tagline: 'Pentru redacții, ONG-uri și echipe.',
+            checks: 'Volum și funcții la cerere',
+            cta: 'Scrie-ne',
+          },
+          compareTitle: 'Compară planurile',
+          included: 'Inclus',
+          excluded: 'Neinclus',
+          rows: [
+            { label: 'Verificări pe lună', free: '3', pro: 'Peste 10×', business: 'La cerere' },
+            { label: 'Verificare din text, screenshot și URL', free: true, pro: true, business: true },
+            { label: 'Verdict, scor și surse citate', free: true, pro: true, business: true },
+            { label: 'Descarcă raportul ca PDF', free: false, pro: true, business: true },
+            { label: 'Link exact la propoziția din fiecare sursă', free: false, pro: true, business: true },
+            { label: 'Suport prioritar', free: false, pro: true, business: true },
+            { label: 'Acces API', free: false, pro: false, business: true },
+            { label: 'Facturare și locuri pentru echipă', free: false, pro: false, business: true },
+          ],
+          footnotePrefix: 'Fără card pentru planul gratuit. Pentru orice nevoie aparte, scrie-ne la ',
+        };
 
   const proPrice = billing === 'yearly' ? c.pro.priceYearly : c.pro.priceMonthly;
 

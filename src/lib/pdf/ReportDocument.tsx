@@ -13,12 +13,13 @@ import { interRegular, interBold, sourceSerif } from './font-data';
  * is fetched at request time.
  */
 
-const VERDICT_WORD: Record<'ro' | 'en', Record<Verdict, string>> = {
+const VERDICT_WORD: Record<'ro' | 'en' | 'fr', Record<Verdict, string>> = {
   ro: { true: 'Probabil adevărat', partial: 'Parțial adevărat', unclear: 'Neclar', false: 'Probabil fals' },
   en: { true: 'Likely true', partial: 'Partly true', unclear: 'Unclear', false: 'Likely false' },
+  fr: { true: 'Probablement vrai', partial: 'Partiellement vrai', unclear: 'Incertain', false: 'Probablement faux' },
 };
 
-export function verdictWordFor(verdict: Verdict, locale: 'ro' | 'en'): string {
+export function verdictWordFor(verdict: Verdict, locale: 'ro' | 'en' | 'fr'): string {
   return VERDICT_WORD[locale][verdict];
 }
 
@@ -108,6 +109,30 @@ const STRINGS = {
     journalistFaqLabel: 'Journalist Reference & FAQ',
     disclaimerLabel: 'Legal disclaimer & methodology',
   },
+  fr: {
+    docKind: 'Rapport de Fact-Checking',
+    generatedOn: 'Généré le',
+    reportId: 'ID du rapport',
+    scoreLabel: 'Score de véracité',
+    confidenceLabel: 'Niveau de confiance',
+    claimLabel: 'Affirmation vérifiée',
+    commentaryLabel: 'Commentaire du diffuseur (non vérifié)',
+    commentaryNote: 'Le verdict concerne l’affirmation factuelle ci-dessus, et non cette interprétation.',
+    rationaleLabel: 'Fondement du verdict',
+    deepReasoningLabel: 'Raisonnement approfondi de l’IA',
+    subClaimsLabel: 'Décomposition de l’affirmation par sous-composants',
+    manipulationLabel: 'Techniques de manipulation identifiées',
+    motiveLabel: 'Motivation et impact public estimé',
+    rememberLabel: 'Points essentiels à retenir',
+    sourcesConsensusLabel: 'Synthèse des sources',
+    agreementsLabel: 'Convergences',
+    contradictionsLabel: 'Divergences',
+    sourcesLabel: (n: number) => `Sources citées et vérifiées (${n})`,
+    seePassage: 'Consulter le passage exact',
+    missingEvidenceLabel: 'Preuves manquantes ou non confirmées',
+    journalistFaqLabel: 'Guide & FAQ pour les journalistes',
+    disclaimerLabel: 'Mentions légales & méthodologie',
+  },
 } as const;
 
 function dataUriToBytes(uri: string): Uint8Array {
@@ -115,11 +140,12 @@ function dataUriToBytes(uri: string): Uint8Array {
   return new Uint8Array(Buffer.from(base64, 'base64'));
 }
 
-function formatDate(iso: string | undefined, locale: 'ro' | 'en'): string {
+function formatDate(iso: string | undefined, locale: 'ro' | 'en' | 'fr'): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'ro-RO', {
+  const intlLocale = locale === 'fr' ? 'fr-FR' : locale === 'en' ? 'en-US' : 'ro-RO';
+  return new Intl.DateTimeFormat(intlLocale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -135,7 +161,7 @@ function stanceColor(stance: string): RGB {
 interface DocProps {
   report: VerificationReport;
   synthesis: ReportSynthesis;
-  locale: 'ro' | 'en';
+  locale: 'ro' | 'en' | 'fr';
 }
 
 const PAGE_W = 595.28;
@@ -326,26 +352,30 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
   }
 
   // ── Manipulation Techniques (Clean Block Titles & Indented Descriptions) ───
-  if (synthesis.manipulationTechniques && synthesis.manipulationTechniques.length > 0) {
+  const manipulationList = synthesis.manipulationAnalysis?.techniques ?? [];
+  if (manipulationList.length > 0) {
     drawLabel(t.manipulationLabel);
-    for (const tech of synthesis.manipulationTechniques) {
+    for (const tech of manipulationList) {
       need(32);
-      // Title on its own line to prevent ANY text overlapping
       drawText(`• ${tech.name}`, { font: bold, size: 9.5, color: ACCENT, x: MARGIN, maxW: CONTENT_W, gap: 2 });
-      // Description indented underneath on the next line
-      drawText(tech.description, { font: reg, size: 8.5, color: INK_SEC, x: MARGIN + 14, maxW: CONTENT_W - 14, gap: 8 });
+      const fullDesc = tech.manifestationInClaim ? `${tech.description} — ${tech.manifestationInClaim}` : tech.description;
+      drawText(fullDesc, { font: reg, size: 8.5, color: INK_SEC, x: MARGIN + 14, maxW: CONTENT_W - 14, gap: 8 });
     }
     y -= 6;
   }
 
   // ── Motive & Impact ───────────────────────────────────────────────────────
-  if (synthesis.motiveAndImpact) {
+  const narrative = synthesis.narrativeAndImpact;
+  const motiveText = narrative
+    ? [narrative.originAndPropagation, narrative.motiveAssessment, narrative.publicImpact].filter(Boolean).join(' ')
+    : undefined;
+  if (motiveText) {
     drawLabel(t.motiveLabel);
-    drawText(synthesis.motiveAndImpact, { font: reg, size: 9, color: INK_SEC, gap: 14 });
+    drawText(motiveText, { font: reg, size: 9, color: INK_SEC, gap: 14 });
   }
 
   // ── What to remember ──────────────────────────────────────────────────────
-  if (synthesis.whatToRemember.length > 0) {
+  if (synthesis.whatToRemember && synthesis.whatToRemember.length > 0) {
     drawLabel(t.rememberLabel);
     for (const item of synthesis.whatToRemember) {
       need(14);
@@ -356,10 +386,13 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
   }
 
   // ── What the sources say ──────────────────────────────────────────────────
-  if (synthesis.agreements || synthesis.contradictions) {
+  const crossSource = synthesis.crossSourceAnalysis;
+  const agreements = crossSource?.agreements;
+  const contradictions = crossSource?.contradictions;
+  if (agreements || contradictions) {
     drawLabel(t.sourcesConsensusLabel);
-    if (synthesis.agreements) drawText(`${t.agreementsLabel}: ${synthesis.agreements}`, { gap: 4 });
-    if (synthesis.contradictions) drawText(`${t.contradictionsLabel}: ${synthesis.contradictions}`, { gap: 4 });
+    if (agreements) drawText(`${t.agreementsLabel}: ${agreements}`, { gap: 4 });
+    if (contradictions) drawText(`${t.contradictionsLabel}: ${contradictions}`, { gap: 4 });
     y -= 12;
   }
 
@@ -393,9 +426,11 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
   }
 
   // ── Missing Evidence ──────────────────────────────────────────────────────
-  if (synthesis.missingEvidence && synthesis.missingEvidence.length > 0) {
+  const toolkit = synthesis.investigatorToolkit;
+  const missingEvidence = toolkit?.missingEvidence ?? [];
+  if (missingEvidence.length > 0) {
     drawLabel(t.missingEvidenceLabel);
-    for (const item of synthesis.missingEvidence) {
+    for (const item of missingEvidence) {
       need(14);
       page.drawText('⚠', { x: MARGIN, y: y - 9, size: 8, font: bold, color: ACCENT });
       drawText(item, { x: MARGIN + 14, maxW: CONTENT_W - 14, gap: 4 });
@@ -404,9 +439,10 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
   }
 
   // ── Journalist FAQ ────────────────────────────────────────────────────────
-  if (synthesis.journalistFaq && synthesis.journalistFaq.length > 0) {
+  const journalistFaq = toolkit?.journalistFaq ?? [];
+  if (journalistFaq.length > 0) {
     drawLabel(t.journalistFaqLabel);
-    for (const faq of synthesis.journalistFaq) {
+    for (const faq of journalistFaq) {
       need(32);
       drawText(`Q: ${faq.question}`, { font: bold, size: 9, color: INK, gap: 3 });
       drawText(`A: ${faq.answer}`, { font: reg, size: 8.5, color: INK_SEC, x: MARGIN + 12, maxW: CONTENT_W - 12, gap: 8 });
@@ -424,7 +460,12 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
   // ── Page Numbers Footers ────────────────────────────────────────────────
   const totalPages = pages.length;
   pages.forEach((p, idx) => {
-    const pageNumStr = locale === 'ro' ? `Pagina ${idx + 1} din ${totalPages}` : `Page ${idx + 1} of ${totalPages}`;
+    const pageNumStr =
+      locale === 'ro'
+        ? `Pagina ${idx + 1} din ${totalPages}`
+        : locale === 'fr'
+        ? `Page ${idx + 1} sur ${totalPages}`
+        : `Page ${idx + 1} of ${totalPages}`;
     p.drawText(pageNumStr, {
       x: PAGE_W - MARGIN - reg.widthOfTextAtSize(pageNumStr, 7.5),
       y: 20,
@@ -432,7 +473,13 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
       font: reg,
       color: INK_MUTED,
     });
-    p.drawText('Verifact AI Fact-Checking Report', {
+    const footerBrand =
+      locale === 'fr'
+        ? 'Rapport de Fact-Checking Verifact'
+        : locale === 'ro'
+        ? 'Raport de Fact-Checking Verifact'
+        : 'Verifact AI Fact-Checking Report';
+    p.drawText(footerBrand, {
       x: MARGIN,
       y: 20,
       size: 7.5,

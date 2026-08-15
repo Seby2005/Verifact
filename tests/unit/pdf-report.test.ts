@@ -39,12 +39,68 @@ const mockReport: VerificationReport = {
 const mockSynthesis: ReportSynthesis = {
   verdictRationale: 'Explicație de test',
   whatToRemember: ['Punct 1 de reținut', 'Punct 2 de reținut'],
-  agreements: 'Convergență surse',
-  contradictions: 'Diferențe surse',
-  commentaryAssessment: 'Analiză comentariu',
+  crossSourceAnalysis: {
+    agreements: 'Convergență surse',
+    contradictions: 'Diferențe surse',
+    consensusLevel: 'strong',
+    comparisonMatrix: [
+      {
+        sourceName: 'test.com',
+        sourceType: 'news',
+        tier: 2,
+        stance: 'context',
+        keyPoint: 'Pasaj de test',
+        url: 'https://example.com/test',
+      },
+    ],
+  },
+  subClaims: [
+    {
+      subClaim: 'Sub-afirmație de test',
+      verdict: 'partial',
+      explanation: 'Explicație detaliată sub-afirmație',
+      evidenceSourceIndexes: [1],
+    },
+  ],
   sourceInsights: [
-    { index: 1, stance: 'context', takeaway: 'Sursă utilă' }
-  ]
+    {
+      index: 1,
+      publisher: 'test.com',
+      sourceUrl: 'https://example.com/test',
+      stance: 'context',
+      takeaway: 'Sursă utilă',
+      credibilityNote: 'Presă verificată',
+      directQuote: 'Pasaj de test',
+    },
+  ],
+  manipulationAnalysis: {
+    detected: true,
+    summary: 'Tehnici detectate',
+    techniques: [
+      {
+        name: 'Scoatere din context',
+        category: 'context_omission',
+        description: 'Trunchiere date',
+        manifestationInClaim: 'Date prezentate fără context',
+      },
+    ],
+  },
+  narrativeAndImpact: {
+    originAndPropagation: 'Origine test',
+    motiveAssessment: 'Motivație test',
+    publicImpact: 'Impact test',
+  },
+  investigatorToolkit: {
+    missingEvidence: ['Document oficial'],
+    foiaRecommendations: ['Cerere 544/2001'],
+    journalistFaq: [
+      {
+        question: 'Întrebare de test?',
+        answer: 'Răspuns de test.',
+      },
+    ],
+  },
+  commentaryAssessment: 'Analiză comentariu',
 };
 
 describe('getReportFilename', () => {

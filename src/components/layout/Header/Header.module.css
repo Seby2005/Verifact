@@ -121,12 +121,22 @@
   color: var(--color-ink);
 }
 
-/* Language toggle — a quiet pill, the only rounded control in the chrome. */
+/* Language dropdown wrapper */
+.langDropdownWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Language toggle trigger — a refined pill control */
 .langToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   background: transparent;
   border: var(--border-width-hairline) solid var(--color-line-strong);
   border-radius: var(--radius-pill);
-  padding: var(--space-1) var(--space-3);
+  padding: 4px 10px;
   font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
@@ -138,17 +148,127 @@
   white-space: nowrap;
 }
 
+.langFlag {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.langCode {
+  font-weight: var(--font-weight-semibold);
+}
+
+.chevron {
+  color: var(--color-ink-tertiary);
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+  color: var(--color-ink);
+}
+
 .langToggle:hover {
   color: var(--color-ink);
   border-color: var(--color-ink);
   background-color: var(--color-paper-shade);
 }
 
+.langToggle:hover .chevron {
+  color: var(--color-ink);
+}
+
+/* Dropdown popover menu */
+.langMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 160px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background-color: var(--color-paper);
+  border: var(--border-width-hairline) solid var(--color-line-strong);
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 8px -2px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+  animation: langMenuIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+@keyframes langMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.langMenuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.langMenuItem:hover {
+  background-color: var(--color-paper-shade);
+  color: var(--color-ink);
+}
+
+.langMenuItemActive {
+  background-color: var(--color-paper-shade);
+  color: var(--color-ink);
+  font-weight: var(--font-weight-semibold);
+}
+
+.menuFlag {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.menuName {
+  flex: 1;
+  font-size: 13px;
+}
+
+.menuCode {
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  color: var(--color-ink-tertiary);
+  padding: 1px 5px;
+  background-color: var(--color-line);
+  border-radius: 4px;
+}
+
+.checkIcon {
+  color: var(--color-ink);
+  margin-left: 2px;
+}
+
 @media (pointer: coarse) {
   .langToggle {
+    min-height: 40px;
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+  .langMenuItem {
     min-height: 44px;
-    padding-left: var(--space-4);
-    padding-right: var(--space-4);
+    padding: 10px 12px;
   }
 }
 

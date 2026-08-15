@@ -16,7 +16,8 @@ function formatResetDate(dateString?: string, locale: string = 'ro'): string {
   try {
     const d = new Date(dateString);
     if (Number.isNaN(d.getTime())) return dateString;
-    return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'ro-RO', {
+    const langTag = locale === 'en' ? 'en-US' : locale === 'fr' ? 'fr-FR' : 'ro-RO';
+    return new Intl.DateTimeFormat(langTag, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',

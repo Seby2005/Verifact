@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
-  const lang: ExamplesLocale = searchParams.get('lang') === 'en' ? 'en' : 'ro';
+  const rawLang = searchParams.get('lang');
+  const lang: ExamplesLocale = rawLang === 'fr' ? 'fr' : rawLang === 'en' ? 'en' : 'ro';
 
   const examples = await getTrendingExamples(lang);
 

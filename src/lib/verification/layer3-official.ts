@@ -23,6 +23,12 @@ const OFFICIAL_DOMAINS = [
   'edu.ro',
   'mfinante.gov.ro',
   'mae.ro',
+  'service-public.fr',
+  'legifrance.gouv.fr',
+  'gouvernement.fr',
+  'insee.fr',
+  'santepubliquefrance.fr',
+  'interieur.gouv.fr',
   'who.int',
   'europa.eu',
   'ec.europa.eu',
@@ -39,12 +45,20 @@ const KNOWN_ORGANIZATIONS: Record<string, { name: string; type: string }> = {
   'edu.ro': { name: 'Ministerul Educației', type: 'government' },
   'mfinante.gov.ro': { name: 'Ministerul Finanțelor', type: 'government' },
   'mae.ro': { name: 'Ministerul Afacerilor Externe', type: 'government' },
+  'service-public.fr': { name: 'Service-Public.fr', type: 'government' },
+  'legifrance.gouv.fr': { name: 'Légifrance', type: 'government' },
+  'gouvernement.fr': { name: 'Gouvernement Français', type: 'government' },
+  'elysee.fr': { name: 'Présidence de la République', type: 'government' },
+  'insee.fr': { name: 'INSEE', type: 'statistics' },
+  'santepubliquefrance.fr': { name: 'Santé Publique France', type: 'health_org' },
+  'interieur.gouv.fr': { name: 'Ministère de l’Intérieur', type: 'government' },
+  'economie.gouv.fr': { name: 'Ministère de l’Économie', type: 'government' },
   'who.int': { name: 'Organizația Mondială a Sănătății', type: 'health_org' },
   'europa.eu': { name: 'Uniunea Europeană', type: 'international_org' },
   'ec.europa.eu': { name: 'Comisia Europeană', type: 'international_org' },
   'cdc.gov': { name: 'Centers for Disease Control and Prevention', type: 'health_org' },
   'fda.gov': { name: 'Food and Drug Administration', type: 'regulator' },
-  'un.org': { name: 'Organizația Națiunilor Unește', type: 'international_org' },
+  'un.org': { name: 'Organizația Națiunilor Unite', type: 'international_org' },
   'nato.int': { name: 'NATO', type: 'international_org' },
 };
 
@@ -59,7 +73,7 @@ function identifyOrganization(urlStr: string): { name?: string; type?: string } 
       }
     }
 
-    if (host.endsWith('.gov.ro') || host.endsWith('.gov')) {
+    if (host.endsWith('.gov.ro') || host.endsWith('.gov') || host.endsWith('.gouv.fr')) {
       return { name: `Instituție guvernamentală (${host})`, type: 'government' };
     }
   } catch {
@@ -71,8 +85,14 @@ function identifyOrganization(urlStr: string): { name?: string; type?: string } 
 
 function analyzeSupport(content: string): OfficialSource['supportsOrDenies'] {
   const text = content.toLowerCase();
-  const denialSignals = ['fals', 'dezminte', 'infirma', 'nu este adevarat', 'fake', 'fake news', 'untrue', 'denies', 'refutes', 'fake news'];
-  const supportSignals = ['confirma', 'adevarat', 'oficial', 'declara', 'confirms', 'authentic', 'verified'];
+  const denialSignals = [
+    'fals', 'dezminte', 'infirma', 'nu este adevarat', 'fake', 'fake news', 'untrue', 'denies', 'refutes',
+    'faux', 'fausse', 'démenti', 'dement', 'infirme', 'intox', 'mensonge', 'sans preuve'
+  ];
+  const supportSignals = [
+    'confirma', 'adevarat', 'oficial', 'declara', 'confirms', 'authentic', 'verified',
+    'confirme', 'vrai', 'authentique', 'officiel', 'avéré', 'exact', 'prouvé'
+  ];
 
   const hasDenial = denialSignals.some((s) => text.includes(s));
   const hasSupport = supportSignals.some((s) => text.includes(s));
@@ -99,12 +119,13 @@ async function fetchOfficialTavily(queryStr: string): Promise<TavilySearchResult
           body: JSON.stringify({
             query: queryStr.slice(0, 300),
             search_depth: 'basic',
-            max_results: 6,
+            topic: 'general',
             include_domains: OFFICIAL_DOMAINS,
+            max_results: 6,
           }),
           signal: AbortSignal.timeout(8000),
         }),
-        { label: 'layer3-official' }
+        { label: 'layer3-tavily-official' }
       ).then((res) => {
         if (!res.ok) throw new Error(`Tavily error: ${res.status}`);
         return res;
@@ -118,21 +139,32 @@ async function fetchOfficialTavily(queryStr: string): Promise<TavilySearchResult
   }
 }
 
-interface WikiSearchResponse {
-  pages?: Array<{ key: string; title: string; excerpt?: string; description?: string }>;
+interface WikiSearchPage {
+  id?: number;
+  key?: string;
+  title?: string;
+  excerpt?: string;
+  description?: string;
 }
 
-function stripHtml(value: string): string {
-  return value
-    .replace(/<[^>]+>/g, '')
+interface WikiSearchResponse {
+  pages?: WikiSearchPage[];
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, ' ')
     .replace(/&quot;/g, '"')
     .replace(/&amp;/g, '&')
+    .replace(/&#039;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
     .replace(/&#\d+;/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-async function fetchWikipedia(queryStr: string, lang: 'ro' | 'en'): Promise<OfficialSource[]> {
+async function fetchWikipedia(queryStr: string, lang: 'ro' | 'en' | 'fr'): Promise<OfficialSource[]> {
   const q = queryStr.trim();
   if (q.length < 3) return [];
 
@@ -161,11 +193,11 @@ async function fetchWikipedia(queryStr: string, lang: 'ro' | 'en'): Promise<Offi
     return data.pages
       .filter((p) => p.title && p.key)
       .map((p): OfficialSource => ({
-        title: p.title,
-        publisher: lang === 'ro' ? 'Wikipedia' : 'Wikipedia (EN)',
+        title: p.title!,
+        publisher: lang === 'ro' ? 'Wikipedia' : lang === 'fr' ? 'Wikipédia (FR)' : 'Wikipedia (EN)',
         organization: 'Wikipedia',
         organizationType: 'encyclopedia',
-        documentUrl: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(p.key)}`,
+        documentUrl: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(p.key!)}`,
         publishedAt: '',
         relevantQuote: stripHtml(p.excerpt ?? p.description ?? ''),
         supportsOrDenies: 'neutral',
@@ -208,13 +240,15 @@ export async function runLayer3(
 
   const roQuery = expandedQueries?.romanianQuery || text;
   const enQuery = expandedQueries?.englishQuery || text;
+  const isFrench = _language === 'fr';
 
   // Official search + Wikipedia grounding + Academic/Scientific Research search in parallel
-  const [roItems, enItems, wikiRo, wikiEn, academicItems] = await Promise.all([
+  const [roItems, enItems, wikiRo, wikiEn, wikiFr, academicItems] = await Promise.all([
     apiKey ? fetchOfficialTavily(roQuery) : Promise.resolve([]),
     apiKey ? fetchOfficialTavily(enQuery) : Promise.resolve([]),
     fetchWikipedia(roQuery, 'ro'),
     fetchWikipedia(enQuery, 'en'),
+    isFrench ? fetchWikipedia(text, 'fr') : Promise.resolve([]),
     runAcademicLayer(text),
   ]);
 
@@ -246,7 +280,7 @@ export async function runLayer3(
     return true;
   });
 
-  const wikiSources = [...wikiRo, ...wikiEn].filter((s) => {
+  const wikiSources = [...wikiRo, ...wikiEn, ...wikiFr].filter((s) => {
     if (!s.documentUrl || seen.has(s.documentUrl)) return false;
     seen.add(s.documentUrl);
     return true;

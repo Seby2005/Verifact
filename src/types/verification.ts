@@ -4,7 +4,7 @@ export type VerifyResponse =
   | { status: 'ok'; report: VerificationReport }
   | { status: 'not_implemented'; message: string }
   | { status: 'error'; message: string };
-export type Language = 'ro' | 'en' | 'unknown';
+export type Language = 'ro' | 'en' | 'fr' | 'unknown';
 export type Verdict = 'true' | 'false' | 'partial' | 'unclear';
 export type LayerStatus = 'pending' | 'loading' | 'done' | 'unavailable' | 'error' | 'success' | 'skipped';
 
@@ -24,7 +24,7 @@ export interface VerifyRequest {
   inputType: InputType;
   inputText: string;
   inputUrl?: string;
-  language: 'ro' | 'en';
+  language: 'ro' | 'en' | 'fr';
   isPublic: boolean;
 }
 
@@ -247,7 +247,84 @@ export interface VerificationReport {
   language: Language;
   fromCache?: boolean;
   aiAvailable?: boolean;
+  proSynthesis?: ProReportSynthesis;
   tokenUsage?: ReportTokenUsage;
+}
+
+export interface SourceComparisonEntry {
+  sourceName: string;
+  sourceType: 'fact_check' | 'official' | 'news' | 'social';
+  tier?: 1 | 2 | 3;
+  stance: 'confirms' | 'contradicts' | 'context';
+  keyPoint: string;
+  url?: string;
+}
+
+export interface CrossSourceAnalysis {
+  agreements: string;
+  contradictions: string;
+  consensusLevel: 'unanimous' | 'strong' | 'mixed' | 'conflicting';
+  comparisonMatrix: SourceComparisonEntry[];
+}
+
+export interface SubClaimCheck {
+  subClaim: string;
+  verdict: 'true' | 'false' | 'partial' | 'unverified';
+  explanation: string;
+  evidenceSourceIndexes?: number[];
+}
+
+export interface ManipulationTechnique {
+  name: string;
+  category?: 'framing' | 'fabrication' | 'context_omission' | 'emotional_appeal' | 'logical_fallacy' | 'other';
+  description: string;
+  manifestationInClaim: string;
+}
+
+export interface ManipulationAnalysis {
+  detected: boolean;
+  techniques: ManipulationTechnique[];
+  summary: string;
+}
+
+export interface NarrativeAndImpact {
+  originAndPropagation: string;
+  motiveAssessment: string;
+  publicImpact: string;
+}
+
+export interface JournalistQA {
+  question: string;
+  answer: string;
+}
+
+export interface InvestigatorToolkit {
+  missingEvidence: string[];
+  foiaRecommendations: string[];
+  journalistFaq: JournalistQA[];
+}
+
+export interface SourceInsight {
+  index: number;
+  sourceUrl?: string;
+  publisher: string;
+  takeaway: string;
+  stance: 'confirmă' | 'contrazice' | 'context' | 'confirms' | 'contradicts' | 'confirme' | 'contredit';
+  credibilityNote?: string;
+  directQuote?: string;
+}
+
+export interface ProReportSynthesis {
+  verdictRationale: string;
+  whatToRemember: string[];
+  crossSourceAnalysis: CrossSourceAnalysis;
+  subClaims: SubClaimCheck[];
+  sourceInsights: SourceInsight[];
+  manipulationAnalysis: ManipulationAnalysis;
+  narrativeAndImpact: NarrativeAndImpact;
+  investigatorToolkit: InvestigatorToolkit;
+  commentaryAssessment?: string;
+  deepReasoning?: string;
 }
 
 export interface TokenUsageDetail {

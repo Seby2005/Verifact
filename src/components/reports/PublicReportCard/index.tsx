@@ -40,7 +40,8 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
   const { locale, t } = useLanguage();
   const verdictInfo = getVerdictInfo(report.verdict, report.score, t);
   const displayDate = report.publishedAt || report.createdAt;
-  const formattedDate = new Date(displayDate).toLocaleDateString(locale === 'en' ? 'en-US' : 'ro-RO', {
+  const langTag = locale === 'en' ? 'en-US' : locale === 'fr' ? 'fr-FR' : 'ro-RO';
+  const formattedDate = new Date(displayDate).toLocaleDateString(langTag, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

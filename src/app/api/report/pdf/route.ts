@@ -51,7 +51,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const locale: 'ro' | 'en' = report.language === 'en' ? 'en' : 'ro';
+    const locale: 'ro' | 'en' | 'fr' = report.language === 'fr' ? 'fr' : report.language === 'en' ? 'en' : 'ro';
     // Instant: reuse what the verification already computed, no fresh AI call.
     const synthesis = synthesisFromReport(report, locale);
     const pdf = await renderReportPdf({ report, synthesis, locale });

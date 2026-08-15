@@ -48,9 +48,9 @@ export async function extractClaim(
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return fallback;
 
-  const lang = language === 'en' ? 'engleză' : 'română';
+  const lang = language === 'en' ? 'engleză' : language === 'fr' ? 'franceză' : 'română';
   const prompt = `Ai primit textul brut extras (OCR) dintr-o captură de ecran sau dintr-o postare pe rețele sociale. Textul poate conține trei lucruri amestecate:
-1. Interfața aplicației — elemente de UI de pe TikTok/Facebook/Instagram/YouTube pe care trebuie să le IGNORI complet: nume de utilizator, ore/date, numărul de aprecieri/comentarii/distribuiri/vizualizări, și cuvinte precum "Aprecieri", "Comentarii", "Distribuie", "Distribuiri", "Urmărește", "Mesaje", "Trimite", "Salvează", "Vezi traducerea", "Follow", "Like", "Share", "Comment", "Reply", "Send", "For You", "Pentru tine", butoane și meniuri.
+1. Interfața aplicației — elemente de UI de pe TikTok/Facebook/Instagram/YouTube/X pe care trebuie să le IGNORI complet: nume de utilizator, ore/date, numărul de aprecieri/comentarii/distribuiri/vizualizări, și cuvinte precum "Aprecieri", "Comentarii", "Distribuie", "Distribuiri", "Urmărește", "Mesaje", "Trimite", "Salvează", "Vezi traducerea", "Follow", "Like", "Share", "Comment", "Reply", "Send", "For You", "Pentru tine", "Abonné", "J’aime", "Partager", "Commenter", "Répondre", "Enregistrer", "Voir la traduction", "Pour toi", butoane și meniuri.
 2. AFIRMAȚIA FACTUALĂ care se răspândește (ce li se cere oamenilor să creadă).
 3. COMENTARIUL celui care a distribuit (opinia, reacția sau concluzia lui personală adăugată peste afirmație).
 

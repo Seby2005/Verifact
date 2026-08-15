@@ -16,6 +16,17 @@ export const SOURCE_CREDIBILITY: Record<string, number> = {
   'theguardian.com': 0.91,
   'euractiv.com': 0.90,
 
+  // French quality press & fact-checkers
+  'lemonde.fr': 0.95,
+  'lefigaro.fr': 0.92,
+  'liberation.fr': 0.91,
+  'france24.com': 0.93,
+  'francetvinfo.fr': 0.92,
+  'rfi.fr': 0.90,
+  'leparisien.fr': 0.88,
+  'lexpress.fr': 0.88,
+  'lepoint.fr': 0.87,
+
   // Romanian quality press
   'g4media.ro': 0.92,
   'pressone.ro': 0.91,
@@ -53,6 +64,16 @@ export const OFFICIAL_DOMAINS: Record<string, { name: string; type: 'government'
   'bnr.ro': { name: 'Banca Națională a României', type: 'government' },
   'politiaromana.ro': { name: 'Poliția Română', type: 'government' },
   'consiliulconcurentei.ro': { name: 'Consiliul Concurenței', type: 'government' },
+
+  // French government & institutions
+  'service-public.fr': { name: 'Service-Public.fr', type: 'government' },
+  'legifrance.gouv.fr': { name: 'Légifrance', type: 'government' },
+  'gouvernement.fr': { name: 'Gouvernement Français', type: 'government' },
+  'elysee.fr': { name: 'Présidence de la République', type: 'government' },
+  'insee.fr': { name: 'INSEE', type: 'statistics' },
+  'santepubliquefrance.fr': { name: 'Santé Publique France', type: 'health_org' },
+  'interieur.gouv.fr': { name: 'Ministère de l’Intérieur', type: 'government' },
+  'economie.gouv.fr': { name: 'Ministère de l’Économie', type: 'government' },
 
   // European institutions
   'europa.eu': { name: 'Uniunea Europeană', type: 'international_org' },
@@ -96,7 +117,7 @@ export const ROMANIAN_PUBLIC_FIGURES: string[] = [
 ];
 
 /**
- * Negative sentiment keywords (RO + EN) indicating the article contradicts a claim.
+ * Negative sentiment keywords (RO + EN + FR) indicating the article contradicts a claim.
  */
 export const CONTRADICTION_KEYWORDS_RO = [
   'fals', 'falsă', 'fals,', 'dezminţit', 'dezminţire', 'dezminţeşte',
@@ -107,6 +128,11 @@ export const CONTRADICTION_KEYWORDS_RO = [
 export const CONTRADICTION_KEYWORDS_EN = [
   'false', 'fake', 'disproven', 'debunked', 'misleading', 'incorrect',
   'fabricated', 'hoax', 'misinformation', 'disinformation', 'contradiction',
+];
+
+export const CONTRADICTION_KEYWORDS_FR = [
+  'faux', 'fausse', 'démenti', 'dément', 'infondé', 'intox', 'trompeur',
+  'mensonge', 'désinformation', 'manipulation', 'non vérifié', 'douteux',
 ];
 
 /**
@@ -122,16 +148,14 @@ export const CONFIRMATION_KEYWORDS_EN = [
   'authentic', 'official', 'accurate',
 ];
 
+export const CONFIRMATION_KEYWORDS_FR = [
+  'confirmé', 'confirme', 'vrai', 'vérifié', 'authentique', 'officiel',
+  'avéré', 'exact', 'prouvé',
+];
+
 /**
  * Debunk-framing phrases, checked before the contradiction/confirmation
- * keyword lists above and winning outright when present. A sentence
- * headlined "no evidence that 5G spreads COVID" is *about* the claim, so it
- * matches on relevance, and it is likely to also contain a generic
- * confirmation-adjacent word ("official", "oficial" — both in
- * CONFIRMATION_KEYWORDS_* — show up constantly in official denial
- * statements, e.g. "oficial dezmintit"), which without this check reads as
- * support instead of a debunk and inverts the verdict on exactly the
- * well-known disinformation this product exists to catch.
+ * keyword lists above and winning outright when present.
  */
 export const DEBUNK_MARKERS = [
   'fals', 'falsă', 'falsa', 'dezinformare', 'dezmințit', 'dezmintit', 'dezmințire',
@@ -140,6 +164,8 @@ export const DEBUNK_MARKERS = [
   'debunk', 'debunked', 'myth', 'hoax', 'no evidence', 'without evidence',
   'baseless', 'unfounded', 'misinformation', 'disinformation', 'conspiracy theory',
   'fact check', 'fact-check', 'falsely', 'false claim', 'not true',
+  'faux', 'fausse', 'intox', 'démenti', 'désinformation', 'aucune preuve',
+  'sans preuve', 'théorie du complot', 'complotisme', 'infondé', 'trompeur',
 ];
 
 /**

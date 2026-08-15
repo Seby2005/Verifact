@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
-  let body: { text?: string; targetLang?: 'ro' | 'en' };
+  let body: { text?: string; targetLang?: 'ro' | 'en' | 'fr' };
   try {
     body = await request.json();
   } catch {
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     return Response.json({ error: 'text parameter is required' }, { status: 400 });
   }
 
-  const lang = targetLang === 'en' ? 'English' : 'Romanian';
+  const lang = targetLang === 'en' ? 'English' : targetLang === 'fr' ? 'French' : 'Romanian';
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;

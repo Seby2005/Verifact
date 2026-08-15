@@ -1,35 +1,40 @@
 import { logger } from '@/lib/utils/logger';
 
-export type ExamplesLocale = 'ro' | 'en';
+export type ExamplesLocale = 'ro' | 'en' | 'fr';
 
 /**
  * A curated fact-check entry linking to a real verification from a recognised
  * fact-checking organisation. Used ONLY as an offline fallback when the live
  * Google Fact Check lookup returns nothing (no API key, network error, or an
- * empty result set). Each entry carries the claim text in both languages.
+ * empty result set). Each entry carries the claim text in all supported languages.
  *
  * Sources:
  *   🇷🇴 Factual.ro  — https://www.factual.ro
  *   🇷🇴 Veridica.ro — https://www.veridica.ro
+ *   🇫🇷 AFP Factuel — https://factuel.afp.com
  *   🌍 Snopes.com   — https://www.snopes.com
  */
 interface CuratedFactCheck {
   ro: string;
   en: string;
+  fr: string;
 }
 
 const CURATED_FALLBACK: readonly CuratedFactCheck[] = [
   {
     ro: 'Guvernul României a decis interzicerea completă a plăților cash de la 1 ianuarie.',
     en: 'The Romanian government has decided to ban all cash payments starting January 1st.',
+    fr: 'Le gouvernement a décidé d’interdire tous les paiements en espèces à compter du 1er janvier.',
   },
   {
     ro: 'Un politician român a declarat că România va ieși din Uniunea Europeană în urma unui referendum secret.',
     en: 'A Romanian politician claimed the country will leave the European Union after a secret referendum.',
+    fr: 'Un responsable politique affirme qu’une sortie de l’Union européenne a été actée lors d’un référendum secret.',
   },
   {
     ro: 'Nu există dovezi științifice că lămâia fiartă vindecă cancerul, contrar postărilor virale.',
     en: 'There is no scientific evidence that boiled lemon cures cancer, contrary to viral posts.',
+    fr: 'Il n’existe aucune preuve scientifique que le citron bouilli guérit le cancer, contrairement aux publications virales.',
   },
 ];
 
@@ -43,10 +48,10 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 /**
  * Broad, evergreen query terms. Each API call needs a query, so we rotate a
  * pool by day to keep the surfaced claims varied across the week and to widen
- * the net (any single term may be quiet on a given day). Romania-focused terms
- * fill the two national slots; global terms fill the one international slot.
+ * the net (any single term may be quiet on a given day).
  */
 const RO_TOPIC_TERMS = ['guvern', 'România', 'pensii', 'energie', 'spital', 'primar', 'lege'];
+const FR_TOPIC_TERMS = ['gouvernement', 'France', 'retraites', 'énergie', 'hôpital', 'maire', 'loi', 'santé', 'climat'];
 const INTL_TOPIC_TERMS = ['Rusia', 'Ucraina', 'NATO', 'climat', 'Trump', 'vaccin', 'Israel'];
 
 interface RecentClaim {
@@ -63,7 +68,7 @@ const moduleCache = new Map<ExamplesLocale, { at: number; examples: string[] }>(
 
 /**
  * Homepage claim suggestions — three genuinely recent fact-checked claims
- * (two Romanian, one international), refreshed automatically as fact-checkers
+ * (two national, one international), refreshed automatically as fact-checkers
  * publish. Pulls from the Google Fact Check Tools API and falls back to a small
  * curated set only when the live lookup yields nothing, so the homepage is
  * never blank and never invents a claim.
@@ -99,10 +104,10 @@ export async function getTrendingExamples(locale: ExamplesLocale): Promise<strin
  * when the API is short on results, letting the caller top up from the fallback.
  */
 async function buildLiveExamples(locale: ExamplesLocale): Promise<string[]> {
-  const languageCode = locale; // 'ro' or 'en'
+  const languageCode = locale; // 'ro', 'fr', or 'en'
   const daySeed = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
 
-  const nationalTerms = locale === 'ro' ? RO_TOPIC_TERMS : INTL_TOPIC_TERMS;
+  const nationalTerms = locale === 'ro' ? RO_TOPIC_TERMS : locale === 'fr' ? FR_TOPIC_TERMS : INTL_TOPIC_TERMS;
   const nationalPick = pickTerms(nationalTerms, 2, daySeed);
   const intlPick = pickTerms(INTL_TOPIC_TERMS, 2, daySeed + 3);
 

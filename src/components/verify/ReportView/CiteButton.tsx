@@ -31,7 +31,8 @@ export const CiteButton: React.FC<CiteButtonProps> = ({ report }) => {
   }, []);
 
   const buildCitation = (): string => {
-    const dateFormat = new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'ro-RO', {
+    const langTag = locale === 'en' ? 'en-US' : locale === 'fr' ? 'fr-FR' : 'ro-RO';
+    const dateFormat = new Intl.DateTimeFormat(langTag, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',

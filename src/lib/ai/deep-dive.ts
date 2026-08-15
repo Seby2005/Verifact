@@ -41,7 +41,7 @@ export interface DeepDiveContext {
   actionType: DeepDiveAction;
   /** Required for 'custom_question', ignored otherwise. */
   customQuestion?: string;
-  locale: 'ro' | 'en';
+  locale: 'ro' | 'en' | 'fr';
 }
 
 const MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat';
@@ -94,51 +94,54 @@ function summariseLayers(report: VerificationReport): string {
     lines.push(`[fact-check] ${r.publisher}: "${r.claimReviewed}" — verdict: ${r.rating}`)
   );
   (layer2?.results ?? []).slice(0, 4).forEach((a) =>
-    lines.push(`[presă] ${a.source}: ${a.title} — ${(a.snippet ?? '').slice(0, 140)}`)
+    lines.push(`[presă/presse] ${a.source}: ${a.title} — ${(a.snippet ?? '').slice(0, 140)}`)
   );
   (layer3?.results ?? []).slice(0, 4).forEach((o) =>
     lines.push(
-      `[oficial] ${o.organization ?? o.publisher}: ${o.title} — ${(o.relevantQuote ?? o.snippet ?? '').slice(0, 140)}`
+      `[oficial/officiel] ${o.organization ?? o.publisher}: ${o.title} — ${(o.relevantQuote ?? o.snippet ?? '').slice(0, 140)}`
     )
   );
   (layer4?.results ?? []).slice(0, 3).forEach((p) =>
-    lines.push(`[declarație] ${p.author}: ${(p.content ?? p.text ?? '').slice(0, 120)}`)
+    lines.push(`[declarație/déclaration] ${p.author}: ${(p.content ?? p.text ?? '').slice(0, 120)}`)
   );
-  return lines.length > 0 ? lines.join('\n') : '(nicio dovadă detaliată disponibilă în raport)';
+  return lines.length > 0 ? lines.join('\n') : '(nicio dovadă detaliată disponibilă în raport / aucune preuve détaillée)';
 }
 
 function buildPrompt(ctx: DeepDiveContext): string {
   const { report, actionType, customQuestion, locale } = ctx;
   const isRo = locale === 'ro';
+  const isFr = locale === 'fr';
 
   const claim = report.verifiedClaim ?? report.claim ?? report.inputText ?? '';
   const commentary = report.posterCommentary?.trim();
   const verdictLabel: Record<VerificationReport['verdict'], string> = {
-    true: isRo ? 'Probabil adevărat' : 'Likely true',
-    false: isRo ? 'Probabil fals' : 'Likely false',
-    partial: isRo ? 'Parțial adevărat / context lipsă' : 'Partially true / missing context',
-    unclear: isRo ? 'Neclar / insuficient verificat' : 'Unclear / insufficiently verified',
+    true: isRo ? 'Probabil adevărat' : isFr ? 'Probablement vrai' : 'Likely true',
+    false: isRo ? 'Probabil fals' : isFr ? 'Probablement faux' : 'Likely false',
+    partial: isRo ? 'Parțial adevărat / context lipsă' : isFr ? 'Partiellement vrai / contexte manquant' : 'Partially true / missing context',
+    unclear: isRo ? 'Neclar / insuficient verificat' : isFr ? 'Incertain / insuffisamment vérifié' : 'Unclear / insufficiently verified',
   };
 
   const sourceLines = (report.sources ?? [])
     .slice(0, MAX_SOURCES_IN_PROMPT)
     .map((s, i) => {
-      const stance = s.supports === true ? (isRo ? 'confirmă' : 'supports')
-        : s.supports === false ? (isRo ? 'contrazice' : 'contradicts')
-        : (isRo ? 'context' : 'context');
+      const stance = s.supports === true ? (isRo ? 'confirmă' : isFr ? 'confirme' : 'supports')
+        : s.supports === false ? (isRo ? 'contrazice' : isFr ? 'contredit' : 'contradicts')
+        : (isRo ? 'context' : isFr ? 'contexte' : 'context');
       const excerpt = (s.excerpt ?? '').slice(0, 220).replace(/\s+/g, ' ').trim();
       return `[${i + 1}] ${s.publisher} — ${s.title} (${stance})${excerpt ? ` — extras: "${excerpt}"` : ''}`;
     })
-    .join('\n') || (isRo ? '(nicio sursă citată)' : '(no cited sources)');
+    .join('\n') || (isRo ? '(nicio sursă citată)' : isFr ? '(aucune source citée)' : '(no cited sources)');
 
   const takeaways =
     (report.keyTakeaways ?? []).map((k) => `- ${stripMarkdown(k)}`).join('\n') ||
-    (isRo ? '- (fără idei cheie separate)' : '- (no separate key takeaways)');
+    (isRo ? '- (fără idei cheie separate)' : isFr ? '- (aucun point clé distinct)' : '- (no separate key takeaways)');
 
-  const instruction = buildActionInstruction(actionType, customQuestion, isRo);
+  const instruction = buildActionInstruction(actionType, customQuestion, locale);
 
   const intro = isRo
     ? `Ești un analist senior de fact-checking la Verifact. Ai în față un raport de verificare deja generat. Răspunde la cererea utilizatorului EXCLUSIV pe baza conținutului acestui raport și a surselor citate mai jos. Nu inventa fapte, cifre, citate sau surse care nu apar în material. Dacă informația cerută nu există în raport sau în surse, spune-o explicit în loc să ghicești.`
+    : isFr
+    ? `Vous êtes un analyste senior de fact-checking chez Verifact. Vous disposez d’un rapport de vérification complet. Répondez à la demande de l’utilisateur EXCLUSIVEMENT à partir du contenu de ce rapport et des sources citées ci-dessous. N’inventez aucun fait, chiffre, citation ou source non mentionné. Si l’information demandée n’est pas disponible, indiquez-le explicitement sans spéculer.`
     : `You are a senior fact-checking analyst at Verifact. You have a completed verification report in front of you. Answer the user's request EXCLUSIVELY from the content of this report and its cited sources below. Do not invent facts, figures, quotes, or sources that do not appear in the material. If the requested information is not in the report or its sources, say so explicitly instead of guessing.`;
 
   return `${intro}
@@ -164,7 +167,7 @@ CEREREA UTILIZATORULUI:
 ${instruction}
 
 REGULI STRICTE PENTRU RĂSPUNS:
-1. Scrie răspunsul în ${isRo ? 'română' : 'engleză'}.
+1. Scrie răspunsul în ${isRo ? 'română' : isFr ? 'franceză' : 'engleză'}.
 2. Bazează-te doar pe raport și pe sursele citate mai sus.
 3. NU include adrese URL. Dacă vrei să trimiți la o sursă, referă-te la ea după numele publicației sau titlul ei.
 4. NU folosi marcaje Markdown (###, ##, #, **, bold). Text simplu, paragrafe scurte; pentru liste folosește doar liniuțe "-" pe linii separate.
@@ -175,26 +178,36 @@ REGULI STRICTE PENTRU RĂSPUNS:
 function buildActionInstruction(
   actionType: DeepDiveAction,
   customQuestion: string | undefined,
-  isRo: boolean
+  locale: 'ro' | 'en' | 'fr'
 ): string {
+  const isRo = locale === 'ro';
+  const isFr = locale === 'fr';
   switch (actionType) {
     case 'explain_simple':
       return isRo
         ? 'Explică acest raport pe înțelesul tuturor, fără jargon tehnic. Spune pe scurt: ce e adevărat, ce e fals sau exagerat, ce context lipsește și de ce verdictul este acesta. Folosește exemple simple și fraze scurte.'
+        : isFr
+        ? 'Expliquez ce rapport de façon simple et accessible, sans jargon technique. Résumez : ce qui est vrai, ce qui est faux ou exagéré, le contexte manquant et la justification du verdict. Utilisez des phrases courtes et limpides.'
         : 'Explain this report in plain, jargon-free language. Briefly say: what is true, what is false or exaggerated, what context is missing, and why the verdict is what it is. Use short sentences and simple examples.';
     case 'counter_arguments':
       return isRo
         ? 'Prezintă cele mai solide perspective alternative sau contra-dovezi cu privire la această afirmație. Pentru fiecare, arată cât de bine este susținută de sursele citate (sau cât de slab). Nu schimba verdictul raportului — obiectivul este să expui argumentele opuse corect, nu să le respingi superficial.'
+        : isFr
+        ? 'Présentez les arguments contradictoires ou contre-preuves les plus solides concernant cette affirmation. Pour chacun, précisez dans quelle mesure il est étayé par les sources citées. Ne modifiez pas le verdict — l’objectif est d’exposer loyalement les thèses divergentes.'
         : 'Present the strongest alternative perspectives or counter-evidence regarding this claim. For each one, indicate how well it is supported by the cited sources (or how weakly). Do not change the report\'s verdict — the goal is to lay out opposing arguments fairly, not to dismiss them superficially.';
     case 'manipulation_techniques':
       return isRo
         ? 'Analizează afirmația, postarea originală și felul în care este prezentată pentru tehnici de manipulare sau propagandă: titlu senzaționalist (clickbait), apel la emoție, cherry-picking, scoțare din context, ad hominem, autoritate falsă, generalizare excesivă, falsă echilibristică etc. Enumeră tehnicile care chiar se aplică, cu o propoziție fiecare despre cum se manifestă în acest caz concret. Dacă nicio tehnică nu se aplică, spune-o explicit.'
+        : isFr
+        ? 'Analysez l’affirmation, la publication d’origine et son cadrage pour identifier d’éventuelles techniques de manipulation ou de propagande : sensationnalisme (clickbait), appel à l’émotion, sélection biaisée (cherry-picking), déscontextualisation, faux dilemme, etc. Détaillez uniquement les procédés effectivement observés avec un exemple précis. Si aucune technique ne s’applique, mentionnez-le clairement.'
         : 'Analyze the claim, the original post, and how it is presented for manipulation or propaganda techniques: sensationalist/clickbait headline, appeal to emotion, cherry-picking, out-of-context framing, ad hominem, false authority, overgeneralization, false balance, etc. List the techniques that actually apply, with one sentence each on how they manifest in this specific case. If no technique applies, say so explicitly.';
     case 'custom_question':
     default: {
       const q = (customQuestion ?? '').trim();
       return isRo
         ? `Răspunde la următoarea întrebare a utilizatorului: "${q}"\n\nDacă întrebarea cere informații care nu apar în raport sau în sursele citate, spune clar că nu ai dovezi pentru a răspunde și sugerează ce fel de sursă ar putea clarifica. Nu extrapola dincolo de materialul de mai sus.`
+        : isFr
+        ? `Répondez à la question suivante de l’utilisateur : "${q}"\n\nSi la question porte sur des éléments absents du rapport et des sources citées, indiquez clairement que vous ne disposez pas des preuves nécessaires et précisez quel type de document pourrait apporter une réponse. N’extrapolez pas au-delà des pièces fournies.`
         : `Answer the user's question: "${q}"\n\nIf the question asks for information that does not appear in the report or its cited sources, clearly state that you have no evidence to answer, and suggest what kind of source could clarify. Do not extrapolate beyond the material above.`;
     }
   }

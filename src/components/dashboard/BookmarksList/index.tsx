@@ -17,7 +17,8 @@ function formatDate(iso?: string, locale: string = 'ro'): string {
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
-    return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'ro-RO', {
+    const langTag = locale === 'en' ? 'en-US' : locale === 'fr' ? 'fr-FR' : 'ro-RO';
+    return new Intl.DateTimeFormat(langTag, {
       day: 'numeric',
       month: 'short',
       year: 'numeric',

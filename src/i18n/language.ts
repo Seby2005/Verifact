@@ -1,4 +1,4 @@
-export type Locale = 'ro' | 'en';
+export type Locale = 'ro' | 'en' | 'fr';
 
 export interface TranslationParams {
   [key: string]: string | number;

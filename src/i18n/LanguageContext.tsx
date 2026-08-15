@@ -5,6 +5,7 @@ import type { Locale, TranslationParams } from './language';
 import { getTranslation } from './language';
 import { ro, type Translations } from './dictionaries/ro';
 import { en } from './dictionaries/en';
+import { fr } from './dictionaries/fr';
 
 interface LanguageContextType {
   locale: Locale;
@@ -12,7 +13,7 @@ interface LanguageContextType {
   t: (key: string, params?: TranslationParams) => string;
 }
 
-const dictionaries: Record<Locale, Translations> = { ro, en };
+const dictionaries: Record<Locale, Translations> = { ro, en, fr };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
@@ -28,11 +29,11 @@ function getInitialLocale(): Locale {
       .find((row) => row.startsWith(`${COOKIE_NAME}=`));
     if (match) {
       const val = match.split('=')[1];
-      if (val === 'ro' || val === 'en') return val;
+      if (val === 'ro' || val === 'en' || val === 'fr') return val;
     }
 
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (stored === 'ro' || stored === 'en') return stored;
+    if (stored === 'ro' || stored === 'en' || stored === 'fr') return stored;
   } catch {
     // Ignore storage / cookie errors
   }

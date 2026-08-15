@@ -5,6 +5,7 @@ import { VerdictLabel, Callout } from '@/components/ui';
 import type { VerificationReport } from '@/types/verification';
 import { useLanguage } from '@/i18n';
 import { ReportDeepDive } from '@/components/report/ReportDeepDive';
+import { ProReportDossier } from '@/components/report/ProReportDossier';
 import { CiteButton } from './CiteButton';
 import { DisputeButton } from './DisputeButton';
 import { DownloadButton } from './DownloadButton';
@@ -26,7 +27,8 @@ function formatDate(iso?: string, locale: string = 'ro'): string | null {
   const parsed = new Date(iso);
   if (Number.isNaN(parsed.getTime())) return null;
 
-  const dateStyle = new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'ro-RO', {
+  const langTag = locale === 'en' ? 'en-US' : locale === 'fr' ? 'fr-FR' : 'ro-RO';
+  const dateStyle = new Intl.DateTimeFormat(langTag, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -34,14 +36,32 @@ function formatDate(iso?: string, locale: string = 'ro'): string | null {
   return dateStyle.format(parsed);
 }
 
-function renderTierBadge(tier?: 1 | 2 | 3): React.ReactNode {
+function renderTierBadge(tier?: 1 | 2 | 3, locale: string = 'ro'): React.ReactNode {
+  const isEn = locale === 'en';
+  const isFr = locale === 'fr';
+
   if (tier === 1) {
-    return <span className={styles.tier1Badge}>Tier 1: Sursă de Încredere / Fact-Checker</span>;
+    const text = isEn
+      ? 'Tier 1: Trusted Source / Fact-Checker'
+      : isFr
+      ? 'Tier 1: Source de Confiance / Fact-Checker'
+      : 'Tier 1: Sursă de Încredere / Fact-Checker';
+    return <span className={styles.tier1Badge}>{text}</span>;
   }
   if (tier === 3) {
-    return <span className={styles.tier3Badge}>Tier 3: Social / Web General</span>;
+    const text = isEn
+      ? 'Tier 3: Social / General Web'
+      : isFr
+      ? 'Tier 3: Réseaux Sociaux / Web Général'
+      : 'Tier 3: Social / Web General';
+    return <span className={styles.tier3Badge}>{text}</span>;
   }
-  return <span className={styles.tier2Badge}>Tier 2: Presă Generală</span>;
+  const text = isEn
+    ? 'Tier 2: Mainstream Press'
+    : isFr
+    ? 'Tier 2: Presse de Référence'
+    : 'Tier 2: Presă Generală';
+  return <span className={styles.tier2Badge}>{text}</span>;
 }
 
 export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interactive = true }) => {
@@ -140,7 +160,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
                   >
                     {source.title}
                   </a>
-                  {renderTierBadge(source.tier)}
+                  {renderTierBadge(source.tier, locale)}
                 </div>
                 <span className={styles.sourceMeta}>
                   {source.publisher}
@@ -154,6 +174,8 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
           ))}
         </ol>
       </div>
+
+      <ProReportDossier report={report} isPremium={isPremium} />
 
       {interactive ? <ReportDeepDive report={report} /> : null}
 

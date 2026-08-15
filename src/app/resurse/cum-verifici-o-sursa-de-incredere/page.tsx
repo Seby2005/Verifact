@@ -21,7 +21,7 @@ export default function SourceVerificationGuidePage() {
     url: `${baseUrl}/resurse/cum-verifici-o-sursa-de-incredere`,
     datePublished: '2026-08-12',
     dateModified: '2026-08-12',
-    inLanguage: locale === 'en' ? 'en-US' : 'ro-RO',
+    inLanguage: locale === 'en' ? 'en-US' : locale === 'fr' ? 'fr-FR' : 'ro-RO',
     author: {
       '@type': 'Organization',
       name: 'Verifact',

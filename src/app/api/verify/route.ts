@@ -32,9 +32,10 @@ function validateVerifyInput(body: unknown): { success: true; data: ValidatedInp
     if (typeof b.text !== 'string' || !isValidHttpUrl(b.text)) {
       return { success: false, error: 'Link-ul introdus nu este valid.' };
     }
+    const urlLang: Language = b.language === 'fr' ? 'fr' : b.language === 'en' ? 'en' : 'ro';
     return {
       success: true,
-      data: { text: b.text.trim(), language: 'ro', isPublic: Boolean(b.isPublic), inputType: 'url' },
+      data: { text: b.text.trim(), language: urlLang, isPublic: Boolean(b.isPublic), inputType: 'url' },
     };
   }
 
@@ -47,7 +48,7 @@ function validateVerifyInput(body: unknown): { success: true; data: ValidatedInp
   // practice. Rejecting it outright just made the tool look broken.
   const text = b.text.length > MAX_TEXT_LENGTH ? b.text.slice(0, MAX_TEXT_LENGTH) : b.text;
 
-  const validLanguages: Language[] = ['ro', 'en', 'unknown'];
+  const validLanguages: Language[] = ['ro', 'en', 'fr', 'unknown'];
   const language: Language = validLanguages.includes(b.language as Language)
     ? (b.language as Language)
     : 'unknown';
