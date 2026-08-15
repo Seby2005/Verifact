@@ -184,6 +184,14 @@ export const ro = {
       network: 'Nu am putut contacta serverul. Verifică conexiunea și încearcă din nou.',
       unavailableLabel: 'Momentan indisponibil',
       errorLabel: 'Eroare',
+      turnstilePending:
+        'Se finalizează verificarea de securitate. Te rugăm să aștepți câteva secunde și să apeși din nou pe „Verifică acum”.',
+      rateLimit: 'Prea multe cereri. Încearcă din nou în câteva minute.',
+      usageLimitFree:
+        'Ai atins limita de verificări gratuite pentru luna aceasta. Treci la Pro sau creează un cont pentru mai multe.',
+      usageLimitPro:
+        'Ai atins limita de verificări pentru luna aceasta. Se resetează la începutul lunii viitoare.',
+      securityFailed: 'Verificarea de securitate a eșuat. Te rugăm să reîncerci.',
     },
   },
   reportView: {

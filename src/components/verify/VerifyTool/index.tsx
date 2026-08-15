@@ -102,7 +102,7 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
     if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken) {
       setStatus({
         state: 'error',
-        message: 'Se finalizează verificarea de securitate. Te rugăm să aștepți câteva secunde și să apeși din nou pe „Verifică acum”.',
+        message: t('verifyTool.errors.turnstilePending'),
       });
       return;
     }
@@ -150,9 +150,22 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
         turnstileRef.current?.reset();
         setTurnstileToken(null);
         const err = (await res.json().catch(() => null)) as VerifyAPIError | null;
+        let errorMessage = err?.error || t('verifyTool.errors.generic');
+
+        if (err?.code === 'USAGE_LIMIT') {
+          const isProLimit = err.error?.includes('Se resetează') || err.error?.includes('reset');
+          errorMessage = isProLimit
+            ? t('verifyTool.errors.usageLimitPro')
+            : t('verifyTool.errors.usageLimitFree');
+        } else if (err?.code === 'RATE_LIMIT') {
+          errorMessage = t('verifyTool.errors.rateLimit');
+        } else if (err?.code === 'INPUT_INVALID' && err.error?.toLowerCase().includes('securitate')) {
+          errorMessage = t('verifyTool.errors.securityFailed');
+        }
+
         setStatus({
           state: err?.code === 'ALL_LAYERS_FAILED' ? 'unavailable' : 'error',
-          message: err?.error || t('verifyTool.errors.generic'),
+          message: errorMessage,
         });
         return;
       }

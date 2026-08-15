@@ -185,6 +185,14 @@ export const en: Translations = {
       network: 'Could not reach the server. Please check your connection and try again.',
       unavailableLabel: 'Currently unavailable',
       errorLabel: 'Error',
+      turnstilePending:
+        'Finalizing security check. Please wait a few seconds and click "Verify now" again.',
+      rateLimit: 'Too many requests. Please try again in a few minutes.',
+      usageLimitFree:
+        'You have reached your free monthly verification limit. Upgrade to Pro or create an account for more.',
+      usageLimitPro:
+        'You have reached your verification limit for this month. It will reset at the start of next month.',
+      securityFailed: 'Security check failed. Please try again.',
     },
   },
   reportView: {
