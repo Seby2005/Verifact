@@ -508,6 +508,8 @@ export const ro = {
     welcomeBack: 'Bine ai revenit',
     adminBadge: 'Administrator',
     adminLink: 'Panou Admin',
+    adminFinancialLink: 'Dashboard Financiar & Costuri',
+    adminOpportunitiesLink: 'Oportunități Conținut',
     tabs: {
       history: 'Istoric Verificări',
       bookmarks: 'Favorite / Salvate',

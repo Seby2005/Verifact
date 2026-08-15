@@ -509,6 +509,8 @@ export const fr: Translations = {
     welcomeBack: 'Bon retour',
     adminBadge: 'Administrateur',
     adminLink: 'Panneau Admin',
+    adminFinancialLink: 'Tableau de bord financier & coûts',
+    adminOpportunitiesLink: 'Opportunités de contenu',
     tabs: {
       history: 'Historique des Vérifications',
       bookmarks: 'Favoris / Enregistrés',

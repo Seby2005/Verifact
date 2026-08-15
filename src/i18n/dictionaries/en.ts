@@ -508,6 +508,8 @@ export const en: Translations = {
     welcomeBack: 'Welcome back',
     adminBadge: 'Administrator',
     adminLink: 'Admin Panel',
+    adminFinancialLink: 'Financial & Cost Dashboard',
+    adminOpportunitiesLink: 'Content Opportunities',
     tabs: {
       history: 'Verification History',
       bookmarks: 'Saved / Bookmarks',

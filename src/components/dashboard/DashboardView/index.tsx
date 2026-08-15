@@ -111,12 +111,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ user, onSignOut })
 
         <div className={styles.userActions}>
           {usage?.unlimited && (
-            <Link href="/admin/oportunitati" className={styles.adminLinkBtn}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-              {t('dashboard.adminLink')}
-            </Link>
+            <>
+              <Link href="/admin/financiar" className={styles.adminFinancialBtn}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23"></line>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                {t('dashboard.adminFinancialLink')}
+              </Link>
+
+              <Link href="/admin/oportunitati" className={styles.adminLinkBtn}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                {t('dashboard.adminOpportunitiesLink')}
+              </Link>
+            </>
           )}
 
           <Button type="button" variant="secondary" size="sm" onClick={handleSignOut}>
@@ -124,6 +136,52 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ user, onSignOut })
           </Button>
         </div>
       </section>
+
+      {/* Admin Quick Section for Staff */}
+      {usage?.unlimited && (
+        <div className={styles.adminQuickSection}>
+          <div className={styles.adminSectionHeader}>
+            <span className={styles.adminSectionBadge}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
+              </svg>
+              Panou Administrator
+            </span>
+            <span className={styles.adminSectionHint}>Acces exclusiv pentru echipa internă Verifact</span>
+          </div>
+
+          <div className={styles.adminCardsGrid}>
+            <Link href="/admin/financiar" className={styles.adminActionCard}>
+              <div className={styles.adminActionIconWrap} style={{ background: '#ecfdf5', color: '#059669' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23"></line>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+              </div>
+              <div className={styles.adminActionContent}>
+                <div className={styles.adminActionTitle}>Dashboard Financiar & Costuri</div>
+                <div className={styles.adminActionDesc}>Calcul cost per verificare, consum tokeni AI în timp real, costuri fixe și prag de rentabilitate.</div>
+              </div>
+              <span className={styles.adminActionArrow}>→</span>
+            </Link>
+
+            <Link href="/admin/oportunitati" className={styles.adminActionCard}>
+              <div className={styles.adminActionIconWrap} style={{ background: '#fef3c7', color: '#d97706' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              </div>
+              <div className={styles.adminActionContent}>
+                <div className={styles.adminActionTitle}>Oportunități de Conținut</div>
+                <div className={styles.adminActionDesc}>Tendințe și afirmații virale agregate automat pentru generare de conținut și fact-checking proactiv.</div>
+              </div>
+              <span className={styles.adminActionArrow}>→</span>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Top Grid: Usage & Stats */}
       <div className={styles.topGrid}>
