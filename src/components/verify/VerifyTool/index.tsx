@@ -99,6 +99,14 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
       return;
     }
 
+    if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken) {
+      setStatus({
+        state: 'error',
+        message: 'Se finalizează verificarea de securitate. Te rugăm să aștepți câteva secunde și să apeși din nou pe „Verifică acum”.',
+      });
+      return;
+    }
+
     setStatus({ state: 'loading' });
     setLiveSteps({});
 

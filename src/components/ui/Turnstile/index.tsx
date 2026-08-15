@@ -28,6 +28,8 @@ declare global {
           action?: string;
           theme?: string;
           size?: string;
+          'refresh-expired'?: string;
+          retry?: string;
           callback?: (token: string) => void;
           'error-callback'?: (error?: string) => void;
           'expired-callback'?: () => void;
@@ -83,7 +85,9 @@ export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
             sitekey: siteKey,
             action,
             theme,
-            size,
+            size: 'normal',
+            'refresh-expired': 'auto',
+            retry: 'auto',
             callback: (token: string) => {
               if (isMounted) onVerify(token);
             },
