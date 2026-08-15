@@ -790,7 +790,9 @@ export const en: Translations = {
       { name: 'Tavily', desc: 'web news article searching.' },
       { name: 'Creem', desc: 'payment processing for Pro and Business plans. Receives your card data directly; Verifact never sees it.' },
       { name: 'Vercel', desc: 'application hosting and aggregate analytics.' },
+      { name: 'Cloudflare', desc: 'invisible bot protection (Turnstile) and cyber-threat defense. Processing of technical data complies with the ' },
     ],
+    turnstilePolicyLink: 'Cloudflare Turnstile Privacy Addendum',
     sec4Outro:
       'All providers maintain infrastructure in the US/EU; transfers rely on EU Standard Contractual Clauses or the EU-US Data Privacy Framework. No vendor receives more data than necessary — e.g. Tavily only receives extracted keywords from a claim, not your account.',
     sec5Title: '5. Data Retention',

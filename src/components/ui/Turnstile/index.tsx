@@ -172,7 +172,6 @@ export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
     return (
       <div className={`${styles.container} ${className ?? ''}`.trim()}>
         <div ref={containerRef} className={styles.widget} />
-        {!isLoaded && <div className={styles.loading}>Se inițializează verificarea de securitate...</div>}
       </div>
     );
   }

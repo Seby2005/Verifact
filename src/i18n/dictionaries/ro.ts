@@ -790,7 +790,9 @@ export const ro = {
       { name: 'Tavily', desc: 'căutarea de articole de presă pe web.' },
       { name: 'Creem', desc: 'procesarea plăților pentru planurile Pro și Business. Primește datele cardului tău direct; Verifact nu le vede.' },
       { name: 'Vercel', desc: 'găzduirea aplicației și statisticile de trafic agregate.' },
+      { name: 'Cloudflare', desc: 'protecție anti-bot invizibilă (Turnstile) și securitate împotriva atacurilor cibernetice. Prelucrarea datelor tehnice este conformă cu ' },
     ],
+    turnstilePolicyLink: 'Politica de Confidențialitate Cloudflare Turnstile',
     sec4Outro:
       'Toți au sediul sau infrastructură inclusiv în SUA; transferurile se bazează pe Clauzele Contractuale Standard ale UE sau pe EU-US Data Privacy Framework. Niciunul nu primește mai multe date decât are nevoie ca să presteze serviciul respectiv — de exemplu, Tavily primește doar cuvintele cheie extrase din afirmație, nu contul tău.',
     sec5Title: '5. Cât păstrăm datele',

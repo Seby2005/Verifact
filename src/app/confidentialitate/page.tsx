@@ -40,6 +40,12 @@ export default function ConfidentialitatePage() {
     { name: 'Tavily', desc: t('confidentialitatePage.sec4Vendors.4.desc') },
     { name: 'Creem', desc: t('confidentialitatePage.sec4Vendors.5.desc') },
     { name: 'Vercel', desc: t('confidentialitatePage.sec4Vendors.6.desc') },
+    {
+      name: 'Cloudflare',
+      desc: t('confidentialitatePage.sec4Vendors.7.desc'),
+      link: 'https://www.cloudflare.com/en-gb/turnstile-privacy-policy/',
+      linkText: t('confidentialitatePage.turnstilePolicyLink'),
+    },
   ];
 
   const sec5List = [
@@ -122,6 +128,16 @@ export default function ConfidentialitatePage() {
             {sec4Vendors.map((vendor) => (
               <li key={vendor.name}>
                 <strong>{vendor.name}</strong> — {vendor.desc}
+                {'link' in vendor && vendor.link ? (
+                  <a
+                    href={vendor.link}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className={shell.textLink}
+                  >
+                    {('linkText' in vendor && vendor.linkText) || 'Privacy Policy'}
+                  </a>
+                ) : null}
               </li>
             ))}
           </ul>
