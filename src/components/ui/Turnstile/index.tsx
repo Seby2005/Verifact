@@ -48,7 +48,7 @@ export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
       siteKey: propSiteKey,
       action = 'verify',
       theme = 'auto',
-      size = 'flexible',
+      size = 'normal',
       onVerify,
       onError,
       onExpire,
@@ -61,6 +61,16 @@ export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
     const [isLoaded, setIsLoaded] = useState(false);
 
     const siteKey = propSiteKey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+    const onVerifyRef = useRef(onVerify);
+    const onErrorRef = useRef(onError);
+    const onExpireRef = useRef(onExpire);
+
+    useEffect(() => {
+      onVerifyRef.current = onVerify;
+      onErrorRef.current = onError;
+      onExpireRef.current = onExpire;
+    });
 
     useImperativeHandle(ref, () => ({
       reset: () => {
@@ -85,24 +95,30 @@ export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
             sitekey: siteKey,
             action,
             theme,
-            size: 'normal',
+            size,
             'refresh-expired': 'auto',
             retry: 'auto',
             callback: (token: string) => {
-              if (isMounted) onVerify(token);
+              if (isMounted) {
+                onVerifyRef.current?.(token);
+              }
             },
             'error-callback': (err?: string) => {
-              if (isMounted && onError) onError(err);
+              if (isMounted) {
+                onErrorRef.current?.(err);
+              }
             },
             'expired-callback': () => {
-              if (isMounted && onExpire) onExpire();
+              if (isMounted) {
+                onExpireRef.current?.();
+              }
             },
           });
           widgetIdRef.current = id;
           if (isMounted) setIsLoaded(true);
         } catch (e) {
-          if (isMounted && onError) {
-            onError(e instanceof Error ? e.message : 'Turnstile render failed');
+          if (isMounted && onErrorRef.current) {
+            onErrorRef.current(e instanceof Error ? e.message : 'Turnstile render failed');
           }
         }
       };
@@ -120,8 +136,8 @@ export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
             if (isMounted) renderWidget();
           };
           script.onerror = () => {
-            if (isMounted && onError) {
-              onError('Nu s-a putut încărca serviciul de verificare anti-bot.');
+            if (isMounted && onErrorRef.current) {
+              onErrorRef.current('Nu s-a putut încărca serviciul de verificare anti-bot.');
             }
           };
           document.head.appendChild(script);
@@ -147,7 +163,7 @@ export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
           widgetIdRef.current = null;
         }
       };
-    }, [siteKey, action, theme, size, onVerify, onError, onExpire]);
+    }, [siteKey, action, theme, size]);
 
     if (!siteKey) {
       return null;
