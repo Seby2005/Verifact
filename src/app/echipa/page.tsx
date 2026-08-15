@@ -90,7 +90,7 @@ export default function TeamPage() {
   const personSchema = {
     '@context': 'https://schema.org',
     '@type': 'Person',
-    name: 'Sebi Iancu',
+    name: 'Iancu Luca Sebastian',
     jobTitle: 'Founder & Lead Software Engineer',
     worksFor: {
       '@type': 'Organization',
@@ -118,7 +118,7 @@ export default function TeamPage() {
           <div className={styles.teamGrid}>
             <article className={styles.memberCard}>
               <div className={styles.memberHeader}>
-                <h3 className={styles.memberName}>Sebi Iancu</h3>
+                <h3 className={styles.memberName}>Iancu Luca Sebastian</h3>
                 <span className={styles.memberRole}>{c.founderRole}</span>
               </div>
               <p className={styles.memberBio}>{c.founderBio}</p>
