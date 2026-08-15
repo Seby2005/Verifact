@@ -117,7 +117,7 @@ const organizationSchema = {
   name: 'Verifact',
   url: 'https://www.verifact.ro',
   logo: 'https://www.verifact.ro/logo/verifact-v-logo-transparent.png',
-  sameAs: [],
+  sameAs: ['https://github.com/Seby2005/Verifact'],
 };
 
 const webSiteSchema = {

@@ -8,7 +8,7 @@ import shell from '../page-shell.module.css';
 import styles from './page.module.css';
 
 export default function TransparentaPage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   const layers = [
     {
@@ -118,6 +118,59 @@ export default function TransparentaPage() {
         </section>
 
         <section className={shell.sectionRule}>
+          <h2 className={styles.sectionTitle}>
+            {locale === 'en' ? 'Verifact in Numbers & Integrity Standards' : 'Verifact în Cifre & Standarde de Integritate'}
+          </h2>
+          <p className={styles.intro}>
+            {locale === 'en'
+              ? 'Our mission is measured through radical openness, reproducible methodology, and zero black-box verdicts.'
+              : 'Misiunea noastră este măsurată prin transparență radicală, metodologie reproductibilă și verdicte 100% verificabile.'}
+          </p>
+
+          <div className={styles.statsGrid}>
+            <div className={styles.statCard}>
+              <span className={styles.statNumber}>4</span>
+              <h3 className={styles.statTitle}>{locale === 'en' ? 'Independent Layers' : 'Straturi Independente'}</h3>
+              <p className={styles.statDesc}>
+                {locale === 'en'
+                  ? 'Fact-checkers, news press, official registries, and social media signals.'
+                  : 'Baze de fact-checking, presă credibilă, arhive oficiale și context social media.'}
+              </p>
+            </div>
+
+            <div className={styles.statCard}>
+              <span className={styles.statNumber}>100%</span>
+              <h3 className={styles.statTitle}>{locale === 'en' ? 'Open Source' : 'Cod Open Source'}</h3>
+              <p className={styles.statDesc}>
+                {locale === 'en'
+                  ? 'Public GitHub codebase audited and verifiable by any researcher or citizen.'
+                  : 'Cod public pe GitHub, auditabil oricând de cercetători, jurnaliști sau cetățeni.'}
+              </p>
+            </div>
+
+            <div className={styles.statCard}>
+              <span className={styles.statNumber}>0</span>
+              <h3 className={styles.statTitle}>{locale === 'en' ? 'Political Affiliations' : 'Partizanat Politic'}</h3>
+              <p className={styles.statDesc}>
+                {locale === 'en'
+                  ? 'Non-partisan principles following international fact-checking standards (IFCN).'
+                  : 'Respectăm strict principiile IFCN de nepartizanat și neutralitate editorială.'}
+              </p>
+            </div>
+
+            <div className={styles.statCard}>
+              <span className={styles.statNumber}>100%</span>
+              <h3 className={styles.statTitle}>{locale === 'en' ? 'Source Citation' : 'Citare Integrală'}</h3>
+              <p className={styles.statDesc}>
+                {locale === 'en'
+                  ? 'Every verdict includes direct quotes and outbound links to primary sources.'
+                  : 'Fiecare verdict include citate exacte și linkuri directe către sursele primare.'}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className={shell.sectionRule}>
           <h2 className={styles.sectionTitle}>{t('transparentaPage.limitsTitle')}</h2>
           <div className={styles.limits}>
             {limits.map((item) => (
@@ -133,6 +186,10 @@ export default function TransparentaPage() {
             {t('transparentaPage.openSourceLead')}
             <Link href="/open-source" className={styles.textLink}>
               {t('transparentaPage.openSourceLink')}
+            </Link>
+            {' '}·{' '}
+            <Link href="/echipa" className={styles.textLink}>
+              {locale === 'en' ? 'Team & Governance' : 'Echipă și Guvernanță'}
             </Link>
             .
           </p>

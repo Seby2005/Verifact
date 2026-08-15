@@ -6,6 +6,7 @@ import type { Verdict } from '@/types/verification';
 import { FlagReportButton } from '@/components/public-reports/FlagReportButton';
 import { ReportPageCta } from '@/components/public-reports/ReportPageCta';
 import { ReportDeepDive } from '@/components/report/ReportDeepDive';
+import { ReportAuditTrail } from '@/components/report/ReportAuditTrail';
 import { PublicReportCard } from '@/components/reports/PublicReportCard';
 import styles from './page.module.css';
 
@@ -127,6 +128,8 @@ export default async function PublicReportPage({ params }: PageProps) {
       </div>
 
       {report ? <ReportDeepDive report={report} /> : null}
+
+      <ReportAuditTrail report={report} id={id} date={displayDate} />
 
       <ReportPageCta />
     </div>

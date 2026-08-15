@@ -28,6 +28,7 @@ export const FOOTER_SECTIONS: ReadonlyArray<{ title: string; links: ReadonlyArra
     links: [
       { href: '/despre-dezinformare', label: 'Despre dezinformare' },
       { href: '/resurse', label: 'Resurse și ghiduri' },
+      { href: '/echipa', label: 'Echipă și guvernanță' },
       { href: '/misiune', label: 'Misiune' },
       { href: '/transparenta', label: 'Transparență' },
       { href: '/open-source', label: 'Open source și confidențialitate' },

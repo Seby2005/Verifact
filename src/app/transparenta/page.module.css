@@ -135,15 +135,67 @@
   border-color: var(--color-accent);
 }
 
+/* Stats / Pillars Grid ------------------------------------------------------ */
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.statCard {
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.statNumber {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-accent);
+  margin: 0;
+  line-height: 1.1;
+}
+
+.statTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.statDesc {
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+  margin: 0;
+}
+
 @media (min-width: 768px) {
   .layers {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-5);
   }
 
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .band {
     grid-template-columns: 8rem minmax(0, 1fr);
     gap: var(--space-8);
     align-items: baseline;
+  }
+}
+
+@media (min-width: 1024px) {
+  .statsGrid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
