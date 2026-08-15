@@ -179,3 +179,5 @@ graphify-out/
 # Claude Code local worktrees
 .claude/worktrees/
 .freebuff/
+.continue/
+skills-lock.json

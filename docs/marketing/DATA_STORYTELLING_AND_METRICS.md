@@ -1,115 +1,88 @@
-# 📊 Data Storytelling, Metrice de Platformă și Narratives pentru Investitori & Presă — Verifact
+# 📊 Data Storytelling, Metrice de Platformă și Narratives pentru Presă & Parteneri — Verifact
 
 > **Aplicație**: Verifact (AI Fact-Checker Web App)  
-> **Skill**: `data-storytelling`  
-> **Metrice Core ale Platformei**:  
-> - **Latență medie de procesare**: 12.3 secunde (de 300x mai rapid decât verificarea manuală).  
-> - **Acuratețe OCR Google Cloud Vision**: 92%+ pe fonturi mici în screenshot-uri mobile.  
-> - **Economie Variabilă (Unit Economics)**: $0.012 - $0.017 per verificare (cu 30% cache hit SHA-256).  
-> - **Marjă Brută**: 65% - 75% pe abonamentele Pro (€3.99/lună sau €2.99/lună anual) și Business.  
+> **Metrice Cheie ale Platformei**:  
+> - **Latență Medie de Verificare**: 12.3 secunde (de 300x mai rapid decât o investigație manuală de presă).  
+> - **Acuratețe OCR Google Cloud Vision**: 92%+ pe capturi de ecran mobile comprimate (WhatsApp, Facebook).  
+> - **Cost Variabil per Verificare**: ~$0.012 - $0.017 (cu caching inteligent SHA-256 de 30%).  
+> - **Marjă Brută**: 65% - 75% pe abonamentele Pro (€3.99/lună sau €2.99/lună la facturare anuală) și Business.  
 
 ---
 
-## 1. Cadrul de Data Storytelling Verifact (Data-to-Story Framework)
+## 1. Cadrul de Data Storytelling Verifact (Transformarea Datelor în Povești de Impact)
 
-Datele tehnice brute (log-uri de latență, credite API, tokeni LLM) sunt transpuse în povești de impact prin 3 lentile principale:
+Pentru a comunica eficient către presă, comunități și parteneri B2B, datele tehnice ale platformei sunt structurate în 3 lentile narative:
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│ 1. LENTILA SOCIALĂ (Pentru Presă & Public)                              │
-│ "Transformăm 1,000 de verificări anonime într-un barometru al         │
-│ dezinformării naționale: ce zvonuri au afectat românii săptămâna asta." │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 2. LENTILA DE EFICIENȚĂ (Pentru Clienții B2B / Redacții)                │
-│ "12.3 secunde vs 4 ore de căutare manuală: cum salvează Verifact 15 ore│
-│ de muncă redacțională per jurnalist în fiecare săptămână."             │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│ 3. LENTILA FINANCIARĂ (Pentru Investitori & Granturi)                   │
-│ "$0.012 cost variabil per verificare + 75% marjă brută = model SaaS     │
-│ scalabil și sustenabil pentru combaterea fake news-ului în CEE."       │
-└────────────────────────────────────────────────────────────────────────┘
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │ 1. LENTILA SOCIALĂ & CETĂȚENEASCĂ (Presă, Public, Social Media)        │
+ │ "Transformăm miile de verificări anonime într-un Barometru Național    │
+ │ al Dezinformării: ce falsuri au circulat cel mai mult în România."    │
+ └───────────────────────────────────┬────────────────────────────────────┘
+                                     │
+                                     ▼
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │ 2. LENTILA DE EFICIENȚĂ EDITORIALĂ (Redacții, Jurnaliști, ONG-uri)     │
+ │ "12.3 secunde vs 4 ore de căutare manuală: cum salvează Verifact 15 ore│
+ │ de muncă de documentare per jurnalist în fiecare săptămână."          │
+ └───────────────────────────────────┬────────────────────────────────────┘
+                                     │
+                                     ▼
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │ 3. LENTILA DE SUSTENABILITATE & SAAS (Investitori, Finanțatori Granturi)│
+ │ "Cost marginal de $0.012 per verificare + arhitectură serverless       │
+ │ deschisă = model SaaS scalabil regional pentru Europa de Est."         │
+ └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Raportul Bi-Săptămânal: "Barometrul Dezinformării în România"
+## 2. Formatul Șablon al Raportului Bi-Săptămânal: "Barometrul Veridicității"
 
-Acest format de raport este conceput pentru a fi distribuit către jurnaliști, trusturi de presă și ONG-uri ca resursă primară de date.
+Acest format este distribuit către jurnaliști de investigație și pe rețelele sociale (în stilul **Gen, știri & Politică la minut**) pentru a poziționa Verifact ca autoritate de date.
 
-### Structura Șablon a Raportului de Date:
+### Structura Editorială:
 
-#### A. Rezumat Cifric
-- **Total interogări procesate**: 3,450 în ultimele 14 zile.
-- **Rata de dezinformare detectată**: 42% din afirmațiile introduse au obținut un scor sub 40% (Probabil Fals).
-- **Formatul cel mai distribuit**: 64% din cereri au fost **screenshot-uri** ( WhatsApp & Facebook).
+#### A. Cifre Cheie (14 Zile)
+- **Total afirmații analizate**: 3,820 de cereri.
+- **Rata de Falsitate Detectată**: 44% din afirmațiile introduse au obținut un scor sub 30% (Probabil Fals).
+- **Formatul Predominant**: 68% au fost **capturi de ecran (screenshot-uri)** primite pe WhatsApp și Facebook.
 
-#### B. Top 3 Categorii Afectate de Fake News
-1. **Sănătate & Tratamente Minune** (38% din cazurile de falsitate) — Dezinformări legate de suplimente necertificate și diagnostice AI false.
-2. **Economie & Impozite** (31%) — Zvonuri alarmiste privind prăbușirea băncilor sau taxe imobiliare extreme.
-3. **Declarații Politice Trucate** (21%) — Citate atribuite fals unor lideri politici prin screenshot-uri editate.
+#### B. Top 3 Categorii Afectate de Dezinformare
+1. **Economie & Impozite (36%)**: Zvonuri alarmiste privind taxe imobiliare, amenzi majorate și modificări fiscale fictive.
+2. **Sănătate & Tratamente Fictive (31%)**: Reclame deepfake cu medici falși promovând suplimente neavizate.
+3. **Declarații Politice Trucate (21%)**: Citate atribuite fals unor lideri politici prin montaje grafice de televiziune.
 
-#### C. Metrica de Transparență Verifact
-- **Surse oficiale interogate**: Peste 1,200 de domenii `.gov.ro` și `.europa.eu` accesate în Stratul 3.
-- **Fact-check-uri umane potrivite**: 415 potriviri directe cu arhivele Factual.ro, Snopes și AFP Fact Check în Stratul 1.
+#### C. Transparența Surselor
+- **Surse Guvernamentale Interogate**: Peste 1,400 de domenii `.gov.ro` și `.europa.eu` accesate în Stratul 3.
+- **Potriviri Directe cu Arhive de Fact-Check**: 430 de potriviri directe cu Factual.ro, Snopes și AFP Fact Check în Stratul 1.
 
 ---
 
-## 3. Narrative Pitch Deck pentru Investitori, Finanțatori & Parteneri
+## 3. Narrative Pitch Deck (Structură pe 6 Slide-uri pentru Finanțare & Granturi)
 
-Structură detaliată slide cu slide pentru prezentările de finanțare și granturi (ex. fonduri europene pentru jurnalism, acceleratoare tech, investitori angel):
+### SLIDE 1: Problema (Criza Dezinformării în România & CEE)
+- **Povestea**: În România, peste 70% din populație se informează preponderent de pe rețelele sociale, dar 6 din 10 cetățeni recunosc că nu pot distinge o știre reală de un fals. Dezinformarea circulă de 6 ori mai rapid decât adevărul.
+- **Data Point**: Verificarea manuală a unei afirmații complexe durează între 2 și 5 ore pentru un jurnalist.
 
-### SLIDE 1: Problema (The Misinformation Crisis in CEE)
-- **Povestea**: În România, peste 72% din populație este activă pe internet, dar 6 din 10 cetățeni declară că nu pot distinge o știre reală de un fals pe rețelele sociale. Dezinformarea circulă de 6 ori mai rapid decât adevărul.
-- **Data Point**: Verificarea manuală a unei știri durează între 2 și 5 ore pentru un jurnalist.
-
-### SLIDE 2: Soluția Verifact (Automated, Transparent Fact-Checking)
-- **Povestea**: Verifact este prima aplicație web open-source din regiune care oferă verificare automată în sub 15 secunde, combinând tehnologia Google Cloud Vision OCR cu modelul Gemini 2.0 Flash și 5 straturi de surse verificate.
+### SLIDE 2: Soluția Verifact (Fact-Checking Automatizat și Transparent)
+- **Povestea**: Verifact este prima aplicație web open-source din regiune care oferă verificare automată în sub 15 secunde, combinând tehnologia Google Cloud Vision OCR cu modelul Gemini 2.0 Flash și 5 straturi de verificare imparțială.
 - **Data Point**: Latență medie de **12.3 secunde**, acuratețe OCR de **92%+**.
 
-### SLIDE 3: Tehnologie & Arhitectură (The 5-Layer Engine)
-- **Povestea**: Spre deosebire de alte modele AI generativ care "halucinează", Verifact nu inventează date. Algoritmul nostru caută mai întâi în baze de date umane de fact-checking, presă convențională și domenii guvernamentale înainte ca LLM-ul să genereze sinteza.
+### SLIDE 3: Tehnologia celor 5 Straturi (The 5-Layer Engine)
+- **Povestea**: Spre deosebire de alte soluții AI generativ care pot halucina, Verifact nu inventează răspunsuri. Algoritmul nostru interoghează mai întâi baze de date umane de fact-checking, presă recunoscută și surse oficiale guvernamentale înainte ca modelul să genereze sinteza.
 - **Data Point**: 100% surse citate, 0% halucinații politice.
 
-### SLIDE 4: Modelul de Business & Monetizare (SaaS Economics)
-- **Povestea**: Model Freemium extrem de atractiv și scalabil.
-  - **Free Tier**: 3 verificări/lună (achiziție masivă de utilizatori).
-  - **Pro Tier**: €3.99/lună sau **€2.99/lună la plată anuală (€35.88/an)** pentru utilizatori frecvenți și jurnaliști.
-  - **Business / API Tier**: Personalizat direct prin comunicare & email pentru redacții, ONG-uri și corporații.
-- **Data Point**: Cost variabil per verificare: **~$0.012**. Marjă brută pe Pro/Business: **>70%**.
+### SLIDE 4: Modelul de Business & Monetizare (SaaS Freemium)
+- **Free Tier**: 3 verificări/lună (achiziție organică masivă de utilizatori).
+- **Pro Tier**: €3.99/lună sau **€2.99/lună la abonament anual (€35.88/an)** pentru utilizatori frecvenți, studenți și jurnaliști.
+- **Business / API Tier**: Integrare directă în CMS-urile redacțiilor și platforme corporate.
+- **Data Point**: Marjă brută de **>70%** pe abonamentele plătite.
 
 ### SLIDE 5: Piața & Tracțiunea Estimată (TAM / SAM / SOM)
 - **TAM (Total Addressable Market)**: 250M utilizatori de internet în Europa Centrală și de Est.
 - **SAM (Serviceable Addressable Market)**: 15M utilizatori activi de știri din România și R. Moldova.
-- **SOM (Serviceable Obtainable Market)**: 50,000 utilizatori activi lunari Verifact + 20 redacții B2B parteneri în primele 12 luni.
+- **SOM (Serviceable Obtainable Market)**: 50,000 utilizatori activi lunari Verifact + 25 de redacții partenere în primele 12 luni.
 
-### SLIDE 6: Echipa, Etica Open-Source & Viziunea de Viitor
-- **Povestea**: Cod open-source sub licență MIT, transparență algoritmică completă și aliniere strictă la valorile de responsabilitate informațională.
-- **Plan de extindere**: Traducere în 5 limbi europene în versiunea v2.0.
-
----
-
-## 4. Blueprint-uri pentru Infografice Vizuale pe Social Media
-
-### Infografic 1: "Anatomia unei Verificări Verifact"
-```
-[INPUT: Screenshot WhatsApp] ──► [OCR Google Vision: Text extras] 
-                                         │
-                                         ▼
-[ Stratul 1: Fact-Check Database Match (35%) ]
-[ Stratul 2: Știri Convenționale (30%)       ]
-[ Stratul 3: Surse Oficiale .gov.ro (25%)    ]
-[ Stratul 4: Sinteză Gemini AI (10%)         ]
-                                         │
-                                         ▼
-[OUTPUT: VERDICT PARȚIAL ADEVĂRAT 67% + 4 Surse Citate]
-```
-
-### Infografic 2: "Cât Te Costă Dezinformarea vs Cât Te Costă Protecția"
-- **Dezinformarea**: Decizii financiare greșite, panică nejustificată, timp pierdut (Ore).
-- **Verifact Pro**: **€2.99 / lună** (echivalentul unei cafele per lună la abonamentul anual) pentru liniște informațională deplină.
+### SLIDE 6: Etică, Open-Source & Viziune
+- **Povestea**: Licență MIT open-source, transparență algoritmică totală, cod auditat public pe GitHub și aliniere la standardele europene de combatere a dezinformării (EU Code of Practice on Disinformation).

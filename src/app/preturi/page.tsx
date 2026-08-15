@@ -122,6 +122,13 @@ export default function PreturiPage() {
             price: 'Gratuit',
             tagline: 'Pour vérifier facilement les publications de votre fil d’actualité.',
             checks: '3 vérifications par mois',
+            features: [
+              '3 vérifications complètes par mois (texte, capture OCR, URL)',
+              'Verdict, score de fiabilité 0–100 et classement',
+              'Sources citées publiques et contexte explicatif',
+              'Carte visuelle de verdict à partager (réseaux & messageries)',
+              'Historique personnel et favoris enregistrés',
+            ],
             cta: 'Commencer gratuitement',
           },
           pro: {
@@ -129,28 +136,60 @@ export default function PreturiPage() {
             priceMonthly: '3,99 €',
             priceYearly: '2,99 €',
             tagline: 'Pour journalistes, chercheurs et utilisateurs quotidiens.',
-            checks: 'Plus de 10× plus de vérifications que l’offre gratuite.',
+            checks: 'Plus de 10× plus de vérifications (50+ / mois)',
+            features: [
+              '50+ vérifications par mois (priorité haute)',
+              'Dossier Pro : Matrice de consensus entre sources',
+              'Dossier Pro : Décomposition granulaire des sous-affirmations',
+              'Dossier Pro : Analyse criminalistique de manipulation & rhétorique',
+              'Dossier Pro : Kit d’enquête journalistique & questions clés',
+              'AI Report Deep-Dive : Assistant interactif Q&R sur le rapport',
+              'Téléchargement du rapport complet en PDF imprimable',
+              'Lien direct avec surlignage sur la phrase citée',
+              'Support prioritaire par e-mail',
+            ],
             cta: isSubmitting ? 'Connexion à Creem...' : 'Choisir Pro',
           },
           business: {
             name: 'Business',
             price: 'Sur devis',
             tagline: 'Pour rédactions, ONG et équipes professionnelles.',
-            checks: 'Volume sur-mesure et fonctionnalités dédiées',
+            checks: 'Volume sur-mesure ou illimité',
+            features: [
+              'Volume élevé ou illimité de vérifications',
+              'Accès complet API REST & Webhooks (intégrations CMS)',
+              'Comptes d’équipe multi-sièges & facturation centralisée',
+              'Flux live de veille & détection des opportunités de fact-checking',
+              'Rapports PDF personnalisés avec votre propre marque (White-label)',
+              'Piste d’audit vérifiable & conformité EEAT / IFCN',
+              'SLA garanti & gestionnaire de compte dédié 1-on-1',
+            ],
             cta: 'Nous contacter',
           },
-          compareTitle: 'Comparatif des forfaits',
+          compareTitle: 'Comparatif détaillé des forfaits',
           included: 'Inclus',
           excluded: 'Non inclus',
           rows: [
-            { label: 'Vérifications mensuelles', free: '3', pro: 'Plus de 10×', business: 'Sur devis' },
-            { label: 'Vérification texte, capture et URL', free: true, pro: true, business: true },
-            { label: 'Verdict, score et sources citées', free: true, pro: true, business: true },
-            { label: 'Téléchargement du rapport en PDF', free: false, pro: true, business: true },
-            { label: 'Lien direct vers la phrase citée', free: false, pro: true, business: true },
-            { label: 'Support prioritaire', free: false, pro: true, business: true },
-            { label: 'Accès API & intégrations', free: false, pro: false, business: true },
-            { label: 'Comptes d’équipe & licences multiples', free: false, pro: false, business: true },
+            { label: 'Vérifications mensuelles', free: '3', pro: '50+ / mois', business: 'Sur devis / Illimité' },
+            { label: 'Vérification texte, capture (OCR) et URL', free: true, pro: true, business: true },
+            { label: 'Verdict, score 0–100 et classement', free: true, pro: true, business: true },
+            { label: 'Carte de verdict partageable (WhatsApp, FB, X)', free: true, pro: true, business: true },
+            { label: 'Historique des recherches et favoris', free: true, pro: true, business: true },
+            { label: 'Téléchargement du rapport complet en PDF', free: false, pro: true, business: true },
+            { label: 'Lien direct avec surlignage de la phrase citée', free: false, pro: true, business: true },
+            { label: 'Dossier Pro : Matrice de consensus entre sources', free: false, pro: true, business: true },
+            { label: 'Dossier Pro : Décomposition des sous-affirmations', free: false, pro: true, business: true },
+            { label: 'Dossier Pro : Analyse des techniques de manipulation', free: false, pro: true, business: true },
+            { label: 'Dossier Pro : Kit d’investigation journalistique', free: false, pro: true, business: true },
+            { label: 'AI Deep-Dive : Assistant interactif Q&R sur le rapport', free: false, pro: true, business: true },
+            { label: 'File d’attente prioritaire (modèles IA haute vitesse)', free: false, pro: true, business: true },
+            { label: 'Support prioritaire par e-mail', free: false, pro: true, business: true },
+            { label: 'Accès API REST & intégrations Webhook', free: false, pro: false, business: true },
+            { label: 'Comptes d’équipe & gestion centralisée des sièges', free: false, pro: false, business: true },
+            { label: 'Flux de veille thématique & détection désinformation', free: false, pro: false, business: true },
+            { label: 'Piste d’audit vérifiable & conformité EEAT / IFCN', free: false, pro: false, business: true },
+            { label: 'Rapports PDF personnalisés (White-label & logo)', free: false, pro: false, business: true },
+            { label: 'SLA garanti & support technique dédié', free: false, pro: false, business: true },
           ],
           footnotePrefix: 'Aucune carte bancaire requise pour le forfait gratuit. Pour toute demande sur-mesure, écrivez à ',
         }
@@ -169,6 +208,13 @@ export default function PreturiPage() {
             price: 'Free',
             tagline: 'For anyone who wants to check what they see in their feed.',
             checks: '3 verifications a month',
+            features: [
+              '3 full verifications per month (text, OCR screenshot, URL)',
+              'Credibility score 0–100 & transparent verdict breakdown',
+              'Public cited sources and context explanations',
+              'Shareable visual verdict card (Social Media & Chat)',
+              'Personal history & bookmarks in your account',
+            ],
             cta: 'Start free',
           },
           pro: {
@@ -176,28 +222,60 @@ export default function PreturiPage() {
             priceMonthly: '€3.99',
             priceYearly: '€2.99',
             tagline: 'For journalists, researchers, and anyone who checks daily.',
-            checks: 'Over 10× more checks than the free plan.',
+            checks: 'Over 10× more checks (50+ / month)',
+            features: [
+              '50+ checks per month (high priority)',
+              'Pro Dossier: Cross-source consensus matrix',
+              'Pro Dossier: Granular sub-claims breakdown & verdicts',
+              'Pro Dossier: Manipulation & rhetoric forensics',
+              'Pro Dossier: Journalist investigation toolkit & missing evidence',
+              'AI Report Deep-Dive: Interactive Q&A on report context',
+              'Download full printable PDF report',
+              'Exact deep-link & highlight to cited sentence in each source',
+              'Priority email support',
+            ],
             cta: isSubmitting ? 'Connecting to Creem...' : 'Choose Pro',
           },
           business: {
             name: 'Business',
             price: 'Contact',
             tagline: 'For newsrooms, NGOs, and teams.',
-            checks: 'Custom volume and features',
+            checks: 'Custom or unlimited volume',
+            features: [
+              'High-volume or unlimited monthly verifications',
+              'Full REST API access & Webhooks (CMS & bot integration)',
+              'Multi-seat team accounts & centralized billing',
+              'Live disinformation monitoring & content opportunities feed',
+              'Custom branded PDF reports (White-label with your logo)',
+              'Verifiable report audit trail & EEAT / IFCN compliance',
+              'Guaranteed SLA & dedicated 1-on-1 account manager',
+            ],
             cta: 'Get in touch',
           },
-          compareTitle: 'Compare the plans',
+          compareTitle: 'Detailed Plan Comparison',
           included: 'Included',
           excluded: 'Not included',
           rows: [
-            { label: 'Verifications per month', free: '3', pro: 'Over 10×', business: 'Custom' },
-            { label: 'Text, screenshot, and URL checks', free: true, pro: true, business: true },
-            { label: 'Verdict, score, and cited sources', free: true, pro: true, business: true },
-            { label: 'Download the report as PDF', free: false, pro: true, business: true },
-            { label: 'Exact link to the sentence in each source', free: false, pro: true, business: true },
-            { label: 'Priority support', free: false, pro: true, business: true },
-            { label: 'API access', free: false, pro: false, business: true },
-            { label: 'Team billing and seats', free: false, pro: false, business: true },
+            { label: 'Verifications per month', free: '3', pro: '50+ / mo', business: 'Custom / Unlimited' },
+            { label: 'Text, screenshot (OCR), and URL checks', free: true, pro: true, business: true },
+            { label: 'Verdict, score 0–100, and cited sources', free: true, pro: true, business: true },
+            { label: 'Shareable verdict card (WhatsApp, FB, X)', free: true, pro: true, business: true },
+            { label: 'Personal search history and bookmarks', free: true, pro: true, business: true },
+            { label: 'Download the full report as PDF', free: false, pro: true, business: true },
+            { label: 'Exact link & highlight to cited sentence', free: false, pro: true, business: true },
+            { label: 'Pro Dossier: Cross-source consensus matrix', free: false, pro: true, business: true },
+            { label: 'Pro Dossier: Sub-claims breakdown & verdicts', free: false, pro: true, business: true },
+            { label: 'Pro Dossier: Manipulation technique analysis', free: false, pro: true, business: true },
+            { label: 'Pro Dossier: Journalist investigation toolkit', free: false, pro: true, business: true },
+            { label: 'AI Deep-Dive: Interactive Q&A on the report', free: false, pro: true, business: true },
+            { label: 'Fast-track priority queue (top AI models)', free: false, pro: true, business: true },
+            { label: 'Priority email support', free: false, pro: true, business: true },
+            { label: 'REST API access & Webhook integrations', free: false, pro: false, business: true },
+            { label: 'Team accounts & centralized seat billing', free: false, pro: false, business: true },
+            { label: 'Live topic monitoring & misinformation feed', free: false, pro: false, business: true },
+            { label: 'Verifiable audit trail & EEAT / IFCN compliance', free: false, pro: false, business: true },
+            { label: 'Custom branded PDF reports (White-label)', free: false, pro: false, business: true },
+            { label: 'Guaranteed SLA & dedicated account manager', free: false, pro: false, business: true },
           ],
           footnotePrefix: 'No card needed for the free plan. For anything custom, write to ',
         }
@@ -215,6 +293,13 @@ export default function PreturiPage() {
             price: 'Gratuit',
             tagline: 'Pentru oricine vrea să verifice ce vede în feed.',
             checks: '3 verificări pe lună',
+            features: [
+              '3 verificări complete pe lună (text, captură OCR, link URL)',
+              'Verdict, scor de veridicitate 0–100 și explicații detaliate',
+              'Surse citate publice și context factual',
+              'Card vizual de verdict share-abil (Social Media & Chat)',
+              'Salvare istoric căutări și marcaje în contul tău',
+            ],
             cta: 'Începe gratuit',
           },
           pro: {
@@ -222,33 +307,85 @@ export default function PreturiPage() {
             priceMonthly: '€3,99',
             priceYearly: '€2,99',
             tagline: 'Pentru jurnaliști, cercetători și oricine verifică zilnic.',
-            checks: 'De peste 10× mai multe verificări ca planul gratuit.',
+            checks: 'De peste 10× mai multe verificări (50+ / lună)',
+            features: [
+              '50+ verificări pe lună (prioritate ridicată)',
+              'Dosar Pro: Matrice comparativă & consens între surse',
+              'Dosar Pro: Descompunere granulară pe sub-afirmații',
+              'Dosar Pro: Criminalistică tehnici de manipulare & retorică',
+              'Dosar Pro: Kit de investigație jurnalistică & întrebări cheie',
+              'AI Report Deep-Dive: Asistent interactiv Q&A pe raport',
+              'Descarcă raportul complet în format PDF gata de tipar',
+              'Link direct cu highlight pe propoziția exactă din fiecare sursă',
+              'Suport prioritar prin email',
+            ],
             cta: isSubmitting ? 'Se conectează la Creem...' : 'Alege Pro',
           },
           business: {
             name: 'Business',
             price: 'Contact',
             tagline: 'Pentru redacții, ONG-uri și echipe.',
-            checks: 'Volum și funcții la cerere',
+            checks: 'Volum personalizat sau nelimitat',
+            features: [
+              'Volum ridicat sau nelimitat de verificări lunare',
+              'Acces complet API REST & Webhooks (integrare CMS)',
+              'Conturi de echipă multi-seat & facturare centralizată',
+              'Feed live de monitorizare teme & oportunități de dezinformare',
+              'Rapoarte PDF personalizate cu brandul organizației tale (White-label)',
+              'Pistă de audit verificabilă & conformitate EEAT / IFCN',
+              'SLA garantat & asistență tehnică dedicată 1-la-1',
+            ],
             cta: 'Scrie-ne',
           },
-          compareTitle: 'Compară planurile',
+          compareTitle: 'Comparativ detaliat al planurilor',
           included: 'Inclus',
           excluded: 'Neinclus',
           rows: [
-            { label: 'Verificări pe lună', free: '3', pro: 'Peste 10×', business: 'La cerere' },
-            { label: 'Verificare din text, screenshot și URL', free: true, pro: true, business: true },
-            { label: 'Verdict, scor și surse citate', free: true, pro: true, business: true },
-            { label: 'Descarcă raportul ca PDF', free: false, pro: true, business: true },
-            { label: 'Link exact la propoziția din fiecare sursă', free: false, pro: true, business: true },
-            { label: 'Suport prioritar', free: false, pro: true, business: true },
-            { label: 'Acces API', free: false, pro: false, business: true },
-            { label: 'Facturare și locuri pentru echipă', free: false, pro: false, business: true },
+            { label: 'Verificări pe lună', free: '3', pro: '50+ / lună', business: 'La cerere / Nelimitat' },
+            { label: 'Verificare din text, screenshot (OCR) și URL', free: true, pro: true, business: true },
+            { label: 'Verdict, scor 0–100 și surse citate', free: true, pro: true, business: true },
+            { label: 'Card de verdict share-abil (WhatsApp, FB, X)', free: true, pro: true, business: true },
+            { label: 'Istoric personal și marcaje salvate', free: true, pro: true, business: true },
+            { label: 'Descarcă raportul complet ca PDF', free: false, pro: true, business: true },
+            { label: 'Link exact cu highlight la propoziția din sursă', free: false, pro: true, business: true },
+            { label: 'Dosar Pro: Matrice de consens între surse', free: false, pro: true, business: true },
+            { label: 'Dosar Pro: Descompunere pe sub-afirmații', free: false, pro: true, business: true },
+            { label: 'Dosar Pro: Criminalistică tehnici de manipulare', free: false, pro: true, business: true },
+            { label: 'Dosar Pro: Kit de investigație jurnalistică', free: false, pro: true, business: true },
+            { label: 'AI Deep-Dive: Asistent interactiv Q&A pe raport', free: false, pro: true, business: true },
+            { label: 'Coadă prioritară Fast-Track (modele AI de top)', free: false, pro: true, business: true },
+            { label: 'Suport prioritar prin email', free: false, pro: true, business: true },
+            { label: 'Acces API REST & integrări Webhook', free: false, pro: false, business: true },
+            { label: 'Conturi de echipă & facturare centralizată', free: false, pro: false, business: true },
+            { label: 'Monitorizare teme & flux live oportunități dezinformare', free: false, pro: false, business: true },
+            { label: 'Pistă de audit verificabilă & conformitate EEAT / IFCN', free: false, pro: false, business: true },
+            { label: 'Rapoarte PDF personalizate (White-label)', free: false, pro: false, business: true },
+            { label: 'SLA garantat & manager dedicat de cont', free: false, pro: false, business: true },
           ],
           footnotePrefix: 'Fără card pentru planul gratuit. Pentru orice nevoie aparte, scrie-ne la ',
         };
 
   const proPrice = billing === 'yearly' ? c.pro.priceYearly : c.pro.priceMonthly;
+
+  const renderCardFeatures = (features: string[]) => (
+    <ul className={styles.featureList}>
+      {features.map((feat, idx) => (
+        <li key={idx} className={styles.featureItem}>
+          <svg viewBox="0 0 20 20" className={styles.featureIcon} aria-hidden="true">
+            <path
+              d="M4 10.5 8 14.5 16 5.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>{feat}</span>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <div className={`container ${shell.page}`}>
@@ -305,6 +442,7 @@ export default function PreturiPage() {
               </p>
               <p className={styles.checks}>{c.free.checks}</p>
               <p className={styles.forWho}>{c.free.tagline}</p>
+              {renderCardFeatures(c.free.features)}
             </div>
             <div className={styles.planCta}>
               <Button variant="secondary" size="md" fullWidth href="/cont">
@@ -327,6 +465,7 @@ export default function PreturiPage() {
               </p>
               <p className={styles.checks}>{c.pro.checks}</p>
               <p className={styles.forWho}>{c.pro.tagline}</p>
+              {renderCardFeatures(c.pro.features)}
             </div>
             <div className={styles.planCta}>
               <Button
@@ -350,6 +489,7 @@ export default function PreturiPage() {
               </p>
               <p className={styles.checks}>{c.business.checks}</p>
               <p className={styles.forWho}>{c.business.tagline}</p>
+              {renderCardFeatures(c.business.features)}
             </div>
             <div className={styles.planCta}>
               <Button variant="secondary" size="md" fullWidth onClick={() => setContactOpen(true)}>
