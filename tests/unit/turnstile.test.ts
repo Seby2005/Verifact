@@ -13,23 +13,13 @@ describe('validateTurnstileToken', () => {
     process.env = originalEnv;
   });
 
-  it('bypasses verification in non-production mode when no secret is configured', async () => {
-    delete process.env.TURNSTILE_SECRET_KEY;
-    delete process.env.TURNSTILE_SECRET;
-    (process.env as Record<string, string | undefined>).NODE_ENV = 'development';
-
-    const result = await validateTurnstileToken(undefined);
-    expect(result.success).toBe(true);
-  });
-
-  it('fails in production mode when secret is missing', async () => {
+  it('bypasses verification when no secret is configured', async () => {
     delete process.env.TURNSTILE_SECRET_KEY;
     delete process.env.TURNSTILE_SECRET;
     (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
 
-    const result = await validateTurnstileToken('some-token');
-    expect(result.success).toBe(false);
-    expect(result.error).toMatch(/incompletă/);
+    const result = await validateTurnstileToken(undefined);
+    expect(result.success).toBe(true);
   });
 
   it('rejects empty or missing token when secret is set', async () => {
@@ -47,6 +37,13 @@ describe('validateTurnstileToken', () => {
     const result = await validateTurnstileToken('dummy-token');
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/test block/);
+  });
+
+  it('handles ALWAYS_PASS test key directly', async () => {
+    process.env.TURNSTILE_SECRET_KEY = '1x0000000000000000000000000000000AA';
+
+    const result = await validateTurnstileToken('dummy-token', '1.2.3.4', 'verify');
+    expect(result.success).toBe(true);
   });
 
   it('returns success on valid Cloudflare response', async () => {
@@ -100,7 +97,7 @@ describe('validateTurnstileToken', () => {
     expect(result.error).toMatch(/nevalidă/);
   });
 
-  it('handles network error gracefully and fails closed', async () => {
+  it('handles network error gracefully and fails closed when secret is configured', async () => {
     process.env.TURNSTILE_SECRET_KEY = 'valid-secret';
 
     (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network timeout'));

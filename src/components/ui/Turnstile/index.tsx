@@ -40,8 +40,6 @@ declare global {
   }
 }
 
-const DEFAULT_DEV_SITEKEY = '1x00000000000000000000AA'; // Cloudflare Always-Pass test sitekey
-
 export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
   (
     {
@@ -60,10 +58,7 @@ export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
     const widgetIdRef = useRef<string | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
 
-    const siteKey =
-      propSiteKey ||
-      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
-      DEFAULT_DEV_SITEKEY;
+    const siteKey = propSiteKey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
     useImperativeHandle(ref, () => ({
       reset: () => {
@@ -74,6 +69,10 @@ export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
     }));
 
     useEffect(() => {
+      if (!siteKey) {
+        return;
+      }
+
       let isMounted = true;
 
       const renderWidget = () => {
@@ -145,6 +144,10 @@ export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
         }
       };
     }, [siteKey, action, theme, size, onVerify, onError, onExpire]);
+
+    if (!siteKey) {
+      return null;
+    }
 
     return (
       <div className={`${styles.container} ${className ?? ''}`.trim()}>

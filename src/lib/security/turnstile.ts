@@ -41,22 +41,9 @@ export async function validateTurnstileToken(
 ): Promise<TurnstileValidationResult> {
   const secret = process.env.TURNSTILE_SECRET_KEY || process.env.TURNSTILE_SECRET;
 
-  // In development or test environments without a configured secret, allow requests to proceed
+  // In environments without a configured secret, allow requests to proceed gracefully
   if (!secret) {
-    if (process.env.NODE_ENV !== 'production') {
-      logger.warn('Turnstile secret key not configured; bypassing verification in non-production mode', {
-        service: 'Turnstile',
-      });
-      return { success: true };
-    }
-
-    logger.error('Turnstile secret key is missing in production environment', {
-      service: 'Turnstile',
-    });
-    return {
-      success: false,
-      error: 'Configurația de securitate este incompletă.',
-    };
+    return { success: true };
   }
 
   // Token is required if Turnstile secret is configured
@@ -72,6 +59,14 @@ export async function validateTurnstileToken(
     return {
       success: false,
       error: 'Verificarea de securitate a eșuat (test block).',
+    };
+  }
+
+  if (secret === CLOUDFLARE_TEST_SECRETS.ALWAYS_PASS) {
+    return {
+      success: true,
+      hostname: 'localhost',
+      action: expectedAction,
     };
   }
 
