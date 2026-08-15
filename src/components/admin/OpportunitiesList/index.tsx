@@ -66,6 +66,7 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [fetchingTab, setFetchingTab] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isTopicSearching, setIsTopicSearching] = useState(false);
 
   // Switch status tab (fetch opportunities with that status)
   const handleTabChange = async (status: OpportunityStatus) => {
@@ -84,7 +85,7 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
     }
   };
 
-  // Manual on-demand aggregation from Google Trends & Google News
+  // Manual on-demand aggregation from Google Trends & Google News Top Stories
   const handleSyncNow = async () => {
     setIsSyncing(true);
     try {
@@ -99,7 +100,7 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
         setCurrentStatus('new');
         setToast({
           id: 'sync-success',
-          text: `S-au sincronizat ${data.result?.totalFetched ?? 0} subiecte trending (${data.result?.inserted ?? 0} noi adăugate).`,
+          text: `S-au sincronizat ${data.result?.totalFetched ?? 0} subiecte de actualitate (${data.result?.inserted ?? 0} noi adăugate).`,
         });
       } else {
         setToast({
@@ -120,7 +121,51 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
     }
   };
 
-  // Filter and search
+  // Search live Google News articles for a specific custom topic (e.g. "centrala nucleara cernavoda")
+  const handleSearchTopicOnline = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setIsTopicSearching(true);
+    try {
+      const res = await fetch('/api/admin/oportunitati', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: searchQuery.trim() }),
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as {
+          success: boolean;
+          opportunities: ContentOpportunity[];
+          result?: { inserted: number; totalFetched: number };
+        };
+        setOpportunities(data.opportunities ?? []);
+        setCurrentStatus('new');
+        setToast({
+          id: 'topic-success',
+          text: `S-au găsit ${data.result?.totalFetched ?? 0} știri despre "${searchQuery}".`,
+        });
+      } else {
+        setToast({
+          id: 'topic-error',
+          text: 'Eroare la căutarea știrilor pe Google News.',
+        });
+      }
+    } catch {
+      setToast({
+        id: 'topic-error',
+        text: 'Eroare de conexiune la server.',
+      });
+    } finally {
+      setIsTopicSearching(false);
+      setTimeout(() => {
+        setToast((prev) => (prev?.id.startsWith('topic-') ? null : prev));
+      }, 5000);
+    }
+  };
+
+  // Filter and search locally
   const filtered = useMemo(() => {
     return opportunities.filter((item) => {
       if (sourceFilter !== 'all' && item.source_name !== sourceFilter) {
@@ -260,20 +305,32 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
             type="button"
             className={styles.syncBtn}
             onClick={handleSyncNow}
-            disabled={isSyncing}
-            aria-label="Actualizează oportunitățile acum din Google Trends"
+            disabled={isSyncing || isTopicSearching}
+            aria-label="Actualizează oportunitățile acum din Google Trends și Știri"
           >
-            {isSyncing ? 'Se agregă...' : '🔄 Actualizează acum'}
+            {isSyncing ? 'Se agregă...' : '🔄 Actualizează știrile de azi'}
           </button>
 
-          <input
-            type="search"
-            className={styles.searchInput}
-            placeholder="Caută subiecte..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Caută în oportunități"
-          />
+          <form onSubmit={handleSearchTopicOnline} style={{ display: 'flex', gap: '0.5rem' }}>
+            <input
+              type="search"
+              className={styles.searchInput}
+              placeholder="Caută sau introdu un subiect..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Caută în oportunități"
+            />
+            {searchQuery.trim().length > 0 && (
+              <button
+                type="submit"
+                className={styles.searchTopicBtn}
+                disabled={isTopicSearching}
+                title="Caută știri pe Google News despre acest subiect și adaugă-le în dashboard"
+              >
+                {isTopicSearching ? 'Căutare...' : '🔍 Caută știri live'}
+              </button>
+            )}
+          </form>
 
           <select
             className={styles.sourceSelect}
@@ -284,19 +341,21 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
             aria-label="Filtrează după sursă"
           >
             <option value="all">Toate sursele</option>
-            <option value="Google Trends">Google Trends</option>
             <option value="Google News">Google News</option>
+            <option value="Google Trends">Google Trends</option>
           </select>
         </div>
       </div>
 
       {/* Content list */}
-      {fetchingTab || isSyncing ? (
+      {fetchingTab || isSyncing || isTopicSearching ? (
         <div className={styles.emptyState}>
           <p className={styles.emptyText}>
             {isSyncing
-              ? 'Se agregă cele mai recente căutări din Google Trends & Google News...'
-              : 'Se încarcă oportunitățile...'}
+              ? 'Se agregă cele mai recente știri și căutări din România...'
+              : isTopicSearching
+                ? `Se caută știri recente despre "${searchQuery}" pe Google News...`
+                : 'Se încarcă oportunitățile...'}
           </p>
         </div>
       ) : groupedByDay.length === 0 ? (
@@ -304,19 +363,29 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
           <h2 className={styles.emptyTitle}>Nicio oportunitate găsită</h2>
           <p className={styles.emptyText}>
             {searchQuery || sourceFilter !== 'all'
-              ? 'Niciun subiect nu corespunde filtrelor selectate.'
+              ? 'Niciun subiect salvat nu corespunde filtrelor selectate.'
               : currentStatus === 'new'
-                ? 'Nu există oportunități noi neprocesate în baza de date. Apasă butonul de mai jos pentru a agrega subiectele trending chiar acum.'
+                ? 'Nu există oportunități noi neprocesate în baza de date. Apasă butonul de mai jos pentru a agrega știrile de actualitate.'
                 : `Nu există oportunități marcate ca ${currentStatus === 'reviewed' ? 'verificate' : 'ignorate'}.`}
           </p>
-          {currentStatus === 'new' && !searchQuery && sourceFilter === 'all' && (
+          {searchQuery && (
+            <button
+              type="button"
+              className={styles.verifyBtn}
+              onClick={() => handleSearchTopicOnline()}
+              disabled={isTopicSearching}
+            >
+              {isTopicSearching ? 'Căutare...' : `🔍 Caută știri online despre "${searchQuery}"`}
+            </button>
+          )}
+          {!searchQuery && currentStatus === 'new' && sourceFilter === 'all' && (
             <button
               type="button"
               className={styles.verifyBtn}
               onClick={handleSyncNow}
               disabled={isSyncing}
             >
-              {isSyncing ? 'Se agregă...' : '⚡ Agregă acum subiectele de azi'}
+              {isSyncing ? 'Se agregă...' : '⚡ Agregă acum știrile de azi'}
             </button>
           )}
         </div>

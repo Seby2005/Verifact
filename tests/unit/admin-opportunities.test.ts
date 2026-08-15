@@ -85,7 +85,10 @@ describe('Admin Opportunities API Routes', () => {
         new AuthorizationError('Admin privileges required', 403)
       );
 
-      const response = await POST();
+      const request = new Request('http://localhost:3000/api/admin/oportunitati', {
+        method: 'POST',
+      });
+      const response = await POST(request);
       expect(response.status).toBe(403);
     });
 
@@ -124,7 +127,10 @@ describe('Admin Opportunities API Routes', () => {
 
       (createAdminClient as jest.Mock).mockReturnValue({ from: mockFrom });
 
-      const response = await POST();
+      const request = new Request('http://localhost:3000/api/admin/oportunitati', {
+        method: 'POST',
+      });
+      const response = await POST(request);
       expect(response.status).toBe(200);
       const data = await response.json();
       expect(data.success).toBe(true);

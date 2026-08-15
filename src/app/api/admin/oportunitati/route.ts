@@ -1,6 +1,10 @@
 import { requireAdmin, AuthorizationError } from '@/lib/auth/admin';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { aggregateDailyOpportunities, saveOpportunities } from '@/lib/opportunities/trends-service';
+import {
+  aggregateDailyOpportunities,
+  fetchGoogleNewsForTerm,
+  saveOpportunities,
+} from '@/lib/opportunities/trends-service';
 import type { OpportunityStatus, ContentOpportunity } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
@@ -47,7 +51,7 @@ export async function GET(request: Request): Promise<Response> {
   return Response.json({ opportunities: data ?? [] });
 }
 
-export async function POST(): Promise<Response> {
+export async function POST(request: Request): Promise<Response> {
   try {
     await requireAdmin({ allowModerator: true });
   } catch (error) {
@@ -57,8 +61,21 @@ export async function POST(): Promise<Response> {
     return Response.json({ error: 'Eroare de autorizare.' }, { status: 403 });
   }
 
+  let customQuery: string | null = null;
   try {
-    const candidates = await aggregateDailyOpportunities();
+    const body = (await request.json().catch(() => null)) as { query?: string } | null;
+    if (body?.query && typeof body.query === 'string' && body.query.trim().length > 0) {
+      customQuery = body.query.trim();
+    }
+  } catch {
+    // Body optional
+  }
+
+  try {
+    const candidates = customQuery
+      ? await fetchGoogleNewsForTerm(customQuery, 1, 10)
+      : await aggregateDailyOpportunities();
+
     const result = await saveOpportunities(candidates);
 
     const adminClient = createAdminClient();

@@ -225,30 +225,82 @@ export async function fetchGoogleNewsForTerm(
 }
 
 /**
+ * Fetches Google News Top Stories and National headlines for Romania.
+ */
+export async function fetchGoogleNewsTopStoriesRO(limitPerFeed: number = 15): Promise<RawOpportunity[]> {
+  const feeds = [
+    'https://news.google.com/rss?hl=ro&gl=RO&ceid=RO:ro',
+    'https://news.google.com/rss/headlines/section/topic/NATION?hl=ro&gl=RO&ceid=RO:ro',
+  ];
+
+  const opportunities: RawOpportunity[] = [];
+
+  for (const feedUrl of feeds) {
+    try {
+      const res = await fetchWithTimeout(feedUrl);
+      if (!res.ok) continue;
+
+      const xmlText = await res.text();
+      const parsed = xmlParser.parse(xmlText) as RSSFeedDocument<GoogleNewsItemNode>;
+      const channel = parsed.rss?.channel;
+      if (!channel?.item) continue;
+
+      const rawItems: GoogleNewsItemNode[] = Array.isArray(channel.item)
+        ? channel.item
+        : [channel.item];
+
+      rawItems.slice(0, limitPerFeed).forEach((item, index) => {
+        const title = item.title?.trim();
+        const link = item.link?.trim();
+
+        if (title && link) {
+          opportunities.push({
+            title,
+            source_url: link,
+            source_name: 'Google News',
+            trend_rank: index + 1,
+          });
+        }
+      });
+    } catch (err) {
+      logger.warn('Failed to fetch Google News Top Stories feed', {
+        service: 'ContentOpportunities',
+        feedUrl,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  return opportunities;
+}
+
+/**
  * Aggregates trending searches and related news for Romania.
  * Uses Promise.allSettled for robust concurrent fetching.
  */
 export async function aggregateDailyOpportunities(): Promise<RawOpportunity[]> {
-  const trends = await fetchGoogleTrendsRO();
-  if (trends.length === 0) {
-    return [];
-  }
+  const [trends, topStories] = await Promise.all([
+    fetchGoogleTrendsRO(),
+    fetchGoogleNewsTopStoriesRO(15),
+  ]);
+
+  const aggregated: RawOpportunity[] = [...topStories, ...trends];
 
   // Extract top search terms from Google Trends items
   const mainTerms = trends.filter((t) => t.source_name === 'Google Trends');
   const topTermsToQuery = mainTerms.slice(0, 10);
 
-  const newsPromises = topTermsToQuery.map((trend) =>
-    fetchGoogleNewsForTerm(trend.title, trend.trend_rank, 3)
-  );
+  if (topTermsToQuery.length > 0) {
+    const newsPromises = topTermsToQuery.map((trend) =>
+      fetchGoogleNewsForTerm(trend.title, trend.trend_rank, 3)
+    );
 
-  const newsResults = await Promise.allSettled(newsPromises);
+    const newsResults = await Promise.allSettled(newsPromises);
 
-  const aggregated: RawOpportunity[] = [...trends];
-
-  for (const res of newsResults) {
-    if (res.status === 'fulfilled' && res.value.length > 0) {
-      aggregated.push(...res.value);
+    for (const res of newsResults) {
+      if (res.status === 'fulfilled' && res.value.length > 0) {
+        aggregated.push(...res.value);
+      }
     }
   }
 
