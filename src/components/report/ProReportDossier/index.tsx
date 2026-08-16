@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import type {
   VerificationReport,
@@ -18,12 +16,15 @@ import styles from './ProReportDossier.module.css';
 
 export interface ProReportDossierProps {
   report: VerificationReport;
+  /** Gates source deep-links (Pro and Business both get exact links). */
   isPremium: boolean;
+  /** Gates the dossier content itself — Business-only (admins included). */
+  canAccessDossier: boolean;
 }
 
 type TabKey = 'matrix' | 'subclaims' | 'sources' | 'manipulation' | 'investigation';
 
-export const ProReportDossier: React.FC<ProReportDossierProps> = ({ report, isPremium }) => {
+export const ProReportDossier: React.FC<ProReportDossierProps> = ({ report, isPremium, canAccessDossier }) => {
   const { locale, t } = useLanguage();
   const isEn = locale === 'en';
   const [activeTab, setActiveTab] = useState<TabKey>('matrix');
@@ -31,53 +32,10 @@ export const ProReportDossier: React.FC<ProReportDossierProps> = ({ report, isPr
   const synthesis: ProReportSynthesis =
     report.proSynthesis || synthesisFromReport(report, locale);
 
-  if (!isPremium) {
-    return (
-      <section className={styles.dossierContainer} aria-label={t('proDossier.title')}>
-        <div className={styles.teaserCard}>
-          <div className={styles.teaserHead}>
-            <span className={styles.proBadge}>{t('proDossier.teaser.badge')}</span>
-            <h3 className={styles.teaserTitle}>{t('proDossier.teaser.title')}</h3>
-          </div>
-          <p className={styles.teaserDesc}>{t('proDossier.teaser.description')}</p>
-
-          <div className={styles.teaserFeatures}>
-            <div className={styles.teaserFeatureItem}>
-              <svg className={styles.teaserCheckIcon} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>{t('proDossier.teaser.feature1')}</span>
-            </div>
-            <div className={styles.teaserFeatureItem}>
-              <svg className={styles.teaserCheckIcon} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>{t('proDossier.teaser.feature2')}</span>
-            </div>
-            <div className={styles.teaserFeatureItem}>
-              <svg className={styles.teaserCheckIcon} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>{t('proDossier.teaser.feature3')}</span>
-            </div>
-            <div className={styles.teaserFeatureItem}>
-              <svg className={styles.teaserCheckIcon} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>{t('proDossier.teaser.feature4')}</span>
-            </div>
-          </div>
-
-          <div className={styles.teaserCtaRow}>
-            <Link href="/preturi">
-              <Button variant="primary" size="md">
-                {t('proDossier.teaser.unlockBtn')}
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-    );
+  // The dossier is a Business-only feature; for everyone else it is simply
+  // absent from the report — no teaser, since it can't be unlocked on Pro.
+  if (!canAccessDossier) {
+    return null;
   }
 
   const { crossSourceAnalysis, subClaims, sourceInsights, manipulationAnalysis, narrativeAndImpact, investigatorToolkit } = synthesis;

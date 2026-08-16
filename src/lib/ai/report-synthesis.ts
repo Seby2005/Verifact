@@ -418,13 +418,11 @@ export function buildFallbackSynthesis(
     {
       subClaim: claimText.length > 120 ? `${claimText.slice(0, 117)}...` : claimText,
       verdict: isTrue ? 'true' : isFalse ? 'false' : isPartial ? 'partial' : 'unverified',
-      explanation:
-        report.executiveSummary ||
-        (isRo
-          ? `Scorul de veridicitate calculat pe baza surselor verificate este de ${score}%.`
-          : isFr
-          ? `Le score de véracité calculé sur la base des sources vérifiées est de ${score}%.`
-          : `Calculated veracity score based on verified sources is ${score}%.`),
+      explanation: isRo
+        ? `Verificată față de cele ${sources.length} surse citate; scorul de veridicitate rezultat este ${score}%.`
+        : isFr
+        ? `Vérifiée face aux ${sources.length} sources citées ; le score de véracité obtenu est de ${score}%.`
+        : `Checked against the ${sources.length} cited sources; the resulting veracity score is ${score}%.`,
       evidenceSourceIndexes: sources.slice(0, 3).map((_, i) => i + 1),
     },
   ];
@@ -620,13 +618,11 @@ export function buildFallbackSynthesis(
           : isFr
           ? 'Quelle est la conclusion centrale de cette vérification ?'
           : 'What is the core conclusion of this fact-check?',
-        answer:
-          report.executiveSummary ||
-          (isRo
-            ? `Afirmația a obținut un scor de ${score}% pe baza celor ${sources.length} surse analizate.`
-            : isFr
-            ? `L’affirmation obtient un score de ${score}% sur la base des ${sources.length} sources analysées.`
-            : `The claim received a score of ${score}% based on ${sources.length} analyzed sources.`),
+        answer: isRo
+          ? `Afirmația a obținut un scor de ${score}% pe baza celor ${sources.length} surse analizate.`
+          : isFr
+          ? `L’affirmation obtient un score de ${score}% sur la base des ${sources.length} sources analysées.`
+          : `The claim received a score of ${score}% based on ${sources.length} analyzed sources.`,
       },
       {
         question: isRo
@@ -673,12 +669,10 @@ export function buildFallbackSynthesis(
         ? 'Le commentaire ajouté constitue une interprétation personnelle non étayée par les faits.'
         : 'The added commentary represents a personal interpretation unsupported by factual data.'
       : undefined,
-    deepReasoning:
-      (report.executiveSummary ? `${report.executiveSummary} ` : '') +
-      (isRo
-        ? 'Sistemul de analiză automată Verifact a verificat concordanța factuală prin interogarea bazelor partenere, separând faptele probate de speculațiile vehiculate în mediul digital.'
-        : isFr
-        ? 'Le système de vérification automatisé Verifact a confronté la concordance factuelle auprès de bases partenaires, distinguant les faits attestés des spéculations du web.'
-        : 'Verifact automated verification system checked factual concordance across partner repositories, isolating proven facts from digital speculations.'),
+    deepReasoning: isRo
+      ? `Analiza a corelat ${sources.length} surse (${confirmingSources} în sprijin, ${contradictingSources} în contradicție) pe cele patru straturi de căutare, separând faptele probate de speculațiile vehiculate în mediul digital. Scorul de ${score}% reflectă ponderea și autoritatea acestor surse, nu o simplă numărătoare.`
+      : isFr
+      ? `L’analyse a recoupé ${sources.length} sources (${confirmingSources} en appui, ${contradictingSources} en contradiction) sur les quatre niveaux de recherche, distinguant les faits attestés des spéculations du web. Le score de ${score}% reflète le poids et l’autorité de ces sources, pas un simple décompte.`
+      : `The analysis cross-referenced ${sources.length} sources (${confirmingSources} supporting, ${contradictingSources} contradicting) across the four search layers, separating proven facts from digital speculation. The ${score}% score reflects the weight and authority of these sources, not a raw count.`,
   };
 }

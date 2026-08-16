@@ -32,7 +32,12 @@ export async function fetchIsPremium(): Promise<boolean> {
  * settled, so the download gate can wait for an authoritative answer instead of
  * acting on the free default during the first render.
  */
-export function useUserTier(): { tier: UserTier; isPremium: boolean; ready: boolean } {
+export function useUserTier(): {
+  tier: UserTier;
+  isPremium: boolean;
+  unlimited: boolean;
+  ready: boolean;
+} {
   const [tier, setTier] = useState<UserTier>('free');
   const [unlimited, setUnlimited] = useState(false);
   const [ready, setReady] = useState(false);
@@ -57,5 +62,5 @@ export function useUserTier(): { tier: UserTier; isPremium: boolean; ready: bool
     };
   }, []);
 
-  return { tier, isPremium: unlimited || isPremiumTier(tier), ready };
+  return { tier, isPremium: unlimited || isPremiumTier(tier), unlimited, ready };
 }

@@ -223,6 +223,23 @@ export const ro = {
     premiumCloseCta: 'Închide',
     /** Shown only on the printed page, which loses the site header. */
     printId: 'ID raport',
+    shareCard: {
+      button: 'Distribuie card',
+      eyebrow: 'Afirmație verificată',
+      tagline: 'Verifică și tu pe verifact.ro',
+      shareTitle: 'Verifact — verdict',
+      generating: 'Se generează...',
+      error: 'Nu am putut genera cardul. Încearcă din nou.',
+      modalTitle: 'Distribuie verdictul',
+      modalLead: 'Descarcă imaginea și postează-o pe Instagram, TikTok, WhatsApp sau oriunde vrei.',
+      download: 'Descarcă imaginea',
+      copy: 'Copiază imaginea',
+      copied: 'Copiat!',
+      copyFail: 'Copierea nu e suportată de browser. Descarcă imaginea.',
+      nativeShare: 'Partajează…',
+      linkLabel: 'Sau trimite un link:',
+      socialNote: 'Instagram și TikTok nu permit postarea directă din browser — descarcă imaginea și încarc-o în aplicație.',
+    },
   },
   proDossier: {
     badge: 'DOSAR PRO',

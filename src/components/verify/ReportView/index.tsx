@@ -6,10 +6,10 @@ import type { VerificationReport } from '@/types/verification';
 import { useLanguage } from '@/i18n';
 import { ReportDeepDive } from '@/components/report/ReportDeepDive';
 import { ProReportDossier } from '@/components/report/ProReportDossier';
-import { CiteButton } from './CiteButton';
 import { DisputeButton } from './DisputeButton';
 import { DownloadButton } from './DownloadButton';
 import { PublishReportButton } from './PublishReportButton';
+import { ShareCardButton } from './ShareCardButton';
 import { StickyVerdict } from './StickyVerdict';
 import { useUserTier } from './useUserTier';
 import { sourceHref } from './sourceLink';
@@ -66,7 +66,11 @@ function renderTierBadge(tier?: 1 | 2 | 3, locale: string = 'ro'): React.ReactNo
 
 export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interactive = true }) => {
   const { locale, t } = useLanguage();
-  const { isPremium, ready } = useUserTier();
+  const { tier, isPremium, unlimited, ready } = useUserTier();
+  // The Pro Dossier is a Business-tier feature (admins/unlimited included). Pro
+  // keeps the Deep-Dive below, but the dossier upsells to Business.
+  const canAccessDossier = unlimited || tier === 'business';
+  const showSummary = isPremium && Boolean(report.executiveSummary);
   const headRef = useRef<HTMLElement>(null);
 
   return (
@@ -116,7 +120,9 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </div>
       ) : null}
 
-      {report.keyTakeaways && report.keyTakeaways.length > 0 ? (
+      {/* Key ideas and the executive summary say the same thing, so show only
+         one: the richer prose summary for premium, the concise bullets otherwise. */}
+      {!showSummary && report.keyTakeaways && report.keyTakeaways.length > 0 ? (
         <div className={styles.takeawaysContainer}>
           <p className={styles.sectionLabel}>{t('reportView.keyIdeasLabel')}</p>
           <ul className={styles.takeawaysList}>
@@ -135,10 +141,10 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </Callout>
       ) : null}
 
-      {isPremium && report.executiveSummary ? (
+      {showSummary ? (
         <div>
           <p className={styles.sectionLabel}>{t('reportView.summaryLabel')}</p>
-          <p className={styles.summary}>{stripMarkdown(report.executiveSummary)}</p>
+          <p className={styles.summary}>{stripMarkdown(report.executiveSummary!)}</p>
         </div>
       ) : null}
 
@@ -175,7 +181,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </ol>
       </div>
 
-      <ProReportDossier report={report} isPremium={isPremium} />
+      <ProReportDossier report={report} isPremium={isPremium} canAccessDossier={canAccessDossier} />
 
       {interactive ? <ReportDeepDive report={report} /> : null}
 
@@ -185,8 +191,8 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </Callout>
         {interactive ? (
           <div className={styles.footerActions} data-print-hide>
+            <ShareCardButton report={report} />
             <PublishReportButton report={report} />
-            <CiteButton report={report} />
             <DownloadButton report={report} isPremium={isPremium} ready={ready} />
             <DisputeButton reportId={report.id} />
           </div>

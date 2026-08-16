@@ -31,6 +31,14 @@ export function extractExecutiveSummary(aiAnalysis: string): string {
     clean = (sentences.length > 0 ? sentences.slice(0, 2) : [fullClean]).join(' ').trim();
   }
 
+  // Strip any leading list bullet + section label the model kept inline
+  // (e.g. "- Verifact Rezumat:", "Rezumat:", "Summary:") so the summary reads
+  // as a clean sentence, not a labelled fragment.
+  clean = clean
+    .replace(/^[-*•\s]+/, '')
+    .replace(/^(?:Verifact\s+)?(?:Rezumat|Summary|Résumé|Raport[^:]*)\s*:\s*/i, '')
+    .trim();
+
   return clean;
 }
 
