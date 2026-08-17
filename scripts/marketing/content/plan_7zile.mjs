@@ -46,6 +46,7 @@ export const planPosts = [
   // Extra/joc — ANALIZA FOTO · deepfake Musk crypto (dosar: găsește semnele)
   {
     id: 'd1-extra-deepfake-musk',
+    hook: 'Elon Musk „îți dublează banii în crypto”? E deepfake — uite cum îți dai seama 🚩',
     format: 'analizaFoto',
     channel: 'tiktok',
     sound: 'tensiune / investigație, ritm care urcă',
@@ -78,6 +79,7 @@ export const planPosts = [
   // Principal — TĂCERE TIPOGRAFICĂ · nostalgie Ceaușescu (România)
   {
     id: 'd2-main-ceausescu',
+    hook: '„Pe vremea lui Ceaușescu se trăia mai bine.” Nostalgia vs. ce arată datele',
     format: 'tacereTipografica',
     channel: 'tiktok',
     sound: 'pian melancolic, lent',
@@ -92,6 +94,7 @@ export const planPosts = [
   // Extra/joc — MIT / ADEVĂR · autobuze Bacău (light, local)
   {
     id: 'd2-extra-autobuze-bacau',
+    hook: '„Autobuze cu ușile pe partea greșită în Bacău.” Poza reală spune altceva 🚌',
     format: 'mitAdevar',
     channel: 'tiktok',
     sound: 'jucăuș, upbeat',
@@ -116,6 +119,7 @@ export const planPosts = [
   // Principal — TERMINAL · app UE verificare vârstă = „supraveghere” (EUvsDisinfo, apr–2026)
   {
     id: 'd3-main-app-ue-varsta',
+    hook: 'NU, aplicația UE de verificare a vârstei nu te spionează. Ce e de fapt 🇪🇺',
     format: 'terminal',
     channel: 'tiktok',
     sound: 'lofi / tech beat, discret',
@@ -130,6 +134,7 @@ export const planPosts = [
   // Extra/joc — EXPLAINER · 5 semne că o poză e AI (ghid + joc)
   {
     id: 'd3-extra-semne-poza-ai',
+    hook: '5 semne că o poză e făcută cu AI. La câte te prinzi din prima? 🤖',
     format: 'explainer',
     channel: 'tiktok',
     sound: 'educativ, ritm clar',
@@ -158,6 +163,7 @@ export const planPosts = [
   //   le remapez pe câmpurile reale ale template-ului când îl implementez.
   {
     id: 'd4-main-rationalizare',
+    hook: '„România, singura țară comunistă cu raționalizare la mâncare.” Dosar: RESPINS 📁',
     format: 'stampilaArhiva',
     channel: 'tiktok',
     sound: 'ambient de arhivă, sunet de ștampilă',
@@ -178,6 +184,7 @@ export const planPosts = [
   // Extra/joc — STATISTICĂ · $1,1 mld pierderi deepfake 2025 (internațional)
   {
     id: 'd4-extra-statistica-deepfake',
+    hook: '1,1 miliarde $ furați într-un singur an cu o voce clonată. Nu e SF.',
     format: 'statistica',
     channel: 'tiktok',
     sound: 'impact / news, lovitură pe cifră',
@@ -202,6 +209,7 @@ export const planPosts = [
   // Principal — VERDICT STAMP · secetă / Olt (România, topical)
   {
     id: 'd5-main-seceta-olt',
+    hook: '„Nu e secetă, uite că Oltul are apă.” De ce nu ține argumentul 💧',
     format: 'verdictStamp',
     channel: 'tiktok',
     sound: 'synth misterios, lent',
@@ -230,6 +238,7 @@ export const planPosts = [
   // Extra/joc — FOTO + BANDĂ · „poza dovedește seceta?” (context lipsă)
   {
     id: 'd5-extra-foto-context',
+    hook: 'Poza asta „dovedește” seceta din 2026? Pune-i o singură întrebare 🕵️',
     format: 'fotoBanda',
     channel: 'tiktok',
     sound: 'ambient/actualitate, ritm mediu',
@@ -258,6 +267,7 @@ export const planPosts = [
   // Principal — TĂCERE TIPOGRAFICĂ · Dunărea nivel normal (România, topical)
   {
     id: 'd6-main-dunarea',
+    hook: '„Dunărea e la nivel normal în 2026.” Ce zic de fapt măsurătorile 🌊',
     format: 'tacereTipografica',
     channel: 'tiktok',
     sound: 'pian melancolic / ambient de apă',
@@ -272,6 +282,7 @@ export const planPosts = [
   // Extra/joc — BAROMETRU · traiectoria fraudelor cu AI (Deloitte)
   {
     id: 'd6-extra-grafic-ai',
+    hook: 'De la 12 la 40 de miliarde $: cât ne vor costa fraudele cu AI 📈',
     format: 'graficTrend',
     channel: 'tiktok',
     sound: 'news / date, ritm constant',
@@ -306,6 +317,7 @@ export const planPosts = [
   // Principal — TERMINAL · „războiul mare începe în septembrie” (fake RO recurent)
   {
     id: 'd7-main-razboi-septembrie',
+    hook: '„România intră în război în septembrie.” Același fake, în fiecare an 🚩',
     format: 'terminal',
     channel: 'tiktok',
     sound: 'lofi / tech beat, tensiune joasă',
@@ -320,6 +332,7 @@ export const planPosts = [
   // Extra — MANIFEST · de ce Verifact (postare de pin, închide săptămâna)
   {
     id: 'd7-extra-manifest',
+    hook: 'Cum verifici orice știre în ~12 secunde. Gratuit 👇',
     format: 'manifest',
     channel: 'tiktok',
     pin: true,
