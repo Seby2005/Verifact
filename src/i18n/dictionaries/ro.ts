@@ -242,7 +242,7 @@ export const ro = {
     },
   },
   proDossier: {
-    badge: 'DOSAR PRO',
+    badge: 'DOSAR BUSINESS',
     title: 'Dosar de Inteligență Fact-Checking',
     subtitle: 'Analiză comparativă detaliată a surselor, descompunere granulară și verificări avansate de dezinformare.',
     tabs: {

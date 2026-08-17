@@ -142,7 +142,27 @@ Aici e motorul pentru postările de statistici. Regula: **un număr → un slide
 
 ---
 
-## 8. Ce fac cu documentele vechi
+## 8. Automatizare — UN slideshow / rulare (`make_tiktok.mjs`)
+
+Algoritmul principal: face **un singur slideshow TikTok** dintr-un fact-check popular, cu verdict — și alege singur template-ul.
+
+```bash
+node --env-file=.env.local scripts/marketing/make_tiktok.mjs                       # random
+node --env-file=.env.local scripts/marketing/make_tiktok.mjs "zidul chinezesc"     # temă anume
+node --env-file=.env.local scripts/marketing/make_tiktok.mjs --template terminal    # forțează template
+```
+
+- **Bazin:** fact-check-uri **RO recente** (Google Fact Check API) + **evergreen** (mituri clasice curate în script, cu surse reale). RO prioritar; internaționalul evergreen e tradus deja în RO.
+- **Template rotit** dintre 4: `verdictStamp` · `tacereTipografica` · `terminal` · `mitAdevar` (ultimul doar la verdict „fals”). Ordinea nu contează — se alege aleator.
+- **Adevărul:** verdict + scor din sursă (evergreen fix; recent din rating). OpenRouter (`DEFAULT_AI_PROVIDER`) doar formulează textul RO.
+- **Poartă de aprobare:** iese în `public/marketing/_drafts/<id>/` cu marcaj `⚠ DRAFT` + sursă în caption. Verifici 30 sec → muți în `tiktok/` → postezi. Deduplicare: `.drafted_tiktok.json`.
+- Variantă lot (mai multe deodată, tot din API): `draft_from_factcheck.mjs` (secundar).
+
+**Limită onestă:** dacă rating-ul unui fact-check recent nu e recunoscut, verdictul cade pe **„Neclar 50%”** (sigur — nu declară „fals” din greșeală). De-aia aprobarea umană rămâne obligatorie.
+
+---
+
+## 9. Ce fac cu documentele vechi
 
 `CONTENT_STRATEGY.md`, `TIKTOK_SLIDESHOWS_COLLECTION.md`, `FACELESS_VIDEO_SCRIPTS.md`,
 `DATA_STORYTELLING_AND_METRICS.md`, `AI_PROMPT_STUDIO.md`, `FACELESS_MARKETING_PLAYBOOK.md`

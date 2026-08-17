@@ -243,7 +243,7 @@ export const fr: Translations = {
     },
   },
   proDossier: {
-    badge: 'DOSSIER PRO',
+    badge: 'DOSSIER BUSINESS',
     title: 'Dossier d’Intelligence Factuelle',
     subtitle: 'Analyse comparative approfondie des sources, décomposition granulaire et détection avancée de la désinformation.',
     tabs: {

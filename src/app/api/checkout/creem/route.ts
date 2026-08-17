@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from '@/lib/supabase/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const user = await getAuthenticatedUser();
 
@@ -14,8 +14,17 @@ export async function POST() {
       );
     }
 
+    const body = await req.json().catch(() => ({}));
+    const billing: 'monthly' | 'yearly' = body?.billing === 'yearly' ? 'yearly' : 'monthly';
+
     const apiKey = process.env.CREEM_API_KEY;
-    const productId = process.env.NEXT_PUBLIC_CREEM_PRO_PRODUCT_ID;
+    const monthlyProductId = process.env.NEXT_PUBLIC_CREEM_PRO_PRODUCT_ID;
+    const yearlyProductId =
+      process.env.NEXT_PUBLIC_CREEM_PRO_YEARLY_PRODUCT_ID ||
+      process.env.CREEM_PRO_YEARLY_PRODUCT_ID ||
+      monthlyProductId;
+
+    const productId = billing === 'yearly' ? yearlyProductId : monthlyProductId;
 
     if (!apiKey) {
       console.error('[Creem Checkout] Missing CREEM_API_KEY environment variable.');
@@ -26,7 +35,7 @@ export async function POST() {
     }
 
     if (!productId) {
-      console.error('[Creem Checkout] Missing NEXT_PUBLIC_CREEM_PRO_PRODUCT_ID environment variable.');
+      console.error('[Creem Checkout] Missing product ID configuration.');
       return NextResponse.json(
         { error: 'ID-ul produsului Pro nu este configurat.' },
         { status: 500 }
@@ -51,6 +60,7 @@ export async function POST() {
         metadata: {
           user_id: user.id,
           email: user.email ?? '',
+          billing,
         },
       }),
     });

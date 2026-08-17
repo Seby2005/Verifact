@@ -242,7 +242,7 @@ export const en: Translations = {
     },
   },
   proDossier: {
-    badge: 'PRO DOSSIER',
+    badge: 'BUSINESS DOSSIER',
     title: 'Fact-Checking Intelligence Dossier',
     subtitle: 'Detailed cross-source comparative analysis, granular sub-claims breakdown, and advanced disinformation forensics.',
     tabs: {

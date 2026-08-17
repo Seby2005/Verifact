@@ -1,0 +1,16 @@
+Verifact — Plan 7 zile · 17–24 august 2026 (1080×1920, 9:16)
+
+   d1-main-hantavirus             verdictStamp     9:16  3 sl
+   d1-extra-deepfake-musk         analizaFoto      9:16  3 sl
+   d2-main-ceausescu              tacereTipografica 9:16  3 sl
+   d2-extra-autobuze-bacau        mitAdevar        9:16  3 sl
+   d3-main-app-ue-varsta          terminal         9:16  3 sl
+   d3-extra-semne-poza-ai         explainer        9:16  7 sl
+   d4-main-rationalizare          stampilaArhiva   9:16  3 sl
+   d4-extra-statistica-deepfake   statistica       9:16  3 sl
+   d5-main-seceta-olt             verdictStamp     9:16  3 sl
+   d5-extra-foto-context          fotoBanda        9:16  3 sl
+   d6-main-dunarea                tacereTipografica 9:16  3 sl
+   d6-extra-grafic-ai             graficTrend      9:16  3 sl
+   d7-main-razboi-septembrie      terminal         9:16  3 sl
+   d7-extra-manifest              manifest         9:16  3 sl
