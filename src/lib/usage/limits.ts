@@ -29,13 +29,6 @@ export function hasUnlimitedUsage(role?: string | null, email?: string | null): 
   return false;
 }
 
-function getFirstOfNextMonth(): string {
-  const date = new Date();
-  return new Date(date.getFullYear(), date.getMonth() + 1, 1)
-    .toISOString()
-    .split('T')[0];
-}
-
 export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> {
   const supabase = await createServerClient();
   let userEmail: string | undefined;
@@ -85,15 +78,11 @@ export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> 
   const resetDate = profile.verifications_reset || today;
   let currentCount = profile.verifications_count || 0;
 
+  // Read-only: on month rollover the enforcement path (reserve_usage_slot)
+  // performs the actual reset on its next write. Reflect it in the displayed
+  // count without persisting — writing here raced that RPC and reset the
+  // enforced counter from a mere page view (a free-cap bypass).
   if (resetDate && today > resetDate) {
-    const firstOfNextMonth = getFirstOfNextMonth();
-    await supabase
-      .from('profiles')
-      .update({
-        verifications_count: 0,
-        verifications_reset: firstOfNextMonth,
-      } as never)
-      .eq('id', userId);
     currentCount = 0;
   }
 

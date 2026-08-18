@@ -8,6 +8,7 @@ import { ReportPageCta } from '@/components/public-reports/ReportPageCta';
 import { ReportDeepDive } from '@/components/report/ReportDeepDive';
 import { ReportAuditTrail } from '@/components/report/ReportAuditTrail';
 import { PublicReportCard } from '@/components/reports/PublicReportCard';
+import { JsonLd } from '@/components/JsonLd';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -114,10 +115,7 @@ export default async function PublicReportPage({ params }: PageProps) {
   return (
     <div className={`container ${styles.reportPage}`}>
       {/* Google ClaimReview Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(claimReviewLdJson) }}
-      />
+      <JsonLd data={claimReviewLdJson} />
 
       <div style={{ marginBottom: '1.5rem' }}>
         <PublicReportCard report={data} variant="detail" />

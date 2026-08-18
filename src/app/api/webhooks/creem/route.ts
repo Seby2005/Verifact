@@ -48,18 +48,22 @@ export async function POST(req: NextRequest) {
     const webhookSecret = process.env.CREEM_WEBHOOK_SECRET;
     const signatureHeader = req.headers.get('creem-signature') || req.headers.get('x-creem-signature');
 
-    if (webhookSecret) {
-      if (!signatureHeader) {
-        console.error('[Creem Webhook] Cerere fără semnătură — respinsă.');
-        return NextResponse.json({ error: 'Semnătură webhook lipsă.' }, { status: 401 });
-      }
+    // Fail-closed: fără secret configurat nu procesăm niciun webhook. Ramura
+    // anterioară doar loga și continua, permițând oricui un POST neautentificat
+    // care seta tier='pro' pentru orice user_id (escaladare de privilegii).
+    if (!webhookSecret) {
+      console.error('[Creem Webhook] CREEM_WEBHOOK_SECRET nu este configurat — cerere respinsă.');
+      return NextResponse.json({ error: 'Webhook indisponibil.' }, { status: 503 });
+    }
 
-      if (!verifyCreemSignature(rawBody, signatureHeader, webhookSecret)) {
-        console.error('[Creem Webhook] Semnătură invalidă — respinsă.');
-        return NextResponse.json({ error: 'Semnătură webhook invalidă.' }, { status: 401 });
-      }
-    } else {
-      console.error('[Creem Webhook] CREEM_WEBHOOK_SECRET nu este configurat — semnătura NU este verificată!');
+    if (!signatureHeader) {
+      console.error('[Creem Webhook] Cerere fără semnătură — respinsă.');
+      return NextResponse.json({ error: 'Semnătură webhook lipsă.' }, { status: 401 });
+    }
+
+    if (!verifyCreemSignature(rawBody, signatureHeader, webhookSecret)) {
+      console.error('[Creem Webhook] Semnătură invalidă — respinsă.');
+      return NextResponse.json({ error: 'Semnătură webhook invalidă.' }, { status: 401 });
     }
 
     // ---------------------------------------------------------------

@@ -81,7 +81,11 @@ describe('checkUsageLimit', () => {
     expect(result.tier).toBe('pro');
   });
 
-  it('resets the count when the reset date is in the past', async () => {
+  it('reports a reset count in-memory on month rollover WITHOUT writing the DB', async () => {
+    // The read path must never write verifications_count: it is the same column
+    // the atomic enforcement RPC (reserve_usage_slot) owns, and writing it from
+    // a page view reset the enforced counter — a free-cap bypass. The rollover
+    // is reflected in the returned count only, with no UPDATE.
     mockSingle.mockResolvedValue({
       data: { tier: 'free', verifications_count: 10, verifications_reset: '2020-01-01' },
       error: null,
@@ -91,7 +95,7 @@ describe('checkUsageLimit', () => {
 
     expect(result.allowed).toBe(true);
     expect(result.current).toBe(0);
-    expect(mockUpdateEq).toHaveBeenCalledWith('id', 'user-1');
+    expect(mockUpdateEq).not.toHaveBeenCalled();
   });
 
   it('defaults to the free tier when the profile has no tier set', async () => {
