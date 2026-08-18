@@ -32,22 +32,22 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.9.0",
-    "@electric-sql/pglite": "^0.5.4",
-    "@playwright/test": "^1.44.0",
+    "@axe-core/playwright": "^4.13.0",
+    "@electric-sql/pglite": "^0.5.5",
+    "@playwright/test": "^1.62.1",
     "@types/estree": "^1.0.6",
     "@types/jest": "^30.0.0",
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^20.14.0",
+    "@types/node": "^26.2.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "eslint": "^9.0.0",
-    "eslint-config-next": "^16.3.0",
+    "eslint": "^10.8.1",
+    "eslint-config-next": "^16.3.1",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^30.4.2",
     "pg-mem": "^3.0.14",
     "ts-jest": "^29.4.12",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.0"
+    "typescript": "^7.0.2"
   }
 }
