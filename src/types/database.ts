@@ -40,6 +40,7 @@ export interface Verification {
   verdict: VerdictType | null;
   score: number | null;
   report_json: Record<string, unknown> | null;
+  image_urls: string[];
   is_public: boolean;
   visibility_status: VisibilityStatus;
   show_author: boolean;

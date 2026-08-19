@@ -93,6 +93,11 @@ export default async function AdminOpportunitiesPage() {
           Subiecte trending agregate automat din România pentru identificarea afirmațiilor de
           verificat și publicat pe /rapoarte.
         </p>
+        <p className={shell.lead}>
+          <a href="/admin/rapoarte-noi" className={shell.textLink}>
+            → Publică un raport nou cu imagine
+          </a>
+        </p>
       </header>
 
       <div className={shell.body}>

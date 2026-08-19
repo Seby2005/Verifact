@@ -49,6 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = `[${verdictInfo.label}] "${claimSnippet}..." — Verifact`;
   const description = `Raport de verificare independentă a informației: Scor de veridicitate ${data.score ?? 'N/A'}%. Vezi analiza detaliată și sursele citate pe Verifact.`;
   const canonicalUrl = `https://verifact.ro/rapoarte/${id}`;
+  const ogImages = data.imageUrls.length > 0 ? data.imageUrls.slice(0, 1) : undefined;
 
   return {
     title,
@@ -63,11 +64,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       siteName: 'Verifact',
       locale: 'ro_RO',
       type: 'article',
+      images: ogImages,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      images: ogImages,
     },
   };
 }
@@ -120,6 +123,21 @@ export default async function PublicReportPage({ params }: PageProps) {
       <div style={{ marginBottom: '1.5rem' }}>
         <PublicReportCard report={data} variant="detail" />
       </div>
+
+      {data.imageUrls.length > 0 && (
+        <div className={styles.imageGallery}>
+          {data.imageUrls.map((url, idx) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={url}
+              src={url}
+              alt={`Dovadă vizuală ${idx + 1} pentru afirmația verificată`}
+              className={styles.reportImage}
+              loading={idx === 0 ? 'eager' : 'lazy'}
+            />
+          ))}
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
         <FlagReportButton reportId={id} />

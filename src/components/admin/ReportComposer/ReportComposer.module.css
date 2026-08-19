@@ -1,0 +1,99 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: var(--measure);
+  margin: 0 auto;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+}
+
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.select {
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-base);
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+}
+
+.fileInput {
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-secondary);
+}
+
+.thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.thumb {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumb button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.thumb button:hover {
+  background-color: rgba(0, 0, 0, 0.85);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
