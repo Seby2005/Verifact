@@ -51,7 +51,12 @@ export async function POST(request: Request) {
   }
 
   // --- Parse & validate text fields ---------------------------------------
-  const inputText = String(form.get('inputText') || '').trim();
+  // The report card always wraps the claim in typographic quotes, so strip any
+  // surrounding quotes the admin typed — otherwise they render doubled («„…"»).
+  const inputText = String(form.get('inputText') || '')
+    .trim()
+    .replace(/^["'“”„»«]+|["'“”„»«]+$/g, '')
+    .trim();
   if (inputText.length < 10) {
     return Response.json({ error: 'Afirmația trebuie să aibă cel puțin 10 caractere.' }, { status: 400 });
   }

@@ -75,7 +75,10 @@ const csp = [
   // is tracked as follow-up work, not part of this pass.
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''} ${turnstileOrigin}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data:${googleAuthOrigin ? ' https://*.googleusercontent.com' : ''}`,
+  // Supabase Storage serves public report images (bucket report-images) — the
+  // browser renders them via <img>, so the storage host must be allowed here
+  // (connect-src already lists it; img-src is a separate directive).
+  `img-src 'self' data: ${supabaseOrigin} https://*.supabase.co${googleAuthOrigin ? ' https://*.googleusercontent.com' : ''}`,
   "font-src 'self'",
   `connect-src ${connectSrc}`,
   `frame-src ${frameSources}`,
