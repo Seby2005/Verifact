@@ -42,6 +42,7 @@ const formbricksOrigin = originOf(process.env.NEXT_PUBLIC_FORMBRICKS_APP_URL);
 // accounts.google.com. Only widened when a Google Client ID is configured.
 const googleAuthOrigin = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? 'https://accounts.google.com' : '';
 const turnstileOrigin = 'https://challenges.cloudflare.com';
+const umamiOrigin = 'https://cloud.umami.is';
 
 const connectSrc = [
   "'self'",
@@ -52,6 +53,7 @@ const connectSrc = [
   formbricksOrigin,
   googleAuthOrigin,
   turnstileOrigin,
+  umamiOrigin,
 ]
   .filter(Boolean)
   .join(' ');
@@ -73,7 +75,7 @@ const csp = [
   // (no nonce plumbing set up yet) — 'unsafe-inline' is required for the
   // app to boot, not an oversight. Tightening this to a nonce-based policy
   // is tracked as follow-up work, not part of this pass.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''} ${turnstileOrigin}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''} ${turnstileOrigin} ${umamiOrigin}`,
   "style-src 'self' 'unsafe-inline'",
   // Supabase Storage serves public report images (bucket report-images) — the
   // browser renders them via <img>, so the storage host must be allowed here

@@ -160,6 +160,12 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <JsonLd data={[organizationSchema, webSiteSchema, webApplicationSchema]} />
+        {/* Umami — analytics privacy-friendly (fără cookie-uri). Host permis în CSP (next.config.mjs). */}
+        <script
+          defer
+          src="https://cloud.umami.is/script.js"
+          data-website-id="e4d62204-5d4c-4098-9f21-b32031ba7393"
+        />
       </head>
       <body>
         <LanguageProvider>
