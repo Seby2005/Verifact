@@ -207,7 +207,16 @@ function decodeEntities(s: string): string {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)));
+    .replace(/&(?:apos|#39);/g, "'")
+    .replace(/&bull;/g, '•')
+    .replace(/&(?:hellip|#8230);/g, '…')
+    .replace(/&(?:mdash|#8212);/g, '—')
+    .replace(/&(?:ndash|#8211);/g, '–')
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    // Any named entity we don't translate would otherwise ride along as literal
+    // "&word;" inside a claim — drop the leftovers so search isn't polluted.
+    .replace(/&[a-z]+;/gi, ' ');
 }
 
 /** Markup in, readable text out. */
@@ -370,6 +379,13 @@ function declaresNonArticle(html: string): boolean {
 function looksLikeProse(text: string): boolean {
   const words = text.split(/\s+/).filter(Boolean).length;
   if (words < 12) return false;
+
+  // A homepage headline list survives the sentence test (each headline reads as
+  // a sentence) but strings items together with bullet/pipe separators and
+  // byline+date+count runs. Real article prose almost never carries four of
+  // these, so their density is a reliable "this is a feed, not a story" signal.
+  const separators = (text.match(/[•|›»]/g) ?? []).length;
+  if (separators >= 4) return false;
 
   const sentences = text
     .split(/(?<=[.!?])\s+/)

@@ -260,5 +260,35 @@ describe('extractArticleText', () => {
       expect(text).not.toContain('Subscribe');
       expect(text).not.toContain('Politics');
     });
+
+    it('rejects a homepage headline list even though each headline reads as a sentence', async () => {
+      // Real failure captured from a news homepage: paragraph-like text that is
+      // actually a feed of "Headline Author • date • views" runs. Each item has
+      // sentence structure, so the prose test alone passed it — the separator
+      // density is what marks it as a feed, not a story.
+      const feed = [
+        'Președintele discută marți cu liderii coaliției pentru deblocarea legii salarizării Damian Matei &bull; 24 aug. &bull; 3 &bull; 2342',
+        'O dronă s-a prăbușit într-o gospodărie din județul Vrancea, aparatul nu avea încărcătură explozivă Alin Ionescu &bull; 24 aug. &bull; 4410',
+        'Țările NATO din Europa de Est vor să acopere o parte din costurile bazelor SUA Mihai Roman &bull; 22 aug. &bull; 5 &bull; 8451',
+        'Cinism în motivarea instanței care secretizează averile demnitarilor Mihai Roman &bull; 22 aug. &bull; 8 &bull; 15354',
+      ].join(' ');
+      mockHtmlResponse(`<html><head><title>Site de Știri</title></head><body><main><p>${feed}</p></main></body></html>`);
+
+      await expect(extractArticleText('https://example.com/')).rejects.toMatchObject({ code: 'NO_CONTENT' });
+    });
+
+    it('decodes &bull;, numeric-hex and drops leftover named entities inside real prose', async () => {
+      mockHtmlResponse(`
+        <html><head><meta property="og:type" content="article"></head><body>
+          <article><p>Bugetul crește cu 5&#37; față de anul trecut &amp; deficitul scade, potrivit raportului oficial &bull; publicat luni de minister, care detaliază fiecare capitol de cheltuieli &widget; în parte.</p></article>
+        </body></html>
+      `);
+
+      const text = await extractArticleText('https://example.com/buget');
+
+      expect(text).toContain('trecut & deficitul scade');
+      expect(text).not.toMatch(/&[a-z]+;/i); // &widget; and friends are gone
+      expect(text).toContain('detaliază fiecare capitol');
+    });
   });
 });
