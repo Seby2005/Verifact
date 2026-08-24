@@ -9,7 +9,46 @@ import { ReportDeepDive } from '@/components/report/ReportDeepDive';
 import { ReportAuditTrail } from '@/components/report/ReportAuditTrail';
 import { PublicReportCard } from '@/components/reports/PublicReportCard';
 import { JsonLd } from '@/components/JsonLd';
+import { FixedLocaleProvider } from '@/i18n';
+import { getTranslation, type Locale } from '@/i18n/language';
+import { ro } from '@/i18n/dictionaries/ro';
+import { en } from '@/i18n/dictionaries/en';
+import { fr } from '@/i18n/dictionaries/fr';
 import styles from './page.module.css';
+
+const DICTS: Record<Locale, unknown> = { ro, en, fr };
+const OG_LOCALE: Record<Locale, string> = { ro: 'ro_RO', en: 'en_US', fr: 'fr_FR' };
+
+/** Narrows a stored report language string to a supported locale. */
+function toLocale(lang: string | null | undefined): Locale {
+  return lang === 'en' || lang === 'fr' ? lang : 'ro';
+}
+
+/** The verdict label in the report's own language (shares the dictionary the badge uses). */
+function localizedVerdict(verdict: Verdict | null, locale: Locale): string {
+  const dict = DICTS[locale] as Record<string, unknown>;
+  const key =
+    verdict === 'true'
+      ? 'publicReports.verdictTrue'
+      : verdict === 'false'
+      ? 'publicReports.verdictFalse'
+      : verdict === 'partial'
+      ? 'publicReports.verdictPartial'
+      : 'publicReports.verdictUnclear';
+  return getTranslation(dict, key);
+}
+
+/** SEO description in the report's own language. */
+function localizedDescription(score: number | null, locale: Locale): string {
+  const s = score ?? 0;
+  if (locale === 'en') {
+    return `Independent information verification report: credibility score ${s}%. See the full analysis and cited sources on Verifact.`;
+  }
+  if (locale === 'fr') {
+    return `Rapport de vérification indépendante de l'information : score de crédibilité ${s}%. Consultez l'analyse détaillée et les sources citées sur Verifact.`;
+  }
+  return `Raport de verificare independentă a informației: Scor de veridicitate ${s}%. Vezi analiza detaliată și sursele citate pe Verifact.`;
+}
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -44,10 +83,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const verdictInfo = getVerdictLabel(data.verdict);
+  const metaLocale = toLocale(data.language);
   const claimSnippet = data.inputText.slice(0, 100);
-  const title = `[${verdictInfo.label}] "${claimSnippet}..." — Verifact`;
-  const description = `Raport de verificare independentă a informației: Scor de veridicitate ${data.score ?? 'N/A'}%. Vezi analiza detaliată și sursele citate pe Verifact.`;
+  const title = `[${localizedVerdict(data.verdict, metaLocale)}] "${claimSnippet}..." — Verifact`;
+  const description = localizedDescription(data.score, metaLocale);
   const canonicalUrl = `https://verifact.ro/rapoarte/${id}`;
   const ogImages = data.imageUrls.length > 0 ? data.imageUrls.slice(0, 1) : undefined;
 
@@ -62,7 +101,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       url: canonicalUrl,
       siteName: 'Verifact',
-      locale: 'ro_RO',
+      locale: OG_LOCALE[metaLocale],
       type: 'article',
       images: ogImages,
     },
@@ -89,6 +128,11 @@ export default async function PublicReportPage({ params }: PageProps) {
   const report = data.reportJson;
   const displayDate = data.publishedAt || data.createdAt;
 
+  // A public report is a fixed-language artifact: render its whole chrome in the
+  // report's own language so an English claim never sits under a Romanian audit
+  // trail. Falls back to Romanian for legacy rows / unexpected values.
+  const reportLocale: Locale = data.language === 'en' || data.language === 'fr' ? data.language : 'ro';
+
   // Schema.org ClaimReview JSON-LD for Google Fact Check Carousel & Rich Results
   const claimReviewLdJson = {
     '@context': 'https://schema.org',
@@ -106,7 +150,7 @@ export default async function PublicReportPage({ params }: PageProps) {
       ratingValue: verdictInfo.ratingValue,
       bestRating: 5,
       worstRating: 1,
-      alternateName: verdictInfo.label,
+      alternateName: localizedVerdict(data.verdict, reportLocale),
     },
     itemReviewed: {
       '@type': 'Claim',
@@ -116,6 +160,7 @@ export default async function PublicReportPage({ params }: PageProps) {
   };
 
   return (
+    <FixedLocaleProvider locale={reportLocale}>
     <div className={`container ${styles.reportPage}`}>
       {/* Google ClaimReview Structured Data */}
       <JsonLd data={claimReviewLdJson} />
@@ -149,5 +194,6 @@ export default async function PublicReportPage({ params }: PageProps) {
 
       <ReportPageCta />
     </div>
+    </FixedLocaleProvider>
   );
 }

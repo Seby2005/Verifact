@@ -83,3 +83,30 @@ export function useLanguage(): LanguageContextType {
   }
   return context;
 }
+
+/**
+ * Pins a subtree to one fixed locale, ignoring the viewer's site language.
+ *
+ * A published report is a fixed artifact written in one language: its claim and
+ * analysis are stored in that language and are not re-generated per viewer.
+ * Rendering its chrome (verdict, audit trail, flag button) in the *viewer's*
+ * language instead produces a report that is half English and half Romanian.
+ * Wrapping the report subtree in this provider makes every `useLanguage()`
+ * consumer below it resolve to the report's own language, so chrome and content
+ * always match. `setLocale` is a no-op here — a report does not switch tongue.
+ */
+export const FixedLocaleProvider: React.FC<{ locale: Locale; children: React.ReactNode }> = ({
+  locale,
+  children,
+}) => {
+  const value = useMemo<LanguageContextType>(() => {
+    const dict = dictionaries[locale] as unknown as Record<string, unknown>;
+    return {
+      locale,
+      setLocale: () => {},
+      t: (key: string, params?: TranslationParams) => getTranslation(dict, key, params),
+    };
+  }, [locale]);
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+};
