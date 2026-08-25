@@ -25,7 +25,7 @@
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
     "@vercel/analytics": "^2.0.1",
-    "fast-xml-parser": "^5.10.1",
+    "fast-xml-parser": "^5.11.0",
     "next": "^16.3.0",
     "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
