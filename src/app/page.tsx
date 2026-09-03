@@ -7,7 +7,46 @@ import { Reveal } from '@/components/ui';
 import { VerifyTool } from '@/components/verify';
 import { useLanguage } from '@/i18n';
 import { Logo } from '@/components/layout/Logo';
+import { JsonLd } from '@/components/JsonLd';
 import styles from './page.module.css';
+
+// Substantive, crawlable copy the tool-first hero deliberately omits. Kept low
+// on the page so it never competes with the input box, but present in the HTML
+// so search engines and AI assistants can read what Verifact is and answer for
+// it. The FAQ is mirrored into FAQPage structured data below — same words, so
+// the markup always matches what a visitor actually sees.
+const FAQ: ReadonlyArray<{ q: string; a: string }> = [
+  {
+    q: 'Ce este Verifact?',
+    a: 'Verifact este o platformă independentă și open source din România pentru verificarea informației. Analizează o afirmație, un articol, o captură de ecran sau un clip scurt și returnează un scor de veridicitate cu sursele citate integral.',
+  },
+  {
+    q: 'Cum verifică Verifact o afirmație?',
+    a: 'Separă afirmația factuală de comentariul celui care a distribuit-o, apoi caută dovezi în surse publice verificabile — fact-checkeri, presă și instituții oficiale. Compară afirmația cu ce găsește și calculează un scor de veridicitate de la 0 la 100.',
+  },
+  {
+    q: 'Pot avea încredere în rezultate?',
+    a: 'Fiecare raport citează integral sursele folosite, ca să poți verifica singur. Scorul este o estimare bazată pe sursele disponibile la momentul verificării, nu o decizie editorială finală, iar algoritmul este open source.',
+  },
+  {
+    q: 'Ce tipuri de conținut pot verifica?',
+    a: 'Un text (o afirmație scrisă), un link către un articol, o captură de ecran dintr-o rețea socială sau un clip video scurt. Verifact extrage afirmația și o verifică la fel în toate cazurile.',
+  },
+  {
+    q: 'Cât costă verificarea?',
+    a: 'Verificarea de bază este gratuită, cu 3 verificări pe lună. Planul Pro oferă de peste 10 ori mai multe verificări, raport PDF descărcabil și link direct către pasajul exact din sursă.',
+  },
+];
+
+const FAQ_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.a },
+  })),
+};
 
 const AnimatedDemo = dynamic(
   () => import('@/components/verify/AnimatedDemo').then((mod) => mod.AnimatedDemo),
@@ -150,6 +189,37 @@ export default function HomePage() {
             ))}
           </ol>
         </div>
+      </section>
+
+      {/* Substance for readers who scroll and for crawlers: what Verifact is,
+          in prose, plus the questions people actually ask. Kept below the tool. */}
+      <section className={`container-narrow ${styles.faq}`}>
+        <JsonLd data={FAQ_SCHEMA} />
+        <Reveal>
+          <h2 className={styles.faqTitle}>Verificare independentă a informației</h2>
+          <p className={styles.faqIntro}>
+            Verifact este un instrument românesc de verificare a informației
+            (fact-checking) asistat de inteligență artificială. Îl folosești când
+            vezi o știre, o afirmație sau o postare și vrei să afli dacă e adevărată
+            înainte să o distribui. Introduci textul, linkul, captura de ecran sau
+            clipul, iar Verifact caută în surse publice verificabile — fact-checkeri,
+            presă și instituții oficiale — și îți dă un scor de veridicitate cu
+            sursele citate integral, ca să pleci mai bine informat.
+          </p>
+        </Reveal>
+
+        <Reveal delay={80}>
+          <ul className={styles.faqList}>
+            {FAQ.map((item) => (
+              <li key={item.q}>
+                <details className={styles.faqItem}>
+                  <summary className={styles.faqQ}>{item.q}</summary>
+                  <p className={styles.faqA}>{item.a}</p>
+                </details>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
       </section>
 
       {/* The promise, in one line — signed off with the mark. */}

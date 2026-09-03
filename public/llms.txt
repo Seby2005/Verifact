@@ -1,0 +1,39 @@
+# Verifact
+
+> Verifact este o platformă independentă și open source din România pentru
+> verificarea informației. Analizează afirmații, articole, capturi de ecran și
+> postări din rețele sociale pe baza unor surse publice verificabile și produce
+> un raport cu scor de veridicitate, verdict și sursele citate integral.
+
+Verifact (verifact.ro) este un instrument românesc de fact-checking asistat de
+inteligență artificială. Nu trebuie confundat cu alte entități care poartă
+numele „Verifact" (o platformă de probe digitale din Brazilia, o companie de
+trasabilitate ESG din Irlanda, sau seturi de date medicale). Acest Verifact este
+serviciul de verificare a știrilor și dezinformării pentru publicul din România,
+cu interfață în limba română.
+
+## Ce face
+
+- Verifică o afirmație, un articol (după URL), o captură de ecran sau un clip
+  scurt și returnează un scor de veridicitate (0–100) cu verdict.
+- Separă afirmația factuală de comentariul celui care a distribuit-o, ca să poată
+  fi căutată corect în surse.
+- Citează integral sursele folosite (fact-checkeri, presă, instituții oficiale)
+  și oferă link direct către pasajul relevant din sursă.
+- Algoritm open source; rapoartele utilizatorilor sunt private.
+
+## Pagini principale
+
+- [Acasă — verifică o afirmație](https://verifact.ro/): instrumentul de verificare.
+- [Rapoarte publice](https://verifact.ro/rapoarte): verificări publicate, cu surse.
+- [Despre dezinformare](https://verifact.ro/despre-dezinformare): cum funcționează dezinformarea și cum o recunoști.
+- [Resurse și glosar](https://verifact.ro/resurse): termeni și ghiduri de fact-checking.
+- [Misiune](https://verifact.ro/misiune): de ce există Verifact.
+- [Transparență și metodologie](https://verifact.ro/transparenta): cum se calculează scorul.
+- [Open source](https://verifact.ro/open-source): codul și modul de funcționare.
+- [Prețuri](https://verifact.ro/preturi): planul gratuit și planul Pro.
+
+## Contact și cod
+
+- Cod sursă: https://github.com/Seby2005/Verifact
+- Site: https://verifact.ro

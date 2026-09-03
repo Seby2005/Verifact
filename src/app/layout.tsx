@@ -4,6 +4,7 @@ import { JetBrains_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 
 import { Header, Footer } from '@/components/layout';
+import { SITE_URL } from '@/lib/site';
 import './globals.css';
 
 // Sans — carries the interface and body copy. Self-hosted (Fontshare).
@@ -47,7 +48,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro'),
+  metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: './',
   },
@@ -56,7 +57,7 @@ export const metadata: Metadata = {
     template: '%s — Verifact',
   },
   description:
-    'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile. Algoritm open source, surse citate integral, rapoarte private.',
+    'Verifact verifică afirmații, articole și postări din social media pe baza unor surse publice verificabile. Open source, cu sursele citate integral.',
   keywords: [
     'verificare stiri',
     'fact checker romania',
@@ -115,8 +116,13 @@ const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'Verifact',
-  url: 'https://www.verifact.ro',
-  logo: 'https://www.verifact.ro/logo/verifact-v-logo-transparent.png',
+  alternateName: 'Verifact România',
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo/verifact-v-logo-transparent.png`,
+  description:
+    'Platformă independentă și open source din România pentru verificarea afirmațiilor, articolelor și postărilor din social media pe baza surselor publice verificabile.',
+  areaServed: 'RO',
+  knowsLanguage: 'ro',
   sameAs: ['https://github.com/Seby2005/Verifact'],
 };
 
@@ -124,7 +130,7 @@ const webSiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
   name: 'Verifact',
-  url: 'https://www.verifact.ro',
+  url: SITE_URL,
   inLanguage: 'ro-RO',
 };
 
@@ -132,7 +138,7 @@ const webApplicationSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'Verifact',
-  url: process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
+  url: SITE_URL,
   applicationCategory: 'FactCheckingApplication',
   operatingSystem: 'All',
   description:
