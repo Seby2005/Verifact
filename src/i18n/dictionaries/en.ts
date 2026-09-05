@@ -831,6 +831,18 @@ export const en: Translations = {
       'This is the methodology the verification runs on. The code that implements it is public and can be followed in the repository.',
     openSourceLead: 'The code implementing all of this is open source. ',
     openSourceLink: 'View the open source page',
+    statsTitle: 'Verifact in Numbers & Integrity Standards',
+    statsIntro:
+      'Our mission is measured through radical openness, reproducible methodology, and zero black-box verdicts.',
+    stat1Title: 'Independent Layers',
+    stat1Desc: 'Fact-checkers, news press, official registries, and social media signals.',
+    stat2Title: 'Open Source',
+    stat2Desc: 'Public GitHub codebase audited and verifiable by any researcher or citizen.',
+    stat3Title: 'Political Affiliations',
+    stat3Desc: 'Non-partisan principles following international fact-checking standards (IFCN).',
+    stat4Title: 'Source Citation',
+    stat4Desc: 'Every verdict includes direct quotes and outbound links to primary sources.',
+    teamLink: 'Team & Governance',
   },
   openSourcePage: {
     metadata: {

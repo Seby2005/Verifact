@@ -44,6 +44,12 @@ const CONTENT = {
     contactText:
       'Dacă ești cercetător, jurnalist sau dezvoltator și vrei să contribui la baza de date sau la algoritmul Verifact, codul este deschis pentru contribuții.',
     contactBtn: 'Vezi Codul pe GitHub',
+    contributorsName: 'Contribuitori & Cercetători',
+    openSourceLink: 'Open Source & Contribuții',
+    methodologyLink: 'Metodologie Verificare',
+    ifcnLabel: 'Standarde IFCN',
+    ifcnText:
+      'Verifact este construit respectând principiile de bază ale International Fact-Checking Network: nepartizanat politic, transparența totală a surselor, transparența finanțării și dreptul la replică și corecții deschise.',
   },
   en: {
     eyebrow: 'Team & Governance',
@@ -80,12 +86,60 @@ const CONTENT = {
     contactText:
       'If you are a researcher, journalist, or developer wishing to improve Verifact’s methodology or dataset, contributions are welcome.',
     contactBtn: 'View Code on GitHub',
+    contributorsName: 'Contributors & Researchers',
+    openSourceLink: 'Open Source & Contributions',
+    methodologyLink: 'Verification Methodology',
+    ifcnLabel: 'IFCN Standards',
+    ifcnText:
+      'Verifact is built following the core tenets of the International Fact-Checking Network: nonpartisanship, transparency of sources, transparency of funding, and open corrections.',
+  },
+  fr: {
+    eyebrow: 'Équipe & Gouvernance',
+    title: 'Qui construit Verifact et comment nous garantissons l’indépendance',
+    lead:
+      'Verifact est une initiative technologique indépendante et open source, dédiée à la lutte contre la désinformation par l’automatisation, la vérification multi-niveaux et une transparence totale des sources.',
+    teamTitle: 'Équipe de développement & initiative',
+    founderRole: 'Fondateur & Développeur principal',
+    founderBio:
+      'Ingénieur logiciel spécialisé en intelligence artificielle appliquée, systèmes distribués et éthique de l’information. Il a conçu l’architecture de Verifact pour offrir un outil de vérification gratuit, neutre et vérifiable.',
+    contributorsRole: 'Communauté open source',
+    contributorsBio:
+      'Verifact est un projet open source hébergé sur GitHub. L’algorithme de vérification, le registre des sources et le code sont auditables et ouverts aux contributions de développeurs, journalistes et chercheurs indépendants.',
+    githubLink: 'Profil GitHub',
+    projectRepo: 'Dépôt du projet (GitHub)',
+    governanceTitle: 'Politique d’indépendance & de financement',
+    governanceIntro:
+      'Conformément aux standards internationaux du fact-checking (Code de principes de l’IFCN), Verifact respecte strictement la neutralité et une transparence radicale.',
+    policies: [
+      {
+        title: 'Indépendance éditoriale & politique',
+        text: 'Verifact n’accepte aucun financement de partis politiques, de candidats ou d’entités gouvernementales. Nous ne soutenons aucune idéologie. L’algorithme évalue les affirmations factuelles uniquement au regard de preuves publiquement vérifiables.',
+      },
+      {
+        title: 'Modèle de financement transparent',
+        text: 'Le projet est autofinancé de manière indépendante par ses créateurs, soutenu par une infrastructure open source et des abonnements Pro optionnels. Nous ne vendons jamais les données des utilisateurs et n’hébergeons aucune publicité sponsorisée.',
+      },
+      {
+        title: 'Politique de corrections & droit de réponse',
+        text: 'Chaque rapport public inclut un mécanisme de contestation ouvert (« Contester / Signaler ») permettant aux lecteurs de contester les sources ou les classifications. Les corrections et révisions sont documentées de façon transparente.',
+      },
+    ],
+    contactTitle: 'Signalez un problème ou collaborez avec nous',
+    contactText:
+      'Si vous êtes chercheur, journaliste ou développeur et souhaitez améliorer la méthodologie ou le jeu de données de Verifact, les contributions sont les bienvenues.',
+    contactBtn: 'Voir le code sur GitHub',
+    contributorsName: 'Contributeurs & Chercheurs',
+    openSourceLink: 'Open Source & Contributions',
+    methodologyLink: 'Méthodologie de vérification',
+    ifcnLabel: 'Normes IFCN',
+    ifcnText:
+      'Verifact est conçu selon les principes fondamentaux du réseau international de fact-checking (IFCN) : non-partisanat, transparence des sources, transparence du financement et corrections ouvertes.',
   },
 };
 
 export default function TeamPage() {
   const { locale } = useLanguage();
-  const c = CONTENT[locale === 'en' ? 'en' : 'ro'];
+  const c = CONTENT[locale];
 
   const personSchema = {
     '@context': 'https://schema.org',
@@ -144,16 +198,16 @@ export default function TeamPage() {
 
             <article className={styles.memberCard}>
               <div className={styles.memberHeader}>
-                <h3 className={styles.memberName}>Contribuitori & Cercetători</h3>
+                <h3 className={styles.memberName}>{c.contributorsName}</h3>
                 <span className={styles.memberRole}>{c.contributorsRole}</span>
               </div>
               <p className={styles.memberBio}>{c.contributorsBio}</p>
               <div className={styles.memberLinks}>
                 <Link href="/open-source" className={styles.memberLink}>
-                  Open Source & Contribuții →
+                  {c.openSourceLink} →
                 </Link>
                 <Link href="/transparenta" className={styles.memberLink}>
-                  Metodologie Verificare →
+                  {c.methodologyLink} →
                 </Link>
               </div>
             </article>
@@ -175,10 +229,8 @@ export default function TeamPage() {
             ))}
           </ul>
 
-          <Callout label="Standarde IFCN" tone="plain">
-            {locale === 'en'
-              ? 'Verifact is built following the core tenets of the International Fact-Checking Network: nonpartisanship, transparency of sources, transparency of funding, and open corrections.'
-              : 'Verifact este construit respectând principiile de bază ale International Fact-Checking Network: nepartizanat politic, transparența totală a surselor, transparența finanțării și dreptul la replică și corecții deschise.'}
+          <Callout label={c.ifcnLabel} tone="plain">
+            {c.ifcnText}
           </Callout>
 
           <div className={styles.contactBlock}>

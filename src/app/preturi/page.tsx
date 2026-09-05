@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Callout } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import { ContactModal } from '@/components/contact/ContactModal';
+import { trackEvent } from '@/lib/analytics/events';
 import shell from '../page-shell.module.css';
 import styles from './page.module.css';
 
@@ -73,6 +74,7 @@ export default function PreturiPage() {
   const handleProCheckout = async () => {
     setIsSubmitting(true);
     setCheckoutError(null);
+    trackEvent('checkout_started', { billing });
     try {
       const res = await fetch('/api/checkout/creem', {
         method: 'POST',
@@ -89,7 +91,12 @@ export default function PreturiPage() {
 
       if (!res.ok || !data.checkoutUrl) {
         setCheckoutError(
-          data.error || (isEn ? 'Failed to initiate checkout session.' : 'Nu am putut iniția sesiunea de plată.')
+          data.error ||
+            (isEn
+              ? 'Failed to initiate checkout session.'
+              : locale === 'fr'
+              ? 'Impossible de démarrer la session de paiement.'
+              : 'Nu am putut iniția sesiunea de plată.')
         );
         setIsSubmitting(false);
         return;

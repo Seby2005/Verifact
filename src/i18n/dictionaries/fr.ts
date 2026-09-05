@@ -831,6 +831,18 @@ export const fr: Translations = {
       'Notre méthodologie de vérification est 100% transparente. Le code informatique qui l’exécute est accessible publiquement dans notre dépôt GitHub.',
     openSourceLead: 'L’ensemble du code source est public. ',
     openSourceLink: 'Voir la page Open Source',
+    statsTitle: 'Verifact en chiffres & normes d’intégrité',
+    statsIntro:
+      'Notre mission se mesure par une transparence radicale, une méthodologie reproductible et des verdicts 100% vérifiables.',
+    stat1Title: 'Niveaux indépendants',
+    stat1Desc: 'Fact-checkers, presse, registres officiels et signaux des réseaux sociaux.',
+    stat2Title: 'Code open source',
+    stat2Desc: 'Base de code publique sur GitHub, auditable par tout chercheur ou citoyen.',
+    stat3Title: 'Affiliations politiques',
+    stat3Desc: 'Principes non partisans selon les standards internationaux de fact-checking (IFCN).',
+    stat4Title: 'Citation des sources',
+    stat4Desc: 'Chaque verdict inclut des citations directes et des liens vers les sources primaires.',
+    teamLink: 'Équipe & Gouvernance',
   },
   openSourcePage: {
     metadata: {

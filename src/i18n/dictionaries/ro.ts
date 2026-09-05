@@ -831,6 +831,18 @@ export const ro = {
       'Aceasta este metodologia după care funcționează verificarea. Codul care o implementează este public și poate fi urmărit în repository.',
     openSourceLead: 'Codul care implementează toate acestea este public. ',
     openSourceLink: 'Vezi pagina open source',
+    statsTitle: 'Verifact în Cifre & Standarde de Integritate',
+    statsIntro:
+      'Misiunea noastră este măsurată prin transparență radicală, metodologie reproductibilă și verdicte 100% verificabile.',
+    stat1Title: 'Straturi Independente',
+    stat1Desc: 'Baze de fact-checking, presă credibilă, arhive oficiale și context social media.',
+    stat2Title: 'Cod Open Source',
+    stat2Desc: 'Cod public pe GitHub, auditabil oricând de cercetători, jurnaliști sau cetățeni.',
+    stat3Title: 'Partizanat Politic',
+    stat3Desc: 'Respectăm strict principiile IFCN de nepartizanat și neutralitate editorială.',
+    stat4Title: 'Citare Integrală',
+    stat4Desc: 'Fiecare verdict include citate exacte și linkuri directe către sursele primare.',
+    teamLink: 'Echipă și Guvernanță',
   },
   openSourcePage: {
     metadata: {
