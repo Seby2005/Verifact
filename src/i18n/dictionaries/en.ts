@@ -103,6 +103,7 @@ export const en: Translations = {
     },
     trust: {
       line: 'Don’t take our word for it — see the sources.',
+      resourcesLink: 'Resources & Glossary',
     },
     sample: {
       eyebrow: 'What an answer looks like',
@@ -135,6 +136,21 @@ export const en: Translations = {
         'A verdict without sources is just another opinion. That is why every Verifact report cites its supporting sources in full, and the algorithm weighting them is open to the public.',
       methodologyLink: 'View full methodology',
       openSourceLink: 'Open source & privacy',
+    },
+    faq: {
+      title: 'Independent information verification',
+      intro:
+        'Verifact is a Romanian AI-assisted information verification (fact-checking) tool. You use it when you see a news item, a claim or a post and want to know whether it is true before sharing it. You enter the text, link, screenshot or clip, and Verifact searches verifiable public sources — fact-checkers, press and official institutions — and gives you a veracity score with the sources cited in full, so you leave better informed.',
+      q1: 'What is Verifact?',
+      a1: 'Verifact is an independent, open-source information-verification platform from Romania. It analyses a claim, an article, a screenshot or a short clip and returns a veracity score with the sources cited in full.',
+      q2: 'How does Verifact check a claim?',
+      a2: 'It separates the factual claim from the commentary of whoever shared it, then looks for evidence in verifiable public sources — fact-checkers, press and official institutions. It compares the claim with what it finds and computes a veracity score from 0 to 100.',
+      q3: 'Can I trust the results?',
+      a3: 'Every report cites the sources it used in full, so you can check for yourself. The score is an estimate based on the sources available at the time of verification, not a final editorial decision, and the algorithm is open source.',
+      q4: 'What types of content can I check?',
+      a4: 'A text (a written claim), a link to an article, a screenshot from social media, or a short video clip. Verifact extracts the claim and verifies it the same way in every case.',
+      q5: 'How much does it cost?',
+      a5: 'Basic verification is free, with 3 checks per month. The Pro plan offers over 10 times more checks, a downloadable PDF report and a direct link to the exact passage in the source.',
     },
   },
   verifyTool: {

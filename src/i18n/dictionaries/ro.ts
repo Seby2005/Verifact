@@ -102,6 +102,7 @@ export const ro = {
     },
     trust: {
       line: 'Nu-ți cerem să ne crezi pe cuvânt — îți arătăm sursele.',
+      resourcesLink: 'Resurse & Glosar',
     },
     sample: {
       eyebrow: 'Așa arată un răspuns',
@@ -134,6 +135,21 @@ export const ro = {
         'Un verdict fără surse este doar o altă opinie. De aceea fiecare raport Verifact citează integral sursele pe care se sprijină, iar algoritmul care le cântărește este public.',
       methodologyLink: 'Vezi metodologia completă',
       openSourceLink: 'Open source și confidențialitate',
+    },
+    faq: {
+      title: 'Verificare independentă a informației',
+      intro:
+        'Verifact este un instrument românesc de verificare a informației (fact-checking) asistat de inteligență artificială. Îl folosești când vezi o știre, o afirmație sau o postare și vrei să afli dacă e adevărată înainte să o distribui. Introduci textul, linkul, captura de ecran sau clipul, iar Verifact caută în surse publice verificabile — fact-checkeri, presă și instituții oficiale — și îți dă un scor de veridicitate cu sursele citate integral, ca să pleci mai bine informat.',
+      q1: 'Ce este Verifact?',
+      a1: 'Verifact este o platformă independentă și open source din România pentru verificarea informației. Analizează o afirmație, un articol, o captură de ecran sau un clip scurt și returnează un scor de veridicitate cu sursele citate integral.',
+      q2: 'Cum verifică Verifact o afirmație?',
+      a2: 'Separă afirmația factuală de comentariul celui care a distribuit-o, apoi caută dovezi în surse publice verificabile — fact-checkeri, presă și instituții oficiale. Compară afirmația cu ce găsește și calculează un scor de veridicitate de la 0 la 100.',
+      q3: 'Pot avea încredere în rezultate?',
+      a3: 'Fiecare raport citează integral sursele folosite, ca să poți verifica singur. Scorul este o estimare bazată pe sursele disponibile la momentul verificării, nu o decizie editorială finală, iar algoritmul este open source.',
+      q4: 'Ce tipuri de conținut pot verifica?',
+      a4: 'Un text (o afirmație scrisă), un link către un articol, o captură de ecran dintr-o rețea socială sau un clip video scurt. Verifact extrage afirmația și o verifică la fel în toate cazurile.',
+      q5: 'Cât costă verificarea?',
+      a5: 'Verificarea de bază este gratuită, cu 3 verificări pe lună. Planul Pro oferă de peste 10 ori mai multe verificări, raport PDF descărcabil și link direct către pasajul exact din sursă.',
     },
   },
   verifyTool: {

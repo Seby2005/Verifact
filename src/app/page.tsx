@@ -12,41 +12,10 @@ import styles from './page.module.css';
 
 // Substantive, crawlable copy the tool-first hero deliberately omits. Kept low
 // on the page so it never competes with the input box, but present in the HTML
-// so search engines and AI assistants can read what Verifact is and answer for
-// it. The FAQ is mirrored into FAQPage structured data below — same words, so
-// the markup always matches what a visitor actually sees.
-const FAQ: ReadonlyArray<{ q: string; a: string }> = [
-  {
-    q: 'Ce este Verifact?',
-    a: 'Verifact este o platformă independentă și open source din România pentru verificarea informației. Analizează o afirmație, un articol, o captură de ecran sau un clip scurt și returnează un scor de veridicitate cu sursele citate integral.',
-  },
-  {
-    q: 'Cum verifică Verifact o afirmație?',
-    a: 'Separă afirmația factuală de comentariul celui care a distribuit-o, apoi caută dovezi în surse publice verificabile — fact-checkeri, presă și instituții oficiale. Compară afirmația cu ce găsește și calculează un scor de veridicitate de la 0 la 100.',
-  },
-  {
-    q: 'Pot avea încredere în rezultate?',
-    a: 'Fiecare raport citează integral sursele folosite, ca să poți verifica singur. Scorul este o estimare bazată pe sursele disponibile la momentul verificării, nu o decizie editorială finală, iar algoritmul este open source.',
-  },
-  {
-    q: 'Ce tipuri de conținut pot verifica?',
-    a: 'Un text (o afirmație scrisă), un link către un articol, o captură de ecran dintr-o rețea socială sau un clip video scurt. Verifact extrage afirmația și o verifică la fel în toate cazurile.',
-  },
-  {
-    q: 'Cât costă verificarea?',
-    a: 'Verificarea de bază este gratuită, cu 3 verificări pe lună. Planul Pro oferă de peste 10 ori mai multe verificări, raport PDF descărcabil și link direct către pasajul exact din sursă.',
-  },
-];
-
-const FAQ_SCHEMA = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: FAQ.map((item) => ({
-    '@type': 'Question',
-    name: item.q,
-    acceptedAnswer: { '@type': 'Answer', text: item.a },
-  })),
-};
+// so search engines and AI assistants can read what Verifact is. The questions
+// live in the i18n dictionary (home.faq) and are mirrored into FAQPage
+// structured data inside the component so the markup always matches what shows.
+const FAQ_KEYS = [1, 2, 3, 4, 5] as const;
 
 const AnimatedDemo = dynamic(
   () => import('@/components/verify/AnimatedDemo').then((mod) => mod.AnimatedDemo),
@@ -95,6 +64,25 @@ function heroFrames(order: number[]): React.ReactNode {
  */
 export default function HomePage() {
   const { t, locale } = useLanguage();
+
+  // FAQ text comes from the dictionary so it follows the language switch, and
+  // the FAQPage schema is built from the same strings so markup matches copy.
+  const faq = useMemo(
+    () => FAQ_KEYS.map((n) => ({ q: t(`home.faq.q${n}`), a: t(`home.faq.a${n}`) })),
+    [t]
+  );
+  const faqSchema = useMemo(
+    () => ({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faq.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    }),
+    [faq]
+  );
 
   // Curated evergreen claims shown instantly; upgraded to live trending
   // Romanian claims once /api/trending-examples responds (falls back to these).
@@ -194,23 +182,15 @@ export default function HomePage() {
       {/* Substance for readers who scroll and for crawlers: what Verifact is,
           in prose, plus the questions people actually ask. Kept below the tool. */}
       <section className={`container-narrow ${styles.faq}`}>
-        <JsonLd data={FAQ_SCHEMA} />
+        <JsonLd data={faqSchema} />
         <Reveal>
-          <h2 className={styles.faqTitle}>Verificare independentă a informației</h2>
-          <p className={styles.faqIntro}>
-            Verifact este un instrument românesc de verificare a informației
-            (fact-checking) asistat de inteligență artificială. Îl folosești când
-            vezi o știre, o afirmație sau o postare și vrei să afli dacă e adevărată
-            înainte să o distribui. Introduci textul, linkul, captura de ecran sau
-            clipul, iar Verifact caută în surse publice verificabile — fact-checkeri,
-            presă și instituții oficiale — și îți dă un scor de veridicitate cu
-            sursele citate integral, ca să pleci mai bine informat.
-          </p>
+          <h2 className={styles.faqTitle}>{t('home.faq.title')}</h2>
+          <p className={styles.faqIntro}>{t('home.faq.intro')}</p>
         </Reveal>
 
         <Reveal delay={80}>
           <ul className={styles.faqList}>
-            {FAQ.map((item) => (
+            {faq.map((item) => (
               <li key={item.q}>
                 <details className={styles.faqItem}>
                   <summary className={styles.faqQ}>{item.q}</summary>
@@ -229,7 +209,7 @@ export default function HomePage() {
           <Logo className={styles.trustMark} />
           <p className={styles.trustLinks}>
             <Link href="/resurse" className={styles.textLink}>
-              Resurse & Glosar
+              {t('home.trust.resourcesLink')}
             </Link>
             <span className={styles.trustDot}>·</span>
             <Link href="/transparenta" className={styles.textLink}>

@@ -104,6 +104,7 @@ export const fr: Translations = {
     },
     trust: {
       line: 'Ne nous croyez pas sur parole — nous vous montrons les sources.',
+      resourcesLink: 'Ressources & Glossaire',
     },
     sample: {
       eyebrow: 'Exemple de rapport',
@@ -136,6 +137,21 @@ export const fr: Translations = {
         'Un verdict sans sources n’est qu’une opinion de plus. C’est pourquoi chaque rapport Verifact cite intégralement ses sources, et l’algorithme d’évaluation est entièrement transparent.',
       methodologyLink: 'Découvrir la méthodologie',
       openSourceLink: 'Open source et confidentialité',
+    },
+    faq: {
+      title: 'Vérification indépendante de l’information',
+      intro:
+        'Verifact est un outil roumain de vérification de l’information (fact-checking) assisté par intelligence artificielle. Vous l’utilisez lorsque vous voyez une actualité, une affirmation ou une publication et voulez savoir si elle est vraie avant de la partager. Vous saisissez le texte, le lien, la capture d’écran ou le clip, et Verifact recherche dans des sources publiques vérifiables — fact-checkers, presse et institutions officielles — et vous donne un score de véracité avec les sources citées intégralement, pour repartir mieux informé.',
+      q1: 'Qu’est-ce que Verifact ?',
+      a1: 'Verifact est une plateforme indépendante et open source de vérification de l’information, basée en Roumanie. Elle analyse une affirmation, un article, une capture d’écran ou un court clip et renvoie un score de véracité avec les sources citées intégralement.',
+      q2: 'Comment Verifact vérifie-t-il une affirmation ?',
+      a2: 'Il sépare l’affirmation factuelle du commentaire de celui qui l’a partagée, puis cherche des preuves dans des sources publiques vérifiables — fact-checkers, presse et institutions officielles. Il compare l’affirmation à ce qu’il trouve et calcule un score de véracité de 0 à 100.',
+      q3: 'Puis-je faire confiance aux résultats ?',
+      a3: 'Chaque rapport cite intégralement les sources utilisées, pour que vous puissiez vérifier vous-même. Le score est une estimation fondée sur les sources disponibles au moment de la vérification, et non une décision éditoriale définitive ; l’algorithme est open source.',
+      q4: 'Quels types de contenu puis-je vérifier ?',
+      a4: 'Un texte (une affirmation écrite), un lien vers un article, une capture d’écran d’un réseau social ou un court clip vidéo. Verifact extrait l’affirmation et la vérifie de la même manière dans tous les cas.',
+      q5: 'Combien ça coûte ?',
+      a5: 'La vérification de base est gratuite, avec 3 vérifications par mois. Le forfait Pro offre plus de 10 fois plus de vérifications, un rapport PDF téléchargeable et un lien direct vers le passage exact de la source.',
     },
   },
   verifyTool: {
