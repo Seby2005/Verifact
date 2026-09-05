@@ -456,6 +456,8 @@ export const en: Translations = {
     errorNetwork: 'Could not reach the server. Please check your connection and try again.',
   },
   auth: {
+    googleAuthFailed: 'Google sign-in failed. Please try again.',
+    googleLoadFailed: 'Could not load Google Sign-In.',
     tabs: {
       login: 'Sign in',
       signup: 'Create account',

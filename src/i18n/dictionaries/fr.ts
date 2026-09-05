@@ -457,6 +457,8 @@ export const fr: Translations = {
     errorNetwork: 'Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.',
   },
   auth: {
+    googleAuthFailed: 'La connexion Google a échoué. Réessayez.',
+    googleLoadFailed: 'Impossible de charger Google Sign-In.',
     tabs: {
       login: 'Connexion',
       signup: 'Inscription',

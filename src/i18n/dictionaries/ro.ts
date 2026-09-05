@@ -456,6 +456,8 @@ export const ro = {
     errorNetwork: 'Nu am putut contacta serverul. Verifică conexiunea și încearcă din nou.',
   },
   auth: {
+    googleAuthFailed: 'Autentificarea Google a eșuat. Încearcă din nou.',
+    googleLoadFailed: 'Nu am putut încărca Google Sign-In.',
     tabs: {
       login: 'Intră în cont',
       signup: 'Creează cont',

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/i18n';
 
 /**
  * "Sign in with Google" via Google Identity Services (GSI) instead of the
@@ -66,6 +67,7 @@ function loadGsiScript(): Promise<void> {
 export const GoogleSignInButton: React.FC<{ onError?: (message: string) => void }> = ({
   onError,
 }) => {
+  const { t } = useLanguage();
   const buttonRef = useRef<HTMLDivElement>(null);
   const rawNonceRef = useRef<string>('');
 
@@ -82,10 +84,10 @@ export const GoogleSignInButton: React.FC<{ onError?: (message: string) => void 
         // Session cookie is set — reload so every client picks it up.
         window.location.assign('/cont');
       } catch (err) {
-        onError?.(err instanceof Error ? err.message : 'Autentificarea Google a eșuat.');
+        onError?.(err instanceof Error ? err.message : t('auth.googleAuthFailed'));
       }
     },
-    [onError]
+    [onError, t]
   );
 
   useEffect(() => {
@@ -124,14 +126,14 @@ export const GoogleSignInButton: React.FC<{ onError?: (message: string) => void 
         // One Tap prompt, in addition to the button.
         id.prompt();
       } catch (err) {
-        onError?.(err instanceof Error ? err.message : 'Nu am putut încărca Google Sign-In.');
+        onError?.(err instanceof Error ? err.message : t('auth.googleLoadFailed'));
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [handleCredential, onError]);
+  }, [handleCredential, onError, t]);
 
   if (!CLIENT_ID) return null;
 
