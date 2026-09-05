@@ -291,6 +291,12 @@ export const fr: Translations = {
     premiumSourcesLabel: 'Aperçu des sources',
     premiumUpgradeCta: 'Voir les forfaits',
     premiumCloseCta: 'Fermer',
+    errorLoginPdf: 'Vous devez être connecté pour télécharger le rapport PDF.',
+    errorPdfFailed: 'Impossible de générer le fichier PDF. Réessayez dans un instant.',
+    errorPdfConnect: 'Impossible de se connecter au serveur pour générer le PDF.',
+    errorLoginDownload: 'Connectez-vous à votre compte pour télécharger le rapport PDF.',
+    errorPublish: 'Une erreur est survenue lors de la publication du rapport.',
+    errorPublishNetwork: 'Une erreur réseau est survenue. Veuillez réessayer.',
     printId: 'ID du rapport',
     shareCard: {
       button: 'Partager la carte',

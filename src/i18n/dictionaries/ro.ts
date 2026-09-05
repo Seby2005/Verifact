@@ -289,6 +289,12 @@ export const ro = {
     premiumSourcesLabel: 'Câteva dintre surse',
     premiumUpgradeCta: 'Vezi planurile',
     premiumCloseCta: 'Închide',
+    errorLoginPdf: 'Trebuie să fii conectat în cont pentru a descărca raportul PDF.',
+    errorPdfFailed: 'Nu am putut genera fișierul PDF. Reîncearcă în câteva momente.',
+    errorPdfConnect: 'Nu s-a putut conecta la server pentru generarea PDF-ului.',
+    errorLoginDownload: 'Conectează-te în contul tău pentru a descărca raportul PDF.',
+    errorPublish: 'A apărut o eroare la publicarea raportului.',
+    errorPublishNetwork: 'A apărut o eroare de rețea. Te rugăm să reîncerci.',
     /** Shown only on the printed page, which loses the site header. */
     printId: 'ID raport',
     shareCard: {

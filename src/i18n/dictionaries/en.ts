@@ -290,6 +290,12 @@ export const en: Translations = {
     premiumSourcesLabel: 'A few of the sources',
     premiumUpgradeCta: 'See the plans',
     premiumCloseCta: 'Close',
+    errorLoginPdf: 'You must be signed in to download the PDF report.',
+    errorPdfFailed: 'We could not generate the PDF file. Try again in a moment.',
+    errorPdfConnect: 'Could not connect to the server to generate the PDF.',
+    errorLoginDownload: 'Sign in to your account to download the PDF report.',
+    errorPublish: 'An error occurred while publishing the report.',
+    errorPublishNetwork: 'A network error occurred. Please try again.',
     printId: 'Report ID',
     shareCard: {
       button: 'Share card',
