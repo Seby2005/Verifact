@@ -156,6 +156,7 @@ export const fr: Translations = {
       text: 'Texte',
       screenshot: 'Capture d’écran',
       url: 'URL',
+      video: 'Vidéo',
     },
     textarea: {
       label: 'Affirmation à vérifier',
@@ -166,6 +167,17 @@ export const fr: Translations = {
       title: 'Sélectionnez une image ou glissez-la ici',
       hint: 'PNG, JPG ou WebP — maximum 10 Mo',
       fileSelected: 'Fichier sélectionné : {name}',
+    },
+    videoDropzone: {
+      title: 'Sélectionnez une vidéo ou glissez-la ici',
+      hint: 'MP4, WebM ou MOV — clip court (jusqu’à ~30 s), maximum 50 Mo',
+      fileSelected: 'Clip sélectionné : {name}',
+    },
+    video: {
+      transcribing: 'Transcription de l’audio…',
+      preparingModel: 'Préparation du modèle de transcription… {percent} %',
+      reading: 'Lecture du texte à l’écran…',
+      note: 'La transcription s’exécute dans votre navigateur — le clip n’est jamais téléversé.',
     },
     urlInput: {
       label: 'Lien vers l’article ou la publication',
@@ -180,6 +192,13 @@ export const fr: Translations = {
     errors: {
       emptyText: 'Veuillez saisir le contenu que vous souhaitez vérifier.',
       emptyImage: 'Veuillez choisir une image avant de lancer la vérification.',
+      emptyVideo: 'Veuillez choisir une vidéo avant de lancer la vérification.',
+      videoTooLarge: 'Ce clip est trop volumineux. Choisissez un fichier de 50 Mo maximum.',
+      videoTooLong: 'Ce clip est trop long. Utilisez un court extrait (jusqu’à 2 minutes).',
+      videoFailed:
+        'Impossible de traiter le clip. Essayez un fichier MP4, WebM ou MOV plus court.',
+      emptyVideoText:
+        'Aucun texte parlé ou affiché n’a été trouvé dans le clip. Essayez-en un avec une voix plus claire ou des sous-titres.',
       ocrFailed:
         'Impossible d’extraire du texte lisible de l’image. Essayez une capture plus nette ou saisissez le texte manuellement.',
       generic: 'Une erreur est survenue lors de la vérification.',

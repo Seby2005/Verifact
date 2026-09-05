@@ -154,6 +154,7 @@ export const ro = {
       text: 'Text',
       screenshot: 'Screenshot',
       url: 'URL',
+      video: 'Video',
     },
     textarea: {
       label: 'Afirmația de verificat',
@@ -164,6 +165,17 @@ export const ro = {
       title: 'Alege o imagine sau trage-o aici',
       hint: 'PNG, JPG sau WebP — maximum 10 MB',
       fileSelected: 'Fișier selectat: {name}',
+    },
+    videoDropzone: {
+      title: 'Alege un clip video sau trage-l aici',
+      hint: 'MP4, WebM sau MOV — clip scurt (până la ~30s), maximum 50 MB',
+      fileSelected: 'Clip selectat: {name}',
+    },
+    video: {
+      transcribing: 'Se transcrie audio…',
+      preparingModel: 'Se pregătește modelul de transcriere… {percent}%',
+      reading: 'Se citește textul de pe ecran…',
+      note: 'Transcrierea rulează în browserul tău — clipul nu este încărcat pe server.',
     },
     urlInput: {
       label: 'Link către articol sau postare',
@@ -178,6 +190,13 @@ export const ro = {
     errors: {
       emptyText: 'Introdu conținutul pe care vrei să îl verifici.',
       emptyImage: 'Alege o imagine înainte de a porni verificarea.',
+      emptyVideo: 'Alege un clip video înainte de a porni verificarea.',
+      videoTooLarge: 'Clipul este prea mare. Alege un fișier de până la 50 MB.',
+      videoTooLong: 'Clipul este prea lung. Folosește un fragment scurt (până la 2 minute).',
+      videoFailed:
+        'Nu am putut procesa clipul. Încearcă un fișier MP4, WebM sau MOV mai scurt.',
+      emptyVideoText:
+        'Nu am găsit text vorbit sau afișat în clip. Încearcă un clip cu voce mai clară sau cu subtitrări.',
       ocrFailed:
         'Nu am putut extrage text lizibil din imagine. Încearcă un screenshot mai clar sau lipește textul manual.',
       generic: 'A apărut o eroare la verificare.',

@@ -155,6 +155,7 @@ export const en: Translations = {
       text: 'Text',
       screenshot: 'Screenshot',
       url: 'URL',
+      video: 'Video',
     },
     textarea: {
       label: 'Claim to verify',
@@ -165,6 +166,17 @@ export const en: Translations = {
       title: 'Choose an image or drop it here',
       hint: 'PNG, JPG, or WebP — up to 10 MB',
       fileSelected: 'Selected file: {name}',
+    },
+    videoDropzone: {
+      title: 'Choose a video clip or drop it here',
+      hint: 'MP4, WebM, or MOV — short clip (up to ~30s), max 50 MB',
+      fileSelected: 'Selected clip: {name}',
+    },
+    video: {
+      transcribing: 'Transcribing audio…',
+      preparingModel: 'Preparing the transcription model… {percent}%',
+      reading: 'Reading on-screen text…',
+      note: 'Transcription runs in your browser — the clip is never uploaded.',
     },
     urlInput: {
       label: 'Link to article or post',
@@ -179,6 +191,13 @@ export const en: Translations = {
     errors: {
       emptyText: 'Please enter the content you want to verify.',
       emptyImage: 'Please choose an image before starting verification.',
+      emptyVideo: 'Please choose a video clip before starting verification.',
+      videoTooLarge: 'That clip is too large. Choose a file up to 50 MB.',
+      videoTooLong: 'That clip is too long. Use a short segment (up to 2 minutes).',
+      videoFailed:
+        'Could not process the clip. Try a shorter MP4, WebM, or MOV file.',
+      emptyVideoText:
+        'No spoken or on-screen text found in the clip. Try one with clearer speech or captions.',
       ocrFailed:
         'Could not extract readable text from the image. Try a clearer screenshot or paste the text manually.',
       generic: 'An error occurred during verification.',
