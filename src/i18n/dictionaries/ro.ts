@@ -16,11 +16,20 @@ export const ro = {
       menuOpen: 'Deschide meniul',
       menuClose: 'Închide meniul',
       toggleLangAria: 'Schimbă limba în engleză',
+      homeAria: 'Verifact — acasă',
+      langOptions: 'Opțiuni de limbă',
     },
     theme: {
       toDark: 'Comută pe tema întunecată',
       toLight: 'Comută pe tema luminoasă',
     },
+  },
+  notFound: {
+    code: '404',
+    title: 'Pagina nu a fost găsită',
+    lead: 'Pagina pe care o cauți nu există sau a fost mutată.',
+    back: 'Înapoi la prima pagină',
+    genericError: 'A apărut o eroare neașteptată. Reîncarcă pagina.',
   },
   publicReports: {
     title: 'Rapoarte de Verificare Publice',

@@ -18,11 +18,20 @@ export const fr: Translations = {
       menuOpen: 'Ouvrir le menu',
       menuClose: 'Fermer le menu',
       toggleLangAria: 'Changer la langue',
+      homeAria: 'Verifact — accueil',
+      langOptions: 'Options de langue',
     },
     theme: {
       toDark: 'Passer au thème sombre',
       toLight: 'Passer au thème clair',
     },
+  },
+  notFound: {
+    code: '404',
+    title: 'Page introuvable',
+    lead: 'La page que vous cherchez n’existe pas ou a été déplacée.',
+    back: 'Retour à l’accueil',
+    genericError: 'Une erreur inattendue s’est produite. Rechargez la page.',
   },
   publicReports: {
     title: 'Rapports de Vérification Publics',

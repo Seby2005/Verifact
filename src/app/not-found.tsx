@@ -1,16 +1,19 @@
+'use client';
+
 import { Button } from '@/components/ui';
+import { useLanguage } from '@/i18n';
 import styles from './not-found.module.css';
 
 export default function NotFound() {
+  const { t } = useLanguage();
+
   return (
     <div className={styles.wrap}>
-      <span className={styles.code}>404</span>
-      <h1 className={styles.title}>Pagina nu a fost găsită</h1>
-      <p className={styles.lead}>
-        Pagina pe care o cauți nu există sau a fost mutată.
-      </p>
+      <span className={styles.code}>{t('notFound.code')}</span>
+      <h1 className={styles.title}>{t('notFound.title')}</h1>
+      <p className={styles.lead}>{t('notFound.lead')}</p>
       <Button href="/" variant="primary" size="lg">
-        Înapoi la prima pagină
+        {t('notFound.back')}
       </Button>
     </div>
   );

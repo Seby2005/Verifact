@@ -17,11 +17,20 @@ export const en: Translations = {
       menuOpen: 'Open menu',
       menuClose: 'Close menu',
       toggleLangAria: 'Switch language to Romanian',
+      homeAria: 'Verifact — home',
+      langOptions: 'Language options',
     },
     theme: {
       toDark: 'Switch to dark theme',
       toLight: 'Switch to light theme',
     },
+  },
+  notFound: {
+    code: '404',
+    title: 'Page not found',
+    lead: 'The page you are looking for does not exist or has moved.',
+    back: 'Back to the homepage',
+    genericError: 'An unexpected error occurred. Reload the page.',
   },
   publicReports: {
     title: 'Public Verification Reports',
