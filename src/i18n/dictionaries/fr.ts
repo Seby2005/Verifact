@@ -604,6 +604,7 @@ export const fr: Translations = {
     adminLink: 'Panneau Admin',
     adminFinancialLink: 'Tableau de bord financier & coûts',
     adminOpportunitiesLink: 'Opportunités de contenu',
+    adminVerificationsLink: 'Toutes les vérifications',
     tabs: {
       history: 'Historique des Vérifications',
       bookmarks: 'Favoris / Enregistrés',

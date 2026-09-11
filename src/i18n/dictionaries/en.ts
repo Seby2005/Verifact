@@ -603,6 +603,7 @@ export const en: Translations = {
     adminLink: 'Admin Panel',
     adminFinancialLink: 'Financial & Cost Dashboard',
     adminOpportunitiesLink: 'Content Opportunities',
+    adminVerificationsLink: 'All verifications',
     tabs: {
       history: 'Verification History',
       bookmarks: 'Saved / Bookmarks',

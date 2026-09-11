@@ -302,6 +302,12 @@ export const AuthPanel: React.FC = () => {
                   Dashboard Financiar & Costuri →
                 </a>
               </div>
+              <div className={styles.accountRow}>
+                <span className={styles.accountLabel}>Verificări</span>
+                <a href="/admin/verificari" className={styles.textLink}>
+                  Toate verificările →
+                </a>
+              </div>
             </>
           ) : null}
         </div>

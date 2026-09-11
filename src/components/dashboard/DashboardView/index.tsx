@@ -128,6 +128,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ user, onSignOut })
                 </svg>
                 {t('dashboard.adminOpportunitiesLink')}
               </Link>
+
+              <Link href="/admin/verificari" className={styles.adminLinkBtn}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                {t('dashboard.adminVerificationsLink')}
+              </Link>
             </>
           )}
 
@@ -176,6 +188,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ user, onSignOut })
               <div className={styles.adminActionContent}>
                 <div className={styles.adminActionTitle}>Oportunități de Conținut</div>
                 <div className={styles.adminActionDesc}>Tendințe și afirmații virale agregate automat pentru generare de conținut și fact-checking proactiv.</div>
+              </div>
+              <span className={styles.adminActionArrow}>→</span>
+            </Link>
+
+            <Link href="/admin/verificari" className={styles.adminActionCard}>
+              <div className={styles.adminActionIconWrap} style={{ background: '#e0f2fe', color: '#0369a1' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+              </div>
+              <div className={styles.adminActionContent}>
+                <div className={styles.adminActionTitle}>Toate Verificările</div>
+                <div className={styles.adminActionDesc}>Ce au întrebat utilizatorii, ce a răspuns algoritmul și unde a avut semnale slabe.</div>
               </div>
               <span className={styles.adminActionArrow}>→</span>
             </Link>

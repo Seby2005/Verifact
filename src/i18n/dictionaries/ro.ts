@@ -603,6 +603,7 @@ export const ro = {
     adminLink: 'Panou Admin',
     adminFinancialLink: 'Dashboard Financiar & Costuri',
     adminOpportunitiesLink: 'Oportunități Conținut',
+    adminVerificationsLink: 'Toate verificările',
     tabs: {
       history: 'Istoric Verificări',
       bookmarks: 'Favorite / Salvate',
