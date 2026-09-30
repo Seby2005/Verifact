@@ -17,7 +17,7 @@ const AI_GATEWAY_BASE_URL = process.env.AI_GATEWAY_BASE_URL?.replace(/\/+$/, '')
 const OPENROUTER_API_URL = AI_GATEWAY_BASE_URL
   ? `${AI_GATEWAY_BASE_URL}/chat/completions`
   : 'https://openrouter.ai/api/v1/chat/completions';
-const DEFAULT_MODEL = process.env.OPENROUTER_MODEL ?? 'deepseek/deepseek-chat';
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL ?? 'google/gemini-2.5-flash';
 
 const ASSESSMENT_FALLBACK: AIAssessment = {
   score: 50,
@@ -34,7 +34,7 @@ function withRetry<T>(createInit: () => RequestInit, label: string): Promise<T> 
     const res = await fetchWithRetry(
       OPENROUTER_API_URL,
       createInit,
-      { label: `OpenRouter ${label}` }
+      { label: `OpenRouter ${label}`, attempts: 2 }
     );
     if (!res.ok) throw new Error(`OpenRouter API HTTP error: ${res.status}`);
     return res.json() as Promise<T>;
@@ -147,7 +147,7 @@ REGULI:
           'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
           'X-Title': 'Verifact AI Fact-Checker',
         },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(8000),
         body: JSON.stringify({
           model,
           messages: [{ role: 'user', content: prompt }],
@@ -210,7 +210,7 @@ export async function filterRelevantSourcesWithOpenRouter(
   const key = apiKey || process.env.OPENROUTER_API_KEY;
   if (!key || candidates.length === 0) return null;
 
-  const model = modelName || DEFAULT_MODEL;
+  const model = modelName || 'google/gemini-2.5-flash-lite';
 
   // Short extracts on purpose: a full snippet per candidate pushed the prompt
   // large enough that the call timed out on a ~18-source report — which fails
@@ -263,7 +263,7 @@ REGULI:
           'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
           'X-Title': 'Verifact AI Fact-Checker',
         },
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(4000),
         body: JSON.stringify({
           model,
           messages: [{ role: 'user', content: prompt }],
@@ -348,7 +348,7 @@ export async function generateOpenRouterAnalysis(
         'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
         'X-Title': 'Verifact AI Fact-Checker',
       },
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(8000),
       body: JSON.stringify({
         model,
         messages: [{ role: 'user', content: prompt }],

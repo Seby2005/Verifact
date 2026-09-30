@@ -59,12 +59,9 @@ function corroboration(layer: { results?: unknown[] }): number {
  * redistributed to the layers that did find something.
  */
 function hasEvidence(layer: { status: string; results?: unknown[]; layerScore: number }): boolean {
-  if (layer.status !== 'success' || (layer.results?.length ?? 0) === 0) return false;
-  // A layer can return results and still fail to say anything about the claim —
-  // e.g. layer 2 finds ten articles but classifies every one as neutral, which
-  // produces a layerScore of exactly 0.5. That is an absence of signal, not a
-  // vote for "unclear", so it must not dilute layers that did reach a finding.
-  return Math.abs(layer.layerScore - 0.5) > 0.02;
+  // A layer has evidence if it succeeded and returned at least one result.
+  // Neutral journalistic reporting (0.5) is still valid evidence, not an absence of evidence.
+  return layer.status === 'success' && (layer.results?.length ?? 0) > 0;
 }
 
 /**
@@ -98,14 +95,20 @@ export function calculateScore(layers: {
 }): ScoreBreakdown {
   const aiScore01 = layers.ai ? layers.ai.score / 100 : 0.5;
 
+  // AI is available if present and either has meaningful confidence (>= 0.15)
+  // or has made a clear directional judgment (|score - 50| >= 10).
+  // We only exclude AI when it has near-zero confidence AND is sitting at 50%.
+  const aiHasSignal = Boolean(
+    layers.ai && (layers.ai.confidence >= 0.15 || Math.abs(layers.ai.score - 50) >= 10)
+  );
+
   // A layer counts only if it actually found something (see hasEvidence).
-  // The AI assessment counts only when the model expressed real confidence.
   const available = {
     layer1: hasEvidence(layers.layer1),
     layer2: hasEvidence(layers.layer2),
     layer3: hasEvidence(layers.layer3),
     layer4: hasEvidence(layers.layer4),
-    ai: Boolean(layers.ai && layers.ai.confidence >= 0.3),
+    ai: aiHasSignal,
   };
 
   // When search turned up nothing at all, the model's assessment is the only
@@ -127,17 +130,16 @@ export function calculateScore(layers: {
   let rawScore: number;
 
   if (totalAvailableWeight === 0) {
-    // Nothing found anywhere and no usable AI assessment.
-    rawScore = 0.5;
+    // If search found nothing and AI had low confidence/no signal,
+    // check if AI at least provided a non-neutral score before defaulting to 0.5.
+    if (layers.ai && Math.abs(layers.ai.score - 50) >= 5) {
+      rawScore = aiScore01;
+    } else {
+      rawScore = 0.5;
+    }
   } else if (searchLayersWithEvidence === 0 && available.ai) {
     // Search found nothing to corroborate, so defer to the model's assessment.
-    // It is only trusted here because it already cleared the confidence gate
-    // (>= 0.3) above — an unsure model returns 'insufficient' with low
-    // confidence, which drops out and lands the claim at a neutral 50. The old
-    // behaviour clamped every unsearchable claim into 40–84%, which is exactly
-    // what made a fabrication ("X started a war") read as ~50% "half true" and a
-    // notorious fact ("Romania joined the EU in 2007") stall at 75%. A confident
-    // model now reads false as false and a well-known truth as true.
+    // It is trusted here because it provided directional signal.
     rawScore = aiScore01;
   } else {
     // Weighted average over the components that carry evidence, with the

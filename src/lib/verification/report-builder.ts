@@ -32,11 +32,12 @@ export function extractExecutiveSummary(aiAnalysis: string): string {
   }
 
   // Strip any leading list bullet + section label the model kept inline
-  // (e.g. "- Verifact Rezumat:", "Rezumat:", "Summary:") so the summary reads
-  // as a clean sentence, not a labelled fragment.
+  // (e.g. "– VERIFACT AFIRMAȚIA DE VERIFICAT: ... Rezumat:", "Rezumat:", "Summary:")
   clean = clean
-    .replace(/^[-*•\s]+/, '')
+    .replace(/^[\s\-*•–—]+/, '')
+    .replace(/^(?:Verifact\s+)?(?:Afirma[tț]ia\s+de\s+verificat|Afirma[tț]ia|The\s+claim|L['’]affirmation)[^:]*:\s*(?:["“'][^"”']+["”']\s*)?(?:Rezumat|Summary|Résumé)?\s*:?\s*/i, '')
     .replace(/^(?:Verifact\s+)?(?:Rezumat|Summary|Résumé|Raport[^:]*)\s*:\s*/i, '')
+    .replace(/^[\s\-*•–—]+/, '')
     .trim();
 
   return clean;
@@ -47,11 +48,32 @@ export function generateKeyTakeaways(
   summary: string,
   sources: CombinedSource[],
   score: number,
-  locale: 'ro' | 'en' | 'fr' = 'ro'
+  locale: 'ro' | 'en' | 'fr' = 'ro',
+  verifiedClaim?: string,
+  inputText?: string
 ): string[] {
   const isRo = locale === 'ro';
   const isFr = locale === 'fr';
   const takeaways: string[] = [];
+
+  if (verifiedClaim && inputText && verifiedClaim.trim().toLowerCase() !== inputText.trim().toLowerCase()) {
+    const verdictLabel =
+      score >= 85
+        ? (isRo ? 'Adevărat' : isFr ? 'Vrai' : 'True')
+        : score >= 60
+        ? (isRo ? 'Parțial Adevărat' : isFr ? 'Partiellement vrai' : 'Partially True')
+        : score >= 40
+        ? (isRo ? 'Neconfirmat / Context Neclar' : isFr ? 'Non confirmé' : 'Unconfirmed')
+        : (isRo ? 'Fals / Fără Temei' : isFr ? 'Faux' : 'False');
+
+    takeaways.push(
+      isRo
+        ? `Am verificat ipoteza: „${verifiedClaim}” — Verdict: ${verdictLabel}.`
+        : isFr
+        ? `Hypothèse vérifiée : « ${verifiedClaim} » — Verdict : ${verdictLabel}.`
+        : `Verified hypothesis: "${verifiedClaim}" — Verdict: ${verdictLabel}.`
+    );
+  }
 
   if (score >= 70) {
     takeaways.push(
@@ -262,7 +284,9 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
     executiveSummary,
     sources,
     score,
-    reportLocale
+    reportLocale,
+    verifiedClaim,
+    input.text
   );
 
   return {

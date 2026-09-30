@@ -19,7 +19,7 @@ import type {
 
 export type ReportSynthesis = ProReportSynthesis;
 
-const MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat';
+const MODEL = process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash';
 const MAX_SOURCES = 10;
 
 function str(value: unknown): string {
@@ -291,7 +291,7 @@ Răspunde EXCLUSIV cu un obiect JSON valid, redactat în limba ${lang}:
             'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
             'X-Title': 'Verifact Pro Report Synthesis',
           },
-          signal: AbortSignal.timeout(20000),
+          signal: AbortSignal.timeout(5000),
           body: JSON.stringify({
             model: MODEL,
             messages: [{ role: 'user', content: prompt }],
@@ -299,7 +299,7 @@ Răspunde EXCLUSIV cu un obiect JSON valid, redactat în limba ${lang}:
             response_format: { type: 'json_object' },
           }),
         }),
-        { label: 'Pro report synthesis' }
+        { label: 'Pro report synthesis', attempts: 2 }
       ).then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<{ choices?: Array<{ message?: { content?: string } }> }>;

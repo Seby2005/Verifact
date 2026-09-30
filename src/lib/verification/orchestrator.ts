@@ -20,11 +20,12 @@ import { getCached, setCached } from './cache';
 import { createContentHash } from '@/lib/utils/hash';
 import { logger } from '@/lib/utils/logger';
 import { expandClaimQueries } from './query-expander';
-import { decomposeAndAssessRisk } from '@/lib/ai/claim-decomposer';
+import { decomposeAndAssessRisk, DEFAULT_DECOMPOSITION, type DecomposedClaim } from '@/lib/ai/claim-decomposer';
 import { extractClaim, shouldExtractClaim, type ExtractedClaim } from '@/lib/ai/claim-extractor';
-import { synthesizeReport } from '@/lib/ai/report-synthesis';
+import { normalizeQuestionToHypothesis } from './question-normalizer';
+import { sanitizeOcrText } from './ocr-cleaner';
 
-const LAYER_TIMEOUT_MS = 5_000; // 5 seconds per layer (fast search)
+const LAYER_TIMEOUT_MS = 3_500; // 3.5 seconds per layer (fast search)
 
 function buildFallbackSummary(
   layers: { layer1: Layer1Result; layer2: Layer2Result; layer3: Layer3Result; layer4: Layer4Result },
@@ -150,8 +151,9 @@ export async function verifyContent(
 
   const startTime = Date.now();
 
-  // 1a. Extract primary claim if input is noisy/long
-  let claimForSearch = input.text;
+  // 1a. Pre-Extraction Cleaner & Sanitizer
+  const sanitized = sanitizeOcrText(input.text);
+  let claimForSearch = sanitized.length >= 15 ? sanitized : input.text;
   let extraction: ExtractedClaim | null = null;
   if (shouldExtractClaim(input.inputType, input.text)) {
     extraction = await extractClaim(input.text, input.language);
@@ -161,13 +163,19 @@ export async function verifyContent(
   }
   const commentary = extraction?.commentary?.trim() || undefined;
 
-  // 1b. AI Query Expansion & Risk Assessment in Parallel
-  const [queries, decomposed] = await Promise.all([
-    expandClaimQueries(claimForSearch),
-    decomposeAndAssessRisk(claimForSearch),
-  ]);
+  // 1b. Interrogative-to-Declarative normalization
+  const questionNorm = normalizeQuestionToHypothesis(claimForSearch);
+  let verifiedHypothesis: string | undefined = undefined;
+  if (questionNorm.isQuestion) {
+    claimForSearch = questionNorm.hypothesis;
+    verifiedHypothesis = questionNorm.hypothesis;
+  }
 
-  // 2. Run all 4 layers in parallel with individual 6s timeouts.
+  // 1c. Fast Query Expansion
+  const queries = await expandClaimQueries(claimForSearch);
+
+  // 2. Run all 4 search layers AND risk decomposition concurrently
+  const pRisk = decomposeAndAssessRisk(claimForSearch);
   const p1 = withTimeout(runLayer1(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer1');
   const p2 = withTimeout(runLayer2(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer2');
   const p3 = withTimeout(runLayer3(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer3');
@@ -187,7 +195,11 @@ export async function verifyContent(
   tap('layer3', p3);
   tap('layer4', p4);
 
-  const [l1Result, l2Result, l3Result, l4Result] = await Promise.allSettled([p1, p2, p3, p4]);
+  const [l1Result, l2Result, l3Result, l4Result, riskResult] = await Promise.allSettled([p1, p2, p3, p4, pRisk]);
+
+  const decomposed: DecomposedClaim = riskResult.status === 'fulfilled'
+    ? riskResult.value
+    : DEFAULT_DECOMPOSITION;
 
   const rawLayer1 = l1Result.status === 'fulfilled'
     ? l1Result.value
@@ -270,7 +282,7 @@ export async function verifyContent(
 
   const report = buildReport({
     input,
-    verifiedClaim: extraction && claimForSearch !== input.text ? claimForSearch : undefined,
+    verifiedClaim: verifiedHypothesis || (extraction && claimForSearch !== input.text ? claimForSearch : undefined),
     posterCommentary: commentary,
     layers: { layer1, layer2, layer3, layer4 },
     layer1,
@@ -307,29 +319,8 @@ export async function verifyContent(
   report.riskLevel = decomposed.riskLevel;
   report.aiAvailable = aiAvailable;
 
-  // Enrich Pro Synthesis with AI deep analysis if available
-  if (aiAvailable && report.sources.length > 0) {
-    try {
-      const locale: 'ro' | 'en' | 'fr' =
-        input.language === 'fr' ? 'fr' : input.language === 'en' ? 'en' : 'ro';
-      const verdictWord =
-        locale === 'fr'
-          ? (report.verdict === 'true' ? 'Probablement vrai' : report.verdict === 'false' ? 'Probablement faux' : 'Partiellement vrai')
-          : locale === 'en'
-          ? (report.verdict === 'true' ? 'Likely true' : report.verdict === 'false' ? 'Likely false' : 'Partially true')
-          : (report.verdict === 'true' ? 'Probabil adevărat' : report.verdict === 'false' ? 'Probabil fals' : 'Parțial adevărat');
-      const enrichedSynthesis = await withTimeout(
-        synthesizeReport(report, verdictWord, locale),
-        6000,
-        'proSynthesis'
-      );
-      if (enrichedSynthesis) {
-        report.proSynthesis = enrichedSynthesis;
-      }
-    } catch {
-      // Deterministic fallback attached by buildReport is preserved
-    }
-  }
+  // Pro Synthesis dossier is already deterministically built and attached by buildReport
+  // via buildFallbackSynthesis with 0ms latency and zero serverless timeout risk.
 
   const layersWithData = [layer1, layer2, layer3, layer4].filter(
     (l) => l.status === 'success' && l.results.length > 0

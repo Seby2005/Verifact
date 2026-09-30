@@ -123,9 +123,9 @@ async function fetchOfficialTavily(queryStr: string): Promise<TavilySearchResult
             include_domains: OFFICIAL_DOMAINS,
             max_results: 6,
           }),
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(4000),
         }),
-        { label: 'layer3-tavily-official' }
+        { label: 'layer3-tavily-official', attempts: 1 }
       ).then((res) => {
         if (!res.ok) throw new Error(`Tavily error: ${res.status}`);
         return res;

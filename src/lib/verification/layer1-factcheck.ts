@@ -211,8 +211,8 @@ async function fetchFactChecks(query: string, lang: string): Promise<FactCheckRe
     const response = await withCircuitBreaker('google-fact-check', () =>
       fetchWithRetry(
         `https://factchecktools.googleapis.com/v1alpha1/claims:search?${params.toString()}`,
-        () => ({ signal: AbortSignal.timeout(8000) }),
-        { label: 'layer1-factcheck' }
+        () => ({ signal: AbortSignal.timeout(4000) }),
+        { label: 'layer1-factcheck', attempts: 2, baseDelayMs: 300 }
       ).then((res) => {
         if (!res.ok) throw new Error(`Fact Check API error: ${res.status} ${res.statusText}`);
         return res;

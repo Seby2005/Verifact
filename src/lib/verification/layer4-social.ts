@@ -174,14 +174,16 @@ async function searchSocialViaTavily(
 
     return items.map((item): SocialMediaPost => {
       const platform = determinePlatform(item.url);
+      const author = extractSocialAuthor(item.title, item.url);
+      const authorLower = author.toLowerCase();
       const isOriginal = namedEntities.some((e) =>
-        item.title.toLowerCase().includes(e.toLowerCase())
+        authorLower.includes(e.toLowerCase())
       );
 
       return {
         platform,
-        author: extractSocialAuthor(item.title, item.url),
-        authorVerified: item.url.includes('twitter.com') || item.url.includes('facebook.com'),
+        author,
+        authorVerified: false,
         postUrl: item.url,
         postDate: item.published_date ?? '',
         content: item.content,
@@ -196,11 +198,15 @@ async function searchSocialViaTavily(
 export function calculateLayer4Score(posts: SocialMediaPost[]): number {
   if (posts.length === 0) return 0.5;
 
-  const verifiedPosts = posts.filter((p) => p.authorVerified);
-  const originalSources = posts.filter((p) => p.isOriginalSource);
+  const verifiedOriginal = posts.filter((p) => p.isOriginalSource && p.authorVerified);
+  if (verifiedOriginal.length > 0) return 0.7;
 
-  if (originalSources.length > 0) return 0.7;
-  if (verifiedPosts.length > 0) return 0.6;
+  const originalSources = posts.filter((p) => p.isOriginalSource);
+  if (originalSources.length > 0) return 0.6;
+
+  const verifiedPosts = posts.filter((p) => p.authorVerified);
+  if (verifiedPosts.length > 0) return 0.55;
+
   return 0.5;
 }
 
