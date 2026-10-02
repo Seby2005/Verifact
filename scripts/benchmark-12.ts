@@ -1,8 +1,24 @@
-import { config } from 'dotenv';
+import fs from 'fs';
 import path from 'path';
 
-// Load .env.local
-config({ path: path.resolve(process.cwd(), '.env.local') });
+// Load .env.local if present
+try {
+  const envPath = path.resolve(process.cwd(), '.env.local');
+  if (fs.existsSync(envPath)) {
+    for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const idx = trimmed.indexOf('=');
+      if (idx !== -1) {
+        const k = trimmed.slice(0, idx).trim();
+        const v = trimmed.slice(idx + 1).trim();
+        if (!process.env[k]) process.env[k] = v;
+      }
+    }
+  }
+} catch {
+  // Ignore missing env file
+}
 
 import { verifyContent } from '../src/lib/verification/orchestrator';
 import type { VerificationInput } from '../src/types/verification';
