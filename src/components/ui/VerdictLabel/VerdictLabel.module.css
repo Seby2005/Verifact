@@ -13,6 +13,12 @@
 .unclear { --vc: var(--verdict-unclear); }
 .false { --vc: var(--verdict-false); }
 
+.corroborated { --vc: var(--verdict-true); }
+.contradicted { --vc: var(--verdict-false); }
+.missing_context { --vc: var(--verdict-partial); }
+.unverified_no_sources { --vc: var(--verdict-unclear); }
+.open_debate { --vc: var(--color-blue-600, #2563eb); }
+
 .label {
   font-family: var(--font-family-sans);
   font-size: 1.0625rem;

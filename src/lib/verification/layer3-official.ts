@@ -240,11 +240,12 @@ export async function runLayer3(
 
   const roQuery = expandedQueries?.romanianQuery || text;
   const enQuery = expandedQueries?.englishQuery || text;
+  const officialQuery = expandedQueries?.officialAngle || roQuery;
   const isFrench = _language === 'fr';
 
   // Official search + Wikipedia grounding + Academic/Scientific Research search in parallel
-  const [roItems, enItems, wikiRo, wikiEn, wikiFr, academicItems] = await Promise.all([
-    apiKey ? fetchOfficialTavily(roQuery) : Promise.resolve([]),
+  const [officialItems, enItems, wikiRo, wikiEn, wikiFr, academicItems] = await Promise.all([
+    apiKey ? fetchOfficialTavily(officialQuery) : Promise.resolve([]),
     apiKey ? fetchOfficialTavily(enQuery) : Promise.resolve([]),
     fetchWikipedia(roQuery, 'ro'),
     fetchWikipedia(enQuery, 'en'),
@@ -253,7 +254,7 @@ export async function runLayer3(
   ]);
 
   const seen = new Set<string>();
-  const officialSources: OfficialSource[] = [...roItems, ...enItems]
+  const officialSources: OfficialSource[] = [...officialItems, ...enItems]
     .filter((item) => {
       if (seen.has(item.url)) return false;
       seen.add(item.url);

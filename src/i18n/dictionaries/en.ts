@@ -91,6 +91,13 @@ export const en: Translations = {
       partial: 'Missing Context',
       unclear: 'Inconclusive',
     },
+    evidenceStatus: {
+      corroborated: 'Corroborated by primary sources',
+      contradicted: 'Contradicted by documented facts',
+      missing_context: 'Missing verifiable context',
+      unverified_no_sources: 'No credible evidence found',
+      open_debate: 'Open debate / Divergent opinions',
+    },
     scoreLabel: 'Credibility score: ',
   },
 

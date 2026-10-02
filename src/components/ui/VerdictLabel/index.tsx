@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { useLanguage } from '@/i18n';
+import type { EvidenceStatus, PlausibilityTilt } from '@/types/verification';
+import { getEvidenceStatusConfig } from '@/lib/constants/verdicts';
 import styles from './VerdictLabel.module.css';
 
 export type VerdictKind = 'true' | 'partial' | 'unclear' | 'false';
@@ -28,6 +30,8 @@ export function verdictFromScore(score: number): VerdictKind {
 
 export interface VerdictLabelProps {
   kind: VerdictKind;
+  evidenceStatus?: EvidenceStatus;
+  plausibilityTilt?: PlausibilityTilt;
   /** Veracity score 0-100. Rendered as plain text, never as a chip. */
   score?: number;
   layout?: 'stacked' | 'inline';
@@ -35,19 +39,44 @@ export interface VerdictLabelProps {
 
 export const VerdictLabel: React.FC<VerdictLabelProps> = ({
   kind,
+  evidenceStatus,
+  plausibilityTilt,
   score,
   layout = 'stacked',
 }) => {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
+
+  const statusConfig = evidenceStatus ? getEvidenceStatusConfig(evidenceStatus) : null;
+  const statusClass = evidenceStatus ? styles[evidenceStatus] : '';
 
   // The band class sets the semantic verdict colour that the label and the
   // score both inherit — the one place colour appears in this design.
-  const classNames = [styles.verdict, styles[kind], layout === 'inline' ? styles.inline : '']
+  const classNames = [
+    styles.verdict,
+    styles[kind],
+    statusClass,
+    layout === 'inline' ? styles.inline : '',
+  ]
     .filter(Boolean)
     .join(' ');
 
-  const labelText = t(`verdict.copy.${kind}`);
-  const noteText = kind === 'partial' || kind === 'unclear' ? t(`verdict.note.${kind}`) : null;
+  let labelText: string;
+  if (statusConfig) {
+    labelText =
+      locale === 'en'
+        ? statusConfig.labelEn
+        : locale === 'fr'
+        ? statusConfig.labelFr
+        : statusConfig.labelRo;
+  } else {
+    labelText = t(`verdict.copy.${kind}`);
+  }
+
+  const noteText = plausibilityTilt?.label
+    ? plausibilityTilt.label
+    : kind === 'partial' || kind === 'unclear'
+    ? t(`verdict.note.${kind}`)
+    : null;
 
   return (
     <div className={classNames}>

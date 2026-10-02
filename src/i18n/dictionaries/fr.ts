@@ -92,6 +92,13 @@ export const fr: Translations = {
       partial: 'Contexte manquant',
       unclear: 'Insuffisamment vérifié',
     },
+    evidenceStatus: {
+      corroborated: 'Confirmé par des sources multiples',
+      contradicted: 'Contredit par les faits documentés',
+      missing_context: 'Contexte vérifiable manquant',
+      unverified_no_sources: 'Aucune source crédible identifiée',
+      open_debate: 'Débat ouvert / Opinions divergentes',
+    },
     scoreLabel: 'Score de véracité : ',
   },
 

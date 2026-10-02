@@ -1,4 +1,4 @@
-import type { AIAnalysisContext, TokenUsageDetail } from '@/types/verification';
+import type { AIAnalysisContext, TokenUsageDetail, EvidenceStatus } from '@/types/verification';
 import { buildAnalysisPrompt } from './prompts';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
@@ -22,6 +22,7 @@ const DEFAULT_MODEL = process.env.OPENROUTER_MODEL ?? 'google/gemini-2.5-flash';
 const ASSESSMENT_FALLBACK: AIAssessment = {
   score: 50,
   verdict: 'insufficient',
+  evidenceStatus: 'unverified_no_sources',
   confidence: 0,
   reasoning: 'Evaluarea OpenRouter nu a putut fi interpretată.',
 };
@@ -52,17 +53,30 @@ function parseAssessment(raw: string): AIAssessment | null {
   if (braced) candidates.push(braced[0]);
   candidates.push(raw);
 
+  const validStatuses: EvidenceStatus[] = [
+    'corroborated',
+    'contradicted',
+    'missing_context',
+    'unverified_no_sources',
+    'open_debate',
+  ];
+
   for (const c of candidates) {
     try {
       const o = JSON.parse(c.trim()) as Record<string, unknown>;
       const score = Number(o.score);
       if (!Number.isFinite(score)) continue;
       const verdict = String(o.verdict) as AIAssessment['verdict'];
+      const rawStatus = String(o.evidenceStatus) as EvidenceStatus;
       return {
         score: Math.max(0, Math.min(100, Math.round(score))),
         verdict: (['supports', 'contradicts', 'mixed', 'insufficient'] as string[]).includes(verdict)
           ? verdict
           : 'insufficient',
+        evidenceStatus: validStatuses.includes(rawStatus) ? rawStatus : undefined,
+        plausibilityTilt: typeof o.plausibilityTilt === 'string' ? o.plausibilityTilt : undefined,
+        isSatireOrParody: Boolean(o.isSatireOrParody),
+        circularReportingDetected: Boolean(o.circularReportingDetected),
         confidence: Math.max(0, Math.min(1, Number(o.confidence) || 0)),
         reasoning: typeof o.reasoning === 'string' ? o.reasoning : '',
       };
@@ -110,7 +124,7 @@ export async function generateOpenRouterAssessment(
   const evidence = summariseEvidence(context);
   const claim = context.claim ?? context.inputText ?? '';
 
-  const prompt = `Ești un evaluator de fact-checking. Evaluează afirmația de mai jos.
+  const prompt = `Ești un analist critic și investigator de fact-checking la Verifact. Evaluează afirmația de mai jos:
 
 AFIRMAȚIA:
 <claim>
@@ -120,18 +134,23 @@ ${claim}
 DOVEZI GĂSITE PRIN CĂUTARE (pot fi goale):
 ${evidence || '(nicio dovadă găsită prin căutare)'}
 
-REGULI:
-1. Bazează-te ÎNTÂI pe dovezile de mai sus. Când lipsesc, dar afirmația ține de fapte binecunoscute (geografie, istorie, apartenențe/funcții publice, evenimente majore), evaluează pe baza cunoștințelor factuale stabilite — "supports" pentru un adevăr clar, "contradicts" pentru o falsitate clară.
-2. Folosește "insufficient" DOAR pentru afirmații cu adevărat obscure, opinii, predicții sau ce nu se poate verifica factual — NU pentru fapte de bază.
-3. Când ești sigur, folosește confidence mare (0.7–1.0) și un scor extrem: aproape de 0 pentru un fals clar, aproape de 100 pentru un adevăr clar. Nu ghici pe ce e obscur (atunci "insufficient", confidence mic).
-4. Nu lua poziții politice.
+REGULI METODOLOGICE:
+1. Examinează dovezile culese: detectează dacă este vorba de satiră/parodie (ex: Times New Roman, The Onion), raportare circulară (site-uri care doar reciclează o postare pe rețele sociale fără verificare) sau omisiune gravă de context.
+2. Plauzibilitate deductivă: Dacă lipsesc articole explicite de demontare (debunk), aplică deducția logică și cunoștințele instituționale: Are instituția menționată atribuții? Există legi/hotărâri atestate? Un eveniment de această magnitudine ar fi putut avea loc fără nicio urmă oficială sau mediatică?
+3. Dacă nu există nicio sursă primară sau dovadă pentru un zvon senzaționalist, alege evidenceStatus "unverified_no_sources", scor redus (15-30) și o înclinație clară spre neverosimil (nu claca într-un neutru 50 "insuficient").
+4. Dacă tema este o dezbatere sau evaluare prospectivă, folosește "open_debate".
+5. Nu lua poziții politice părtinitoare.
 
-Întoarce EXCLUSIV un obiect JSON cu exact aceste chei:
+Întoarce EXCLUSIV un JSON valid:
 {
   "score": <număr 0-100>,
   "verdict": "supports" | "contradicts" | "mixed" | "insufficient",
+  "evidenceStatus": "corroborated" | "contradicted" | "missing_context" | "unverified_no_sources" | "open_debate",
+  "plausibilityTilt": "<scurtă înclinație de plauzibilitate în română>",
+  "isSatireOrParody": false,
+  "circularReportingDetected": false,
   "confidence": <număr 0-1>,
-  "reasoning": "<o propoziție scurtă în română>"
+  "reasoning": "<o analiză deductivă scurtă în română>"
 }`;
 
   try {

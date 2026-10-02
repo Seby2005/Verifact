@@ -5,6 +5,8 @@ import type {
   Layer4Result,
   ScoreBreakdown,
   Verdict,
+  EvidenceStatus,
+  PlausibilityTilt,
 } from '@/types/verification';
 
 const WEIGHTS = {
@@ -203,3 +205,222 @@ export function scoreToConfidence(
   if (availableLayers >= 2) return 'medium';
   return 'low';
 }
+
+export interface EvidenceStatusInput {
+  score: number;
+  layers: {
+    layer1: Layer1Result;
+    layer2: Layer2Result;
+    layer3: Layer3Result;
+    layer4: Layer4Result;
+  };
+  ai?: {
+    score?: number;
+    verdict?: string;
+    evidenceStatus?: EvidenceStatus;
+    confidence?: number;
+    reasoning?: string;
+    isSatireOrParody?: boolean;
+    circularReportingDetected?: boolean;
+  };
+}
+
+/**
+ * Determines the descriptive, non-dogmatic evidence status of a claim.
+ * Replaces binary "true/false" labeling with objective investigative categorization.
+ */
+export function determineEvidenceStatus(input: EvidenceStatusInput): EvidenceStatus {
+  const { score, layers, ai } = input;
+
+  // 1. Explicit satire/parody detection from the LLM cross-examination
+  if (ai?.isSatireOrParody) {
+    return 'contradicted';
+  }
+
+  // 2. Direct model-assessed evidence status if valid
+  const validStatuses: EvidenceStatus[] = [
+    'corroborated',
+    'contradicted',
+    'missing_context',
+    'unverified_no_sources',
+    'open_debate',
+  ];
+  if (ai?.evidenceStatus && validStatuses.includes(ai.evidenceStatus)) {
+    return ai.evidenceStatus;
+  }
+
+  const l1Results = layers.layer1.results ?? [];
+  const l2Results = layers.layer2.results ?? [];
+  const l3Results = layers.layer3.results ?? [];
+  const totalEvidenceResults = l1Results.length + l2Results.length + l3Results.length;
+
+  // 3. Clear Contradiction signals:
+  // - Fact-checkers explicitly rated it false/debunk (layer1)
+  // - Official institutions explicitly deny it (layer3)
+  // - Low composite score (< 40) or confident contradiction from AI
+  const hasFactCheckDebunk = l1Results.some(
+    (r) => r.ratingValue !== undefined && r.ratingValue <= 0.25
+  );
+  const hasOfficialDenial = l3Results.some((o) => o.supportsOrDenies === 'denies');
+  if (hasFactCheckDebunk || hasOfficialDenial || (ai?.verdict === 'contradicts' && score <= 38) || score < 35) {
+    return 'contradicted';
+  }
+
+  // 4. Clear Corroboration signals:
+  // - Fact-checker rated it true/confirmed
+  // - Official sources confirm/support
+  // - High score (>= 80) with corroborating evidence
+  const hasFactCheckConfirmation = l1Results.some(
+    (r) => r.ratingValue !== undefined && r.ratingValue >= 0.75
+  );
+  const hasOfficialSupport = l3Results.some((o) => o.supportsOrDenies === 'supports');
+  if (
+    (hasFactCheckConfirmation || hasOfficialSupport || (ai?.verdict === 'supports' && (ai?.confidence ?? 0) >= 0.7)) &&
+    score >= 75
+  ) {
+    return 'corroborated';
+  }
+
+  // 5. Zero credible evidence identified (the rumor / unsubstantiated claim):
+  // When search yields nothing and AI lacks high confidence in a known historical/scientific fact
+  if (totalEvidenceResults === 0) {
+    if (ai?.verdict === 'supports' && (ai?.confidence ?? 0) >= 0.85 && score >= 80) {
+      return 'corroborated';
+    }
+    if (ai?.verdict === 'contradicts' && (ai?.confidence ?? 0) >= 0.75 && score <= 25) {
+      return 'contradicted';
+    }
+    return 'unverified_no_sources';
+  }
+
+  // 6. Open debate vs. Missing context:
+  const isDebate =
+    ai?.verdict === 'mixed' ||
+    Boolean(
+      ai?.reasoning &&
+        /(dezbatere|divergent|controvers|opinie|perspectiv|estimar|nuan[tț]|prospectiv)/i.test(ai.reasoning)
+    );
+  if (isDebate) {
+    return 'open_debate';
+  }
+
+  // 7. Missing context / decontextualized
+  if (score >= 50 && score <= 79) {
+    return 'missing_context';
+  }
+
+  return score < 50 ? 'contradicted' : 'corroborated';
+}
+
+/**
+ * Calculates a nuanced, non-dogmatic plausibility tilt with an honest rationale.
+ */
+export function calculatePlausibilityTilt(
+  status: EvidenceStatus,
+  score: number,
+  aiReasoning?: string,
+  language: 'ro' | 'en' | 'fr' = 'ro'
+): PlausibilityTilt {
+  const isRo = language === 'ro';
+  const isFr = language === 'fr';
+
+  switch (status) {
+    case 'corroborated':
+      return {
+        direction: 'plausible',
+        score,
+        label: isRo
+          ? 'Înclinație spre Verosimil — confirmat prin surse primare'
+          : isFr
+          ? 'Forte probabilité de véracité — corroboré par des sources primaires'
+          : 'Tilt toward Plausible — corroborated by primary sources',
+        rationale: isRo
+          ? 'Datele și documentele verificate atestă convergent evenimentele sau cifrele menționate.'
+          : isFr
+          ? 'Les données et documents vérifiés attestent de manière concordante les faits ou chiffres mentionnés.'
+          : 'Verified data and primary documentation consistently attest to the mentioned facts.',
+      };
+
+    case 'contradicted':
+      return {
+        direction: 'unlikely',
+        score,
+        label: isRo
+          ? 'Înclinație spre Fals — contrazis de evidențele publice'
+          : isFr
+          ? 'Forte probabilité d’inexactitude — réfuté par les faits établis'
+          : 'Tilt toward False — contradicted by documented facts',
+        rationale: isRo
+          ? 'Documentele oficiale, rapoartele instituționale sau investigațiile independente contrazic direct această afirmație.'
+          : isFr
+          ? 'Les documents officiels, rapports d’institutions ou enquêtes indépendantes contredisent directement cette affirmation.'
+          : 'Official records, institutional reports, or independent investigations directly contradict this claim.',
+      };
+
+    case 'missing_context':
+      return {
+        direction: 'mixed',
+        score,
+        label: isRo
+          ? 'Înclinație spre Denaturare — context esențial omis'
+          : isFr
+          ? 'Probabilité de distorsion — contexte déterminant omis'
+          : 'Tilt toward Misleading — critical context omitted',
+        rationale: isRo
+          ? 'Afirmația preia un element factual real, însă îl prezintă trunchiat, denaturând semnificația sau cauzalitatea.'
+          : isFr
+          ? 'L’affirmation repose sur un fait réel mais le présente de manière tronquée, faussant sa portée ou sa causalité.'
+          : 'The claim relies on a real factual element but presents it out of context, distorting its scope or causality.',
+      };
+
+    case 'unverified_no_sources':
+      return {
+        direction: score < 40 ? 'unlikely' : 'neutral',
+        score,
+        label: isRo
+          ? 'Înclinație spre Neverosimil — absență totală a surselor credibile'
+          : isFr
+          ? 'Non corroboré — absence totale de sources fiables'
+          : 'Tilt toward Unverified — no credible evidence found',
+        rationale: isRo
+          ? 'Nu a fost identificată nicio dovadă primară sau atestare credibilă. Într-o societate digitală, deciziile majore lasă urme documentare.'
+          : isFr
+          ? 'Aucune preuve primaire ni attestation crédible n’a été identifiée. Les décisions publiques laissent normalement des traces documentaires.'
+          : 'No primary evidence or credible records were found. Significant events leave verifiable public trails.',
+      };
+
+    case 'open_debate':
+      return {
+        direction: 'mixed',
+        score,
+        label: isRo
+          ? 'Perspectivă deschisă — opinii divergente sau consens nedefinit'
+          : isFr
+          ? 'Débat ouvert — avis divergents ou consensus en évolution'
+          : 'Open debate — divergent viewpoints or evolving consensus',
+        rationale: isRo
+          ? 'Subiectul vizează opinii prospective, dispute legislative sau evaluări de politici publice fără consens factual tranșat.'
+          : isFr
+          ? 'Le sujet relève d’analyses prospectives ou de controverses d’experts ne faisant pas l’objet d’un consensus tranché.'
+          : 'The topic involves forward-looking assessments or policy debates where no uniform consensus exists.',
+      };
+  }
+}
+
+/**
+ * Generates an empowering critical thinking invitation for the reader.
+ */
+export function generateCriticalThinkingPrompt(
+  status: EvidenceStatus,
+  claim: string,
+  language: 'ro' | 'en' | 'fr' = 'ro'
+): string {
+  if (language === 'en') {
+    return 'Here is what the evidence shows and what is missing — review the sources and decide for yourself.';
+  }
+  if (language === 'fr') {
+    return 'Voici ce que documentent les sources et ce qui fait défaut — examinez les preuves et jugez par vous-même.';
+  }
+  return 'Iată ce spun sursele, iată ce lipsește, decide tu pe baza dovezilor.';
+}
+

@@ -85,7 +85,12 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
       <header className={styles.head} ref={headRef}>
         <div>
           {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-          <VerdictLabel kind={report.verdict} score={report.score} />
+          <VerdictLabel
+            kind={report.verdict}
+            evidenceStatus={report.evidenceStatus}
+            plausibilityTilt={report.plausibilityTilt}
+            score={report.score}
+          />
         </div>
         <p className={styles.meta}>
           {formatDate(report.createdAt, locale)}
@@ -101,6 +106,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
       {interactive ? (
         <StickyVerdict
           kind={report.verdict}
+          evidenceStatus={report.evidenceStatus}
           score={report.score}
           claim={report.claim ?? report.inputText ?? ''}
           watch={headRef}
@@ -111,6 +117,22 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         <p className={styles.sectionLabel}>{t('reportView.claimLabel')}</p>
         <p className={styles.claim}>&ldquo;{report.claim ?? report.inputText}&rdquo;</p>
       </div>
+
+      {report.criticalThinkingPrompt ? (
+        <div className={styles.criticalThinkingBanner}>
+          <span className={styles.criticalThinkingIcon} aria-hidden="true">💡</span>
+          <span>{report.criticalThinkingPrompt}</span>
+        </div>
+      ) : null}
+
+      {report.plausibilityTilt?.rationale ? (
+        <div className={styles.plausibilityBlock}>
+          <div className={styles.plausibilityHeader}>
+            <span className={styles.plausibilityTitle}>{report.plausibilityTilt.label}</span>
+          </div>
+          <p className={styles.plausibilityRationale}>{report.plausibilityTilt.rationale}</p>
+        </div>
+      ) : null}
 
       {report.posterCommentary ? (
         <div className={styles.commentaryBlock}>

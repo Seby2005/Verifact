@@ -291,6 +291,7 @@ export async function verifyContent(
     layer4,
     scoreBreakdown,
     aiAnalysis,
+    aiAssessment: assessment,
     processingTime: Date.now() - startTime,
   });
 

@@ -306,15 +306,17 @@ export async function runLayer2(
 
   const roQuery = expandedQueries?.romanianQuery || text;
   const enQuery = expandedQueries?.englishQuery || text;
+  const contextQuery = expandedQueries?.contextOriginAngle;
 
   // One GDELT call only (it rate-limits to 1 req / 5s); enQuery casts the widest
   // net across its global, mostly-English index, complementing the RO-first
   // NewsAPI/Tavily calls.
-  const [newsRo, newsEn, tavilyRo, tavilyEn, gdelt] = await Promise.allSettled([
+  const [newsRo, newsEn, tavilyRo, tavilyEn, tavilyContext, gdelt] = await Promise.allSettled([
     fetchFromNewsAPI(roQuery, 'ro'),
     fetchFromNewsAPI(enQuery, 'en'),
     fetchFromTavily(roQuery, text),
     fetchFromTavily(enQuery, text),
+    contextQuery && contextQuery !== roQuery ? fetchFromTavily(contextQuery, text) : Promise.resolve([]),
     fetchFromGDELT(enQuery, text),
   ]);
 
@@ -323,6 +325,7 @@ export async function runLayer2(
     ...(newsEn.status === 'fulfilled' ? newsEn.value : []),
     ...(tavilyRo.status === 'fulfilled' ? tavilyRo.value : []),
     ...(tavilyEn.status === 'fulfilled' ? tavilyEn.value : []),
+    ...(tavilyContext.status === 'fulfilled' ? tavilyContext.value : []),
     ...(gdelt.status === 'fulfilled' ? gdelt.value : []),
   ];
 

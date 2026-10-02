@@ -90,6 +90,13 @@ export const ro = {
       partial: 'Context lipsă',
       unclear: 'Insuficient verificat',
     },
+    evidenceStatus: {
+      corroborated: 'Confirmat de documente / surse multiple',
+      contradicted: 'Contrazis de sursele oficiale / presă',
+      missing_context: 'Lipsit de context verificabil',
+      unverified_no_sources: 'Fără surse credibile identificate',
+      open_debate: 'Dezbatere deschisă / Opinii divergente',
+    },
     scoreLabel: 'Scor de veridicitate: ',
   },
 
