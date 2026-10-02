@@ -122,7 +122,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ user, onSignOut })
 
               <Link href="/admin/oportunitati" className={styles.adminLinkBtn}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                   <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
                   <line x1="12" y1="22.08" x2="12" y2="12"></line>
                 </svg>
@@ -141,6 +140,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ user, onSignOut })
                 {t('dashboard.adminVerificationsLink')}
               </Link>
             </>
+          )}
+
+          {(usage?.tier === 'business' || usage?.unlimited) && (
+            <Link href="/cont/api" className={styles.apiKeysBtn}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 2l-2 2m-1.5 1.5L12 11l-4 4-3-3 4-4 5.5-5.5z"></path>
+                <circle cx="16" cy="8" r="2"></circle>
+              </svg>
+              Chei API
+            </Link>
           )}
 
           <Button type="button" variant="secondary" size="sm" onClick={handleSignOut}>

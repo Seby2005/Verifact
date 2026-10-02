@@ -158,6 +158,18 @@ export interface AdminAction {
   created_at: string;
 }
 
+export interface ApiKey {
+  id: string;
+  user_id: string;
+  key_hash: string;
+  key_prefix: string;
+  name: string;
+  scopes: string[];
+  last_used_at: string | null;
+  created_at: string;
+  revoked_at: string | null;
+}
+
 export interface ContentOpportunity {
   id: string;
   title: string;
@@ -175,6 +187,16 @@ export interface Database {
         Row: Profile;
         Insert: Pick<Profile, 'id'> & Partial<Omit<Profile, 'id'>>;
         Update: Partial<Profile>;
+      };
+      api_keys: {
+        Row: ApiKey;
+        Insert: Omit<ApiKey, 'id' | 'created_at' | 'last_used_at' | 'revoked_at'> & {
+          id?: string;
+          last_used_at?: string | null;
+          created_at?: string;
+          revoked_at?: string | null;
+        };
+        Update: Partial<ApiKey>;
       };
       verifications: {
         Row: Verification;
@@ -293,6 +315,14 @@ export interface Database {
       };
       release_usage_slot: {
         Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
+      reserve_usage_slot_for: {
+        Args: { p_user_id: string };
+        Returns: { allowed: boolean; usage_limit: number; used: number }[];
+      };
+      release_usage_slot_for: {
+        Args: { p_user_id: string };
         Returns: undefined;
       };
       check_rate_limit: {

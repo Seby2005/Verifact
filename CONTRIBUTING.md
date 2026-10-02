@@ -32,7 +32,7 @@ This project follows standards of respect and professionalism. We expect all con
 
 ### Submitting Pull Requests
 
-#### Local Setup
+#### Quickstart & Development
 
 ```bash
 # 1. Fork the repository on GitHub

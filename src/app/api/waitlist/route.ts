@@ -13,6 +13,21 @@ import { logger } from '@/lib/utils/logger';
  */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
+
+function sanitizeUtm(utm: unknown): Record<string, string> {
+  if (typeof utm !== 'object' || utm === null) return {};
+  const source = utm as Record<string, unknown>;
+  const clean: Record<string, string> = {};
+  for (const key of UTM_KEYS) {
+    const value = source[key];
+    if (typeof value === 'string' && value.trim()) {
+      clean[key] = value.trim().slice(0, 120);
+    }
+  }
+  return clean;
+}
+
 export async function POST(request: Request) {
   const base = process.env.LISTMONK_URL?.replace(/\/+$/, '');
   const user = process.env.LISTMONK_API_USER;
@@ -23,9 +38,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'waitlist not configured' }, { status: 503 });
   }
 
-  let body: { email?: string; name?: string };
+  let body: { email?: string; name?: string; utm?: Record<string, unknown> };
   try {
-    body = (await request.json()) as { email?: string; name?: string };
+    body = (await request.json()) as { email?: string; name?: string; utm?: Record<string, unknown> };
   } catch {
     return NextResponse.json({ error: 'invalid JSON' }, { status: 400 });
   }
@@ -34,6 +49,12 @@ export async function POST(request: Request) {
   if (!EMAIL_RE.test(email)) {
     return NextResponse.json({ error: 'invalid email' }, { status: 422 });
   }
+
+  // Attribution is stored on the subscriber so a campaign can be evaluated
+  // later from Listmonk alone. Only the five known UTM keys are forwarded, and
+  // each is length-capped, so an arbitrary client payload can't be written into
+  // the CRM record.
+  const attribs = sanitizeUtm(body.utm);
 
   try {
     const res = await fetch(`${base}/api/subscribers`, {
@@ -49,6 +70,7 @@ export async function POST(request: Request) {
         status: 'enabled',
         lists: [listId],
         preconfirm_subscriptions: true,
+        attribs,
       }),
       signal: AbortSignal.timeout(8000),
     });

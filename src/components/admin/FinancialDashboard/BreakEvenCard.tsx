@@ -41,6 +41,10 @@ export const BreakEvenCard: React.FC<BreakEvenCardProps> = ({ metrics }) => {
             <span className={styles.statValue}>{subscribers.businessCount} conturi</span>
           </div>
           <div className={styles.statRow}>
+            <span className={styles.statLabel}>Preț Standard Business</span>
+            <span className={styles.statValue}>€{subscribers.businessPricePerMonthEur.toFixed(2)} / lună</span>
+          </div>
+          <div className={styles.statRow}>
             <span className={styles.statLabel}>Total Abonați Plătitori</span>
             <span className={styles.statValue}>{subscribers.totalActivePremium} abonați</span>
           </div>
@@ -52,6 +56,12 @@ export const BreakEvenCard: React.FC<BreakEvenCardProps> = ({ metrics }) => {
             <span className={styles.statLabel}>MRR Curent (Venit Lunar)</span>
             <span className={`${styles.statValue} ${styles.statValueLarge}`}>
               €{subscribers.currentMrrEur.toFixed(2)}
+            </span>
+          </div>
+          <div className={styles.statRow}>
+            <span className={styles.statLabel}>din care Pro / Business</span>
+            <span className={styles.statValue}>
+              €{subscribers.proMrrEur.toFixed(2)} / €{subscribers.businessMrrEur.toFixed(2)}
             </span>
           </div>
         </div>

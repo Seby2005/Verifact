@@ -9,7 +9,6 @@ import { ReportDeepDive } from '@/components/report/ReportDeepDive';
 import { ReportAuditTrail } from '@/components/report/ReportAuditTrail';
 import { PublicReportCard } from '@/components/reports/PublicReportCard';
 import { JsonLd } from '@/components/JsonLd';
-import { FixedLocaleProvider } from '@/i18n';
 import { getTranslation, type Locale } from '@/i18n/language';
 import { ro } from '@/i18n/dictionaries/ro';
 import { en } from '@/i18n/dictionaries/en';
@@ -50,6 +49,20 @@ function localizedDescription(score: number | null, locale: Locale): string {
   return `Raport de verificare independentă a informației: Scor de veridicitate ${s}%. Vezi analiza detaliată și sursele citate pe Verifact.`;
 }
 
+function getRatingValue(verdict: Verdict | null): number {
+  switch (verdict) {
+    case 'true':
+      return 5;
+    case 'false':
+      return 1;
+    case 'partial':
+      return 3;
+    case 'unclear':
+    default:
+      return 2;
+  }
+}
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -57,23 +70,8 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-function getVerdictLabel(verdict: Verdict | null): { label: string; badgeClass: string; ratingValue: number } {
-  switch (verdict) {
-    case 'true':
-      return { label: 'Probabil Adevărat', badgeClass: styles.badgeTrue, ratingValue: 5 };
-    case 'false':
-      return { label: 'Probabil Fals', badgeClass: styles.badgeFalse, ratingValue: 1 };
-    case 'partial':
-      return { label: 'Parțial Adevărat / Context Lipsă', badgeClass: styles.badgePartial, ratingValue: 3 };
-    case 'unclear':
-    default:
-      return { label: 'Neclar / Dovezi Insuficiente', badgeClass: styles.badgeUnclear, ratingValue: 2 };
-  }
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  // Consume central helper (single source of truth)
   const data = await getPublicReportById(id);
 
   if (!data) {
@@ -116,22 +114,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PublicReportPage({ params }: PageProps) {
   const { id } = await params;
-  // Consume central helper (single source of truth)
   const data = await getPublicReportById(id);
 
-  // Return HTTP 404 (notFound) if report does not exist or is not public
   if (!data) {
     notFound();
   }
 
-  const verdictInfo = getVerdictLabel(data.verdict);
   const report = data.reportJson;
   const displayDate = data.publishedAt || data.createdAt;
-
-  // A public report is a fixed-language artifact: render its whole chrome in the
-  // report's own language so an English claim never sits under a Romanian audit
-  // trail. Falls back to Romanian for legacy rows / unexpected values.
   const reportLocale: Locale = data.language === 'en' || data.language === 'fr' ? data.language : 'ro';
+  const ratingValue = getRatingValue(data.verdict);
 
   // Schema.org ClaimReview JSON-LD for Google Fact Check Carousel & Rich Results
   const claimReviewLdJson = {
@@ -147,7 +139,7 @@ export default async function PublicReportPage({ params }: PageProps) {
     },
     reviewRating: {
       '@type': 'Rating',
-      ratingValue: verdictInfo.ratingValue,
+      ratingValue,
       bestRating: 5,
       worstRating: 1,
       alternateName: localizedVerdict(data.verdict, reportLocale),
@@ -160,7 +152,6 @@ export default async function PublicReportPage({ params }: PageProps) {
   };
 
   return (
-    <FixedLocaleProvider locale={reportLocale}>
     <div className={`container ${styles.reportPage}`}>
       {/* Google ClaimReview Structured Data */}
       <JsonLd data={claimReviewLdJson} />
@@ -176,7 +167,7 @@ export default async function PublicReportPage({ params }: PageProps) {
             <img
               key={url}
               src={url}
-              alt={`Dovadă vizuală ${idx + 1} pentru afirmația verificată`}
+              alt={`Evidence ${idx + 1}`}
               className={styles.reportImage}
               loading={idx === 0 ? 'eager' : 'lazy'}
             />
@@ -194,6 +185,5 @@ export default async function PublicReportPage({ params }: PageProps) {
 
       <ReportPageCta />
     </div>
-    </FixedLocaleProvider>
   );
 }

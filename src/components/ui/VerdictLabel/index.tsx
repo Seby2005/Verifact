@@ -61,7 +61,23 @@ export const VerdictLabel: React.FC<VerdictLabelProps> = ({
     .join(' ');
 
   let labelText: string;
-  if (statusConfig) {
+  if (kind === 'false') {
+    if (evidenceStatus === 'contradicted') {
+      labelText =
+        locale === 'en'
+          ? 'Contradicted by documented facts'
+          : locale === 'fr'
+          ? 'Contredit par les faits documentés'
+          : 'Contrazis de sursele oficiale / presă';
+    } else {
+      labelText =
+        locale === 'en'
+          ? 'Likely False / Unverified claim'
+          : locale === 'fr'
+          ? 'Information probablement fausse / non vérifiée'
+          : 'Informație posibil falsă / neverificată';
+    }
+  } else if (statusConfig) {
     labelText =
       locale === 'en'
         ? statusConfig.labelEn

@@ -181,3 +181,26 @@ graphify-out/
 .freebuff/
 .continue/
 skills-lock.json
+
+# Marketing assets, video scripts & TikTok strategies (internal only, not for GitHub)
+public/marketing/
+scripts/marketing/
+docs/marketing/
+TIKTOK_VIRAL_STRATEGY.md
+
+# Preview artifacts
+public/editorial_landing_preview.jpg
+public/redesign-preview.html
+
+# Internal workspace & temporary deliverables
+.workbuddy-ai/
+deliverables/
+
+# Personal / academic documents
+*.docx
+Referat_Laborator_*
+
+# Large ML models & runtime binaries (downloaded dynamically or served via CDN)
+public/models/
+public/ort/
+

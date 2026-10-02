@@ -14,10 +14,15 @@
 .false { --vc: var(--verdict-false); }
 
 .corroborated { --vc: var(--verdict-true); }
-.contradicted { --vc: var(--verdict-false); }
+.contradicted { --vc: var(--verdict-false) !important; }
 .missing_context { --vc: var(--verdict-partial); }
 .unverified_no_sources { --vc: var(--verdict-unclear); }
 .open_debate { --vc: var(--color-blue-600, #2563eb); }
+
+/* When the overall verdict is false, ALWAYS use signal red */
+.verdict.false {
+  --vc: var(--verdict-false) !important;
+}
 
 .label {
   font-family: var(--font-family-sans);

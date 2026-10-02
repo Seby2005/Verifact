@@ -23,7 +23,7 @@
 
 Aplicația **Verifact** este concepută cu o arhitectură serverless extrem de eficientă din punct de vedere al costurilor (*cost-effective*). Datorită utilizării intensive a nivelurilor gratuite (*Free Tiers*) ale furnizorilor de infrastructură modernă (Vercel, Supabase, Google AI Studio, Tavily, Resend), aplicația poate funcționa cu **costuri operaționale aproape ZERO** în faza inițială (până la ~1,000 verificări/lună).
 
-La scală comercială, costul variabil mediu al unei verificări complete este de aproximativ **$0.011 - $0.017 (~0.05 - 0.08 RON)**. Marja brută a abonamentelor plătite (Pro la €7.99/lună și Business la €49/lună) este de peste **60% - 75%**, ceea ce oferă o profitabilitate excelentă chiar și la un număr redus de utilizatori plătitori (5 abonați Pro acoperă integral toate costurile de dezvoltare și infrastructură).
+La scală comercială, costul variabil mediu al unei verificări complete este de aproximativ **$0.011 - $0.017 (~0.05 - 0.08 RON)**. Marja brută a abonamentelor plătite (Pro la €3.99/lună, €2.99/lună la plata anuală, și Business la €49/lună) este de peste **75% - 90%**, ceea ce oferă o profitabilitate excelentă chiar și la un număr redus de utilizatori plătitori (7 abonați Pro lunari acoperă integral costurile fixe de dezvoltare și infrastructură).
 
 ---
 
@@ -146,20 +146,26 @@ export async function generateDeepSeekCompletion(prompt: string, isJson = false)
 
 ## 5. Profitabilitate și Marje pe Tier-uri de Abonament
 
-Pe baza modelului de prețuri stabilit în PRD (€7.99/lună Pro, €49/lună Business), calculăm marjele de profit brut per utilizator plătitor:
+Pe baza prețurilor practicate efectiv în produs (€3.99/lună Pro, €2.99/lună Pro anual, €49/lună Business — vezi `/preturi` și `src/lib/financial/pricing.ts`), calculăm marjele de profit brut per utilizator plătitor. Limitele de verificări sunt cele din `TIER_CONFIG` (`src/types/user.ts`).
 
 ### Tabla Marjelor Financiare per Tier
 
 | Tier Abonament | Preț Abonament / lună | Verificări Incluse | Cost Variabil Maxim (fără cache) | Cost Variabil Mediu (cu 30% cache) | Marjă Brută Lunar ($) | Marjă Brută (%) |
 |---|---|---|---|---|---|---|
-| **Free** | €0.00 ($0.00) | 10 verificări | $0.17 | $0.12 | **-$0.12** | Subvenționat |
-| **Pro** | **€7.99 (~$8.70)** | 200 verificări | $3.40 | $2.42 | **+$6.28 / user** | **72.2%** |
-| **Business** | **€49.00 (~$53.50)** | 2,000 verificări | $34.00 | $24.20 | **+$29.30 / user** | **54.8%** |
+| **Free** | €0.00 ($0.00) | 3 verificări | $0.05 | $0.04 | **-$0.04** | Subvenționat |
+| **Pro (lunar)** | **€3.99 (~$4.34)** | 35 verificări | $0.60 | $0.42 | **+$3.92 / user** | **90.3%** |
+| **Pro (anual)** | **€2.99 (~$3.25)** | 35 verificări | $0.60 | $0.42 | **+$2.83 / user** | **87.1%** |
+| **Business** | **€49.00 (~$53.26)** | 1,000 verificări (negociabil) | $17.00 | $12.10 | **+$41.16 / user** | **77.3%** |
+
+> Marja Pro este mult mai mare decât în modelul vechi (€7.99 / 200 verificări) pentru că plafonul real e 35 de verificări, nu 200 — prețul mai mic vine la pachet cu un volum inclus de ~6× mai mic.
 
 ### Punctul de Echilibru (Break-Even Point)
 Pentru a acoperi costurile fixe lunare de dezvoltare (Claude Pro $24 + Domeniu $1.10 = **~$25.10 / lună**):
-* Sunt necesari doar **4 utilizatori Pro** ($6.28 marjă x 4 = $25.12)
-* SAU **1 singur utilizator Business** ($29.30 marjă > $25.10)
+* Sunt necesari **7 utilizatori Pro lunari** ($3.92 marjă x 7 = $27.44)
+* SAU **9 utilizatori Pro anuali** ($2.83 marjă x 9 = $25.47)
+* SAU **1 singur utilizator Business** ($41.16 marjă > $25.10)
+
+> Cifra live, calculată pe costurile fixe reale din baza de date plus rata variabilă efectivă, este cea din dashboard-ul `/admin/financiar`; tabelul de mai sus e doar modelul de referință.
 
 ---
 

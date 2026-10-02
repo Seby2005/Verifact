@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Verifact</title>
+  <style>
+    :root { color-scheme: light dark; }
+    html, body {
+      margin: 0; height: 100%;
+      background: #0b0b0c; color: #f4f4f5;
+      font: 500 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    .wrap {
+      height: 100%; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px;
+    }
+    .dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #f4f4f5; animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: .25 } 50% { opacity: 1 } }
+    @media (prefers-reduced-motion: reduce) { .dot { animation: none } }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="status" aria-live="polite">
+    <span class="dot" aria-hidden="true"></span>
+    <span>Se deschide Verifact…</span>
+  </div>
+
+  <script>
+    // Bootstrap: if the app was opened via a native share (Android ACTION_SEND /
+    // iOS Share Extension), capture the shared payload and hand it to the live
+    // site with the claim pre-filled; otherwise just open the site. The website's
+    // VerifyTool reads ?text= and fills the claim box.
+    //
+    // Two shared kinds are handled, both ending on the same ?text= seam:
+    //   - text / link  → passed straight through as ?text=
+    //   - image (screenshot) → OCR'd via the site's /api/ocr, then its extracted
+    //     text is passed through as ?text=. This is why /api/ocr answers CORS for
+    //     the shell's origin.
+    (function () {
+      var SITE = 'https://verifact.ro/';
+
+      function target(shared) {
+        var t = (shared || '').trim();
+        return t ? SITE + '?text=' + encodeURIComponent(t) : SITE;
+      }
+      function go(shared) {
+        window.location.replace(target(shared));
+      }
+
+      var Cap = window.Capacitor;
+
+      // Not running inside the native shell (e.g. opened in a plain browser):
+      // nothing to capture, go straight to the site.
+      if (!Cap || typeof Cap.isNativePlatform !== 'function' || !Cap.isNativePlatform()) {
+        go('');
+        return;
+      }
+
+      var Plugins = Cap.Plugins || {};
+      var SendIntent = Plugins.SendIntent;
+      if (!SendIntent || typeof SendIntent.checkSendIntentReceived !== 'function') {
+        go('');
+        return;
+      }
+
+      function isImageShare(r) {
+        return !!(r && typeof r.type === 'string' && r.type.indexOf('image/') === 0 && r.url);
+      }
+
+      // A screenshot: read the shared file's bytes, OCR them on the server, then
+      // continue with the extracted text. Any failure falls back to opening the
+      // site so the user can retry manually rather than seeing a dead end.
+      function handleImage(r) {
+        var Filesystem = Plugins.Filesystem;
+        if (!Filesystem || typeof Filesystem.readFile !== 'function') {
+          go('');
+          return;
+        }
+        Filesystem.readFile({ path: r.url })
+          .then(function (read) {
+            return fetch(SITE + 'api/ocr', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imageBase64: read.data, mimeType: r.type }),
+            });
+          })
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (data) {
+            var text = data && data.success ? (data.text || '') : '';
+            go(text.trim().length >= 10 ? text : '');
+          })
+          .catch(function () {
+            go('');
+          });
+      }
+
+      // A cold-start share delivers the payload here. `text`/`title` carry shared
+      // plain text; `url` carries a shared link (still a valid claim input).
+      SendIntent.checkSendIntentReceived()
+        .then(function (r) {
+          if (isImageShare(r)) {
+            handleImage(r);
+          } else {
+            go((r && (r.text || r.title || r.url)) || '');
+          }
+        })
+        .catch(function () {
+          go('');
+        });
+    })();
+  </script>
+</body>
+</html>

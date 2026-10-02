@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button, Input } from '@/components/ui';
+import { readUtmParams, trackEvent } from '@/lib/analytics/events';
 import styles from './WaitlistForm.module.css';
 
 /**
@@ -16,13 +17,15 @@ export function WaitlistForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setState('loading');
+    const utm = readUtmParams();
     try {
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, utm }),
       });
       setState(res.ok ? 'done' : 'error');
+      if (res.ok) trackEvent('waitlist_joined', utm);
     } catch {
       setState('error');
     }

@@ -42,7 +42,15 @@ const formbricksOrigin = originOf(process.env.NEXT_PUBLIC_FORMBRICKS_APP_URL);
 // accounts.google.com. Only widened when a Google Client ID is configured.
 const googleAuthOrigin = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? 'https://accounts.google.com' : '';
 const turnstileOrigin = 'https://challenges.cloudflare.com';
+// Umami uses two hosts: the tracker script is served from cloud.umami.is, but
+// every pageview and event is POSTed to gateway.umami.is. Listing only the
+// script host made analytics look installed while the browser silently blocked
+// every beacon, so both belong in the policy.
 const umamiOrigin = 'https://cloud.umami.is';
+const umamiIngestOrigin = 'https://gateway.umami.is';
+// @vercel/analytics (mounted in the root layout) loads its script from, and
+// beacons to, this host.
+const vercelAnalyticsOrigin = 'https://va.vercel-scripts.com';
 
 const connectSrc = [
   "'self'",
@@ -54,6 +62,8 @@ const connectSrc = [
   googleAuthOrigin,
   turnstileOrigin,
   umamiOrigin,
+  umamiIngestOrigin,
+  vercelAnalyticsOrigin,
 ]
   .filter(Boolean)
   .join(' ');
@@ -75,8 +85,17 @@ const csp = [
   // (no nonce plumbing set up yet) — 'unsafe-inline' is required for the
   // app to boot, not an oversight. Tightening this to a nonce-based policy
   // is tracked as follow-up work, not part of this pass.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''} ${turnstileOrigin} ${umamiOrigin}`,
+  // 'wasm-unsafe-eval' lets the browser compile WebAssembly — required by
+  // onnxruntime-web, which runs the Whisper transcription model client-side
+  // (src/lib/transcription/browser-whisper.ts). It permits only WASM
+  // compilation, not arbitrary eval(), so it stays far tighter than the
+  // 'unsafe-eval' that dev's HMR needs.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''} ${turnstileOrigin} ${umamiOrigin} ${vercelAnalyticsOrigin}`,
   "style-src 'self' 'unsafe-inline'",
+  // Video clip verification loads the uploaded file into a <video> element via a
+  // blob: URL to sample frames for OCR (src/lib/transcription/video-frames.ts).
+  // The file never leaves the browser, so only 'self' and blob: are needed.
+  "media-src 'self' blob:",
   // Supabase Storage serves public report images (bucket report-images) — the
   // browser renders them via <img>, so the storage host must be allowed here
   // (connect-src already lists it; img-src is a separate directive).

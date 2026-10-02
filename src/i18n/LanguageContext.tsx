@@ -7,13 +7,18 @@ import { ro, type Translations } from './dictionaries/ro';
 import { en } from './dictionaries/en';
 import { fr } from './dictionaries/fr';
 
-interface LanguageContextType {
+export interface LanguageContextType {
   locale: Locale;
   setLocale: (nextLocale: Locale) => void;
   t: (key: string, params?: TranslationParams) => string;
+  dict: Translations;
 }
 
-const dictionaries: Record<Locale, Translations> = { ro, en, fr };
+export const dictionaries: Record<Locale, Translations> = { ro, en, fr };
+
+export function getDictionary(locale: Locale): Translations {
+  return dictionaries[locale] ?? dictionaries.ro;
+}
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
@@ -64,14 +69,19 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const t = useMemo(() => {
-    const dict = dictionaries[locale] as unknown as Record<string, unknown>;
-    return (key: string, params?: TranslationParams): string => {
-      return getTranslation(dict, key, params);
-    };
-  }, [locale]);
+  const activeDict = useMemo(() => dictionaries[locale] ?? dictionaries.ro, [locale]);
 
-  const value = useMemo(() => ({ locale, setLocale, t }), [locale, t]);
+  const t = useMemo(() => {
+    const rawDict = activeDict as unknown as Record<string, unknown>;
+    return (key: string, params?: TranslationParams): string => {
+      return getTranslation(rawDict, key, params);
+    };
+  }, [activeDict]);
+
+  const value = useMemo(
+    () => ({ locale, setLocale, t, dict: activeDict }),
+    [locale, t, activeDict]
+  );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
@@ -100,11 +110,13 @@ export const FixedLocaleProvider: React.FC<{ locale: Locale; children: React.Rea
   children,
 }) => {
   const value = useMemo<LanguageContextType>(() => {
-    const dict = dictionaries[locale] as unknown as Record<string, unknown>;
+    const activeDict = dictionaries[locale] ?? dictionaries.ro;
+    const rawDict = activeDict as unknown as Record<string, unknown>;
     return {
       locale,
       setLocale: () => {},
-      t: (key: string, params?: TranslationParams) => getTranslation(dict, key, params),
+      t: (key: string, params?: TranslationParams) => getTranslation(rawDict, key, params),
+      dict: activeDict,
     };
   }, [locale]);
 

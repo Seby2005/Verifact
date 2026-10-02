@@ -1,4 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/auth/admin-emails';
 import { logger } from '@/lib/utils/logger';
 import { TIER_CONFIG } from '@/types/user';
 import type { UsageLimitCheck, UserTier } from '@/types/user';
@@ -17,16 +18,7 @@ interface ProfileRecord {
  * rule can never drift between the two.
  */
 export function hasUnlimitedUsage(role?: string | null, email?: string | null): boolean {
-  if (role === 'admin') return true;
-  if (email) {
-    const norm = email.trim().toLowerCase();
-    if (norm === 'sebi.iancu23@gmail.com') return true;
-    if (process.env.ADMIN_EMAILS) {
-      const adminEmails = process.env.ADMIN_EMAILS.split(',').map((e) => e.trim().toLowerCase());
-      if (adminEmails.includes(norm)) return true;
-    }
-  }
-  return false;
+  return role === 'admin' || isAdminEmail(email);
 }
 
 export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> {

@@ -19,10 +19,13 @@ export async function POST(req: Request) {
 
     const apiKey = process.env.CREEM_API_KEY;
     const monthlyProductId = process.env.NEXT_PUBLIC_CREEM_PRO_PRODUCT_ID;
+    // No fallback from yearly to monthly: the yearly plan is cheaper per month,
+    // so silently substituting the monthly product bills the customer more than
+    // the price they picked. A missing yearly product is a configuration fault
+    // and must surface as one.
     const yearlyProductId =
       process.env.NEXT_PUBLIC_CREEM_PRO_YEARLY_PRODUCT_ID ||
-      process.env.CREEM_PRO_YEARLY_PRODUCT_ID ||
-      monthlyProductId;
+      process.env.CREEM_PRO_YEARLY_PRODUCT_ID;
 
     const productId = billing === 'yearly' ? yearlyProductId : monthlyProductId;
 
@@ -35,9 +38,14 @@ export async function POST(req: Request) {
     }
 
     if (!productId) {
-      console.error('[Creem Checkout] Missing product ID configuration.');
+      console.error(`[Creem Checkout] Missing ${billing} product ID configuration.`);
       return NextResponse.json(
-        { error: 'ID-ul produsului Pro nu este configurat.' },
+        {
+          error:
+            billing === 'yearly'
+              ? 'Planul anual nu este disponibil momentan. Alege plata lunară sau scrie-ne.'
+              : 'ID-ul produsului Pro nu este configurat.',
+        },
         { status: 500 }
       );
     }

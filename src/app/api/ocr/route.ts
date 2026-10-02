@@ -4,19 +4,28 @@ import { sniffImageType } from '@/lib/utils/image-type';
 import { processOCR } from '@/lib/ocr';
 import { CircuitOpenError } from '@/lib/utils/circuit-breaker';
 import { logger } from '@/lib/utils/logger';
+import { corsHeaders, handlePreflight } from '@/lib/api/cors';
+import { getClientIp } from '@/lib/utils/client-ip';
 import type { OcrRequest } from '@/types/verification';
 
 export const dynamic = 'force-dynamic';
 
+// The mobile shell (Capacitor) shares a screenshot from another app, runs it
+// through OCR here, then opens the site with the extracted text pre-filled — a
+// cross-origin call, so this route answers preflight and echoes CORS headers for
+// allowlisted origins (same list as the extension). Same-origin website calls
+// send no Origin and get no CORS headers, unchanged.
+export async function OPTIONS(req: NextRequest): Promise<Response> {
+  return handlePreflight(req);
+}
+
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
+  const cors = corsHeaders(req);
 
   try {
     // 1. Rate Limiting per IP
-    const clientIp =
-      req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-      req.headers.get('x-real-ip') ||
-      '127.0.0.1';
+    const clientIp = getClientIp(req);
     const rateCheck = await checkRateLimit(`ocr:${clientIp}`, 10, 60 * 1000);
 
     if (!rateCheck.success) {
@@ -26,7 +35,7 @@ export async function POST(req: NextRequest) {
           error: 'Ai depășit limita de solicitări. Te rugăm să aștepți un minut.',
           code: 'RATE_LIMIT_EXCEEDED',
         },
-        { status: 429 }
+        { status: 429, headers: cors }
       );
     }
 
@@ -42,7 +51,7 @@ export async function POST(req: NextRequest) {
           error: 'Imaginea transmisă este invalidă.',
           code: 'INVALID_INPUT',
         },
-        { status: 400 }
+        { status: 400, headers: cors }
       );
     }
 
@@ -54,7 +63,7 @@ export async function POST(req: NextRequest) {
           error: 'Format nepermis. Acceptăm doar JPEG, PNG și WEBP.',
           code: 'INVALID_INPUT',
         },
-        { status: 400 }
+        { status: 400, headers: cors }
       );
     }
 
@@ -67,7 +76,7 @@ export async function POST(req: NextRequest) {
           error: 'Imaginea este prea mare. Maximul permis este de 10MB.',
           code: 'IMAGE_TOO_LARGE',
         },
-        { status: 400 }
+        { status: 400, headers: cors }
       );
     }
 
@@ -82,7 +91,7 @@ export async function POST(req: NextRequest) {
           error: 'Fișierul transmis nu este o imagine validă (JPEG, PNG sau WEBP).',
           code: 'INVALID_INPUT',
         },
-        { status: 400 }
+        { status: 400, headers: cors }
       );
     }
 
@@ -91,13 +100,16 @@ export async function POST(req: NextRequest) {
 
     const processingTime = Date.now() - startTime;
 
-    return NextResponse.json({
-      success: true,
-      text: ocrResult.text,
-      confidence: ocrResult.confidence,
-      language: ocrResult.language,
-      processingTime,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        text: ocrResult.text,
+        confidence: ocrResult.confidence,
+        language: ocrResult.language,
+        processingTime,
+      },
+      { headers: cors }
+    );
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : '';
 
@@ -108,7 +120,7 @@ export async function POST(req: NextRequest) {
           error: 'Nu am detectat text în această imagine. Încearcă un screenshot mai clar sau introdu textul manual.',
           code: 'NO_TEXT_FOUND',
         },
-        { status: 200 }
+        { status: 200, headers: cors }
       );
     }
 
@@ -119,7 +131,7 @@ export async function POST(req: NextRequest) {
           error: 'Procesarea a durat prea mult. Încearcă o imagine mai simplă.',
           code: 'API_ERROR',
         },
-        { status: 504 }
+        { status: 504, headers: cors }
       );
     }
 
@@ -130,7 +142,7 @@ export async function POST(req: NextRequest) {
           error: 'Serviciul de extragere text este temporar indisponibil. Te rugăm să încerci din nou peste câteva minute.',
           code: 'SERVICE_UNAVAILABLE',
         },
-        { status: 503 }
+        { status: 503, headers: cors }
       );
     }
 
@@ -142,7 +154,7 @@ export async function POST(req: NextRequest) {
         error: 'A apărut o eroare la procesarea imaginii. Te rugăm să încerci din nou.',
         code: 'API_ERROR',
       },
-      { status: 500 }
+      { status: 500, headers: cors }
     );
   }
 }

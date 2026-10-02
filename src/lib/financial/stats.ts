@@ -6,6 +6,7 @@ import {
   calculateTokenCost,
   convertToEur,
   STANDARD_PRO_PRICE_EUR,
+  STANDARD_BUSINESS_PRICE_EUR,
   ESTIMATED_BASELINE_INPUT_TOKENS,
   ESTIMATED_BASELINE_OUTPUT_TOKENS,
 } from './pricing';
@@ -44,6 +45,9 @@ export interface FinancialMetrics {
     businessCount: number;
     totalActivePremium: number;
     proPricePerMonthEur: number;
+    businessPricePerMonthEur: number;
+    proMrrEur: number;
+    businessMrrEur: number;
     currentMrrEur: number;
   };
   breakEven: {
@@ -301,7 +305,11 @@ export async function calculateFinancialMetrics(
   }
 
   const totalActivePremium = proCount + businessCount;
-  const currentMrrEur = (proCount * STANDARD_PRO_PRICE_EUR) + (businessCount * STANDARD_PRO_PRICE_EUR);
+  // Each tier is valued at its own price. Counting Business at the Pro price
+  // under-reported real MRR by roughly 12x per Business account.
+  const proMrrEur = proCount * STANDARD_PRO_PRICE_EUR;
+  const businessMrrEur = businessCount * STANDARD_BUSINESS_PRICE_EUR;
+  const currentMrrEur = proMrrEur + businessMrrEur;
 
   // 4. Break-even analysis
   // Total monthly projected expense = total fixed costs + projected variable cost (from 7d or 30d run rate)
@@ -310,10 +318,14 @@ export async function calculateFinancialMetrics(
   const breakEvenSubscribersNeeded = totalMonthlyCostEur > 0
     ? Math.ceil(totalMonthlyCostEur / STANDARD_PRO_PRICE_EUR)
     : 0;
-  const subscribersGap = Math.max(0, breakEvenSubscribersNeeded - totalActivePremium);
-  const targetProgressPercentage = breakEvenSubscribersNeeded > 0
-    ? Math.min(100, Math.round((totalActivePremium / breakEvenSubscribersNeeded) * 100))
-    : (totalActivePremium > 0 ? 100 : 0);
+  // The gap is measured in revenue, not in headcount: one Business account
+  // covers ~12 Pro subscriptions, so subtracting raw account counts from a
+  // Pro-priced break-even target overstated how far away break-even is.
+  const revenueGapEur = Math.max(0, totalMonthlyCostEur - currentMrrEur);
+  const subscribersGap = Math.ceil(revenueGapEur / STANDARD_PRO_PRICE_EUR);
+  const targetProgressPercentage = totalMonthlyCostEur > 0
+    ? Math.min(100, Math.round((currentMrrEur / totalMonthlyCostEur) * 100))
+    : (currentMrrEur > 0 ? 100 : 0);
 
   return {
     variableCosts: {
@@ -341,6 +353,9 @@ export async function calculateFinancialMetrics(
       businessCount,
       totalActivePremium,
       proPricePerMonthEur: STANDARD_PRO_PRICE_EUR,
+      businessPricePerMonthEur: STANDARD_BUSINESS_PRICE_EUR,
+      proMrrEur: Math.round(proMrrEur * 100) / 100,
+      businessMrrEur: Math.round(businessMrrEur * 100) / 100,
       currentMrrEur: Math.round(currentMrrEur * 100) / 100,
     },
     breakEven: {

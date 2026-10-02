@@ -1,0 +1,15 @@
+# Capacitor mobile shell.
+node_modules/
+
+# The Android native project IS committed — it is pre-generated and customized
+# (share intent-filters in AndroidManifest.xml, generated Verifact icons/splash).
+# Its own android/.gitignore already excludes build/, .gradle/, local.properties,
+# and APK/AAB outputs, so only source is tracked.
+
+# The iOS project is NOT committed: it can only be generated on a Mac
+# (`npx cap add ios`). See README.md.
+ios/
+
+# Local build junk
+.DS_Store
+*.log

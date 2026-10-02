@@ -272,6 +272,36 @@ export const fr: Translations = {
     },
   },
   reportView: {
+    eyebrow: 'Rapport de Vérification Factuelle',
+    hypothesisLabel: 'Hypothèse Factuelle Analysée',
+    commentaryBadge: 'Commentaire du partageur',
+    commentaryNoteShort: 'opinion distincte de l’affirmation factuelle',
+    criticalThinkingDefault: 'Voici ce que documentent les sources et ce qui fait défaut — examinez les preuves et jugez par vous-même.',
+    scoreTitle: 'Score de véracité',
+    visualEvidenceAlt: 'Preuve visuelle {index} pour l’affirmation vérifiée',
+    executiveBreakdown: {
+      title: 'Synthèse exécutive',
+      subtitle: 'Évaluation structurée de l’hypothèse, des preuves documentées et des omissions critiques.',
+      whatClaimAsserts: 'Que soutient l’affirmation ?',
+      whatFactsProve: 'Que prouvent les faits ?',
+      whatIsMissing: 'Que manque-t-il ?',
+      claimSubtext: 'L’hypothèse factuelle isolée des commentaires personnels.',
+      factsSubtext: 'Conclusions tirées des sources documentées et vérifiées.',
+      missingSubtext: 'Éléments de contexte déterminants omis ou non démontrés.',
+    },
+    evidenceCards: {
+      title: 'Sources et preuves documentées',
+      subtitle: 'Articles de presse, rapports officiels et fact-checks certifiés consultés.',
+      tier1Label: 'Tier 1 : Source de Confiance / Fact-Checker',
+      tier2Label: 'Tier 2 : Presse de Référence',
+      tier3Label: 'Tier 3 : Réseaux Sociaux / Web Général',
+      stanceConfirms: 'Confirme',
+      stanceContradicts: 'Contredit',
+      stanceContext: 'Contexte / Neutre',
+      openSourceArticle: 'Consulter l’article source',
+      publisherUnknown: 'Publication en ligne',
+      noSourcesFound: 'Aucune source publique pertinente n’a été identifiée pour cette affirmation.',
+    },
     analyzedIn: 'analysé en {seconds}s',
     layersWithEvidence: '{count}/4 niveaux avec preuves',
     claimLabel: 'Affirmation vérifiée',
@@ -623,6 +653,7 @@ export const fr: Translations = {
       bookmarked: 'Favoris',
       activePlan: 'Forfait Actif',
       currentUsage: 'Utilisation ce mois',
+      statusActive: 'Compte actif',
     },
     usageCard: {
       title: 'Quota mensuel de vérifications',
@@ -700,18 +731,29 @@ export const fr: Translations = {
     metadata: {
       title: 'Mission',
       description:
-        'Pourquoi Verifact existe : un accès universel et instantané à la vérification factuelle, grâce à une IA transparente et des sources ouvertes.',
+        'Pourquoi Verifact existe : un accès universel et transparent à la vérification factuelle et aux sources ouvertes.',
     },
     eyebrow: 'Mission',
     title: 'Pourquoi Verifact existe',
     calloutLabel: 'Notre engagement',
     calloutText:
-      'Offrir à chaque citoyen un accès immédiat à la vérité factuelle, grâce à une intelligence artificielle transparente et des sources vérifiables.',
-    problemTitle: 'Le problème que nous combattons',
+      'Nous concevons des outils simples et accessibles pour permettre à chacun de vérifier rapidement rumeurs, affirmations et captures d’écran grâce à des preuves factuelles et des sources ouvertes.',
+    problemTitle: 'Le problème de désinformation que nous traitons',
     problemText1:
-      'Une fausse information touche des millions de personnes en quelques heures. Les démentis n’arrivent souvent que des jours plus tard — quand ils arrivent.',
+      'Chaque jour, des millions de personnes font face à de fausses citations, des captures décontextualisées et des rumeurs virales sur WhatsApp, Facebook ou TikTok. Une fausse information circule en quelques minutes parce qu’elle suscite une vive émotion, alors qu’une enquête minutieuse exige du temps.',
     problemText2:
-      'Verifact rend la vérification instantanée, transparente et accessible gratuitement à tous.',
+      'Verifact intervient précisément au moment du doute — offrant un moyen rapide et transparent de vérifier la solidité factuelle d’une affirmation avant de la relayer.',
+    criticalThinkingTitle: 'Pourquoi l’esprit critique est essentiel',
+    criticalThinkingText1:
+      'La désinformation fonctionne parce qu’elle contourne la raison et mise sur la réaction impulsive. Lorsqu’une nouvelle suscite colère ou indignation, le premier réflexe est souvent de la partager immédiatement sans s’interroger.',
+    criticalThinkingText2:
+      'L’esprit critique ne consiste pas à douter de tout avec méfiance, mais à faire une courte pause pour poser trois questions clés : Qui l’affirme ? Sur quelles preuves ? Quel contexte manque-t-il ? Verifact n’est pas un juge infaillible, mais un outil d’analyse qui vous donne les faits pour forger votre propre opinion.',
+    algorithmTitle: 'Comment l’algorithme vous aide (concrètement, sans jargon)',
+    algorithmSteps: [
+      'Isole les affirmations clés : le système identifie les faits vérifiables (dates, chiffres, citations, événements).',
+      'Consulte des sources de référence : croisement automatisé avec les bases de fact-checking, les archives officielles et la presse documentée.',
+      'Expose preuves et nuances : loin d’un simple score opaque, il met en évidence les faits établis, le contexte omis et les liens directs.',
+    ],
     romaniaTitle: 'Notre vision d’ouverture',
     romaniaBullets: [
       'Fournir des outils automatisés et multilingues de fact-checking en accès libre et open source.',
@@ -748,6 +790,177 @@ export const fr: Translations = {
     methodologyLink: 'méthodologie de vérification',
     orText: ' ou notre ',
     openSourceLink: 'code source et politique de confidentialité',
+  },
+  despreDezinformarePage: {
+    metadata: {
+      title: 'Comprendre la désinformation',
+      description:
+        'Guide pratique d’autodéfense numérique : pourquoi les fausses informations prospèrent, pièges fréquents et méthode en 5 étapes.',
+    },
+    eyebrow: 'Guide d’autodéfense numérique',
+    title: 'Comprendre la désinformation : comment la déceler et la stopper',
+    lead:
+      'Les infox modernes ne ressemblent plus à des mensonges grossiers. Elles exploitent des demi-vérités, de vieux enregistrements décontextualisés et des titres anxiogènes. Voici comment fonctionne la manipulation et comment s’en protéger en 5 étapes simples.',
+    calloutLabel: 'Règle d’or',
+    calloutText:
+      'Le rempart le plus efficace contre la désinformation, c’est vous, durant les 5 secondes précédant le clic sur « Partager ». Une courte pause brise la chaîne de propagation.',
+    pillarsTitle: 'Anatomie de la manipulation : pourquoi les fausses nouvelles prennent-elles ?',
+    pillarsLead:
+      'La désinformation ne se propage pas par naïveté, mais parce qu’elle est calibrée pour contourner le filtre rationnel.',
+    pillars: [
+      {
+        badge: '01 · Émotion',
+        title: 'Le levier de la peur et de la colère',
+        text:
+          'Un contenu alarmiste ou clivant circule jusqu’à 6 fois plus vite qu’une analyse factuelle. L’indignation neutralise le recul critique.',
+      },
+      {
+        badge: '02 · Psychologie',
+        title: 'Le piège de la confirmation',
+        text:
+          'Nous tendons naturellement à croire les rumeurs qui confortent nos inquiétudes préexistantes. Les créateurs de fausses nouvelles le savent parfaitement.',
+      },
+      {
+        badge: '03 · Algorithme',
+        title: 'L’asymétrie de vitesse',
+        text:
+          'Un mensonge sensationnel fait le tour du web en deux heures, tandis qu’un démenti documenté nécessite du temps et touche un public restreint.',
+      },
+    ],
+    techniquesTitle: 'Mécanismes et stratagèmes récurrents (exemples concrets)',
+    techniquesLead:
+      'Voici les schémas les plus fréquemment observés et la manière de les déjouer immédiatement :',
+    techniques: [
+      {
+        tag: 'Faux contexte',
+        title: 'Recyclage d’images et vidéos anciennes',
+        trap:
+          'Une séquence spectaculaire (manœuvres militaires passées, sinistre industriel ancien) est republiée avec la mention « EN DIRECT : Attaque en cours ! ».',
+        reality:
+          'L’image est authentique, mais la date et le lieu sont trompeurs. Le stratagème mise sur l’absence de vérification d’origine.',
+        example:
+          'Exemple concret : Vidéos d’exercices d’il y a deux ans présentées comme des mouvements de troupes récents.',
+      },
+      {
+        tag: 'Alarmisme extrême',
+        title: 'Victimisation et bilans inventés',
+        trap:
+          'Messages dramatiques affirmant que des pertes massives sont dissimulées par les autorités ou les hôpitaux.',
+        reality:
+          'L’objectif est de semer la panique et de saper toute confiance institutionnelle.',
+        example:
+          'Exemple concret : Messages en chaîne sur messagerie évoquant des convois médicaux tenus secrets.',
+      },
+      {
+        tag: 'Théorie du complot',
+        title: 'Le récit de la duplicité institutionnelle',
+        trap:
+          'Affirmations selon lesquelles les institutions ou les alliés « savaient d’avance et ont sciemment laissé faire ».',
+        reality:
+          'Cherche à détruire la cohésion civique et la confiance dans les mécanismes de protection publique.',
+        example:
+          'Exemple concret : Spéculations sur des incidents frontaliers supposément dissimulés par les autorités.',
+      },
+      {
+        tag: 'Piège à clics',
+        title: 'Titres racoleurs en contradiction avec l’article',
+        trap:
+          'Titres en majuscules annonçant des mesures choc qui ne sont que de simples suggestions ou sondages dans le texte.',
+        reality:
+          'La majorité des partages se fait sans ouvrir l’article, monétisant l’angoisse des internautes.',
+        example:
+          'Exemple concret : Une déclaration publique tronquée de toutes ses conditions restrictives.',
+      },
+    ],
+    stepsTitle: 'Checklist pratique en 5 étapes (moins d’une minute)',
+    stepsLead:
+      'Nul besoin d’être journaliste d’investigation. Adoptez ces réflexes simples face à tout contenu suspect :',
+    steps: [
+      {
+        num: '01',
+        title: 'Le réflexe des 5 secondes : observez votre réaction',
+        text:
+          'Si un message déclenche une vive émotion, respirez. Ne relayez jamais sous le coup de l’impulsion.',
+      },
+      {
+        num: '02',
+        title: 'Remontez à la source originelle',
+        text:
+          'Qui est l’émetteur initial ? Existe-t-il un document officiel ou une allocution enregistrée intégrale ?',
+      },
+      {
+        num: '03',
+        title: 'Vérifiez la couverture médiatique globale',
+        text:
+          'Un événement d’envergure nationale ou internationale est invariablement couvert par de multiples rédactions indépendantes.',
+      },
+      {
+        num: '04',
+        title: 'Vérifiez les images par recherche inversée',
+        text:
+          'Utilisez Google Lens ou Verifact pour retrouver l’historique et la date réelle de publication d’une image.',
+      },
+      {
+        num: '05',
+        title: 'Passez l’affirmation au crible de Verifact',
+        text:
+          'Collez le texte ou téléchargez la capture sur verifact.ro pour consulter l’état des preuves et le consensus factuel.',
+      },
+    ],
+    labelTrap: 'Dans le flux (Le Piège)',
+    labelReality: 'La Réalité',
+    familyTitle: 'Comment dialoguer avec ses proches sur les réseaux',
+    familyLead:
+      'La plupart des fausses nouvelles proviennent de discussions familiales ou d’amis partageant ces contenus de bonne foi, par précaution. Voici comment réagir avec bienveillance :',
+    familyRules: [
+      {
+        title: '1. Échangez en privé',
+        text:
+          'Ne contredisez pas la personne publiquement sur le groupe. Les gens se braquent lorsqu’ils sont repris devant d’autres. Un message privé et calme est bien plus constructif.',
+      },
+      {
+        title: '2. Partagez des sources, pas des jugements',
+        text:
+          'Plutôt que « Comment peux-tu croire ça ? », écrivez : « J’ai eu un doute aussi, mais j’ai vérifié et voici ce qu’indiquent les sources officielles et la presse : [lien] ».',
+      },
+      {
+        title: '3. Faites preuve d’empathie',
+        text:
+          'Les fausses informations actuelles sont sophistiquées. N’importe qui peut se faire piéger. Privilégiez l’explication plutôt que la confrontation.',
+      },
+    ],
+    guidesTitle: 'Guides pratiques et outils Verifact',
+    guidesLead:
+      'Approfondissez vos compétences de vérification et testez les déclarations suspectes :',
+    guides: [
+      {
+        tag: 'Guide Pratique',
+        title: 'Comment repérer un Deepfake',
+        desc: 'Apprenez à déceler les voix synthétisées et les visages manipulés par IA.',
+        href: '/despre-dezinformare/cum-identifici-deepfake',
+        action: 'Lire le guide →',
+      },
+      {
+        tag: 'Sécurité',
+        title: 'Arnaques et Phishing sur les Réseaux',
+        desc: 'Protégez-vous contre l’usurpation d’identité et les liens frauduleux.',
+        href: '/despre-dezinformare/scheme-phishing-social-media',
+        action: 'En savoir plus →',
+      },
+      {
+        tag: 'Pédagogie',
+        title: 'Glossaire de la Désinformation',
+        desc: 'Définitions claires : mésinformation, fermes à trolls, bulles de filtres et sources primaires.',
+        href: '/resurse/glosar-dezinformare',
+        action: 'Explorer le glossaire →',
+      },
+    ],
+    closingText: 'Un doute sur une information repérée sur internet ? ',
+    verifyLink: 'Vérifier sur Verifact',
+    orText: ' ou consulter ',
+    methodologyLink: 'notre méthodologie de vérification',
+    sourcesNote:
+      'Inspiré des standards de sensibilisation développés par des plateformes de référence comme InfoRadar (MApN) et EUvsDisinfo.',
   },
   transparentaPage: {
     metadata: {

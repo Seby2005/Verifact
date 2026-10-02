@@ -271,6 +271,36 @@ export const en: Translations = {
     },
   },
   reportView: {
+    eyebrow: 'Factual Verification Report',
+    hypothesisLabel: 'Analyzed Factual Hypothesis',
+    commentaryBadge: 'Sharer commentary',
+    commentaryNoteShort: 'opinion separated from factual claim',
+    criticalThinkingDefault: 'Here is what the evidence shows and what is missing — review the sources and decide for yourself.',
+    scoreTitle: 'Veracity score',
+    visualEvidenceAlt: 'Visual evidence {index} for verified claim',
+    executiveBreakdown: {
+      title: 'Executive Breakdown',
+      subtitle: 'Structured assessment of the claim hypothesis, documented evidence, and critical omissions.',
+      whatClaimAsserts: 'What does the claim assert?',
+      whatFactsProve: 'What do the facts prove?',
+      whatIsMissing: 'What is missing?',
+      claimSubtext: 'The core factual hypothesis isolated from personal opinions.',
+      factsSubtext: 'Key findings established from documented and verified sources.',
+      missingSubtext: 'Essential context elements that were omitted or remain unproven.',
+    },
+    evidenceCards: {
+      title: 'Documented Evidence & Sources',
+      subtitle: 'News reports, official records, and certified fact-checks consulted during analysis.',
+      tier1Label: 'Tier 1: Trusted Source / Fact-Checker',
+      tier2Label: 'Tier 2: Mainstream Press',
+      tier3Label: 'Tier 3: Social / General Web',
+      stanceConfirms: 'Confirms',
+      stanceContradicts: 'Contradicts',
+      stanceContext: 'Context / Neutral',
+      openSourceArticle: 'Open source article',
+      publisherUnknown: 'Online publication',
+      noSourcesFound: 'No relevant public sources were identified for this claim.',
+    },
     analyzedIn: 'analyzed in {seconds}s',
     layersWithEvidence: '{count}/4 layers with evidence',
     claimLabel: 'Verified claim',
@@ -622,6 +652,7 @@ export const en: Translations = {
       bookmarked: 'Bookmarks',
       activePlan: 'Active Plan',
       currentUsage: 'Monthly Usage',
+      statusActive: 'Active account',
     },
     usageCard: {
       title: 'Monthly verification quota',
@@ -699,54 +730,239 @@ export const en: Translations = {
     metadata: {
       title: 'Mission',
       description:
-        'Why Verifact exists: instant access to fact verification through transparent AI and verifiable sources.',
+        'Why Verifact exists: open-source access to fact verification through radical transparency and verifiable sources.',
     },
     eyebrow: 'Mission',
     title: 'Why Verifact exists',
     calloutLabel: 'Product Mission',
     calloutText:
-      'We give every citizen instant access to truth, through transparent artificial intelligence and verifiable sources.',
-    problemTitle: 'The Problem',
+      'We build simple, accessible tools to help anyone quickly verify rumors, claims, and screenshots on social media through factual evidence and open sources.',
+    problemTitle: 'The Misinformation Problem We Address',
     problemText1:
-      'A false story reaches millions within hours. The correction arrives days later — if at all.',
+      'Every day, millions of people scroll past fake quotes, cropped screenshots, manipulated headlines, and viral rumors on platforms like WhatsApp, Facebook, or TikTok. False claims spread in minutes because they trigger strong emotions like fear or anger, while manual fact-checks take hours or days to produce.',
     problemText2:
-      'Verifact makes verification instant, transparent, and free for personal use.',
-    romaniaTitle: 'Why Romania First',
+      'Verifact steps in right at the moment of doubt—giving users a fast, transparent way to check whether a viral claim has real evidence behind it before sharing it further.',
+    criticalThinkingTitle: 'Why Critical Thinking Matters',
+    criticalThinkingText1:
+      'Disinformation works because it bypasses logical reasoning and appeals directly to emotional reactions. When a headline makes us angry or thrilled, our natural instinct is to share it immediately without questioning its truth.',
+    criticalThinkingText2:
+      'Critical thinking isn’t about being cynical or paranoid; it’s about pausing to ask three simple questions: Who is asserting this? What evidence is provided? What context might be missing? Verifact is not an infallible arbiter dictating what to think, but a research companion that surfaces the evidence so you can decide for yourself.',
+    algorithmTitle: 'How the Algorithm Helps (Without Technical Jargon)',
+    algorithmSteps: [
+      'Extracts key claims: When you upload a screenshot or text, the system isolates specific factual assertions (dates, numbers, quotes, events).',
+      'Cross-references trusted sources: It automatically searches database archives, official reports, and reputable journalism to see if the claim has been analyzed or verified.',
+      'Breaks down evidence & context: Instead of giving an opaque rating, it highlights verified facts, missing context, or fabrications with direct links to primary sources.',
+    ],
+    romaniaTitle: 'Why Focus on Romania First',
     romaniaBullets: [
-      'There is no native automated fact-checking tool in the Romanian language.',
-      'Demand for independent verification is high and growing.',
-      'Independent journalism — G4Media, PressOne, Recorder — are natural partners, not competitors.',
+      'No native, open-source automated verification tool currently exists for the Romanian language.',
+      'Public demand for fast, independent, non-partisan fact-checking is growing rapidly.',
+      'Independent newsrooms (e.g. G4Media, PressOne, Recorder) are natural allies and sources of trustworthy context.',
     ],
     notTitle: 'What We Are Not',
     notText:
-      'We are not an arbiter of truth and we do not replace newsrooms. An automated report is a starting point backed by sources, not an editorial judgment. That is why every verdict shows its score and its sources — so you can check the conclusion yourself, including against us.',
-    valuesTitle: 'Our Values',
+      'We are not an "arbiter of truth" and we do not replace journalists or editors. An automated report is an objective starting point grounded in source links, not an unquestionable verdict. Every result displays its sources and methodology so you can audit our findings yourself.',
+    valuesTitle: 'Core Principles',
     values: [
       {
         title: 'Transparency',
-        text: 'The algorithm is open source. Anyone can inspect how verification is performed.',
+        text: 'The algorithm and scoring criteria are completely open source so anyone can inspect how claims are checked.',
       },
       {
-        title: 'Fairness',
-        text: 'We do not take political sides. We verify facts, not opinions.',
+        title: 'Neutrality',
+        text: 'We do not take political sides or evaluate opinions. We only compare factual claims against verifiable data.',
       },
       {
         title: 'Accessibility',
-        text: 'Free for everyday users.',
+        text: 'Free and simple to use for everyday internet users, without paywalls or complex technical jargon.',
       },
       {
         title: 'Accountability',
-        text: 'Every report includes verifiable sources, not just assertions.',
+        text: 'Every score is backed by direct, traceable source links so you don’t have to take our word for it.',
       },
       {
-        title: 'Privacy',
-        text: 'User screenshots are never stored permanently.',
+        title: 'Privacy First',
+        text: 'User screenshots and uploads are processed securely without unnecessary permanent retention.',
       },
     ],
-    followText: 'See also the ',
+    followText: 'Learn more about our ',
     methodologyLink: 'verification methodology',
-    orText: ' or the ',
-    openSourceLink: 'code and privacy policy',
+    orText: ' or inspect our ',
+    openSourceLink: 'open-source repository',
+  },
+  despreDezinformarePage: {
+    metadata: {
+      title: 'Understanding Disinformation',
+      description:
+        'A practical guide to digital self-defense: why fake news goes viral, common manipulation patterns, and a 5-step verification checklist.',
+    },
+    eyebrow: 'Digital Self-Defense Guide',
+    title: 'Understanding Disinformation: How to Spot and Stop It',
+    lead:
+      'Online falsehoods rarely look like obvious lies anymore. They are packaged in half-truths, old recycled clips taken out of context, and headlines engineered to trigger immediate anger or fear. Here is how modern manipulation works—and how to protect your mind in 5 quick steps.',
+    calloutLabel: 'The Golden Rule',
+    calloutText:
+      'The most powerful defense against disinformation is you, during the 5 seconds before hitting "Share". Pausing breaks a chain of panic that would otherwise infect thousands of feeds.',
+    pillarsTitle: 'The Anatomy of Manipulation: Why Falsehoods Spread',
+    pillarsLead:
+      'Disinformation does not spread because people are naive—it spreads because it is psychologically and algorithmically tuned to bypass critical reasoning.',
+    pillars: [
+      {
+        badge: '01 · Emotion',
+        title: 'Weaponizing Anger and Fear',
+        text:
+          'Content triggering outrage or anxiety spreads up to 6 times faster than factual reporting. Anger acts as an emotional breaker switch that turns off critical thinking and provokes impulsive sharing.',
+      },
+      {
+        badge: '02 · Psychology',
+        title: 'The Confirmation Trap',
+        text:
+          'We instinctively accept any rumor that matches our pre-existing fears or beliefs, while aggressively disputing whatever challenges us. Disinformation creators know precisely which cognitive buttons to push.',
+      },
+      {
+        badge: '03 · Algorithm',
+        title: 'The Speed Asymmetry',
+        text:
+          'A sensational lie travels around the world in two hours. A thorough, documented investigation takes hours or days to research and only reaches a small fraction of the initial audience.',
+      },
+    ],
+    techniquesTitle: 'Common Patterns & Deceptive Tactics (With Real Scenarios)',
+    techniquesLead:
+      'Here are the most pervasive manipulation mechanisms documented across online feeds and how to expose them immediately:',
+    techniques: [
+      {
+        tag: 'False context',
+        title: 'Recycling Old Footage & Images',
+        trap:
+          'Dramatic video footage (a 2021 military drill, an old industrial accident, or video game graphics) is relabeled as "BREAKING: Live Attack Right Now!".',
+        reality:
+          'The visuals are authentic, but the date and location are completely fabricated. The tactic relies on nobody taking 30 seconds to trace the original file.',
+        example:
+          'Real scenario: Old drill footage recirculated on TikTok as foreign military units crossing the border this morning.',
+      },
+      {
+        tag: 'Extreme alarmism',
+        title: 'Manufactured Victims & Inflated Numbers',
+        trap:
+          'Terrifying posts with emotional details: "800 wounded soldiers hidden in secret wards" or "authorities covering up thousands of casualties".',
+        reality:
+          'The goal is sowing widespread demoralization and panic. An event of that magnitude cannot realistically be concealed from journalists, medical staff, and families.',
+        example:
+          'Real scenario: WhatsApp chain messages claiming secret ambulance convoys and hospital lockdowns.',
+      },
+      {
+        tag: 'Betrayal narrative',
+        title: 'The "Institutional Conspiracy" Trope',
+        trap:
+          'Claims that democratic institutions or international allies "knew in advance but deliberately allowed the tragedy" out of treachery or cowardice.',
+        reality:
+          'The objective is eroding public confidence in national defense and democratic self-governance.',
+        example:
+          'Real scenario: Speculation that military authorities deliberately ignored incoming airspace incursions to cover up a secret diplomatic deal.',
+      },
+      {
+        tag: 'Clickbait & distortion',
+        title: 'Headlines That Contradict the Story',
+        trap:
+          'Screaming all-caps headlines: "CASH TRANSACTIONS BANNED STARTING NEXT MONTH!". The actual body of the article only mentions an exploratory opinion poll.',
+        reality:
+          'Over 60% of social media users share articles based solely on the headline. Sensationalist content creators monetize your anxiety for traffic and clicks.',
+        example:
+          'Real scenario: An official quote stripped of qualifying nuances, reversing its actual policy intent.',
+      },
+    ],
+    stepsTitle: '5-Step Practical Verification Checklist (Under 1 Minute)',
+    stepsLead:
+      'You do not need to be an investigative reporter. Follow these five quick habits whenever you encounter suspicious claims:',
+    steps: [
+      {
+        num: '01',
+        title: 'The 5-Second Reflex: Check Your Emotion',
+        text:
+          'If a post makes you feel sudden dread, rage, or vindictive joy, pause and breathe. Outrage is the fuel of manipulation. Never share on the first visceral impulse.',
+      },
+      {
+        num: '02',
+        title: 'Track Down the Primary Source',
+        text:
+          'Who originally stated this? Is there a press release, an uncut video recording, or an official institutional document? A post starting with "word on the street" or "a contact from the inside told me" is a rumor, not proof.',
+      },
+      {
+        num: '03',
+        title: 'Check If Reputable Newsrooms Covered It',
+        text:
+          'If a massive event ("borders shut down", "emergency nationwide ban") only appears on an obscure Telegram channel or anonymous TikTok profile, it is almost certainly false. Historic events are reported simultaneously by dozens of accredited journalists.',
+      },
+      {
+        num: '04',
+        title: 'Scrutinize Images: Run a Quick Reverse Search',
+        text:
+          'Anyone can download a photo from an earthquake in 2018 and claim it occurred last night. Use Google Lens, TinEye, or Verifact to check where and when the picture first surfaced.',
+      },
+      {
+        num: '05',
+        title: 'Run It Through Verifact',
+        text:
+          'Take a screenshot or paste the claim into verifact.ro. Within seconds, cross-reference certified fact-checks, public records, and trusted press reports.',
+      },
+    ],
+    labelTrap: 'In the feed (The Trap)',
+    labelReality: 'The Reality Behind It',
+    familyTitle: 'How to Talk to Loved Ones When They Share Falsehoods',
+    familyLead:
+      'Most of us encounter misinformation not from malicious bots, but in family group chats from loved ones sharing out of genuine concern. Here is how to help without straining relationships:',
+    familyRules: [
+      {
+        title: '1. Reach Out Privately',
+        text:
+          'Never call someone out in front of the entire group chat. People become defensive when corrected in public. A gentle private message is far more effective.',
+      },
+      {
+        title: '2. Share Sources, Not Labels',
+        text:
+          'Instead of "How could you believe this?", write: "I was worried when I saw this too, but I looked it up and found what official agencies and independent journalists actually reported: [link]".',
+      },
+      {
+        title: '3. Avoid Condescension',
+        text:
+          'Modern fakes are crafted to deceive. Anyone can be misled in an unguarded moment. Focus on sharing clear facts rather than winning an argument.',
+      },
+    ],
+    guidesTitle: 'Practical Guides & Verifact Tools',
+    guidesLead:
+      'Deepen your digital literacy skills and quickly verify any questionable claim:',
+    guides: [
+      {
+        tag: 'Practical Guide',
+        title: 'How to Spot a Deepfake',
+        desc:
+          'Learn to detect AI-generated voices, synthetic video artifacts, and altered faces.',
+        href: '/despre-dezinformare/cum-identifici-deepfake',
+        action: 'Read guide →',
+      },
+      {
+        tag: 'Security',
+        title: 'Phishing & Social Media Scams',
+        desc:
+          'Protect yourself against impersonator accounts, fraudulent ads, and trap links.',
+        href: '/despre-dezinformare/scheme-phishing-social-media',
+        action: 'Learn more →',
+      },
+      {
+        tag: 'Education',
+        title: 'Disinformation Glossary',
+        desc:
+          'Clear definitions of key terms: malinformation, bot networks, echo chambers, and primary sources.',
+        href: '/resurse/glosar-dezinformare',
+        action: 'Explore glossary →',
+      },
+    ],
+    closingText: 'Not sure about something you saw online? ',
+    verifyLink: 'Check it now on Verifact',
+    orText: ' or inspect ',
+    methodologyLink: 'our verification methodology',
+    sourcesNote:
+      'Inspired by digital verification standards developed by leading initiatives including InfoRadar (MApN) and EUvsDisinfo.',
   },
   transparentaPage: {
     metadata: {

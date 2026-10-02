@@ -49,9 +49,6 @@
   text-align: right;
 }
 
-/* Section headings — promoted from quiet mono captions to real subtitles so the
-   report reads as distinct, scannable blocks rather than one dense column. An
-   accent tick and a hairline underline anchor each section. */
 .sectionLabel {
   display: flex;
   align-items: center;
@@ -84,9 +81,6 @@
   max-width: var(--measure);
 }
 
-/* The sharer's separated commentary — set apart as a quiet recessed panel (the
-   role --color-paper-shade exists for) so the reader sees it is the poster's
-   take, not the verified claim. */
 .commentaryBlock {
   background-color: var(--color-paper-shade);
   border-radius: var(--radius-md);
@@ -181,6 +175,13 @@
   gap: 0.5rem;
 }
 
+.sourceFavicon {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
 .sourceTitle {
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-body);
@@ -192,9 +193,6 @@
   text-decoration: underline;
 }
 
-/* Tier badges map to the verdict palette rather than off-system pastels:
-   trusted → pine, general press → neutral ink, social → amber. Tinted grounds
-   via color-mix so they stay legible in both themes. */
 .tier1Badge {
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-semibold);
@@ -251,25 +249,6 @@
   gap: var(--space-3);
 }
 
-.criticalThinkingBanner {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  background-color: var(--color-paper-shade);
-  border-left: 3px solid var(--color-accent);
-  border-radius: var(--radius-sm);
-  padding: var(--space-3) var(--space-4);
-  font-family: var(--font-family-sans);
-  font-size: var(--font-size-body-sm);
-  line-height: var(--line-height-body-sm);
-  color: var(--color-ink-secondary);
-}
-
-.criticalThinkingIcon {
-  flex: none;
-  font-size: 1.1rem;
-}
-
 .plausibilityBlock {
   background-color: var(--color-paper-shade);
   border: var(--border-width-hairline) solid var(--color-line);
@@ -277,24 +256,10 @@
   padding: var(--space-4) var(--space-5);
 }
 
-.plausibilityHeader {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-bottom: var(--space-2);
-}
-
-.plausibilityTitle {
-  font-family: var(--font-family-sans);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-ink);
-}
-
 .plausibilityRationale {
   font-family: var(--font-family-sans);
   font-size: var(--font-size-body-sm);
   line-height: 1.5;
   color: var(--color-ink-secondary);
+  margin: 0;
 }

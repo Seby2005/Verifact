@@ -270,6 +270,36 @@ export const ro = {
     },
   },
   reportView: {
+    eyebrow: 'Raport de Verificare Factuală',
+    hypothesisLabel: 'Ipoteza Factuală Analizată',
+    commentaryBadge: 'Comentariu distribuitor',
+    commentaryNoteShort: 'opinie separată de afirmația factuală',
+    criticalThinkingDefault: 'Iată ce spun sursele, iată ce lipsește, decide tu pe baza dovezilor.',
+    scoreTitle: 'Scor de veridicitate',
+    visualEvidenceAlt: 'Dovadă vizuală {index} pentru afirmația verificată',
+    executiveBreakdown: {
+      title: 'Sinteză executivă',
+      subtitle: 'Evaluare structurată a afirmației, evidențelor documentare și omisiunilor critice.',
+      whatClaimAsserts: 'Ce susține afirmația?',
+      whatFactsProve: 'Ce dovedesc faptele?',
+      whatIsMissing: 'Ce lipsește?',
+      claimSubtext: 'Ipoteza factuală extrasă și izolată de comentariul subiectiv.',
+      factsSubtext: 'Concluziile desprinse din sursele documentate și verificate.',
+      missingSubtext: 'Elementele de context esențiale care nu au fost demonstrate sau au fost omise.',
+    },
+    evidenceCards: {
+      title: 'Surse și dovezi documentate',
+      subtitle: 'Articole de presă, rapoarte oficiale și fact-check-uri independente consultate.',
+      tier1Label: 'Tier 1: Sursă de Încredere / Fact-Checker',
+      tier2Label: 'Tier 2: Presă Generală',
+      tier3Label: 'Tier 3: Social / Web General',
+      stanceConfirms: 'Confirmă',
+      stanceContradicts: 'Contrazice',
+      stanceContext: 'Context / Neutru',
+      openSourceArticle: 'Deschide articolul sursă',
+      publisherUnknown: 'Publicație online',
+      noSourcesFound: 'Nu au fost identificate surse publice relevante pentru această afirmație.',
+    },
     analyzedIn: 'analizat în {seconds}s',
     layersWithEvidence: '{count}/4 straturi cu dovezi',
     claimLabel: 'Afirmația verificată',
@@ -622,6 +652,7 @@ export const ro = {
       bookmarked: 'Favorite',
       activePlan: 'Plan Activ',
       currentUsage: 'Consum Lunar',
+      statusActive: 'Cont activ',
     },
     usageCard: {
       title: 'Cota lunară de verificări',
@@ -699,54 +730,239 @@ export const ro = {
     metadata: {
       title: 'Misiune',
       description:
-        'De ce există Verifact: acces instant la verificarea informației, prin AI transparentă și surse verificabile.',
+        'De ce există Verifact: acces la verificarea informației, prin transparență radicală și surse verificabile.',
     },
     eyebrow: 'Misiune',
     title: 'De ce există Verifact',
     calloutLabel: 'Misiunea produsului',
     calloutText:
-      'Oferim fiecărui cetățean acces instant la adevăr, prin inteligență artificială transparentă și surse verificabile.',
-    problemTitle: 'Problema',
+      'Construim instrumente simple și accesibile pentru a ajuta pe oricine să verifice rapid zvonurile, afirmațiile și capturile de ecran din mediul online prin dovezi factuale și surse deschise.',
+    problemTitle: 'Ce probleme de dezinformare adresăm',
     problemText1:
-      'O știre falsă ajunge la milioane de oameni în câteva ore. Dezmințirea vine zile mai târziu — dacă vine.',
+      'În fiecare zi, milioane de oameni se lovesc de citate fabricate, imagini scoase din context, titluri de senzație și zvonuri virale pe platforme precum WhatsApp, Facebook sau TikTok. O informație falsă se propagă în câteva minute deoarece stârnește reacții emoționale puternice (frică, indignare), în timp ce o verificare documentată poate dura ore sau zile.',
     problemText2:
-      'Verifact face verificarea instantă, transparentă și gratuită pentru uz personal.',
-    romaniaTitle: 'De ce România, întâi',
+      'Verifact intervine fix în momentul de îndoială — oferindu-ți o modalitate rapidă și transparentă de a verifica dacă o afirmație virală are acoperire în fapte înainte de a o da mai departe.',
+    criticalThinkingTitle: 'De ce contează gândirea critică',
+    criticalThinkingText1:
+      'Dezinformarea funcționează deoarece ocolește rațiunea și mizează pe impulsul de moment. Când o știre ne provoacă furie sau entuziasm, prima tendință este să o distribuim imediat fără a-i chestiona veridicitatea.',
+    criticalThinkingText2:
+      'Gândirea critică nu înseamnă să devii suspicios față de orice, ci să faci o scurtă pauză și să pui trei întrebări simple: Cine afirmă asta? Pe ce dovezi se bazează? Ce context lipsește? Verifact nu este un arbitru care îți spune ce să crezi, ci un sprijin pentru ca tu să îți poți trage singur propriile concluzii informate.',
+    algorithmTitle: 'Cum ajută algoritmul concret (fără termeni tehnici)',
+    algorithmSteps: [
+      'Extrage afirmațiile cheie: Când introduci un text sau o imagine, sistemul identifică faptele concrete care pot fi verificate (date, cifre, declarații, evenimente).',
+      'Caută în surse verificate: Compară automat aceste afirmații cu baze de date de fact-checking existente, arhive oficiale și articole din presă de încredere.',
+      'Explică dovezi și nuanțe: În loc să îți ofere doar un simplu verdict opac, îți arată clar ce fapte se confirmă, ce este scos din context și unde poți citi sursa primară.',
+    ],
+    romaniaTitle: 'De ce România, mai întâi',
     romaniaBullets: [
-      'Nu există un instrument automat de fact-checking nativ în limba română.',
-      'Cererea de verificare independentă este mare și în creștere.',
-      'Jurnalismul independent — G4Media, PressOne, Recorder — sunt parteneri naturali, nu concurenți.',
+      'Nu există în prezent un instrument automat de fact-checking nativ în limba română, gratuit și open source.',
+      'Nevoia de verificare independentă a informațiilor din spațiul public românesc este ridicată și în continuă creștere.',
+      'Jurnalismul de investigație și redacțiile independente (ex: G4Media, PressOne, Recorder) sunt surse de încredere și parteneri naturali în lupta cu falsurile.',
     ],
     notTitle: 'Ce nu suntem',
     notText:
-      'Nu suntem un arbitru al adevărului și nu înlocuim redacțiile. Un raport automat e un punct de plecare cu surse, nu o decizie editorială. De aceea fiecare verdict vine cu scorul și sursele la vedere — ca să poți verifica concluzia singur, inclusiv împotriva noastră.',
+      'Nu suntem un „judecător al adevărului” și nu înlocuim jurnalismul. Un raport automat Verifact este un punct de plecare bazat pe surse transparente, nu o decizie editorială absolută. Fiecare raport vine cu scorul și legăturile directe la vedere, astfel încât să poți verifica singur concluziile noastre.',
     valuesTitle: 'Valorile după care lucrăm',
     values: [
       {
         title: 'Transparență',
-        text: 'Algoritmul este open source. Orice persoană poate vedea cum se face verificarea.',
+        text: 'Algoritmul și criteriile de evaluare sunt open source. Oricine poate inspecta modul în care se face verificarea.',
       },
       {
         title: 'Corectitudine',
-        text: 'Nu luăm poziții politice. Verificăm fapte, nu opinii.',
+        text: 'Nu luăm poziții politice și nu evaluăm opinii. Verificăm doar afirmații factuale în raport cu date reale.',
       },
       {
         title: 'Accesibilitate',
-        text: 'Gratuit pentru utilizatorul de rând.',
+        text: 'Instrument gratuit și ușor de înțeles pentru utilizatorul obișnuit, fără jargon tehnic sau bariere de utilizare.',
       },
       {
         title: 'Responsabilitate',
-        text: 'Fiecare raport include surse verificabile, nu doar concluzii.',
+        text: 'Fiecare verdict include trimiteri directe către surse verificabile, nu doar opinii sau scoruri opace.',
       },
       {
         title: 'Confidențialitate',
-        text: 'Screenshot-urile utilizatorilor nu sunt stocate permanent.',
+        text: 'Fișierele și screenshot-urile încărcate sunt procesate în siguranță, fără stocare permanentă nejustificată.',
       },
     ],
-    followText: 'Vezi și ',
+    followText: 'Află mai multe despre ',
     methodologyLink: 'metodologia de verificare',
-    orText: ' sau ',
-    openSourceLink: 'codul și politica de confidențialitate',
+    orText: ' sau consultă ',
+    openSourceLink: 'codul open-source',
+  },
+  despreDezinformarePage: {
+    metadata: {
+      title: 'Dezinformarea pe înțelesul tuturor',
+      description:
+        'Ghid practic de autoapărare digitală: de ce prind știrile false, tehnici frecvente de manipulare și un checklist de verificare în 5 pași.',
+    },
+    eyebrow: 'Ghid de autoapărare digitală',
+    title: 'Dezinformarea pe înțelesul tuturor: cum o recunoști și o oprești',
+    lead:
+      'Falsurile din mediul online nu mai arată ca niște minciuni evidente. Sunt ambalate în jumătăți de adevăr, clipuri vechi scoase din context și titluri construite special să stârnească frică sau revoltă. Iată cum funcționează manipularea și cum te aperi în 5 pași rapizi.',
+    calloutLabel: 'Regula de aur',
+    calloutText:
+      'Cel mai puternic filtru împotriva dezinformării ești chiar tu, în cele 5 secunde dinainte de a apăsa „Distribuie”. O pauză scurtă rupe un lanț de panică ce altfel ar ajunge la mii de oameni.',
+    pillarsTitle: 'Anatomia manipulării: de ce prind știrile false?',
+    pillarsLead:
+      'Dezinformarea nu se răspândește pentru că oamenii ar fi naivi, ci pentru că este optimizată psihologic și algoritmic să ocolească rațiunea.',
+    pillars: [
+      {
+        badge: '01 · Emoție',
+        title: 'Miza pe frică și revoltă',
+        text:
+          'Conținutul care stârnește indignare sau teamă se distribuie de 6 ori mai repede decât o analiză factuală. Furia este comutatorul care deconectează gândirea critică și provoacă reacția impulsivă de share.',
+      },
+      {
+        badge: '02 · Psihologie',
+        title: 'Capcana confirmării',
+        text:
+          'Avem tendința să acceptăm instantaneu orice zvon care se potrivește cu temerile sau convingerile noastre și să contestăm doar ce ne contrazice. Creatorii de falsuri știu exact ce butoane să apese.',
+      },
+      {
+        badge: '03 · Algoritm',
+        title: 'Asimetria vitezei',
+        text:
+          'O minciună senzațională face înconjurul internetului în 2 ore. O verificare documentată sau o dezmințire oficială durează ore sau zile și ajunge doar la o mică parte din publicul inițial.',
+      },
+    ],
+    techniquesTitle: 'Tipare și tehnici frecvente (cu exemple reale)',
+    techniquesLead:
+      'Iată principalele mecanisme de dezinformare documentate în spațiul public și cum le demaști imediat:',
+    techniques: [
+      {
+        tag: 'Context fals',
+        title: 'Reciclarea imaginilor și clipurilor vechi',
+        trap:
+          'O filmare dramatică (exercițiu militar din 2021, o explozie industrială veche sau chiar secvențe dintr-un joc video) este reetichetată drept „ACUM: Atac în direct!”.',
+        reality:
+          'Materialul vizual este real, dar data și locul sunt 100% false. Se mizează pe faptul că nimeni nu verifică originea clipului.',
+        example:
+          'Exemplu real: Filmări de la exerciții militare din anii trecuți prezentate pe TikTok drept trupe care intră în țară în această dimineață.',
+      },
+      {
+        tag: 'Alarmism extrem',
+        title: 'Victimizare și cifre dramatice inventate',
+        trap:
+          'Mesaje alarmiste cu detalii emoționale fabricate: „800 de soldați răniți secretizați în spitale” sau „victime ascunse de autorități”.',
+        reality:
+          'Scopul este crearea de panică și neîncredere generală. Dacă un eveniment de o asemenea amploare ar fi real, ar fi imposibil de ținut secret de presă și medici.',
+        example:
+          'Exemplu real: Zvonuri virale pe WhatsApp despre presupuse convoaie medicale secrete și unități spitalicești blocate.',
+      },
+      {
+        tag: 'Teoria trădării',
+        title: 'Narațiunea complotului instituțional',
+        trap:
+          'Afirmația că instituțiile sau aliații „știu, dar lasă intenționat să se întâmple” incidente grave din trădare sau lașitate.',
+        reality:
+          'Se urmărește slăbirea încrederii în capacitatea de apărare și în mecanismele democratice fundamentale ale societății.',
+        example:
+          'Exemplu real: Speculații că armata „a lăsat intenționat o dronă să cadă” pentru a ascunde un incident diplomatic.',
+      },
+      {
+        tag: 'Clickbait & trunchiere',
+        title: 'Titlul care minte în locul textului',
+        trap:
+          'Titluri panicarde cu majuscule: „SE INTERZIC BANII CASH DE LUNA VIITOARE!”. În corpul articolului, se vorbește despre un simplu sondaj orientativ.',
+        reality:
+          'Peste 60% dintre oameni dau share citind doar titlul. Creatorii de conținut senzaționalist monetizează frica ta prin vizualizări și clicuri.',
+        example:
+          'Exemplu real: O declarație oficială scoasă din context prin eliminarea condițiilor nuanțate care schimbau complet sensul frazei.',
+      },
+    ],
+    stepsTitle: 'Ghid practic de verificare în 5 pași (sub 1 minut)',
+    stepsLead:
+      'Nu trebuie să fii jurnalist de investigație. Respectă acest checklist rapid înainte de a da mai departe orice informație suspectă:',
+    steps: [
+      {
+        num: '01',
+        title: 'Reflexul de 5 secunde: verifică-ți emoția',
+        text:
+          'Dacă o postare te face să simți frică acută, furie sau revoltă instantanee, respiră. Furia este combustibilul manipulării. Nu apăsa pe „Distribuie” la primul impuls.',
+      },
+      {
+        num: '02',
+        title: 'Urmărește sursa primară',
+        text:
+          'Cine a spus concret asta? Există un comunicat oficial, o declarație filmată integral sau o instituție asumată? O postare care începe cu „Se aude că...” sau „Mi-a trimis o cunoștință din sistem” este un zvon, nu o dovadă.',
+      },
+      {
+        num: '03',
+        title: 'Verifică dacă a mai preluat altcineva știrea',
+        text:
+          'Dacă o știre uriașă („s-a închis granița”, „s-a interzis ceva la nivel național”) apare doar pe un canal obscur de Telegram sau pe un cont de TikTok, este aproape garantat falsă. Evenimentele majore sunt acoperite simultan de zeci de redacții.',
+      },
+      {
+        num: '04',
+        title: 'Atenție la imagini: căutare inversă rapidă',
+        text:
+          'Oricine poate lua o poză dintr-un cutremur din 2018 și să scrie că s-a întâmplat azi noapte. Folosește Google Lens sau Verifact pentru a verifica data și contextul inițial al imaginii.',
+      },
+      {
+        num: '05',
+        title: 'Trece afirmația prin Verifact',
+        text:
+          'Fă o captură de ecran sau copiază textul suspect și verifică-l pe verifact.ro. În câteva secunde afli dacă a fost deja demontat de fact-checkeri sau dacă există dovezi reale.',
+      },
+    ],
+    labelTrap: 'În feed (Capcana)',
+    labelReality: 'Realitatea din spate',
+    familyTitle: 'Cum vorbești cu cei dragi când distribuie un fals',
+    familyLead:
+      'Cei mai mulți dintre noi întâlnim dezinformarea pe grupurile de familie sau de la prieteni apropiați care o dau mai departe din grijă, cu bună-credință. Iată cum ajuți eficient fără să strici relația:',
+    familyRules: [
+      {
+        title: '1. Discută în privat',
+        text:
+          'Nu corecta persoana pe grupul mare sau în comentarii publice. Oamenii devin defensivi când se simt judecați în fața altora. Un mesaj privat cald funcționează mult mai bine.',
+      },
+      {
+        title: '2. Trimite sursa, nu etichete',
+        text:
+          'În loc de „Cum ai putut crede prostia asta?”, scrie: „M-am speriat și eu când am văzut, dar am căutat și uite ce spun verificările oficiale și presa independentă: [link]”.',
+      },
+      {
+        title: '3. Fără superioritate morală',
+        text:
+          'Falsurile moderne sunt realizate profesionist. Oricine poate fi păcălit într-un moment de neatenție. Focusează-te pe informare corectă, nu pe a câștiga o dispută.',
+      },
+    ],
+    guidesTitle: 'Ghiduri practice și instrumente Verifact',
+    guidesLead:
+      'Aprofundează tehnicile de securitate digitală și verifică rapid orice afirmație suspectă:',
+    guides: [
+      {
+        tag: 'Ghid Practic',
+        title: 'Cum identifici un Deepfake',
+        desc:
+          'Recunoaște vocile clonate și fețele generate cu inteligență artificială în clipurile virale.',
+        href: '/despre-dezinformare/cum-identifici-deepfake',
+        action: 'Citește ghidul →',
+      },
+      {
+        tag: 'Securitate',
+        title: 'Scheme de Phishing & Înșelăciuni',
+        desc:
+          'Cum te protejezi de conturile false, reclamele frauduloase și linkurile capcană.',
+        href: '/despre-dezinformare/scheme-phishing-social-media',
+        action: 'Află mai multe →',
+      },
+      {
+        tag: 'Educație',
+        title: 'Glosarul de Dezinformare',
+        desc:
+          'Dicționar clar cu termeni esențiali: malinformare, boți, camere de ecou și surse primare.',
+        href: '/resurse/glosar-dezinformare',
+        action: 'Explorează glosarul →',
+      },
+    ],
+    closingText: 'Ai dubii despre ceva ce ai văzut online? ',
+    verifyLink: 'Verifică acum pe Verifact',
+    orText: ' sau consultă ',
+    methodologyLink: 'metodologia noastră de verificare',
+    sourcesNote:
+      'Inspirat din bunele practici de conștientizare și prevenție dezvoltate de platforme de referință precum InfoRadar (MApN) și EUvsDisinfo.',
   },
   transparentaPage: {
     metadata: {

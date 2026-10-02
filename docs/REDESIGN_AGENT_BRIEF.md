@@ -91,7 +91,7 @@ de asta, nu o pierdere accidentală a deciziilor deja luate.
 ### 2. Rutele existente
 
 `/` (homepage cu unealta reală de verificare), `/cont` (login/signup),
-`/preturi` (pricing: Free / Pro €7,99/lună / Business €49/lună),
+`/preturi` (pricing: Free / Pro €3,99 pe lună sau €2,99 pe lună la plata anuală / Business „Contact"),
 `/misiune` (despre/misiune), `/open-source` (open source + confidențialitate,
 combinate deliberat pe aceeași pagină), `/rapoarte` (istoric/rapoarte
 publice), `/transparenta` (metodologie de verificare — separată deliberat de
