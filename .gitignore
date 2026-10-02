@@ -224,3 +224,9 @@ docs/tools/
 mobile/
 extension/
 
+# Self-hosted container stack (not used)
+docker-compose.yml
+docker/
+services/
+workflows/
+

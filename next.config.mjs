@@ -29,9 +29,6 @@ const originOf = (value) => {
     return '';
   }
 };
-// Formbricks: loads its UMD script and calls its ingest API from the browser.
-const formbricksOrigin = originOf(process.env.NEXT_PUBLIC_FORMBRICKS_APP_URL);
-
 // Google Identity Services (One Tap / "Sign in with Google"): the browser loads
 // its script, opens its popup in an iframe, and posts the ID token — all on
 // accounts.google.com. Only widened when a Google Client ID is configured.
@@ -52,7 +49,6 @@ const connectSrc = [
   supabaseOrigin,
   'https://*.supabase.co',
   'wss://*.supabase.co',
-  formbricksOrigin,
   googleAuthOrigin,
   turnstileOrigin,
   umamiOrigin,
@@ -84,7 +80,7 @@ const csp = [
   // (src/lib/transcription/browser-whisper.ts). It permits only WASM
   // compilation, not arbitrary eval(), so it stays far tighter than the
   // 'unsafe-eval' that dev's HMR needs.
-  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''} ${turnstileOrigin} ${umamiOrigin} ${vercelAnalyticsOrigin}`,
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''} ${turnstileOrigin} ${umamiOrigin} ${vercelAnalyticsOrigin}`,
   "style-src 'self' 'unsafe-inline'",
   // Video clip verification loads the uploaded file into a <video> element via a
   // blob: URL to sample frames for OCR (src/lib/transcription/video-frames.ts).

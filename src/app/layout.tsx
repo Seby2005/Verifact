@@ -108,7 +108,6 @@ export const metadata: Metadata = {
 
 import { LanguageProvider } from '@/i18n';
 import { ToastProvider } from '@/components/ui';
-import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 import { THEME_SCRIPT } from '@/components/layout/ThemeToggle/theme-script';
 import { JsonLd } from '@/components/JsonLd';
 
@@ -187,7 +186,6 @@ export default function RootLayout({
               <Footer />
             </div>
             <Analytics />
-            <FeedbackWidget />
           </ToastProvider>
         </LanguageProvider>
       </body>

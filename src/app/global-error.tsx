@@ -1,14 +1,9 @@
 'use client';
 
-// App Router global error boundary. Reports uncaught React render errors to
-// GlitchTip via the Sentry SDK (a no-op when no DSN is configured). Recommended
-// by @sentry/nextjs — without it, render errors in the root layout aren't
-// captured. Kept minimal; the app's normal error/not-found UI handles the rest.
-//
+// App Router global error boundary. Captures uncaught React render errors.
 // This boundary renders its own <html> and sits ABOVE the LanguageProvider, so
 // it cannot use useLanguage(). It reads the persisted locale cookie directly and
-// carries its own three-string map — the one place a UI string is duplicated,
-// justified by keeping the crash path free of app context.
+// carries its own three-string map.
 import { useEffect } from 'react';
 
 const MESSAGES: Record<'ro' | 'en' | 'fr', string> = {

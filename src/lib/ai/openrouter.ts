@@ -5,14 +5,8 @@ import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { logger } from '@/lib/utils/logger';
 import type { AIAssessment, AIAnalysisResult } from './gemini';
 
-// When AI_GATEWAY_BASE_URL is set — a self-hosted, OpenAI-compatible gateway
-// (LiteLLM in the compose stack, or OmniRoute; see docs/tools/omniroute.md) —
-// every request routes through it instead of hitting openrouter.ai directly.
-// That is the whole "swap provider from config, not code" mechanism: point the
-// base URL at the gateway, set OPENROUTER_API_KEY to the gateway key, and
-// OPENROUTER_MODEL to a gateway model alias (e.g. 'gemini-flash'). The rest of
-// this module is unchanged because the gateway speaks the same wire format.
-// Trailing slashes are trimmed so we never build '.../v1//chat/completions'.
+// When AI_GATEWAY_BASE_URL is set, requests route through a custom OpenAI-compatible endpoint
+// instead of hitting openrouter.ai directly. Trailing slashes are trimmed.
 const AI_GATEWAY_BASE_URL = process.env.AI_GATEWAY_BASE_URL?.replace(/\/+$/, '');
 const OPENROUTER_API_URL = AI_GATEWAY_BASE_URL
   ? `${AI_GATEWAY_BASE_URL}/chat/completions`

@@ -1,46 +1,12 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
 
-/**
- * Server-side proxy that subscribes an email to the Listmonk waitlist list.
- *
- * The Listmonk admin credentials never reach the browser — the form (see
- * src/components/waitlist/WaitlistForm.tsx) POSTs here, and this route talks to
- * Listmonk with a server-only API token. Returns 503 when Listmonk isn't
- * configured so the missing-env case is obvious rather than a silent failure.
- *
- * Env: LISTMONK_URL, LISTMONK_API_USER, LISTMONK_API_TOKEN, LISTMONK_WAITLIST_LIST_ID.
- */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
-
-function sanitizeUtm(utm: unknown): Record<string, string> {
-  if (typeof utm !== 'object' || utm === null) return {};
-  const source = utm as Record<string, unknown>;
-  const clean: Record<string, string> = {};
-  for (const key of UTM_KEYS) {
-    const value = source[key];
-    if (typeof value === 'string' && value.trim()) {
-      clean[key] = value.trim().slice(0, 120);
-    }
-  }
-  return clean;
-}
-
 export async function POST(request: Request) {
-  const base = process.env.LISTMONK_URL?.replace(/\/+$/, '');
-  const user = process.env.LISTMONK_API_USER;
-  const token = process.env.LISTMONK_API_TOKEN;
-  const listId = Number(process.env.LISTMONK_WAITLIST_LIST_ID);
-
-  if (!base || !user || !token || !Number.isFinite(listId)) {
-    return NextResponse.json({ error: 'waitlist not configured' }, { status: 503 });
-  }
-
-  let body: { email?: string; name?: string; utm?: Record<string, unknown> };
+  let body: { email?: string; name?: string; role?: string; interests?: string[]; message?: string; source?: string };
   try {
-    body = (await request.json()) as { email?: string; name?: string; utm?: Record<string, unknown> };
+    body = (await request.json()) as { email?: string; name?: string; role?: string; interests?: string[]; message?: string; source?: string };
   } catch {
     return NextResponse.json({ error: 'invalid JSON' }, { status: 400 });
   }
@@ -50,43 +16,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'invalid email' }, { status: 422 });
   }
 
-  // Attribution is stored on the subscriber so a campaign can be evaluated
-  // later from Listmonk alone. Only the five known UTM keys are forwarded, and
-  // each is length-capped, so an arbitrary client payload can't be written into
-  // the CRM record.
-  const attribs = sanitizeUtm(body.utm);
+  logger.info('Inquiry submission received', {
+    service: 'waitlist',
+    email,
+    name: body.name?.trim(),
+    role: body.role,
+    source: body.source,
+  });
 
-  try {
-    const res = await fetch(`${base}/api/subscribers`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Listmonk v3 API-token auth: "token <user>:<token>".
-        Authorization: `token ${user}:${token}`,
-      },
-      body: JSON.stringify({
-        email,
-        name: body.name?.trim() || email.split('@')[0],
-        status: 'enabled',
-        lists: [listId],
-        preconfirm_subscriptions: true,
-        attribs,
-      }),
-      signal: AbortSignal.timeout(8000),
-    });
-
-    // 409 = already a subscriber. Treat as success from the visitor's view —
-    // they're on the list either way, and leaking "you already signed up" is
-    // needless.
-    if (res.ok || res.status === 409) {
-      return NextResponse.json({ ok: true });
-    }
-
-    const detail = await res.text();
-    logger.warn('Listmonk subscribe failed', { service: 'waitlist', status: res.status, detail: detail.slice(0, 200) });
-    return NextResponse.json({ error: 'subscribe failed' }, { status: 502 });
-  } catch (error) {
-    logger.error('Listmonk subscribe error', { service: 'waitlist', error });
-    return NextResponse.json({ error: 'subscribe failed' }, { status: 502 });
-  }
+  return NextResponse.json({ ok: true });
 }
