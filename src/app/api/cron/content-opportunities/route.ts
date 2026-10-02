@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
 import { aggregateDailyOpportunities, saveOpportunities } from '@/lib/opportunities/trends-service';
 import { logger } from '@/lib/utils/logger';
@@ -5,12 +6,18 @@ import { logger } from '@/lib/utils/logger';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60s max execution time for Vercel Cron serverless function
 
+function safeCompare(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
 /**
  * Validates whether the incoming request is authorized to trigger the cron job.
  * Supports:
  * - Authorization: Bearer <CRON_SECRET> (Vercel Cron standard)
  * - x-cron-secret: <CRON_SECRET>
- * - Query parameter: ?secret=<CRON_SECRET>
  */
 function isAuthorized(request: Request): boolean {
   const cronSecret = process.env.CRON_SECRET;
@@ -30,26 +37,15 @@ function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7).trim();
-    if (token === cronSecret) {
+    if (safeCompare(token, cronSecret)) {
       return true;
     }
   }
 
   // 2. Custom header: x-cron-secret
   const customHeader = request.headers.get('x-cron-secret');
-  if (customHeader && customHeader === cronSecret) {
+  if (customHeader && safeCompare(customHeader.trim(), cronSecret)) {
     return true;
-  }
-
-  // 3. URL search parameter: ?secret=<token>
-  try {
-    const url = new URL(request.url);
-    const querySecret = url.searchParams.get('secret');
-    if (querySecret && querySecret === cronSecret) {
-      return true;
-    }
-  } catch {
-    // Malformed URL
   }
 
   return false;

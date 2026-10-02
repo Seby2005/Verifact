@@ -8,7 +8,60 @@ import { ReportPageCta } from '@/components/public-reports/ReportPageCta';
 import { ReportDeepDive } from '@/components/report/ReportDeepDive';
 import { ReportAuditTrail } from '@/components/report/ReportAuditTrail';
 import { PublicReportCard } from '@/components/reports/PublicReportCard';
+import { JsonLd } from '@/components/JsonLd';
+import { getTranslation, type Locale } from '@/i18n/language';
+import { ro } from '@/i18n/dictionaries/ro';
+import { en } from '@/i18n/dictionaries/en';
+import { fr } from '@/i18n/dictionaries/fr';
 import styles from './page.module.css';
+
+const DICTS: Record<Locale, unknown> = { ro, en, fr };
+const OG_LOCALE: Record<Locale, string> = { ro: 'ro_RO', en: 'en_US', fr: 'fr_FR' };
+
+/** Narrows a stored report language string to a supported locale. */
+function toLocale(lang: string | null | undefined): Locale {
+  return lang === 'en' || lang === 'fr' ? lang : 'ro';
+}
+
+/** The verdict label in the report's own language (shares the dictionary the badge uses). */
+function localizedVerdict(verdict: Verdict | null, locale: Locale): string {
+  const dict = DICTS[locale] as Record<string, unknown>;
+  const key =
+    verdict === 'true'
+      ? 'publicReports.verdictTrue'
+      : verdict === 'false'
+      ? 'publicReports.verdictFalse'
+      : verdict === 'partial'
+      ? 'publicReports.verdictPartial'
+      : 'publicReports.verdictUnclear';
+  return getTranslation(dict, key);
+}
+
+/** SEO description in the report's own language. */
+function localizedDescription(score: number | null, locale: Locale): string {
+  const s = score ?? 0;
+  if (locale === 'en') {
+    return `Independent information verification report: credibility score ${s}%. See the full analysis and cited sources on Verifact.`;
+  }
+  if (locale === 'fr') {
+    return `Rapport de vérification indépendante de l'information : score de crédibilité ${s}%. Consultez l'analyse détaillée et les sources citées sur Verifact.`;
+  }
+  return `Raport de verificare independentă a informației: Scor de veridicitate ${s}%. Vezi analiza detaliată și sursele citate pe Verifact.`;
+}
+
+function getRatingValue(verdict: Verdict | null): number {
+  switch (verdict) {
+    case 'true':
+      return 5;
+    case 'false':
+      return 1;
+    case 'partial':
+      return 3;
+    case 'unclear':
+    default:
+      return 2;
+  }
+}
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,23 +70,8 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-function getVerdictLabel(verdict: Verdict | null): { label: string; badgeClass: string; ratingValue: number } {
-  switch (verdict) {
-    case 'true':
-      return { label: 'Probabil Adevărat', badgeClass: styles.badgeTrue, ratingValue: 5 };
-    case 'false':
-      return { label: 'Probabil Fals', badgeClass: styles.badgeFalse, ratingValue: 1 };
-    case 'partial':
-      return { label: 'Parțial Adevărat / Context Lipsă', badgeClass: styles.badgePartial, ratingValue: 3 };
-    case 'unclear':
-    default:
-      return { label: 'Neclar / Dovezi Insuficiente', badgeClass: styles.badgeUnclear, ratingValue: 2 };
-  }
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  // Consume central helper (single source of truth)
   const data = await getPublicReportById(id);
 
   if (!data) {
@@ -43,11 +81,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const verdictInfo = getVerdictLabel(data.verdict);
+  const metaLocale = toLocale(data.language);
   const claimSnippet = data.inputText.slice(0, 100);
-  const title = `[${verdictInfo.label}] "${claimSnippet}..." — Verifact`;
-  const description = `Raport de verificare independentă a informației: Scor de veridicitate ${data.score ?? 'N/A'}%. Vezi analiza detaliată și sursele citate pe Verifact.`;
+  const title = `[${localizedVerdict(data.verdict, metaLocale)}] "${claimSnippet}..." — Verifact`;
+  const description = localizedDescription(data.score, metaLocale);
   const canonicalUrl = `https://verifact.ro/rapoarte/${id}`;
+  const ogImages = data.imageUrls.length > 0 ? data.imageUrls.slice(0, 1) : undefined;
 
   return {
     title,
@@ -60,30 +99,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       url: canonicalUrl,
       siteName: 'Verifact',
-      locale: 'ro_RO',
+      locale: OG_LOCALE[metaLocale],
       type: 'article',
+      images: ogImages,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      images: ogImages,
     },
   };
 }
 
 export default async function PublicReportPage({ params }: PageProps) {
   const { id } = await params;
-  // Consume central helper (single source of truth)
   const data = await getPublicReportById(id);
 
-  // Return HTTP 404 (notFound) if report does not exist or is not public
   if (!data) {
     notFound();
   }
 
-  const verdictInfo = getVerdictLabel(data.verdict);
   const report = data.reportJson;
   const displayDate = data.publishedAt || data.createdAt;
+  const reportLocale: Locale = data.language === 'en' || data.language === 'fr' ? data.language : 'ro';
+  const ratingValue = getRatingValue(data.verdict);
 
   // Schema.org ClaimReview JSON-LD for Google Fact Check Carousel & Rich Results
   const claimReviewLdJson = {
@@ -99,10 +139,10 @@ export default async function PublicReportPage({ params }: PageProps) {
     },
     reviewRating: {
       '@type': 'Rating',
-      ratingValue: verdictInfo.ratingValue,
+      ratingValue,
       bestRating: 5,
       worstRating: 1,
-      alternateName: verdictInfo.label,
+      alternateName: localizedVerdict(data.verdict, reportLocale),
     },
     itemReviewed: {
       '@type': 'Claim',
@@ -114,14 +154,26 @@ export default async function PublicReportPage({ params }: PageProps) {
   return (
     <div className={`container ${styles.reportPage}`}>
       {/* Google ClaimReview Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(claimReviewLdJson) }}
-      />
+      <JsonLd data={claimReviewLdJson} />
 
       <div style={{ marginBottom: '1.5rem' }}>
         <PublicReportCard report={data} variant="detail" />
       </div>
+
+      {data.imageUrls.length > 0 && (
+        <div className={styles.imageGallery}>
+          {data.imageUrls.map((url, idx) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={url}
+              src={url}
+              alt={`Evidence ${idx + 1}`}
+              className={styles.reportImage}
+              loading={idx === 0 ? 'eager' : 'lazy'}
+            />
+          ))}
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
         <FlagReportButton reportId={id} />

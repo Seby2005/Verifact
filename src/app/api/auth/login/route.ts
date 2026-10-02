@@ -1,5 +1,6 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
+import { getClientIp } from '@/lib/utils/client-ip';
 import { logger } from '@/lib/utils/logger';
 import type { Database } from '@/types/database';
 
@@ -32,10 +33,7 @@ export async function POST(request: Request): Promise<Response> {
   const email = b.email.trim();
   const password = b.password;
 
-  const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
-    request.headers.get('x-real-ip') ??
-    'unknown';
+  const ip = getClientIp(request);
 
   const rateLimitResult = await checkRateLimit(`auth-login:${ip}`, 5, 60 * 1000);
   if (!rateLimitResult.success) {

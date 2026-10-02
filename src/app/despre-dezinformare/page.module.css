@@ -1,15 +1,314 @@
 .prose {
-  margin-top: var(--space-12);
+  margin-top: var(--space-8);
 }
 
-/* Lead phrase of each checklist item, in the mono "instrument" voice so the
-   list scans as a set of actions before the detail. */
-.checkStrong {
-  font-family: var(--font-family-sans);
+.sectionHeader {
+  margin-top: var(--space-12);
+  margin-bottom: var(--space-6);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-h2);
+  color: var(--color-ink);
+  margin-bottom: var(--space-2);
+}
+
+.sectionLead {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  color: var(--color-ink-secondary);
+  max-width: var(--measure);
+}
+
+/* 1. Cognitive & Algorithmic Pillars Grid ----------------------------------- */
+.pillarsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-10);
+}
+
+.pillarCard {
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.pillarBadge {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-label);
+  color: var(--color-accent);
+  text-transform: uppercase;
+}
+
+.pillarTitle {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.pillarText {
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+  margin: 0;
+}
+
+/* 2. Real Manipulation Techniques (Inforadar Style) ------------------------ */
+.techniquesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-10);
+}
+
+.techniqueCard {
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.techniqueHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.techniqueTag {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-label-tight);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-paper-shade);
+  border-radius: var(--radius-sm);
   color: var(--color-ink);
 }
 
+.techniqueTitle {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.techniqueBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.techniqueRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.techniqueLabel {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+.labelTrap {
+  color: var(--verdict-false);
+}
+
+.labelReality {
+  color: var(--verdict-true);
+}
+
+.techniqueContent {
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+  margin: 0;
+}
+
+.techniqueExampleBox {
+  background-color: var(--color-paper);
+  border-left: 3px solid var(--color-accent);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink);
+  font-style: italic;
+}
+
+/* 3. 5-Step Action Checklist ------------------------------------------------ */
+.stepsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-10);
+  list-style: none;
+  padding: 0;
+}
+
+.stepCard {
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: var(--space-5) var(--space-6);
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.stepNumber {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-accent);
+  line-height: 1;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.stepContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.stepTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.stepText {
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+  margin: 0;
+}
+
+/* 4. Everyday / Family Talk Box -------------------------------------------- */
+.familyBox {
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-10);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.familyIntro {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  color: var(--color-ink-secondary);
+  margin-bottom: var(--space-5);
+}
+
+.familyRulesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+.familyRule {
+  background-color: var(--color-paper);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+}
+
+.familyRuleTitle {
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  margin: 0 0 var(--space-1);
+}
+
+.familyRuleText {
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+  margin: 0;
+}
+
+/* 5. Guides & Related Resources Grid --------------------------------------- */
+.guidesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-10);
+}
+
+.guideCard {
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: var(--space-5) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-3);
+  text-decoration: none;
+  transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.guideCard:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.guideTag {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-label-tight);
+  color: var(--color-ink-muted);
+}
+
+.guideTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.guideDesc {
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
+  color: var(--color-ink-secondary);
+  margin: 0;
+}
+
+.guideAction {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent);
+  margin-top: var(--space-2);
+}
+
+/* Closing / Footer Section ------------------------------------------------- */
 .closing {
   font-family: var(--font-family-mono);
   font-size: var(--font-size-body-sm);
@@ -21,10 +320,30 @@
   color: var(--color-ink);
   border-bottom: var(--border-width-hairline) solid var(--color-line-strong);
   padding-bottom: 2px;
+  text-decoration: none;
   transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .textLink:hover {
   color: var(--color-accent);
   border-color: var(--color-accent);
+}
+
+/* Media Queries ------------------------------------------------------------ */
+@media (min-width: 768px) {
+  .pillarsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .techniquesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .familyRulesGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .guidesGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }

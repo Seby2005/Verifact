@@ -1,9 +1,10 @@
 import type { MetadataRoute } from 'next';
 import { RESOURCE_ARTICLES } from '@/content/resurse';
 import { listPublicReports } from '@/lib/verification/public-reports-query';
+import { SITE_URL } from '@/lib/site';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro';
+  const baseUrl = SITE_URL;
   const currentDate = new Date();
 
   // Static resource articles

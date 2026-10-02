@@ -14,7 +14,7 @@ export interface DecomposedClaim {
   tokenUsage?: TokenUsageDetail;
 }
 
-const DEFAULT_DECOMPOSITION: DecomposedClaim = {
+export const DEFAULT_DECOMPOSITION: DecomposedClaim = {
   originalText: '',
   subClaims: [],
   riskLevel: 'low',
@@ -23,10 +23,9 @@ const DEFAULT_DECOMPOSITION: DecomposedClaim = {
 };
 
 const OPENROUTER_MODELS = [
-  process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat',
-  'google/gemini-2.0-flash-lite-001:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'deepseek/deepseek-r1:free',
+  process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash',
+  'google/gemini-2.5-flash-lite',
+  'meta-llama/llama-3.3-70b-instruct',
 ];
 
 /**
@@ -72,7 +71,7 @@ Răspunde EXCLUSIV cu un obiect JSON structurat:
               'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
               'X-Title': 'Verifact Decomposer',
             },
-            signal: AbortSignal.timeout(6000),
+            signal: AbortSignal.timeout(5000),
             body: JSON.stringify({
               model,
               messages: [{ role: 'user', content: prompt }],

@@ -211,8 +211,8 @@ async function fetchFactChecks(query: string, lang: string): Promise<FactCheckRe
     const response = await withCircuitBreaker('google-fact-check', () =>
       fetchWithRetry(
         `https://factchecktools.googleapis.com/v1alpha1/claims:search?${params.toString()}`,
-        () => ({ signal: AbortSignal.timeout(8000) }),
-        { label: 'layer1-factcheck' }
+        () => ({ signal: AbortSignal.timeout(4000) }),
+        { label: 'layer1-factcheck', attempts: 2, baseDelayMs: 300 }
       ).then((res) => {
         if (!res.ok) throw new Error(`Fact Check API error: ${res.status} ${res.statusText}`);
         return res;
@@ -261,13 +261,18 @@ export async function runLayer1(
 
   const roQuery = expandedQueries?.romanianQuery || buildFactCheckQuery(text, false);
   const enQuery = expandedQueries?.englishQuery || buildFactCheckQuery(text, true);
+  const factAngle = expandedQueries?.factCheckAngle;
 
-  const [roResults, enResults] = await Promise.all([
+  const searches = [
     fetchFactChecks(roQuery, language === 'unknown' ? 'ro' : language),
     fetchFactChecks(enQuery, 'en'),
-  ]);
+  ];
+  if (factAngle && factAngle !== roQuery) {
+    searches.push(fetchFactChecks(factAngle, language === 'unknown' ? 'ro' : language));
+  }
 
-  const allResults = deduplicateByUrl([...roResults, ...enResults]);
+  const searchResults = await Promise.all(searches);
+  const allResults = deduplicateByUrl(searchResults.flat());
   allResults.sort((a, b) => b.relevanceScore - a.relevanceScore);
 
   const layerScore = calculateLayer1Score(allResults);

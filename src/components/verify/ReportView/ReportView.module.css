@@ -1,7 +1,7 @@
 .report {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-8);
 }
 
 .printHeader {
@@ -50,13 +50,27 @@
 }
 
 .sectionLabel {
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-medium);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-  color: var(--color-ink-muted);
-  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-label-tight);
+  color: var(--color-ink);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-line);
+}
+
+.sectionLabel::before {
+  content: '';
+  flex: none;
+  width: 4px;
+  align-self: stretch;
+  min-height: 1.1em;
+  background-color: var(--color-accent);
+  border-radius: var(--radius-pill);
 }
 
 .claim {
@@ -67,9 +81,6 @@
   max-width: var(--measure);
 }
 
-/* The sharer's separated commentary — set apart as a quiet recessed panel (the
-   role --color-paper-shade exists for) so the reader sees it is the poster's
-   take, not the verified claim. */
 .commentaryBlock {
   background-color: var(--color-paper-shade);
   border-radius: var(--radius-md);
@@ -102,21 +113,25 @@
 .takeawaysList {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-3);
   margin: 0;
   padding-left: 1.2rem;
 }
 
 .takeawayItem {
-  font-size: 0.95rem;
-  line-height: 1.5;
+  font-size: var(--font-size-lead);
+  line-height: 1.6;
   color: var(--color-ink);
-  font-weight: 500;
+  font-weight: var(--font-weight-semibold);
+}
+
+.takeawayItem::marker {
+  color: var(--color-accent);
 }
 
 .summary {
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
+  font-size: var(--font-size-lead);
+  line-height: 1.7;
   color: var(--color-ink-secondary);
   max-width: var(--measure);
 }
@@ -160,8 +175,15 @@
   gap: 0.5rem;
 }
 
+.sourceFavicon {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
 .sourceTitle {
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-body);
   color: var(--color-ink);
   text-decoration: none;
@@ -171,9 +193,6 @@
   text-decoration: underline;
 }
 
-/* Tier badges map to the verdict palette rather than off-system pastels:
-   trusted → pine, general press → neutral ink, social → amber. Tinted grounds
-   via color-mix so they stay legible in both themes. */
 .tier1Badge {
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-semibold);
@@ -202,12 +221,13 @@
 }
 
 .sourceMeta {
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-body-sm);
   color: var(--color-ink-muted);
 }
 
 .sourceExcerpt {
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-body-sm);
   color: var(--color-ink-secondary);
   font-style: italic;
   margin-top: 4px;
@@ -227,4 +247,19 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
+}
+
+.plausibilityBlock {
+  background-color: var(--color-paper-shade);
+  border: var(--border-width-hairline) solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+}
+
+.plausibilityRationale {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body-sm);
+  line-height: 1.5;
+  color: var(--color-ink-secondary);
+  margin: 0;
 }

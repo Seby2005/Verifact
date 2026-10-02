@@ -2,6 +2,7 @@ import { logger } from '@/lib/utils/logger';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import type { Language, TokenUsageDetail } from '@/types/verification';
+import { sanitizeOcrText, extractLongestCoherentText } from '@/lib/verification/ocr-cleaner';
 
 /**
  * The result of pulling a checkable claim out of noisy input.
@@ -23,16 +24,16 @@ export interface ExtractedClaim {
 }
 
 const OPENROUTER_MODELS = [
-  process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat',
-  'google/gemini-2.0-flash-lite-001:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
+  process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash',
+  'google/gemini-2.5-flash-lite',
+  'meta-llama/llama-3.3-70b-instruct',
 ];
 
 const MAX_INPUT_CHARS = 1500;
 
 /**
  * Splits raw submitted text into the factual claim to verify and the sharer's
- * separate commentary. Falls back to treating the whole text as the claim when
+ * separate commentary. Falls back to treating the cleaned text as the claim when
  * no model is available or the call fails, so extraction can only ever help the
  * pipeline, never block it.
  */
@@ -40,10 +41,12 @@ export async function extractClaim(
   rawText: string,
   language: Language
 ): Promise<ExtractedClaim> {
-  const trimmed = rawText.trim();
-  const fallback: ExtractedClaim = { primaryClaim: trimmed, commentary: '', sourceContext: '' };
+  const sanitized = sanitizeOcrText(rawText);
+  const textToProcess = sanitized.length >= 15 ? sanitized : rawText.trim();
+  const coherentFallback = extractLongestCoherentText(textToProcess) || textToProcess;
+  const fallback: ExtractedClaim = { primaryClaim: coherentFallback, commentary: '', sourceContext: '' };
 
-  if (trimmed.length < 12) return fallback;
+  if (textToProcess.length < 12) return fallback;
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return fallback;
@@ -56,7 +59,7 @@ export async function extractClaim(
 
 TEXT BRUT:
 """
-${trimmed.slice(0, MAX_INPUT_CHARS)}
+${textToProcess.slice(0, MAX_INPUT_CHARS)}
 """
 
 SARCINA:
@@ -84,14 +87,14 @@ Răspunde EXCLUSIV cu un obiect JSON:
               'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
               'X-Title': 'Verifact Claim Extractor',
             },
-            signal: AbortSignal.timeout(7000),
+            signal: AbortSignal.timeout(6000),
             body: JSON.stringify({
               model,
               messages: [{ role: 'user', content: prompt }],
               temperature: 0.1,
             }),
           }),
-          { label: `Extract ${model}` }
+          { label: `Extract ${model}`, attempts: 2 }
         ).then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json() as Promise<{
@@ -145,6 +148,8 @@ Răspunde EXCLUSIV cu un obiect JSON:
 export function shouldExtractClaim(inputType: string, text: string): boolean {
   if (inputType === 'screenshot') return true;
   if (inputType === 'text') {
+    const sanitized = sanitizeOcrText(text);
+    if (sanitized !== text && sanitized.length > 0) return true;
     const lineBreaks = (text.match(/\n/g) ?? []).length;
     return text.length > 220 || lineBreaks >= 2;
   }

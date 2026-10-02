@@ -10,12 +10,28 @@ import type {
   VerifyStreamEvent,
 } from '@/types/verification';
 import { useLanguage } from '@/i18n';
+import { trackEvent } from '@/lib/analytics/events';
 import { ReportView } from '../ReportView';
 import { LayerProgress, type LiveSteps } from '../LayerProgress';
 import { useTypedPlaceholder } from './useTypedPlaceholder';
+import { buildVideoClaim, type VideoClaimProgress } from '@/lib/transcription/video-claim';
+import type { TranscriptionLanguage } from '@/lib/transcription/browser-whisper';
 import styles from './VerifyTool.module.css';
 
-type VerificationInputKind = InputType;
+// The tool offers a Video tab, but the pipeline (and the DB `input_type`) only
+// know text/screenshot/url. A clip is reduced to text in the browser — spoken
+// words + on-screen text — then submitted as a screenshot: same "media-derived,
+// stays private" semantics, no new enum value, no migration.
+type VerificationInputKind = InputType | 'video';
+
+// A short clip fits well under this; the guard just stops someone dropping a
+// feature-length file that would exhaust browser memory during audio decode.
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+
+/** Narrows the UI locale to a language Whisper transcribes; defaults to Romanian. */
+function toWhisperLanguage(locale: string): TranscriptionLanguage {
+  return locale === 'en' || locale === 'fr' ? locale : 'ro';
+}
 
 /**
  * Carries the server's own failure message instead of collapsing every OCR
@@ -48,9 +64,16 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
   const [url, setUrl] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // The Turnstile widget pulls ~660KB from Cloudflare. Most landing visitors
+  // never submit, so it stays unmounted until the first interaction with the
+  // form — by the time someone finishes typing and clicks, it has loaded.
+  const [armed, setArmed] = useState(false);
   const [status, setStatus] = useState<Status>({ state: 'idle' });
   // Per-layer progress streamed from the server while a verification runs.
   const [liveSteps, setLiveSteps] = useState<LiveSteps>({});
+  // In-browser video preprocessing (transcription + frame OCR) runs before the
+  // server verification and reports its own progress here.
+  const [videoPrep, setVideoPrep] = useState<VideoClaimProgress | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const turnstileRef = useRef<TurnstileRef>(null);
 
@@ -67,6 +90,7 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
   const tabs: ReadonlyArray<TabItem<VerificationInputKind>> = [
     { id: 'text', label: t('verifyTool.tabs.text') },
     { id: 'screenshot', label: t('verifyTool.tabs.screenshot') },
+    { id: 'video', label: t('verifyTool.tabs.video') },
     { id: 'url', label: t('verifyTool.tabs.url') },
   ];
 
@@ -82,6 +106,10 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
   const handleTabChange = (next: VerificationInputKind) => {
     setKind(next);
     setStatus({ state: 'idle' });
+    // Screenshot and video share the `file` slot; clearing on switch avoids
+    // carrying an image into the video tab (or vice versa).
+    setFile(null);
+    setVideoPrep(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,7 +122,9 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
         message:
           kind === 'screenshot'
             ? t('verifyTool.errors.emptyImage')
-            : t('verifyTool.errors.emptyText'),
+            : kind === 'video'
+              ? t('verifyTool.errors.emptyVideo')
+              : t('verifyTool.errors.emptyText'),
       });
       return;
     }
@@ -107,8 +137,14 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
       return;
     }
 
+    if (kind === 'video' && file && file.size > MAX_VIDEO_BYTES) {
+      setStatus({ state: 'error', message: t('verifyTool.errors.videoTooLarge') });
+      return;
+    }
+
     setStatus({ state: 'loading' });
     setLiveSteps({});
+    setVideoPrep(null);
 
     try {
       let claimText = text.trim();
@@ -129,7 +165,36 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
         claimText = ocr.text.trim();
       }
 
+      if (kind === 'video' && file) {
+        let result;
+        try {
+          result = await buildVideoClaim(file, toWhisperLanguage(locale), ocrFrame, setVideoPrep);
+        } catch (err) {
+          const tooLong = err instanceof Error && err.message === 'VIDEO_TOO_LONG';
+          setStatus({
+            state: 'error',
+            message: tooLong
+              ? t('verifyTool.errors.videoTooLong')
+              : t('verifyTool.errors.videoFailed'),
+          });
+          return;
+        } finally {
+          setVideoPrep(null);
+        }
+        if (result.text.trim().length < 10) {
+          setStatus({ state: 'error', message: t('verifyTool.errors.emptyVideoText') });
+          return;
+        }
+        claimText = result.text.trim();
+      }
+
       if (kind === 'url') claimText = url.trim();
+
+      trackEvent('claim_submitted', { inputType: kind });
+
+      // Video has no `input_type` of its own; it rides the screenshot path,
+      // which the pipeline and DB already accept and keep private.
+      const wireInputType: InputType = kind === 'video' ? 'screenshot' : kind;
 
       const res = await fetch('/api/verify', {
         method: 'POST',
@@ -137,7 +202,7 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
         body: JSON.stringify({
           text: claimText,
           url: kind === 'url' ? url.trim() : undefined,
-          inputType: kind,
+          inputType: wireInputType,
           language: locale,
           isPublic: false,
           turnstileToken: turnstileToken ?? undefined,
@@ -268,13 +333,36 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
     return { ok: true, text: data.text ?? '' };
   }
 
+  /**
+   * OCRs a single sampled video frame. Unlike the screenshot path, a frame with
+   * no text (or a transient OCR failure) is not an error — most frames of a clip
+   * carry no caption — so this returns null and lets the caller move on.
+   */
+  async function ocrFrame(base64: string, mimeType: string): Promise<string | null> {
+    try {
+      const res = await fetch('/api/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mimeType }),
+      });
+      const data = (await res.json()) as { success?: boolean; text?: string };
+      return res.ok && data.success ? data.text ?? null : null;
+    } catch {
+      return null;
+    }
+  }
+
   return (
     <section className={styles.tool} aria-labelledby="verify-heading">
       <h2 id="verify-heading" className="label-caps">
         {t('verifyTool.heading')}
       </h2>
 
-      <form onSubmit={handleSubmit}>
+      <form
+        onSubmit={handleSubmit}
+        onFocusCapture={() => setArmed(true)}
+        onPointerDownCapture={() => setArmed(true)}
+      >
         <div className={styles.panel}>
           <Tabs
             items={tabs}
@@ -357,6 +445,36 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
             </div>
           ) : null}
 
+          {kind === 'video' ? (
+            <div className={styles.field}>
+              <label
+                className={styles.dropzone}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const dropped = e.dataTransfer.files?.[0];
+                  if (dropped) setFile(dropped);
+                }}
+              >
+                <input
+                  type="file"
+                  accept="video/*"
+                  className={styles.fileInput}
+                  aria-label={t('verifyTool.videoDropzone.title')}
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
+                <span className={styles.dropzoneTitle}>{t('verifyTool.videoDropzone.title')}</span>
+                <span className={styles.dropzoneHint}>{t('verifyTool.videoDropzone.hint')}</span>
+              </label>
+              {file ? (
+                <p className={styles.fileName}>
+                  {t('verifyTool.videoDropzone.fileSelected', { name: file.name })}
+                </p>
+              ) : null}
+              <p className={styles.fileName}>{t('verifyTool.video.note')}</p>
+            </div>
+          ) : null}
+
           {kind === 'url' ? (
             <div className={styles.field}>
               <Input
@@ -372,12 +490,14 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
             </div>
           ) : null}
 
-          <Turnstile
-            ref={turnstileRef}
-            action="verify"
-            onVerify={setTurnstileToken}
-            onExpire={() => setTurnstileToken(null)}
-          />
+          {armed ? (
+            <Turnstile
+              ref={turnstileRef}
+              action="verify"
+              onVerify={setTurnstileToken}
+              onExpire={() => setTurnstileToken(null)}
+            />
+          ) : null}
 
           <div className={styles.actions}>
             <Button type="submit" variant="primary" size="lg" isLoading={status.state === 'loading'}>
@@ -393,7 +513,19 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
             four layers being searched rather than a bare spinner. */}
         {status.state === 'loading' ? (
           <div className={styles.progress}>
-            <LayerProgress phase="streaming" live={liveSteps} />
+            {videoPrep ? (
+              <p className={styles.fileName} aria-live="polite">
+                {videoPrep.stage === 'transcribing'
+                  ? typeof videoPrep.modelFraction === 'number'
+                    ? t('verifyTool.video.preparingModel', {
+                        percent: String(Math.round(videoPrep.modelFraction * 100)),
+                      })
+                    : t('verifyTool.video.transcribing')
+                  : t('verifyTool.video.reading')}
+              </p>
+            ) : (
+              <LayerProgress phase="streaming" live={liveSteps} />
+            )}
           </div>
         ) : null}
 

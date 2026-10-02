@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { sendNtfyAlert } from '@/lib/alerts/ntfy';
 
 /**
  * Lightweight health/readiness probe.
@@ -8,10 +7,6 @@ import { sendNtfyAlert } from '@/lib/alerts/ntfy';
  * need are present. It does NOT call the external services — this is a cheap
  * config check meant to be hit frequently by an uptime monitor, not a full
  * end-to-end synthetic run.
- *
- * Hit `/api/health?notify=1` to also push a ntfy alert when degraded — that is
- * the wiring between health-checks and ntfy (the other path, GlitchTip errors
- * -> ntfy, is a webhook configured inside GlitchTip, no code here).
  */
 export const dynamic = 'force-dynamic';
 
@@ -31,20 +26,10 @@ function runChecks(): Check[] {
   ];
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   const checks = runChecks();
   const failed = checks.filter((c) => !c.ok);
   const status = failed.length === 0 ? 'ok' : 'degraded';
-
-  const notify = new URL(request.url).searchParams.get('notify') === '1';
-  if (notify && failed.length > 0) {
-    await sendNtfyAlert({
-      title: 'Verifact health check degraded',
-      message: `Missing config for: ${failed.map((c) => c.name).join(', ')}`,
-      priority: 4,
-      tags: ['warning'],
-    });
-  }
 
   return NextResponse.json(
     { status, checks },

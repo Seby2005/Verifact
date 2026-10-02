@@ -13,6 +13,16 @@ export const USD_TO_RON_RATE = 4.577;
 
 export const STANDARD_PRO_PRICE_EUR = 3.99;
 
+/**
+ * List price of a Business contract. Business is sold by email rather than
+ * self-serve (the pricing page shows "Contact"), so no checkout ever records
+ * this number — the financial dashboard needs it to value the tier. Valuing a
+ * Business account at the Pro price under-reports its MRR roughly 12x, so the
+ * two prices are kept apart. Override with BUSINESS_PRICE_EUR when the signed
+ * contracts differ from the list price.
+ */
+export const STANDARD_BUSINESS_PRICE_EUR = Number(process.env.BUSINESS_PRICE_EUR) || 49;
+
 export const DEFAULT_MODEL_PRICING: Record<string, ModelPricing> = {
   // Google Gemini Direct Models
   'gemini-2.0-flash': {

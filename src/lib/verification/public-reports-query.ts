@@ -34,6 +34,7 @@ export interface PublicReportSummary {
   createdAt: string;
   showAuthor: boolean;
   authorName: string | null;
+  imageUrls: string[];
 }
 
 /**
@@ -51,6 +52,7 @@ export interface PublicReportDetail {
   showAuthor: boolean;
   authorName: string | null;
   reportJson: VerificationReport | null;
+  imageUrls: string[];
 }
 
 export interface ListPublicReportsOptions {
@@ -77,7 +79,7 @@ export async function getPublicReportById(id: string): Promise<PublicReportDetai
     const supabase = await createServerClient();
     const { data, error } = await supabase
       .from('verifications')
-      .select('id, input_text, verdict, score, visibility_status, show_author, language, created_at, published_at, report_json, profiles!verifications_user_id_fkey(username)')
+      .select('id, input_text, verdict, score, visibility_status, show_author, language, created_at, published_at, report_json, image_urls, profiles!verifications_user_id_fkey(username)')
       .eq('id', id)
       .eq('visibility_status', 'public')
       .single();
@@ -102,6 +104,7 @@ export async function getPublicReportById(id: string): Promise<PublicReportDetai
       showAuthor,
       authorName,
       reportJson: (row.report_json as VerificationReport | null) || null,
+      imageUrls: Array.isArray(row.image_urls) ? (row.image_urls as string[]) : [],
     };
 
     return detail;
@@ -129,7 +132,7 @@ export async function listPublicReports({
 
     const { data, count, error } = await supabase
       .from('verifications')
-      .select('id, input_text, verdict, score, created_at, published_at, show_author, profiles!verifications_user_id_fkey(username)', { count: 'exact' })
+      .select('id, input_text, verdict, score, created_at, published_at, show_author, image_urls, profiles!verifications_user_id_fkey(username)', { count: 'exact' })
       .eq('visibility_status', 'public')
       .order('published_at', { ascending: false, nullsFirst: false })
       .range(from, to);
@@ -155,6 +158,7 @@ export async function listPublicReports({
         createdAt: String(item.created_at),
         showAuthor,
         authorName,
+        imageUrls: Array.isArray(item.image_urls) ? (item.image_urls as string[]) : [],
       };
     });
 

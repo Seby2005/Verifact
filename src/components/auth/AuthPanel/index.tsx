@@ -5,6 +5,7 @@ import { Button, Input, Tabs, Callout, Modal, useToast, type TabItem } from '@/c
 import { createClient } from '@/lib/supabase/client';
 import { TIER_CONFIG, type UsageLimitCheck } from '@/types/user';
 import { useLanguage } from '@/i18n';
+import { readUtmParams, trackEvent } from '@/lib/analytics/events';
 import { GoogleSignInButton } from '../GoogleSignInButton';
 import styles from './AuthPanel.module.css';
 
@@ -102,6 +103,7 @@ export const AuthPanel: React.FC = () => {
         const supabase = createClient();
         const { error } = await supabase.auth.signUp({ email: email.trim(), password });
         if (error) throw error;
+        trackEvent('signup_started', readUtmParams());
         // A visible toast on top of the inline confirmation: the callout alone
         // sits low in the form and was easy to miss.
         notify(t('auth.form.successSignupToast'), 'success');
@@ -300,6 +302,12 @@ export const AuthPanel: React.FC = () => {
                 <span className={styles.accountLabel}>Financiar</span>
                 <a href="/admin/financiar" className={styles.textLink}>
                   Dashboard Financiar & Costuri →
+                </a>
+              </div>
+              <div className={styles.accountRow}>
+                <span className={styles.accountLabel}>Verificări</span>
+                <a href="/admin/verificari" className={styles.textLink}>
+                  Toate verificările →
                 </a>
               </div>
             </>

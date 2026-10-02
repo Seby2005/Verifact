@@ -7,13 +7,18 @@ import { ro, type Translations } from './dictionaries/ro';
 import { en } from './dictionaries/en';
 import { fr } from './dictionaries/fr';
 
-interface LanguageContextType {
+export interface LanguageContextType {
   locale: Locale;
   setLocale: (nextLocale: Locale) => void;
   t: (key: string, params?: TranslationParams) => string;
+  dict: Translations;
 }
 
-const dictionaries: Record<Locale, Translations> = { ro, en, fr };
+export const dictionaries: Record<Locale, Translations> = { ro, en, fr };
+
+export function getDictionary(locale: Locale): Translations {
+  return dictionaries[locale] ?? dictionaries.ro;
+}
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
@@ -64,14 +69,19 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const t = useMemo(() => {
-    const dict = dictionaries[locale] as unknown as Record<string, unknown>;
-    return (key: string, params?: TranslationParams): string => {
-      return getTranslation(dict, key, params);
-    };
-  }, [locale]);
+  const activeDict = useMemo(() => dictionaries[locale] ?? dictionaries.ro, [locale]);
 
-  const value = useMemo(() => ({ locale, setLocale, t }), [locale, t]);
+  const t = useMemo(() => {
+    const rawDict = activeDict as unknown as Record<string, unknown>;
+    return (key: string, params?: TranslationParams): string => {
+      return getTranslation(rawDict, key, params);
+    };
+  }, [activeDict]);
+
+  const value = useMemo(
+    () => ({ locale, setLocale, t, dict: activeDict }),
+    [locale, t, activeDict]
+  );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
@@ -83,3 +93,32 @@ export function useLanguage(): LanguageContextType {
   }
   return context;
 }
+
+/**
+ * Pins a subtree to one fixed locale, ignoring the viewer's site language.
+ *
+ * A published report is a fixed artifact written in one language: its claim and
+ * analysis are stored in that language and are not re-generated per viewer.
+ * Rendering its chrome (verdict, audit trail, flag button) in the *viewer's*
+ * language instead produces a report that is half English and half Romanian.
+ * Wrapping the report subtree in this provider makes every `useLanguage()`
+ * consumer below it resolve to the report's own language, so chrome and content
+ * always match. `setLocale` is a no-op here — a report does not switch tongue.
+ */
+export const FixedLocaleProvider: React.FC<{ locale: Locale; children: React.ReactNode }> = ({
+  locale,
+  children,
+}) => {
+  const value = useMemo<LanguageContextType>(() => {
+    const activeDict = dictionaries[locale] ?? dictionaries.ro;
+    const rawDict = activeDict as unknown as Record<string, unknown>;
+    return {
+      locale,
+      setLocale: () => {},
+      t: (key: string, params?: TranslationParams) => getTranslation(rawDict, key, params),
+      dict: activeDict,
+    };
+  }, [locale]);
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+};

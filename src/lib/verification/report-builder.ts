@@ -7,8 +7,15 @@ import type {
   Layer2Result,
   Layer3Result,
   Layer4Result,
+  EvidenceStatus,
 } from '@/types/verification';
-import { scoreToVerdict, scoreToConfidence } from './scoring';
+import {
+  scoreToVerdict,
+  scoreToConfidence,
+  determineEvidenceStatus,
+  calculatePlausibilityTilt,
+  generateCriticalThinkingPrompt,
+} from './scoring';
 import { assignSourceTier } from './ai-source-filter';
 import { buildFallbackSynthesis } from '@/lib/ai/report-synthesis';
 import { stripMarkdown } from '@/lib/utils/romanian-text';
@@ -31,6 +38,15 @@ export function extractExecutiveSummary(aiAnalysis: string): string {
     clean = (sentences.length > 0 ? sentences.slice(0, 2) : [fullClean]).join(' ').trim();
   }
 
+  // Strip any leading list bullet + section label the model kept inline
+  // (e.g. "– VERIFACT AFIRMAȚIA DE VERIFICAT: ... Rezumat:", "Rezumat:", "Summary:")
+  clean = clean
+    .replace(/^[\s\-*•–—]+/, '')
+    .replace(/^(?:Verifact\s+)?(?:Afirma[tț]ia\s+de\s+verificat|Afirma[tț]ia|The\s+claim|L['’]affirmation)[^:]*:\s*(?:["“'][^"”']+["”']\s*)?(?:Rezumat|Summary|Résumé)?\s*:?\s*/i, '')
+    .replace(/^(?:Verifact\s+)?(?:Rezumat|Summary|Résumé|Raport[^:]*)\s*:\s*/i, '')
+    .replace(/^[\s\-*•–—]+/, '')
+    .trim();
+
   return clean;
 }
 
@@ -39,13 +55,104 @@ export function generateKeyTakeaways(
   summary: string,
   sources: CombinedSource[],
   score: number,
-  locale: 'ro' | 'en' | 'fr' = 'ro'
+  locale: 'ro' | 'en' | 'fr' = 'ro',
+  verifiedClaim?: string,
+  inputText?: string,
+  evidenceStatus?: EvidenceStatus
 ): string[] {
   const isRo = locale === 'ro';
   const isFr = locale === 'fr';
   const takeaways: string[] = [];
 
-  if (score >= 70) {
+  if (verifiedClaim && inputText && verifiedClaim.trim().toLowerCase() !== inputText.trim().toLowerCase()) {
+    let verdictLabel: string;
+    if (evidenceStatus) {
+      switch (evidenceStatus) {
+        case 'corroborated':
+          verdictLabel = isRo ? 'Confirmat de documente / surse multiple' : isFr ? 'Corroboré par les sources' : 'Corroborated by primary sources';
+          break;
+        case 'contradicted':
+          verdictLabel = isRo ? 'Contrazis de sursele oficiale / presă' : isFr ? 'Contredit par les sources officielles' : 'Contradicted by documented facts';
+          break;
+        case 'missing_context':
+          verdictLabel = isRo ? 'Lipsit de context verificabil' : isFr ? 'Contexte manquant / partiel' : 'Missing verifiable context';
+          break;
+        case 'unverified_no_sources':
+          verdictLabel = isRo ? 'Fără surse credibile identificate' : isFr ? 'Non corroboré / Aucune source' : 'No credible evidence found';
+          break;
+        case 'open_debate':
+          verdictLabel = isRo ? 'Dezbatere deschisă / Opinii divergente' : isFr ? 'Débat ouvert / Avis divergents' : 'Open debate / Divergent opinions';
+          break;
+      }
+    } else {
+      verdictLabel =
+        score >= 85
+          ? (isRo ? 'Adevărat' : isFr ? 'Vrai' : 'True')
+          : score >= 60
+          ? (isRo ? 'Parțial Adevărat' : isFr ? 'Partiellement vrai' : 'Partially True')
+          : score >= 40
+          ? (isRo ? 'Neconfirmat / Context Neclar' : isFr ? 'Non confirmé' : 'Unconfirmed')
+          : (isRo ? 'Fals / Fără Temei' : isFr ? 'Faux' : 'False');
+    }
+
+    takeaways.push(
+      isRo
+        ? `Am verificat ipoteza: „${verifiedClaim}” — Verdict: ${verdictLabel}.`
+        : isFr
+        ? `Hypothèse vérifiée : « ${verifiedClaim} » — Verdict : ${verdictLabel}.`
+        : `Verified hypothesis: "${verifiedClaim}" — Verdict: ${verdictLabel}.`
+    );
+  }
+
+  if (evidenceStatus) {
+    switch (evidenceStatus) {
+      case 'corroborated':
+        takeaways.push(
+          isRo
+            ? 'Afirmația este confirmată convergent de documentele și sursele identificate.'
+            : isFr
+            ? 'L’affirmation est confirmée de manière convergente par les documents et sources identifiés.'
+            : 'The claim is consistently corroborated by the identified documents and sources.'
+        );
+        break;
+      case 'contradicted':
+        takeaways.push(
+          isRo
+            ? 'Afirmația este contrazisă de sursele oficiale, documentele publice sau fact-checkeri.'
+            : isFr
+            ? 'L’affirmation est contredite par les sources officielles, les documents publics ou les fact-checkers.'
+            : 'The claim is contradicted by official sources, public records, or certified fact-checkers.'
+        );
+        break;
+      case 'missing_context':
+        takeaways.push(
+          isRo
+            ? 'Afirmația conține elemente factuale reale, însă este lipsită de contextul verificabil esențial.'
+            : isFr
+            ? 'L’affirmation contient des éléments réels mais est dépourvue du contexte vérifiable déterminant.'
+            : 'The claim contains real factual elements, but lacks essential verifiable context.'
+        );
+        break;
+      case 'unverified_no_sources':
+        takeaways.push(
+          isRo
+            ? 'Nu au fost identificate surse credibile sau dovezi primare care să ateste această afirmație.'
+            : isFr
+            ? 'Aucune source crédible ni preuve primaire n’a été identifiée pour étayer cette affirmation.'
+            : 'No credible sources or primary evidence were found to substantiate this claim.'
+        );
+        break;
+      case 'open_debate':
+        takeaways.push(
+          isRo
+            ? 'Subiectul face obiectul unei dezbateri deschise, cu opinii divergente și fără consens factual tranșat.'
+            : isFr
+            ? 'Le sujet fait l’objet d’un débat ouvert, avec des avis divergents et sans consensus tranché.'
+            : 'The topic is under open debate, with divergent opinions and no established factual consensus.'
+        );
+        break;
+    }
+  } else if (score >= 70) {
     takeaways.push(
       isRo
         ? `Afirmația este susținută de dovezile și sursele identificate (scor de veridicitate: ${score}%).`
@@ -226,6 +333,7 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
     layer4,
     scoreBreakdown,
     aiAnalysis,
+    aiAssessment,
     processingTime,
   } = params;
 
@@ -238,23 +346,55 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
   const verdict = scoreToVerdict(score);
   const confidenceLevel = scoreToConfidence(breakdown.availableLayers);
 
+  const resolvedLayers = {
+    layer1: layer1 || params.layers?.layer1 || DEFAULT_UNAVAILABLE_LAYER1,
+    layer2: layer2 || params.layers?.layer2 || DEFAULT_UNAVAILABLE_LAYER2,
+    layer3: layer3 || params.layers?.layer3 || DEFAULT_UNAVAILABLE_LAYER3,
+    layer4: layer4 || params.layers?.layer4 || DEFAULT_UNAVAILABLE_LAYER4,
+  };
+
+  const evidenceStatus =
+    params.evidenceStatus ??
+    determineEvidenceStatus({
+      score,
+      layers: resolvedLayers,
+      ai: aiAssessment,
+    });
+
+  const reportLocale = input.language === 'fr' ? 'fr' : input.language === 'en' ? 'en' : 'ro';
+
+  const plausibilityTilt = calculatePlausibilityTilt(
+    evidenceStatus,
+    score,
+    aiAssessment?.reasoning,
+    reportLocale
+  );
+
+  const criticalThinkingPrompt = generateCriticalThinkingPrompt(
+    evidenceStatus,
+    claimText,
+    reportLocale
+  );
+
   const disclaimer =
     input.language === 'ro'
-      ? 'Acest raport este generat automat de un sistem AI și nu reprezintă o decizie editorială finală. Scorul de veridicitate este o estimare bazată pe sursele disponibile la momentul verificării. Consultați sursele citate pentru context complet. Aplicația nu preia responsabilitate pentru conținutul surselor externe.'
+      ? 'Acest raport este un asistent pentru gândire critică generat automat și nu reprezintă un arbitru absolut al adevărului. Evaluarea evidențelor și înclinația de plauzibilitate se bazează pe sursele documentare identificate la momentul verificării. Te invităm să consulți sursele citate, să analizezi contextul și să tragi propriile concluzii.'
       : input.language === 'fr'
-      ? 'Ce rapport est généré automatiquement par un système d’intelligence artificielle et ne constitue pas une décision éditoriale définitive. Le score de véracité est une estimation établie sur les sources disponibles au moment de l’analyse. Consultez les sources citées pour un contexte complet.'
-      : 'This report is automatically generated by an AI system and does not represent a final editorial decision. The veracity score is an estimate based on sources available at the time of verification. Consult the cited sources for full context. The application takes no responsibility for third-party source content.';
+      ? 'Ce rapport est un assistant à la pensée critique généré automatiquement et ne constitue pas un arbitre absolu de la vérité. L’évaluation des preuves et l’indice de plausibilité reposent sur les sources documentaires identifiées lors de l’analyse. Nous vous invitons à consulter les sources citées et à forger votre propre jugement.'
+      : 'This report is an automated critical thinking assistant and does not act as an infallible arbiter of truth. The evidence evaluation and plausibility tilt are based on documentary sources identified at the time of verification. We encourage you to review the cited sources, examine the context, and draw your own conclusions.';
 
   const sources = buildCombinedSources(params);
   const rawAnalysis = typeof aiAnalysis === 'object' ? aiAnalysis.summary : (aiAnalysis ?? '');
   const executiveSummary = extractExecutiveSummary(rawAnalysis);
-  const reportLocale = input.language === 'fr' ? 'fr' : input.language === 'en' ? 'en' : 'ro';
   const keyTakeaways = generateKeyTakeaways(
     claimText,
     executiveSummary,
     sources,
     score,
-    reportLocale
+    reportLocale,
+    verifiedClaim,
+    input.text,
+    evidenceStatus
   );
 
   return {
@@ -266,6 +406,9 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
     inputType: input.inputType,
     language: input.language,
     verdict,
+    evidenceStatus,
+    plausibilityTilt,
+    criticalThinkingPrompt,
     score,
     confidenceLevel,
     riskLevel: 'low',
@@ -274,16 +417,11 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
     processingTime,
     scoreBreakdown: breakdown,
     executiveSummary,
-    layers: {
-      layer1: layer1 || DEFAULT_UNAVAILABLE_LAYER1,
-      layer2: layer2 || DEFAULT_UNAVAILABLE_LAYER2,
-      layer3: layer3 || DEFAULT_UNAVAILABLE_LAYER3,
-      layer4: layer4 || DEFAULT_UNAVAILABLE_LAYER4,
-    },
-    layer1,
-    layer2,
-    layer3,
-    layer4,
+    layers: resolvedLayers,
+    layer1: resolvedLayers.layer1,
+    layer2: resolvedLayers.layer2,
+    layer3: resolvedLayers.layer3,
+    layer4: resolvedLayers.layer4,
     aiAnalysis: typeof aiAnalysis === 'string' ? aiAnalysis : aiAnalysis?.summary,
     sources,
     disclaimer,
@@ -301,6 +439,8 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
         inputType: input.inputType,
         language: input.language,
         verdict,
+        evidenceStatus,
+        plausibilityTilt,
         score,
         confidenceLevel,
         keyTakeaways,

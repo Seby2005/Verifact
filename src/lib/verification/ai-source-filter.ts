@@ -119,7 +119,8 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
     });
   });
 
-  if (candidates.length === 0) return layers;
+  // If 2 or fewer candidates found across all layers, no LLM filtering overhead needed.
+  if (candidates.length <= 2) return layers;
 
   const relevantIds = await filterRelevantSources(claim, candidates);
   if (relevantIds === null) return layers;

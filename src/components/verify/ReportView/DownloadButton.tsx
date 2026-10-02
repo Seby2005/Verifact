@@ -41,11 +41,11 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremiu
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
         if (res.status === 401) {
-          notify('Trebuie să fii conectat în cont pentru a descărca raportul PDF.', 'error');
+          notify(t('reportView.errorLoginPdf'), 'error');
           return;
         }
         if (res.status === 500) {
-          notify(data?.error || 'Nu am putut genera fișierul PDF. Reîncearcă în câteva momente.', 'error');
+          notify(data?.error || t('reportView.errorPdfFailed'), 'error');
           return;
         }
         setPreviewOpen(true);
@@ -62,7 +62,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremiu
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch {
-      notify('Nu s-a putut conecta la server pentru generarea PDF-ului.', 'error');
+      notify(t('reportView.errorPdfConnect'), 'error');
     } finally {
       setDownloading(false);
     }
@@ -76,7 +76,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremiu
       try {
         const usageRes = await fetch('/api/user/usage');
         if (usageRes.status === 401) {
-          notify('Conectează-te în contul tău pentru a descărca raportul PDF.', 'error');
+          notify(t('reportView.errorLoginDownload'), 'error');
           return;
         }
       } catch {
