@@ -1,5 +1,3 @@
-import { withSentryConfig } from '@sentry/nextjs';
-
 /**
  * The browser only ever talks directly to this app's own origin and to
  * Supabase (REST + Auth, from the browser client in src/lib/supabase/client.ts).
@@ -31,9 +29,6 @@ const originOf = (value) => {
     return '';
   }
 };
-// GlitchTip DSN host: the Sentry browser SDK POSTs events here. new URL().origin
-// drops the public key in the DSN userinfo, leaving just scheme + host.
-const glitchtipOrigin = originOf(process.env.NEXT_PUBLIC_SENTRY_DSN);
 // Formbricks: loads its UMD script and calls its ingest API from the browser.
 const formbricksOrigin = originOf(process.env.NEXT_PUBLIC_FORMBRICKS_APP_URL);
 
@@ -57,7 +52,6 @@ const connectSrc = [
   supabaseOrigin,
   'https://*.supabase.co',
   'wss://*.supabase.co',
-  glitchtipOrigin,
   formbricksOrigin,
   googleAuthOrigin,
   turnstileOrigin,
@@ -135,8 +129,8 @@ const nextConfig = {
   experimental: {
     workerThreads: false,
     cpus: 1,
-    optimizePackageImports: ['@sentry/nextjs'],
   },
+  turbopack: {},
   // @react-pdf's yoga layout engine is WebAssembly; allow the bundled module to
   // load it in the server build.
   webpack: (config) => {
@@ -169,12 +163,4 @@ const nextConfig = {
   },
 };
 
-// withSentryConfig injects the client config into the browser bundle and wires
-// the server/edge instrumentation. Source-map upload is intentionally left off
-// (no org/project/authToken): self-hosted GlitchTip doesn't require it, and the
-// build must not depend on a token. When NEXT_PUBLIC_SENTRY_DSN is unset the
-// whole SDK is inert (see the sentry.*.config.ts guards).
-export default withSentryConfig(nextConfig, {
-  silent: true,
-  disableLogger: true,
-});
+export default nextConfig;

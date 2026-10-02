@@ -9,7 +9,6 @@
 // it cannot use useLanguage(). It reads the persisted locale cookie directly and
 // carries its own three-string map — the one place a UI string is duplicated,
 // justified by keeping the crash path free of app context.
-import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
 const MESSAGES: Record<'ro' | 'en' | 'fr', string> = {
@@ -31,7 +30,7 @@ export default function GlobalError({
   error: Error & { digest?: string };
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    console.error('Unhandled application error:', error);
   }, [error]);
 
   const locale = detectLocale();
