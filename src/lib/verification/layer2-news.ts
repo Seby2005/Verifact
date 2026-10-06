@@ -11,7 +11,7 @@ import {
 } from './constants';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
-import { isRelevantToClaim } from './relevance';
+import { isRelevantToClaim, isArticleRelevant } from './relevance';
 import { matchesAnyPhrase } from './keyword-match';
 import type { ExpandedQueries } from './query-expander';
 
@@ -73,7 +73,7 @@ export function detectSentiment(
 ): NewsArticle['sentiment'] {
   const combinedText = `${title} ${snippet}`.toLowerCase();
 
-  if (!isRelevantToClaim(inputText, combinedText)) return 'unrelated';
+  if (!isArticleRelevant(inputText, title, snippet)) return 'unrelated';
 
   if (matchesAnyPhrase(combinedText, DEBUNK_MARKERS)) {
     return 'contradicts';
@@ -102,7 +102,7 @@ function deduplicateArticles(articles: NewsArticle[]): NewsArticle[] {
   });
 }
 
-async function fetchFromNewsAPI(query: string, language: Language): Promise<NewsArticle[]> {
+async function fetchFromNewsAPI(query: string, language: Language, rawInputText?: string): Promise<NewsArticle[]> {
   const apiKey = process.env.NEWS_API_KEY;
   if (!apiKey || !query.trim()) return [];
 
@@ -132,7 +132,7 @@ async function fetchFromNewsAPI(query: string, language: Language): Promise<News
 
     return data.articles.map((article): NewsArticle => {
       const credibilityScore = getCredibilityScore(article.url);
-      const sentiment = detectSentiment(article.title, article.description ?? '', query, credibilityScore);
+      const sentiment = detectSentiment(article.title, article.description ?? '', rawInputText || query, credibilityScore);
 
       return {
         title: article.title,
@@ -312,8 +312,8 @@ export async function runLayer2(
   // net across its global, mostly-English index, complementing the RO-first
   // NewsAPI/Tavily calls.
   const [newsRo, newsEn, tavilyRo, tavilyEn, tavilyContext, gdelt] = await Promise.allSettled([
-    fetchFromNewsAPI(roQuery, 'ro'),
-    fetchFromNewsAPI(enQuery, 'en'),
+    fetchFromNewsAPI(roQuery, 'ro', text),
+    fetchFromNewsAPI(enQuery, 'en', text),
     fetchFromTavily(roQuery, text),
     fetchFromTavily(enQuery, text),
     contextQuery && contextQuery !== roQuery ? fetchFromTavily(contextQuery, text) : Promise.resolve([]),

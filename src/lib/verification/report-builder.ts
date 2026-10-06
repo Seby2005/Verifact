@@ -343,9 +343,6 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
 
   const breakdown = scoreBreakdown || DEFAULT_SCORE_BREAKDOWN;
   const score = breakdown.finalScore;
-  const verdict = scoreToVerdict(score);
-  const confidenceLevel = scoreToConfidence(breakdown.availableLayers);
-
   const resolvedLayers = {
     layer1: layer1 || params.layers?.layer1 || DEFAULT_UNAVAILABLE_LAYER1,
     layer2: layer2 || params.layers?.layer2 || DEFAULT_UNAVAILABLE_LAYER2,
@@ -361,6 +358,14 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
       ai: aiAssessment,
     });
 
+  let verdict = scoreToVerdict(score);
+  if (evidenceStatus === 'contradicted' && verdict !== 'false') {
+    verdict = 'false';
+  } else if (evidenceStatus === 'corroborated' && verdict !== 'true' && score >= 70) {
+    verdict = 'true';
+  }
+
+  const confidenceLevel = scoreToConfidence(breakdown.availableLayers);
   const reportLocale = input.language === 'fr' ? 'fr' : input.language === 'en' ? 'en' : 'ro';
 
   const plausibilityTilt = calculatePlausibilityTilt(

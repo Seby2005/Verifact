@@ -3,6 +3,7 @@ import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import type { ExpandedQueries } from './query-expander';
 import { runAcademicLayer } from './layer-academic';
+import { isRelevantToClaim } from './relevance';
 
 interface TavilySearchResult {
   title: string;
@@ -17,6 +18,7 @@ interface TavilySearchResponse {
 }
 
 const OFFICIAL_DOMAINS = [
+  'presidency.ro',
   'gov.ro',
   'mai.gov.ro',
   'ms.ro',
@@ -39,6 +41,7 @@ const OFFICIAL_DOMAINS = [
 ];
 
 const KNOWN_ORGANIZATIONS: Record<string, { name: string; type: string }> = {
+  'presidency.ro': { name: 'Administrația Prezidențială', type: 'government' },
   'gov.ro': { name: 'Guvernul României', type: 'government' },
   'mai.gov.ro': { name: 'Ministerul Afacerilor Interne', type: 'government' },
   'ms.ro': { name: 'Ministerul Sănătății', type: 'government' },
@@ -274,21 +277,25 @@ export async function runLayer3(
       };
     });
 
+  const relevantOfficial = officialSources.filter((s) =>
+    isRelevantToClaim(text, `${s.title} ${s.relevantQuote}`)
+  );
+
   const academicSources = academicItems.filter((s) => {
     const link = s.url || s.documentUrl || s.title;
     if (seen.has(link)) return false;
     seen.add(link);
-    return true;
+    return isRelevantToClaim(text, `${s.title} ${s.snippet ?? ''}`);
   });
 
   const wikiSources = [...wikiRo, ...wikiEn, ...wikiFr].filter((s) => {
     if (!s.documentUrl || seen.has(s.documentUrl)) return false;
     seen.add(s.documentUrl);
-    return true;
+    return isRelevantToClaim(text, `${s.title} ${s.relevantQuote}`);
   });
 
   // Official and Academic research sources lead; Wikipedia follows.
-  const sources = [...officialSources, ...academicSources, ...wikiSources];
+  const sources = [...relevantOfficial, ...academicSources, ...wikiSources];
 
   if (sources.length === 0 && !apiKey) {
     return {

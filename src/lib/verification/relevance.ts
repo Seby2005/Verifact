@@ -99,3 +99,31 @@ export function isRelevantToClaim(claim: string, documentText: string): boolean 
 
   return matches >= requiredMatches && matches / claimTokens.size >= MIN_COVERAGE;
 }
+
+/**
+ * Stricter relevance check for news articles and documents with distinct titles:
+ * ensures the article is not just an unrelated story with claim keywords in its footer/sidebar.
+ */
+export function isArticleRelevant(claim: string, title: string, bodyText: string): boolean {
+  // If the body text alone satisfies relevance, the article is discussing the claim
+  if (isRelevantToClaim(claim, bodyText)) {
+    return true;
+  }
+
+  const claimTokens = tokenize(claim);
+  if (claimTokens.size === 0) return true;
+
+  const titleTokens = tokenize(title);
+  let titleMatches = 0;
+  for (const token of claimTokens) {
+    if (titleTokens.has(token)) titleMatches++;
+  }
+
+  // If the title contains claim keywords, verify that title + body together are relevant
+  if (titleMatches > 0 && isRelevantToClaim(claim, `${title} ${bodyText}`)) {
+    return true;
+  }
+
+  return false;
+}
+

@@ -120,8 +120,10 @@ export interface OfficialSource {
   supportsOrDenies?: 'supports' | 'denies' | 'neutral';
 }
 
+export type SocialPlatform = 'twitter' | 'facebook' | 'youtube' | 'tiktok' | 'instagram' | 'other';
+
 export interface SocialMediaPost {
-  platform: 'twitter' | 'facebook' | 'youtube' | 'other';
+  platform: SocialPlatform;
   author: string;
   authorVerified?: boolean;
   authorRole?: string;

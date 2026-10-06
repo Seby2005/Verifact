@@ -25,7 +25,7 @@ import { extractClaim, shouldExtractClaim, type ExtractedClaim } from '@/lib/ai/
 import { normalizeQuestionToHypothesis } from './question-normalizer';
 import { sanitizeOcrText } from './ocr-cleaner';
 
-const LAYER_TIMEOUT_MS = 3_500; // 3.5 seconds per layer (fast search)
+const LAYER_TIMEOUT_MS = 8_500; // 8.5 seconds per layer (respects max 10s rule from GEMINI.md)
 
 function buildFallbackSummary(
   layers: { layer1: Layer1Result; layer2: Layer2Result; layer3: Layer3Result; layer4: Layer4Result },
@@ -323,11 +323,16 @@ export async function verifyContent(
   // Pro Synthesis dossier is already deterministically built and attached by buildReport
   // via buildFallbackSynthesis with 0ms latency and zero serverless timeout risk.
 
+  // Never cache degraded runs where any search layer timed out or failed
+  const hasUnavailableLayer = [rawLayer1, rawLayer2, rawLayer3, rawLayer4].some(
+    (l) => l.status === 'unavailable'
+  );
+
   const layersWithData = [layer1, layer2, layer3, layer4].filter(
     (l) => l.status === 'success' && l.results.length > 0
   ).length;
 
-  if (layersWithData >= 2 && aiAvailable) {
+  if (!hasUnavailableLayer && layersWithData >= 2 && aiAvailable) {
     void setCached(contentHash, report);
   }
 
