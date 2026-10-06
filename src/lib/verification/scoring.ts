@@ -237,48 +237,56 @@ export function determineEvidenceStatus(input: EvidenceStatusInput): EvidenceSta
     return 'contradicted';
   }
 
-  // 2. Direct model-assessed evidence status if valid
-  const validStatuses: EvidenceStatus[] = [
-    'corroborated',
-    'contradicted',
-    'missing_context',
-    'unverified_no_sources',
-    'open_debate',
-  ];
-  if (ai?.evidenceStatus && validStatuses.includes(ai.evidenceStatus)) {
-    return ai.evidenceStatus;
-  }
-
   const l1Results = layers.layer1.results ?? [];
   const l2Results = layers.layer2.results ?? [];
   const l3Results = layers.layer3.results ?? [];
   const totalEvidenceResults = l1Results.length + l2Results.length + l3Results.length;
 
-  // 3. Clear Contradiction signals:
-  // - Fact-checkers explicitly rated it false/debunk (layer1)
-  // - Official institutions explicitly deny it (layer3)
-  // - Low composite score (< 40) or confident contradiction from AI
   const hasFactCheckDebunk = l1Results.some(
     (r) => r.ratingValue !== undefined && r.ratingValue <= 0.25
   );
   const hasOfficialDenial = l3Results.some((o) => o.supportsOrDenies === 'denies');
-  if (hasFactCheckDebunk || hasOfficialDenial || (ai?.verdict === 'contradicts' && score <= 38) || score < 35) {
+  const contradictingPress = l2Results.filter((a) => a.sentiment === 'contradicts').length;
+  const confirmingPress = l2Results.filter((a) => a.sentiment === 'confirms').length;
+
+  // 2. Clear Contradiction signals:
+  // - Fact-checkers explicitly rated it false/debunk (layer1)
+  // - Official institutions explicitly deny it (layer3)
+  // - Majority of reporting news outlets contradict/debunk the claim
+  // - Low composite score (< 40) or explicit contradiction from AI
+  if (
+    hasFactCheckDebunk ||
+    hasOfficialDenial ||
+    (contradictingPress > confirmingPress && score <= 60) ||
+    ai?.evidenceStatus === 'contradicted' ||
+    (ai?.verdict === 'contradicts' && score <= 45) ||
+    score < 35
+  ) {
     return 'contradicted';
   }
 
-  // 4. Clear Corroboration signals:
+  // 3. Clear Corroboration signals:
   // - Fact-checker rated it true/confirmed
   // - Official sources confirm/support
-  // - High score (>= 80) with corroborating evidence
+  // - High score (>= 70) with corroborating evidence or confident AI support
   const hasFactCheckConfirmation = l1Results.some(
     (r) => r.ratingValue !== undefined && r.ratingValue >= 0.75
   );
   const hasOfficialSupport = l3Results.some((o) => o.supportsOrDenies === 'supports');
   if (
-    (hasFactCheckConfirmation || hasOfficialSupport || (ai?.verdict === 'supports' && (ai?.confidence ?? 0) >= 0.7)) &&
-    score >= 75
+    (hasFactCheckConfirmation ||
+      hasOfficialSupport ||
+      (confirmingPress > 0 && confirmingPress > contradictingPress) ||
+      (ai?.evidenceStatus === 'corroborated' && (ai?.confidence ?? 0) >= 0.6) ||
+      (ai?.verdict === 'supports' && (ai?.confidence ?? 0) >= 0.7)) &&
+    score >= 70
   ) {
     return 'corroborated';
+  }
+
+  // 4. Model-assessed evidence status for nuanced states (missing context, open debate)
+  if (ai?.evidenceStatus && ['missing_context', 'open_debate'].includes(ai.evidenceStatus)) {
+    return ai.evidenceStatus;
   }
 
   // 5. Zero credible evidence identified (the rumor / unsubstantiated claim):
@@ -290,6 +298,10 @@ export function determineEvidenceStatus(input: EvidenceStatusInput): EvidenceSta
     if (ai?.verdict === 'contradicts' && (ai?.confidence ?? 0) >= 0.75 && score <= 25) {
       return 'contradicted';
     }
+    return 'unverified_no_sources';
+  }
+
+  if (ai?.evidenceStatus === 'unverified_no_sources') {
     return 'unverified_no_sources';
   }
 
@@ -305,11 +317,11 @@ export function determineEvidenceStatus(input: EvidenceStatusInput): EvidenceSta
   }
 
   // 7. Missing context / decontextualized
-  if (score >= 50 && score <= 79) {
+  if (score >= 40 && score <= 79) {
     return 'missing_context';
   }
 
-  return score < 50 ? 'contradicted' : 'corroborated';
+  return score < 40 ? 'contradicted' : 'corroborated';
 }
 
 /**

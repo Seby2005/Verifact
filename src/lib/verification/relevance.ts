@@ -69,7 +69,7 @@ export function claimCoverage(claim: string, documentText: string): number {
 }
 
 /** Minimum share of the claim's words a document must account for. */
-const MIN_COVERAGE = 0.3;
+const MIN_COVERAGE = 0.35;
 
 /**
  * Minimum number of distinct claim words a document must contain, regardless
@@ -94,8 +94,12 @@ export function isRelevantToClaim(claim: string, documentText: string): boolean 
     if (docTokens.has(token)) matches++;
   }
 
-  // A one-word claim cannot produce two matches; require what it can give.
-  const requiredMatches = Math.min(MIN_MATCHES, claimTokens.size);
+  // For longer claims (5+ significant tokens), require at least 3 distinct matching words
+  // to prevent accidental false positives from isolated surnames/common words.
+  const requiredMatches = Math.min(
+    claimTokens.size,
+    Math.max(MIN_MATCHES, Math.ceil(claimTokens.size * 0.4))
+  );
 
   return matches >= requiredMatches && matches / claimTokens.size >= MIN_COVERAGE;
 }

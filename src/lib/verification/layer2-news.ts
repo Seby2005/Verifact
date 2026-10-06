@@ -52,6 +52,31 @@ function extractDomain(url: string): string {
   }
 }
 
+const SOCIAL_MEDIA_DOMAINS = [
+  'facebook.com',
+  'fb.com',
+  'tiktok.com',
+  'instagram.com',
+  'twitter.com',
+  'x.com',
+  'youtube.com',
+  'youtu.be',
+  'reddit.com',
+  'threads.net',
+  'bsky.app',
+  't.me',
+  'telegram.org',
+];
+
+function isSocialDomain(url: string): boolean {
+  try {
+    const domain = extractDomain(url).toLowerCase();
+    return SOCIAL_MEDIA_DOMAINS.some((d) => domain === d || domain.endsWith('.' + d));
+  } catch {
+    return false;
+  }
+}
+
 function getCredibilityScore(url: string): number {
   const domain = extractDomain(url);
   if (domain in SOURCE_CREDIBILITY) return SOURCE_CREDIBILITY[domain];
@@ -130,21 +155,23 @@ async function fetchFromNewsAPI(query: string, language: Language, rawInputText?
     const data = (await response.json()) as NewsAPIResponse;
     if (data.status !== 'ok' || !data.articles) return [];
 
-    return data.articles.map((article): NewsArticle => {
-      const credibilityScore = getCredibilityScore(article.url);
-      const sentiment = detectSentiment(article.title, article.description ?? '', rawInputText || query, credibilityScore);
+    return data.articles
+      .filter((article) => !isSocialDomain(article.url))
+      .map((article): NewsArticle => {
+        const credibilityScore = getCredibilityScore(article.url);
+        const sentiment = detectSentiment(article.title, article.description ?? '', rawInputText || query, credibilityScore);
 
-      return {
-        title: article.title,
-        source: article.source.name,
-        sourceUrl: article.url,
-        articleUrl: article.url,
-        publishedAt: article.publishedAt,
-        snippet: article.description ?? '',
-        sentiment,
-        credibilityScore,
-      };
-    });
+        return {
+          title: article.title,
+          source: article.source.name,
+          sourceUrl: article.url,
+          articleUrl: article.url,
+          publishedAt: article.publishedAt,
+          snippet: article.description ?? '',
+          sentiment,
+          credibilityScore,
+        };
+      });
   } catch {
     return [];
   }
@@ -167,8 +194,9 @@ async function fetchFromTavily(query: string, rawInputText: string): Promise<New
           body: JSON.stringify({
             query: query.slice(0, 300),
             search_depth: 'basic',
-            topic: 'news',
+            topic: 'general',
             max_results: 10,
+            exclude_domains: SOCIAL_MEDIA_DOMAINS,
           }),
           signal: AbortSignal.timeout(8000),
         }),
@@ -182,22 +210,24 @@ async function fetchFromTavily(query: string, rawInputText: string): Promise<New
     const data = (await response.json()) as TavilySearchResponse;
     if (!data.results?.length) return [];
 
-    return data.results.map((item): NewsArticle => {
-      const credibilityScore = getCredibilityScore(item.url);
-      const domain = extractDomain(item.url);
-      const sentiment = detectSentiment(item.title, item.content, rawInputText, credibilityScore);
+    return data.results
+      .filter((item) => !isSocialDomain(item.url))
+      .map((item): NewsArticle => {
+        const credibilityScore = getCredibilityScore(item.url);
+        const domain = extractDomain(item.url);
+        const sentiment = detectSentiment(item.title, item.content, rawInputText, credibilityScore);
 
-      return {
-        title: item.title,
-        source: domain,
-        sourceUrl: domain,
-        articleUrl: item.url,
-        publishedAt: item.published_date ?? '',
-        snippet: item.content,
-        sentiment,
-        credibilityScore,
-      };
-    });
+        return {
+          title: item.title,
+          source: domain,
+          sourceUrl: domain,
+          articleUrl: item.url,
+          publishedAt: item.published_date ?? '',
+          snippet: item.content,
+          sentiment,
+          credibilityScore,
+        };
+      });
   } catch {
     return [];
   }
@@ -254,7 +284,7 @@ async function fetchFromGDELT(query: string, rawInputText: string): Promise<News
     if (!Array.isArray(data.articles)) return [];
 
     return data.articles
-      .filter((a) => a.url && a.title)
+      .filter((a) => a.url && a.title && !isSocialDomain(a.url as string))
       .map((a): NewsArticle => {
         const url = a.url as string;
         const credibilityScore = getCredibilityScore(url);
@@ -331,14 +361,30 @@ export async function runLayer2(
 
   const unique = deduplicateArticles(allArticles);
   const relevant = unique.filter((a) => a.sentiment !== 'unrelated');
-  relevant.sort((a, b) => (b.credibilityScore ?? 0) - (a.credibilityScore ?? 0));
+
+  relevant.sort((a, b) => {
+    // 1. Articles with explicit investigative stance (debunk / confirmation) take precedence over neutral
+    const aStance = a.sentiment !== 'neutral' ? 1 : 0;
+    const bStance = b.sentiment !== 'neutral' ? 1 : 0;
+    if (aStance !== bStance) return bStance - aStance;
+
+    // 2. Matching language domain priority (e.g. .ro for Romanian queries)
+    if (language === 'ro') {
+      const aRo = (a.sourceUrl?.endsWith('.ro') ?? false) || a.source.toLowerCase().endsWith('.ro') ? 1 : 0;
+      const bRo = (b.sourceUrl?.endsWith('.ro') ?? false) || b.source.toLowerCase().endsWith('.ro') ? 1 : 0;
+      if (aRo !== bRo) return bRo - aRo;
+    }
+
+    // 3. Credibility score
+    return (b.credibilityScore ?? 0) - (a.credibilityScore ?? 0);
+  });
 
   const layerScore = calculateLayer2Score(relevant);
 
   return {
     status: 'success',
-    articles: relevant.slice(0, 10),
-    results: relevant.slice(0, 10),
+    articles: relevant.slice(0, 12),
+    results: relevant.slice(0, 12),
     summary: `${relevant.length} news articles found`,
     layerScore,
     processingTime: Date.now() - startTime,

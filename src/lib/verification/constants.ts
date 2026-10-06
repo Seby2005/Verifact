@@ -120,9 +120,15 @@ export const ROMANIAN_PUBLIC_FIGURES: string[] = [
  * Negative sentiment keywords (RO + EN + FR) indicating the article contradicts a claim.
  */
 export const CONTRADICTION_KEYWORDS_RO = [
-  'fals', 'falsă', 'fals,', 'dezminţit', 'dezminţire', 'dezminţeşte',
-  'incorect', 'incorectă', 'neadevărat', 'fake', 'fabricat', 'inventat',
-  'manipulare', 'dezinformare', 'contrazis', 'infirmat', 'negat',
+  'fals', 'falsă', 'fals,', 'falsul', 'falsuri', 'farsă', 'farsa',
+  'dezminţit', 'dezminţire', 'dezminţeşte', 'dezmințit', 'dezmintit', 'dezmințire', 'dezminte', 'dezminte că', 'dezminte ca',
+  'incorect', 'incorectă', 'neadevărat', 'fake', 'fabricat', 'inventat', 'invenție', 'inventie',
+  'manipulare', 'dezinformare', 'contrazis', 'contrazice', 'infirmat', 'infirmă', 'infirma', 'negat', 'neagă', 'neaga',
+  'trucat', 'trucată', 'trucata', 'trucaj', 'trucaje', 'colaj', 'parodie', 'satiră', 'satira',
+  'nu este adevărat', 'nu e adevărat', 'nu a fost', 'nu a existat',
+  'fără temei', 'fara temei', 'speculație', 'speculații', 'speculatie', 'speculatii',
+  'conspirație', 'conspiratie', 'conspirații', 'conspiratii', 'teorie', 'teorii',
+  'clarifică', 'clarifica', 'clarificări', 'clarificari', 'precizări', 'precizari', 'precizează', 'precizeaza',
 ];
 
 export const CONTRADICTION_KEYWORDS_EN = [
@@ -137,19 +143,22 @@ export const CONTRADICTION_KEYWORDS_FR = [
 
 /**
  * Confirmation keywords indicating the article supports a claim.
+ * Note: generic institutional words like 'oficial' or 'real' are intentionally omitted
+ * because their presence in news reports (e.g. 'contul oficial', 'vizită oficială')
+ * caused false confirmations of viral hoaxes.
  */
 export const CONFIRMATION_KEYWORDS_RO = [
-  'confirmat', 'confirmă', 'adevărat', 'verificat', 'real', 'corect',
-  'autentic', 'oficial', 'dovedit', 'probat',
+  'confirmat', 'confirmă', 'se confirmă', 'adevărat', 'este adevărat', 'verificat', 'corect',
+  'autentic', 'dovedit', 'probat', 's-a confirmat',
 ];
 
 export const CONFIRMATION_KEYWORDS_EN = [
-  'confirmed', 'true', 'verified', 'real', 'correct', 'proven',
-  'authentic', 'official', 'accurate',
+  'confirmed', 'true', 'verified', 'correct', 'proven',
+  'authentic', 'accurate',
 ];
 
 export const CONFIRMATION_KEYWORDS_FR = [
-  'confirmé', 'confirme', 'vrai', 'vérifié', 'authentique', 'officiel',
+  'confirmé', 'confirme', 'vrai', 'vérifié', 'authentique',
   'avéré', 'exact', 'prouvé',
 ];
 
@@ -158,9 +167,14 @@ export const CONFIRMATION_KEYWORDS_FR = [
  * keyword lists above and winning outright when present.
  */
 export const DEBUNK_MARKERS = [
-  'fals', 'falsă', 'falsa', 'dezinformare', 'dezmințit', 'dezmintit', 'dezmințire',
+  'fals', 'falsă', 'falsa', 'falsul', 'falsuri', 'farsă', 'farsa', 'dezinformare',
+  'dezmințit', 'dezmintit', 'dezmințire', 'dezminte', 'dezminte că', 'dezminte ca',
+  'trucat', 'trucată', 'trucata', 'trucaj', 'colaj', 'invenție', 'inventie',
+  'clarifică', 'clarificari', 'clarificări', 'precizări', 'precizari', 'precizează',
+  'nu este adevărat', 'nu e adevărat', 'nu a fost', 'nu a existat',
   'mit', 'mitul', 'nu există dovezi', 'nu exista dovezi', 'fără dovezi', 'fara dovezi',
-  'teorie a conspirației', 'teoria conspirației', 'conspirație', 'conspiratie',
+  'teorie a conspirației', 'teoria conspirației', 'conspirație', 'conspiratie', 'conspirații', 'conspiratii',
+  'speculație', 'speculații', 'speculatie', 'speculatii',
   'debunk', 'debunked', 'myth', 'hoax', 'no evidence', 'without evidence',
   'baseless', 'unfounded', 'misinformation', 'disinformation', 'conspiracy theory',
   'fact check', 'fact-check', 'falsely', 'false claim', 'not true',
