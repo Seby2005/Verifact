@@ -69,7 +69,7 @@ export function claimCoverage(claim: string, documentText: string): number {
 }
 
 /** Minimum share of the claim's words a document must account for. */
-const MIN_COVERAGE = 0.35;
+const MIN_COVERAGE = 0.3;
 
 /**
  * Minimum number of distinct claim words a document must contain, regardless
@@ -94,40 +94,8 @@ export function isRelevantToClaim(claim: string, documentText: string): boolean 
     if (docTokens.has(token)) matches++;
   }
 
-  // For longer claims (5+ significant tokens), require at least 3 distinct matching words
-  // to prevent accidental false positives from isolated surnames/common words.
-  const requiredMatches = Math.min(
-    claimTokens.size,
-    Math.max(MIN_MATCHES, Math.ceil(claimTokens.size * 0.4))
-  );
+  // A one-word claim cannot produce two matches; require what it can give.
+  const requiredMatches = Math.min(MIN_MATCHES, claimTokens.size);
 
   return matches >= requiredMatches && matches / claimTokens.size >= MIN_COVERAGE;
 }
-
-/**
- * Stricter relevance check for news articles and documents with distinct titles:
- * ensures the article is not just an unrelated story with claim keywords in its footer/sidebar.
- */
-export function isArticleRelevant(claim: string, title: string, bodyText: string): boolean {
-  // If the body text alone satisfies relevance, the article is discussing the claim
-  if (isRelevantToClaim(claim, bodyText)) {
-    return true;
-  }
-
-  const claimTokens = tokenize(claim);
-  if (claimTokens.size === 0) return true;
-
-  const titleTokens = tokenize(title);
-  let titleMatches = 0;
-  for (const token of claimTokens) {
-    if (titleTokens.has(token)) titleMatches++;
-  }
-
-  // If the title contains claim keywords, verify that title + body together are relevant
-  if (titleMatches > 0 && isRelevantToClaim(claim, `${title} ${bodyText}`)) {
-    return true;
-  }
-
-  return false;
-}
-

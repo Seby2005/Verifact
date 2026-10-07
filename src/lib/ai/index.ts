@@ -4,6 +4,7 @@ import {
   generateOpenRouterAnalysis,
   filterRelevantSourcesWithOpenRouter,
   type SourceCandidate,
+  type SourceFilterResult,
 } from './openrouter';
 import { logger } from '@/lib/utils/logger';
 import { normalizeRomanianDiacritics } from '@/lib/utils/romanian-text';
@@ -11,7 +12,7 @@ import type { AIAnalysisContext } from '@/types/verification';
 import type { AIAssessment, AIAnalysisResult } from './gemini';
 
 export type { AIAssessment, AIAnalysisResult };
-export type { SourceCandidate };
+export type { SourceCandidate, SourceFilterResult };
 
 type Provider = 'openrouter' | 'gemini';
 
@@ -43,7 +44,7 @@ function resolveProvider(): Provider {
 export async function filterRelevantSources(
   claim: string,
   candidates: SourceCandidate[]
-): Promise<string[] | null> {
+): Promise<SourceFilterResult | null> {
   if (!process.env.OPENROUTER_API_KEY) return null;
   return filterRelevantSourcesWithOpenRouter(claim, candidates);
 }

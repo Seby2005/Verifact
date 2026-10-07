@@ -122,12 +122,18 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
   // If no candidates found across all layers, nothing to filter.
   if (candidates.length === 0) return layers;
 
-  const relevantIds = await filterRelevantSources(claim, candidates);
-  if (relevantIds === null) return layers;
+  const judgement = await filterRelevantSources(claim, candidates);
+  if (judgement === null) return layers;
 
-  const keepSet = new Set(relevantIds);
+  const keepSet = new Set(judgement.relevant);
+  const oppositeSet = new Set(judgement.opposite);
 
-  const l1Surviving = layers.layer1.results.filter((_, i) => keepSet.has(`l1:${i}`));
+  // A fact-check of the claim's opposite speaks to the claim with its rating
+  // inverted: "X is a hoax" rated False is evidence *for* X. The rating label
+  // stays as the publisher wrote it; only the value used for scoring flips.
+  const l1Surviving = layers.layer1.results
+    .map((r, i) => (oppositeSet.has(`l1:${i}`) ? { ...r, ratingValue: 1 - r.ratingValue } : r))
+    .filter((_, i) => keepSet.has(`l1:${i}`));
   const l2Surviving = layers.layer2.results.filter((_, i) => keepSet.has(`l2:${i}`));
   const l3Surviving = layers.layer3.results.filter((_, i) => keepSet.has(`l3:${i}`));
   const l4Surviving = layers.layer4.results.filter((_, i) => keepSet.has(`l4:${i}`));

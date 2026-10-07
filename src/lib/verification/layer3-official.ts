@@ -3,7 +3,6 @@ import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import type { ExpandedQueries } from './query-expander';
 import { runAcademicLayer } from './layer-academic';
-import { isRelevantToClaim } from './relevance';
 
 interface TavilySearchResult {
   title: string;
@@ -277,25 +276,21 @@ export async function runLayer3(
       };
     });
 
-  const relevantOfficial = officialSources.filter((s) =>
-    isRelevantToClaim(text, `${s.title} ${s.relevantQuote}`)
-  );
-
   const academicSources = academicItems.filter((s) => {
     const link = s.url || s.documentUrl || s.title;
     if (seen.has(link)) return false;
     seen.add(link);
-    return isRelevantToClaim(text, `${s.title} ${s.snippet ?? ''}`);
+    return true;
   });
 
   const wikiSources = [...wikiRo, ...wikiEn, ...wikiFr].filter((s) => {
     if (!s.documentUrl || seen.has(s.documentUrl)) return false;
     seen.add(s.documentUrl);
-    return isRelevantToClaim(text, `${s.title} ${s.relevantQuote}`);
+    return true;
   });
 
   // Official and Academic research sources lead; Wikipedia follows.
-  const sources = [...relevantOfficial, ...academicSources, ...wikiSources];
+  const sources = [...officialSources, ...academicSources, ...wikiSources];
 
   if (sources.length === 0 && !apiKey) {
     return {

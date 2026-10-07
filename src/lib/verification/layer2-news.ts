@@ -11,7 +11,7 @@ import {
 } from './constants';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
-import { isRelevantToClaim, isArticleRelevant } from './relevance';
+import { isRelevantToClaim } from './relevance';
 import { matchesAnyPhrase } from './keyword-match';
 import type { ExpandedQueries } from './query-expander';
 
@@ -98,7 +98,7 @@ export function detectSentiment(
 ): NewsArticle['sentiment'] {
   const combinedText = `${title} ${snippet}`.toLowerCase();
 
-  if (!isArticleRelevant(inputText, title, snippet)) return 'unrelated';
+  if (!isRelevantToClaim(inputText, combinedText)) return 'unrelated';
 
   if (matchesAnyPhrase(combinedText, DEBUNK_MARKERS)) {
     return 'contradicts';
@@ -341,13 +341,17 @@ export async function runLayer2(
   // One GDELT call only (it rate-limits to 1 req / 5s); enQuery casts the widest
   // net across its global, mostly-English index, complementing the RO-first
   // NewsAPI/Tavily calls.
+  //
+  // English-language searches are judged for relevance against enQuery, not
+  // the claim text: an English article shares almost no tokens with a
+  // Romanian claim, so checking it against `text` silently drops all of them.
   const [newsRo, newsEn, tavilyRo, tavilyEn, tavilyContext, gdelt] = await Promise.allSettled([
     fetchFromNewsAPI(roQuery, 'ro', text),
-    fetchFromNewsAPI(enQuery, 'en', text),
+    fetchFromNewsAPI(enQuery, 'en'),
     fetchFromTavily(roQuery, text),
-    fetchFromTavily(enQuery, text),
+    fetchFromTavily(enQuery, enQuery),
     contextQuery && contextQuery !== roQuery ? fetchFromTavily(contextQuery, text) : Promise.resolve([]),
-    fetchFromGDELT(enQuery, text),
+    fetchFromGDELT(enQuery, enQuery),
   ]);
 
   const allArticles: NewsArticle[] = [
@@ -363,19 +367,14 @@ export async function runLayer2(
   const relevant = unique.filter((a) => a.sentiment !== 'unrelated');
 
   relevant.sort((a, b) => {
-    // 1. Articles with explicit investigative stance (debunk / confirmation) take precedence over neutral
-    const aStance = a.sentiment !== 'neutral' ? 1 : 0;
-    const bStance = b.sentiment !== 'neutral' ? 1 : 0;
-    if (aStance !== bStance) return bStance - aStance;
-
-    // 2. Matching language domain priority (e.g. .ro for Romanian queries)
+    // 1. Matching language domain priority (e.g. .ro for Romanian queries)
     if (language === 'ro') {
       const aRo = (a.sourceUrl?.endsWith('.ro') ?? false) || a.source.toLowerCase().endsWith('.ro') ? 1 : 0;
       const bRo = (b.sourceUrl?.endsWith('.ro') ?? false) || b.source.toLowerCase().endsWith('.ro') ? 1 : 0;
       if (aRo !== bRo) return bRo - aRo;
     }
 
-    // 3. Credibility score
+    // 2. Credibility score
     return (b.credibilityScore ?? 0) - (a.credibilityScore ?? 0);
   });
 

@@ -339,4 +339,44 @@ describe('Critical Thinking & Investigative Verification Pipeline', () => {
       expect(frTakeaways[0]).toBe('L’affirmation est confirmée de manière convergente par les documents et sources identifiés.');
     });
   });
+  describe('Contradiction stays consistent with the score', () => {
+    it('does not label a claim contradicted when the weighted evidence is in the partial/true band', () => {
+      // A fact-check that rated the *opposite* claim false still matches by keywords.
+      const status = determineEvidenceStatus({
+        score: 72,
+        layers: {
+          layer1: {
+            status: 'success',
+            results: [
+              {
+                claimReviewed: 'Climate change is a hoax',
+                rating: 'False',
+                ratingValue: 0,
+                publisher: 'PolitiFact',
+                reviewUrl: 'https://politifact.com/x',
+              } as never,
+            ],
+            summary: '',
+            layerScore: 0.1,
+          },
+          layer2: emptyLayer2,
+          layer3: emptyLayer3,
+          layer4: emptyLayer4,
+        },
+        ai: { score: 90, verdict: 'supports', evidenceStatus: 'corroborated', confidence: 0.9 },
+      });
+
+      expect(status).not.toBe('contradicted');
+    });
+
+    it('still labels a low-scoring claim contradicted when the AI says so', () => {
+      const status = determineEvidenceStatus({
+        score: 45,
+        layers: { layer1: emptyLayer1, layer2: emptyLayer2, layer3: emptyLayer3, layer4: emptyLayer4 },
+        ai: { score: 15, verdict: 'contradicts', evidenceStatus: 'contradicted', confidence: 0.8 },
+      });
+
+      expect(status).toBe('contradicted');
+    });
+  });
 });

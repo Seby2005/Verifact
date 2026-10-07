@@ -118,17 +118,19 @@ export const ROMANIAN_PUBLIC_FIGURES: string[] = [
 
 /**
  * Negative sentiment keywords (RO + EN + FR) indicating the article contradicts a claim.
+ *
+ * Only words that signal a debunk. Ordinary reporting vocabulary ("precizează",
+ * "clarifică", "nu a fost", "teorie", "speculații") appears in most Romanian
+ * news stories, so listing it marked nearly every article as contradicting —
+ * true claims such as "Nicușor Dan este președintele României" came back false.
  */
 export const CONTRADICTION_KEYWORDS_RO = [
   'fals', 'falsă', 'fals,', 'falsul', 'falsuri', 'farsă', 'farsa',
-  'dezminţit', 'dezminţire', 'dezminţeşte', 'dezmințit', 'dezmintit', 'dezmințire', 'dezminte', 'dezminte că', 'dezminte ca',
-  'incorect', 'incorectă', 'neadevărat', 'fake', 'fabricat', 'inventat', 'invenție', 'inventie',
-  'manipulare', 'dezinformare', 'contrazis', 'contrazice', 'infirmat', 'infirmă', 'infirma', 'negat', 'neagă', 'neaga',
-  'trucat', 'trucată', 'trucata', 'trucaj', 'trucaje', 'colaj', 'parodie', 'satiră', 'satira',
-  'nu este adevărat', 'nu e adevărat', 'nu a fost', 'nu a existat',
-  'fără temei', 'fara temei', 'speculație', 'speculații', 'speculatie', 'speculatii',
-  'conspirație', 'conspiratie', 'conspirații', 'conspiratii', 'teorie', 'teorii',
-  'clarifică', 'clarifica', 'clarificări', 'clarificari', 'precizări', 'precizari', 'precizează', 'precizeaza',
+  'dezminţit', 'dezminţire', 'dezminţeşte', 'dezmințit', 'dezmintit', 'dezmințire', 'dezminte',
+  'incorect', 'incorectă', 'neadevărat', 'fake', 'fabricat', 'inventat',
+  'manipulare', 'dezinformare', 'contrazis', 'infirmat', 'negat',
+  'trucat', 'trucată', 'trucata', 'trucaj', 'trucaje',
+  'nu este adevărat', 'nu e adevărat', 'fără temei', 'fara temei',
 ];
 
 export const CONTRADICTION_KEYWORDS_EN = [
@@ -168,13 +170,11 @@ export const CONFIRMATION_KEYWORDS_FR = [
  */
 export const DEBUNK_MARKERS = [
   'fals', 'falsă', 'falsa', 'falsul', 'falsuri', 'farsă', 'farsa', 'dezinformare',
-  'dezmințit', 'dezmintit', 'dezmințire', 'dezminte', 'dezminte că', 'dezminte ca',
-  'trucat', 'trucată', 'trucata', 'trucaj', 'colaj', 'invenție', 'inventie',
-  'clarifică', 'clarificari', 'clarificări', 'precizări', 'precizari', 'precizează',
-  'nu este adevărat', 'nu e adevărat', 'nu a fost', 'nu a existat',
+  'dezmințit', 'dezmintit', 'dezmințire', 'dezminte',
+  'trucat', 'trucată', 'trucata', 'trucaj',
+  'nu este adevărat', 'nu e adevărat',
   'mit', 'mitul', 'nu există dovezi', 'nu exista dovezi', 'fără dovezi', 'fara dovezi',
-  'teorie a conspirației', 'teoria conspirației', 'conspirație', 'conspiratie', 'conspirații', 'conspiratii',
-  'speculație', 'speculații', 'speculatie', 'speculatii',
+  'teorie a conspirației', 'teoria conspirației', 'conspirație', 'conspiratie',
   'debunk', 'debunked', 'myth', 'hoax', 'no evidence', 'without evidence',
   'baseless', 'unfounded', 'misinformation', 'disinformation', 'conspiracy theory',
   'fact check', 'fact-check', 'falsely', 'false claim', 'not true',

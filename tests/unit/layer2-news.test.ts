@@ -53,6 +53,18 @@ describe('detectSentiment', () => {
     expect(sentiment).toBe('contradicts');
   });
 
+  it('does not read ordinary reporting verbs as a debunk', () => {
+    // "precizează", "nu a fost" and "speculații" occur in most Romanian news
+    // stories; treating them as debunk markers flipped true claims to false.
+    const sentiment = detectSentiment(
+      'Nicușor Dan a depus jurământul ca președinte al României',
+      'Administrația Prezidențială precizează că ceremonia nu a fost amânată, în ciuda speculațiilor.',
+      'Nicușor Dan este președintele României',
+      0.9
+    );
+    expect(sentiment).not.toBe('contradicts');
+  });
+
   it('detects a plain contradiction', () => {
     const sentiment = detectSentiment(
       'Este fals ca vaccinurile ARNm modifica genomul uman',

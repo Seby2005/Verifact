@@ -89,10 +89,9 @@ function summariseEvidence(context: AIAnalysisContext): string {
   context.layers?.layer1?.results?.slice(0, 5).forEach((r) =>
     lines.push(`[fact-check] ${r.publisher}: "${r.claimReviewed}" — verdict: ${r.rating}`)
   );
-  context.layers?.layer2?.results?.slice(0, 5).forEach((a) => {
-    const stance = a.sentiment === 'contradicts' ? ' [DEZMINȚIRE/INFIRMARE]' : a.sentiment === 'confirms' ? ' [CONFIRMARE]' : '';
-    lines.push(`[presă] ${a.source}: ${a.title}${stance} — ${a.snippet?.slice(0, 180) ?? ''}`);
-  });
+  context.layers?.layer2?.results?.slice(0, 5).forEach((a) =>
+    lines.push(`[presă] ${a.source}: ${a.title} — ${a.snippet?.slice(0, 180) ?? ''}`)
+  );
   context.layers?.layer3?.results?.slice(0, 5).forEach((o) =>
     lines.push(`[oficial] ${o.organization ?? o.publisher}: ${o.title} — ${(o.relevantQuote ?? o.snippet ?? '').slice(0, 180)}`)
   );
@@ -135,7 +134,8 @@ REGULI METODOLOGICE:
 3. Dacă nu există nicio sursă primară sau dovadă pentru un zvon senzaționalist, alege evidenceStatus "unverified_no_sources", scor redus (15-30) și o înclinație clară spre neverosimil (nu claca într-un neutru 50 "insuficient").
 4. Dacă tema este o dezbatere sau evaluare prospectivă, folosește "open_debate".
 5. Nu lua poziții politice părtinitoare.
-6. DIRECȚIA AFIRMAȚIEI ȘI ZVONURI VIRALE: Fii vigilent la distincția dintre evenimentul real relatat în presă și zvonul/farsa virală supusă verificării. Dacă afirmația conține o speculație, farsă sau memă virală (ex: „X s-a pozat cu un carton”, „X a murit”, „X a fost arestat”), iar sursele din presă sau instituțiile oficiale clarifică faptul că a fost o întâlnire reală (nu din carton) ori demontează zvonul apărut pe rețele, afirmația verificată este INFIRMATĂ / FALSĂ (verdict: "contradicts", evidenceStatus: "contradicted", scor: 10-25). NU alege "corroborated" când presa doar citează zvonul pentru a-l clarifica sau infirma!
+6. Citește direcția fiecărei surse: un articol care doar menționează un zvon pentru a-l demonta NU confirmă afirmația, iar un articol care relatează faptul ca atare NU o infirmă doar pentru că pomenește cuvinte ca „dezinformare” sau „precizări”. Judecă după ce susține sursa despre afirmație, nu după cuvinte-cheie.
+7. DATA DE AZI este ${new Date().toISOString().slice(0, 10)}. Cunoștințele tale pot fi depășite: pentru evenimente recente (alegeri, numiri în funcții, legi, taxe noi), sursele de mai sus au prioritate față de memoria ta. Nu infirma o afirmație doar pentru că nu o știi din antrenament.
 
 Întoarce EXCLUSIV un JSON valid:
 {
@@ -204,10 +204,24 @@ export interface SourceCandidate {
   source?: string;
 }
 
+export interface SourceFilterResult {
+  /** Ids of candidates that are about the claim. */
+  relevant: string[];
+  /** Ids of fact-checks whose reviewed statement is the claim's opposite. */
+  opposite: string[];
+}
+
 /**
- * Asks the model which candidate sources actually concern the claim.
+ * Asks the model which candidate sources actually concern the claim, and which
+ * fact-checks reviewed the claim's opposite.
  *
- * Returns the ids to keep, or null when the judgement could not be obtained —
+ * `opposite` exists because a fact-check is matched to the claim by keywords:
+ * "Climate change is a hoax" (rated False) matches "climate change is caused by
+ * humans", and its False rating then counted against a true claim. Only the
+ * model can tell the two statements point in opposite directions.
+ *
+ * Returns the ids to keep and the opposite-polarity ids, or null when the
+ * judgement could not be obtained —
  * callers treat null as "keep everything" rather than dropping evidence
  * because a model call failed.
  *
@@ -221,7 +235,7 @@ export async function filterRelevantSourcesWithOpenRouter(
   candidates: SourceCandidate[],
   apiKey?: string,
   modelName?: string
-): Promise<string[] | null> {
+): Promise<SourceFilterResult | null> {
   const key = apiKey || process.env.OPENROUTER_API_KEY;
   if (!key || candidates.length === 0) return null;
 
@@ -261,9 +275,10 @@ REGULI:
 3. Extrasele sunt fragmente lipite din document, nu propoziții continue. Cuvinte din afirmație apărute în fragmente diferite NU înseamnă că documentul tratează afirmația.
 4. Nu evalua dacă afirmația este adevărată. Decide doar dacă sursa este pe subiect.
 5. Dacă ești nesigur, păstreaz-o — dar o coincidență de cuvinte nu înseamnă nesiguranță, înseamnă că sursa nu e pe subiect.
+6. Pentru sursele cu id "l1:..." (fact-check-uri), titlul este afirmația verificată de fact-checker. Pune id-ul și în "opposite" dacă acea afirmație susține CONTRARIUL afirmației de mai sus (ex: afirmația "schimbările climatice sunt cauzate de om" vs fact-check pe "schimbările climatice sunt o farsă"). Dacă susține același lucru sau nu ești sigur, nu o pune în "opposite".
 
 Întoarce EXCLUSIV un obiect JSON:
-{"relevant": ["id1", "id2"]}`;
+{"relevant": ["id1", "id2"], "opposite": []}`;
 
   try {
     const data = await withRetry<{
@@ -301,9 +316,13 @@ REGULI:
     for (const candidateJson of [fenced?.[1], braced?.[0], content]) {
       if (!candidateJson) continue;
       try {
-        const parsed = JSON.parse(candidateJson.trim()) as { relevant?: unknown };
+        const parsed = JSON.parse(candidateJson.trim()) as { relevant?: unknown; opposite?: unknown };
         if (Array.isArray(parsed.relevant)) {
-          return parsed.relevant.filter((id): id is string => typeof id === 'string');
+          const ids = (list: unknown[]) => list.filter((id): id is string => typeof id === 'string');
+          return {
+            relevant: ids(parsed.relevant),
+            opposite: Array.isArray(parsed.opposite) ? ids(parsed.opposite) : [],
+          };
         }
       } catch {
         // try next candidate

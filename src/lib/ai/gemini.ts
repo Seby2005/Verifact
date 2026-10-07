@@ -198,7 +198,8 @@ REGULI METODOLOGICE:
 3. Dacă nu există nicio sursă primară sau dovadă pentru un zvon senzaționalist, alege evidenceStatus "unverified_no_sources", scor redus (15-30) și o înclinație clară spre neverosimil (nu claca într-un neutru 50 "insuficient").
 4. Dacă tema este o dezbatere sau evaluare prospectivă, folosește "open_debate".
 5. Nu lua poziții politice părtinitoare.
-6. DIRECȚIA AFIRMAȚIEI ȘI ZVONURI VIRALE: Fii vigilent la distincția dintre evenimentul real relatat în presă și zvonul/farsa virală supusă verificării. Dacă afirmația conține o speculație, farsă sau memă virală (ex: „X s-a pozat cu un carton”, „X a murit”, „X a fost arestat”), iar sursele din presă sau instituțiile oficiale clarifică faptul că a fost o întâlnire reală (nu din carton) ori demontează zvonul apărut pe rețele, afirmația verificată este INFIRMATĂ / FALSĂ (verdict: "contradicts", evidenceStatus: "contradicted", scor: 10-25). NU alege "corroborated" când presa doar citează zvonul pentru a-l clarifica sau infirma!
+6. Citește direcția fiecărei surse: un articol care doar menționează un zvon pentru a-l demonta NU confirmă afirmația, iar un articol care relatează faptul ca atare NU o infirmă doar pentru că pomenește cuvinte ca „dezinformare” sau „precizări”. Judecă după ce susține sursa despre afirmație, nu după cuvinte-cheie.
+7. DATA DE AZI este ${new Date().toISOString().slice(0, 10)}. Cunoștințele tale pot fi depășite: pentru evenimente recente (alegeri, numiri în funcții, legi, taxe noi), sursele de mai sus au prioritate față de memoria ta. Nu infirma o afirmație doar pentru că nu o știi din antrenament.
 
 Întoarce EXCLUSIV un JSON valid:
 {
@@ -239,10 +240,9 @@ function summariseEvidence(context: AIAnalysisContext): string {
   context.layers?.layer1?.results?.slice(0, 5).forEach((r) =>
     lines.push(`[fact-check] ${r.publisher}: "${r.claimReviewed}" — verdict: ${r.rating}`)
   );
-  context.layers?.layer2?.results?.slice(0, 5).forEach((a) => {
-    const stance = a.sentiment === 'contradicts' ? ' [DEZMINȚIRE/INFIRMARE]' : a.sentiment === 'confirms' ? ' [CONFIRMARE]' : '';
-    lines.push(`[presă] ${a.source}: ${a.title}${stance} — ${a.snippet?.slice(0, 180) ?? ''}`);
-  });
+  context.layers?.layer2?.results?.slice(0, 5).forEach((a) =>
+    lines.push(`[presă] ${a.source}: ${a.title} — ${a.snippet?.slice(0, 180) ?? ''}`)
+  );
   context.layers?.layer3?.results?.slice(0, 5).forEach((o) =>
     lines.push(`[oficial] ${o.organization ?? o.publisher}: ${o.title} — ${(o.relevantQuote ?? o.snippet ?? '').slice(0, 180)}`)
   );

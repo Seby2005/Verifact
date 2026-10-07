@@ -86,9 +86,10 @@ describe('calculateScore', () => {
     expect(scoreToConfidence(result.availableLayers)).toBe('medium');
   });
 
-  it('includes a layer that returned neutral journalistic articles as valid evidence', () => {
-    // layer2 has 10 articles that report objectively (layerScore 0.5) — this is valid
-    // journalistic evidence and contributes weight alongside layer1
+  it('excludes a layer that returned results but scored exactly neutral (no real signal)', () => {
+    // layer2 has 10 articles but they nett out to a neutral 0.5 — that is an
+    // absence of signal, not a vote for "unclear", and must not dilute the
+    // layers that did find something (see scoring.ts's hasEvidence comment).
     const result = calculateScore({
       layer1: layer1(0.05, 3),
       layer2: layer2(0.5, 10),
@@ -96,10 +97,9 @@ describe('calculateScore', () => {
       layer4: NEUTRAL_L4,
     });
 
-    // Both layer1 (0.05 * 0.35) and layer2 (0.5 * 0.30) count:
-    // (0.0175 + 0.15) / 0.65 * 100 ≈ 25.77 -> 26
-    expect(result.finalScore).toBe(26);
-    expect(result.availableLayers).toBe(2);
+    // Only layer1 counts: 0.05*0.35/0.35 * 100 = 5
+    expect(result.finalScore).toBe(5);
+    expect(result.availableLayers).toBe(1);
     expect(scoreToVerdict(result.finalScore)).toBe('false');
   });
 

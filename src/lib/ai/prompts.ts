@@ -119,6 +119,7 @@ Stratul 4 (Rețele Sociale și declarații publice):
 ${data.socialPosts}
 
 Indice calculat al surselor: ${data.calculatedScore}% (din ${data.availableLayers} straturi cu date)
+Data de azi: ${new Date().toISOString().slice(0, 10)}. Pentru evenimente recente, sursele de mai sus au prioritate față de cunoștințele tale din antrenament.
 
 PRINCIPII METODOLOGICE OBLIGATORII:
 1. GÂNDIRE CRITICĂ, FĂRĂ DOGME:
@@ -165,6 +166,7 @@ Niveau 4 (Réseaux Sociaux et déclarations publiques) :
 ${data.socialPosts}
 
 Indice calculé des sources : ${data.calculatedScore}% (sur ${data.availableLayers} niveaux disponibles)
+Date du jour : ${new Date().toISOString().slice(0, 10)}. Pour les événements récents, les sources ci-dessus priment sur tes connaissances d’entraînement.
 
 DIRECTIVES MÉTHODOLOGIQUES :
 1. ESPRIT CRITIQUE ET OBJECTIVITÉ :
@@ -210,6 +212,7 @@ Layer 4 (Social Media & Public Statements):
 ${data.socialPosts}
 
 Calculated source index: ${data.calculatedScore}% (across ${data.availableLayers} layers with data)
+Today is ${new Date().toISOString().slice(0, 10)}. For recent events, the sources above take precedence over your training knowledge.
 
 CORE METHODOLOGICAL PRINCIPLES:
 1. CRITICAL THINKING OVER DOGMA:

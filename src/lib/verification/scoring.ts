@@ -61,9 +61,12 @@ function corroboration(layer: { results?: unknown[] }): number {
  * redistributed to the layers that did find something.
  */
 function hasEvidence(layer: { status: string; results?: unknown[]; layerScore: number }): boolean {
-  // A layer has evidence if it succeeded and returned at least one result.
-  // Neutral journalistic reporting (0.5) is still valid evidence, not an absence of evidence.
-  return layer.status === 'success' && (layer.results?.length ?? 0) > 0;
+  if (layer.status !== 'success' || (layer.results?.length ?? 0) === 0) return false;
+  // A layer can return results and still fail to say anything about the claim —
+  // e.g. layer 2 finds ten articles but classifies every one as neutral, which
+  // produces a layerScore of exactly 0.5. That is an absence of signal, not a
+  // vote for "unclear", so it must not dilute layers that did reach a finding.
+  return Math.abs(layer.layerScore - 0.5) > 0.02;
 }
 
 /**
@@ -225,6 +228,9 @@ export interface EvidenceStatusInput {
   };
 }
 
+/** At or above this score a claim is in the partial/true band and is never "contradicted". */
+const CONTRADICTION_CEILING = VERDICT_THRESHOLD.partial;
+
 /**
  * Determines the descriptive, non-dogmatic evidence status of a claim.
  * Replaces binary "true/false" labeling with objective investigative categorization.
@@ -246,21 +252,24 @@ export function determineEvidenceStatus(input: EvidenceStatusInput): EvidenceSta
     (r) => r.ratingValue !== undefined && r.ratingValue <= 0.25
   );
   const hasOfficialDenial = l3Results.some((o) => o.supportsOrDenies === 'denies');
-  const contradictingPress = l2Results.filter((a) => a.sentiment === 'contradicts').length;
-  const confirmingPress = l2Results.filter((a) => a.sentiment === 'confirms').length;
 
   // 2. Clear Contradiction signals:
   // - Fact-checkers explicitly rated it false/debunk (layer1)
   // - Official institutions explicitly deny it (layer3)
-  // - Majority of reporting news outlets contradict/debunk the claim
-  // - Low composite score (< 40) or explicit contradiction from AI
+  // - Low composite score (< 35) or explicit contradiction from AI
+  //
+  // Only below CONTRADICTION_CEILING: a fact-check match is fuzzy (a debunk of
+  // the *opposite* claim — "climate change is a hoax" rated False — matches
+  // "climate change is caused by humans"), and the press-layer stance is a
+  // keyword guess. When the weighted evidence still lands in the partial/true
+  // band, labelling the claim "contradicted" would contradict its own score.
   if (
-    hasFactCheckDebunk ||
-    hasOfficialDenial ||
-    (contradictingPress > confirmingPress && score <= 60) ||
-    ai?.evidenceStatus === 'contradicted' ||
-    (ai?.verdict === 'contradicts' && score <= 45) ||
-    score < 35
+    score < CONTRADICTION_CEILING &&
+    (hasFactCheckDebunk ||
+      hasOfficialDenial ||
+      ai?.evidenceStatus === 'contradicted' ||
+      (ai?.verdict === 'contradicts' && score <= 45) ||
+      score < 35)
   ) {
     return 'contradicted';
   }
@@ -276,7 +285,6 @@ export function determineEvidenceStatus(input: EvidenceStatusInput): EvidenceSta
   if (
     (hasFactCheckConfirmation ||
       hasOfficialSupport ||
-      (confirmingPress > 0 && confirmingPress > contradictingPress) ||
       (ai?.evidenceStatus === 'corroborated' && (ai?.confidence ?? 0) >= 0.6) ||
       (ai?.verdict === 'supports' && (ai?.confidence ?? 0) >= 0.7)) &&
     score >= 70

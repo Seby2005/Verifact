@@ -2,7 +2,6 @@ import type { FactCheckResult, Language, Layer1Result } from '@/types/verificati
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import type { ExpandedQueries } from './query-expander';
-import { isRelevantToClaim } from './relevance';
 
 // ─── Internal Google API types ────────────────────────────────
 
@@ -273,9 +272,7 @@ export async function runLayer1(
   }
 
   const searchResults = await Promise.all(searches);
-  const allResults = deduplicateByUrl(searchResults.flat()).filter((r) =>
-    isRelevantToClaim(text, `${r.claimReviewed} ${r.publisher}`)
-  );
+  const allResults = deduplicateByUrl(searchResults.flat());
   allResults.sort((a, b) => b.relevanceScore - a.relevanceScore);
 
   const layerScore = calculateLayer1Score(allResults);

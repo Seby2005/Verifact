@@ -25,7 +25,7 @@ import { extractClaim, shouldExtractClaim, type ExtractedClaim } from '@/lib/ai/
 import { normalizeQuestionToHypothesis } from './question-normalizer';
 import { sanitizeOcrText } from './ocr-cleaner';
 
-const LAYER_TIMEOUT_MS = 8_500; // 8.5 seconds per layer (respects max 10s rule from GEMINI.md)
+const LAYER_TIMEOUT_MS = 8_500; // per layer; 3.5s timed out most Tavily/NewsAPI calls and emptied the press layer
 
 function buildFallbackSummary(
   layers: { layer1: Layer1Result; layer2: Layer2Result; layer3: Layer3Result; layer4: Layer4Result },
