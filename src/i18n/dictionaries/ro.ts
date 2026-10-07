@@ -310,6 +310,9 @@ export const ro = {
     partialAnalysisLabel: 'Analiză parțială',
     partialAnalysisText:
       'Analiza în limbaj natural nu a putut fi generată pentru acest raport. Verdictul și sursele de mai jos provin din căutarea în surse și sunt complete; lipsește doar explicația narativă.',
+    searchDegradedLabel: 'Căutare incompletă',
+    searchDegradedText:
+      'Unele surse de căutare (presă, fact-checking sau rețele sociale) nu au răspuns la momentul verificării. Verdictul se bazează pe mai puține dovezi decât de obicei: tratează-l cu prudență și reîncearcă mai târziu.',
     summaryLabel: 'Rezumat',
     sourcesLabel: 'Surse ({count})',
     disclaimerLabel: 'Disclaimer',

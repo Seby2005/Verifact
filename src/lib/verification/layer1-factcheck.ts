@@ -2,6 +2,7 @@ import type { FactCheckResult, Language, Layer1Result } from '@/types/verificati
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import type { ExpandedQueries } from './query-expander';
+import { settleProviderCalls } from './provider-calls';
 
 // ─── Internal Google API types ────────────────────────────────
 
@@ -207,35 +208,31 @@ async function fetchFactChecks(query: string, lang: string): Promise<FactCheckRe
     pageSize: '10',
   });
 
-  try {
-    const response = await withCircuitBreaker('google-fact-check', () =>
-      fetchWithRetry(
-        `https://factchecktools.googleapis.com/v1alpha1/claims:search?${params.toString()}`,
-        () => ({ signal: AbortSignal.timeout(4000) }),
-        { label: 'layer1-factcheck', attempts: 2, baseDelayMs: 300 }
-      ).then((res) => {
-        if (!res.ok) throw new Error(`Fact Check API error: ${res.status} ${res.statusText}`);
-        return res;
-      })
-    );
+  const response = await withCircuitBreaker('google-fact-check', () =>
+    fetchWithRetry(
+      `https://factchecktools.googleapis.com/v1alpha1/claims:search?${params.toString()}`,
+      () => ({ signal: AbortSignal.timeout(4000) }),
+      { label: 'layer1-factcheck', attempts: 2, baseDelayMs: 300 }
+    ).then((res) => {
+      if (!res.ok) throw new Error(`Fact Check API error: ${res.status} ${res.statusText}`);
+      return res;
+    })
+  );
 
-    const data = (await response.json()) as GoogleFactCheckResponse;
-    if (!data.claims?.length) return [];
+  const data = (await response.json()) as GoogleFactCheckResponse;
+  if (!data.claims?.length) return [];
 
-    return data.claims.map((claim): FactCheckResult => ({
-      claimReviewed: claim.text,
-      rating: claim.claimReview?.[0]?.textualRating ?? 'Unknown',
-      ratingValue: normalizeRating(claim.claimReview?.[0]?.textualRating ?? ''),
-      publisher: claim.claimReview?.[0]?.publisher?.name ?? 'Unknown',
-      publisherUrl: claim.claimReview?.[0]?.publisher?.site ?? '',
-      reviewUrl: claim.claimReview?.[0]?.url ?? '',
-      reviewDate: claim.claimReview?.[0]?.reviewDate ?? '',
-      claimant: claim.claimant,
-      relevanceScore: Math.max(calculateRelevance(claim.text, query), 0.3),
-    }));
-  } catch {
-    return [];
-  }
+  return data.claims.map((claim): FactCheckResult => ({
+    claimReviewed: claim.text,
+    rating: claim.claimReview?.[0]?.textualRating ?? 'Unknown',
+    ratingValue: normalizeRating(claim.claimReview?.[0]?.textualRating ?? ''),
+    publisher: claim.claimReview?.[0]?.publisher?.name ?? 'Unknown',
+    publisherUrl: claim.claimReview?.[0]?.publisher?.site ?? '',
+    reviewUrl: claim.claimReview?.[0]?.url ?? '',
+    reviewDate: claim.claimReview?.[0]?.reviewDate ?? '',
+    claimant: claim.claimant,
+    relevanceScore: Math.max(calculateRelevance(claim.text, query), 0.3),
+  }));
 }
 
 export function calculateLayer1Score(results: FactCheckResult[]): number {
@@ -264,15 +261,26 @@ export async function runLayer1(
   const factAngle = expandedQueries?.factCheckAngle;
 
   const searches = [
-    fetchFactChecks(roQuery, language === 'unknown' ? 'ro' : language),
-    fetchFactChecks(enQuery, 'en'),
+    { provider: 'google-fact-check', run: fetchFactChecks(roQuery, language === 'unknown' ? 'ro' : language) },
+    { provider: 'google-fact-check', run: fetchFactChecks(enQuery, 'en') },
   ];
   if (factAngle && factAngle !== roQuery) {
-    searches.push(fetchFactChecks(factAngle, language === 'unknown' ? 'ro' : language));
+    searches.push({ provider: 'google-fact-check', run: fetchFactChecks(factAngle, language === 'unknown' ? 'ro' : language) });
   }
 
-  const searchResults = await Promise.all(searches);
-  const allResults = deduplicateByUrl(searchResults.flat());
+  const { items, failure } = await settleProviderCalls('layer1-factcheck', searches);
+  if (failure) {
+    return {
+      status: 'unavailable',
+      results: [],
+      summary: 'Fact-check search unavailable',
+      layerScore: 0.5,
+      processingTime: Date.now() - startTime,
+      error: failure,
+    };
+  }
+
+  const allResults = deduplicateByUrl(items);
   allResults.sort((a, b) => b.relevanceScore - a.relevanceScore);
 
   const layerScore = calculateLayer1Score(allResults);

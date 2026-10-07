@@ -1,58 +1,13 @@
-import { timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
 import { aggregateDailyOpportunities, saveOpportunities } from '@/lib/opportunities/trends-service';
 import { logger } from '@/lib/utils/logger';
+import { isCronAuthorized } from '@/lib/security/cron-auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60s max execution time for Vercel Cron serverless function
 
-function safeCompare(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
-}
-
-/**
- * Validates whether the incoming request is authorized to trigger the cron job.
- * Supports:
- * - Authorization: Bearer <CRON_SECRET> (Vercel Cron standard)
- * - x-cron-secret: <CRON_SECRET>
- */
-function isAuthorized(request: Request): boolean {
-  const cronSecret = process.env.CRON_SECRET;
-
-  // If no CRON_SECRET is configured, only allow in local development
-  if (!cronSecret) {
-    if (process.env.NODE_ENV === 'development') {
-      logger.warn('CRON_SECRET is not configured; allowing in development mode', {
-        service: 'CronContentOpportunities',
-      });
-      return true;
-    }
-    return false;
-  }
-
-  // 1. Authorization header: Bearer <token>
-  const authHeader = request.headers.get('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7).trim();
-    if (safeCompare(token, cronSecret)) {
-      return true;
-    }
-  }
-
-  // 2. Custom header: x-cron-secret
-  const customHeader = request.headers.get('x-cron-secret');
-  if (customHeader && safeCompare(customHeader.trim(), cronSecret)) {
-    return true;
-  }
-
-  return false;
-}
-
 async function handleCronRequest(request: Request): Promise<Response> {
-  if (!isAuthorized(request)) {
+  if (!isCronAuthorized(request, 'CronContentOpportunities')) {
     return NextResponse.json(
       { error: 'Unauthorized. Valid CRON_SECRET required.' },
       { status: 401 }

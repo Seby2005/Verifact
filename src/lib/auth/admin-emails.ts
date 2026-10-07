@@ -26,3 +26,12 @@ export function isAdminEmail(email?: string | null): boolean {
     .map((entry) => entry.trim().toLowerCase())
     .includes(normalized);
 }
+
+/** Every admin address: the owner plus ADMIN_EMAILS, for operational alerts. */
+export function getAdminEmails(): string[] {
+  const configured = (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+  return Array.from(new Set([OWNER_EMAIL, ...configured]));
+}

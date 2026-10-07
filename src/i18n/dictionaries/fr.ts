@@ -312,6 +312,9 @@ export const fr: Translations = {
     partialAnalysisLabel: 'Analyse partielle',
     partialAnalysisText:
       'L’analyse narrative en langage naturel n’a pas pu être générée. Le verdict et les sources ci-dessous proviennent directement des recherches et sont complets.',
+    searchDegradedLabel: 'Recherche incomplète',
+    searchDegradedText:
+      'Certaines sources de recherche (presse, fact-checking ou réseaux sociaux) n’ont pas répondu au moment de la vérification. Le verdict repose sur moins de preuves que d’habitude : à considérer avec prudence, réessayez plus tard.',
     summaryLabel: 'Résumé',
     sourcesLabel: 'Sources ({count})',
     disclaimerLabel: 'Avertissement',

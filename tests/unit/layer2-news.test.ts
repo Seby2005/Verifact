@@ -154,6 +154,41 @@ describe('runLayer2', () => {
     expect(result.layerScore).toBe(0.5);
   });
 
+  it('reports itself unavailable when every press provider fails, rather than finding nothing', async () => {
+    process.env.NEWS_API_KEY = 'news-key';
+    process.env.TAVILY_API_KEY = 'tavily-key';
+    // NewsAPI rate-limited, Tavily over its plan limit, GDELT empty.
+    global.fetch = jest.fn().mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('newsapi.org')
+          ? jsonResponse({}, false, 429)
+          : url.includes('tavily.com')
+            ? jsonResponse({}, false, 432)
+            : jsonResponse({ articles: [] })
+      )
+    );
+
+    const result = await runLayer2('orice afirmatie', 'ro');
+
+    expect(result.status).toBe('unavailable');
+    expect(result.error).toContain('tavily');
+    expect(result.error).toContain('newsapi');
+  });
+
+  it('stays available when one press provider still works', async () => {
+    process.env.NEWS_API_KEY = 'news-key';
+    process.env.TAVILY_API_KEY = 'tavily-key';
+    global.fetch = jest.fn().mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('tavily.com') ? jsonResponse({}, false, 432) : jsonResponse({ status: 'ok', articles: [] })
+      )
+    );
+
+    const result = await runLayer2('orice afirmatie', 'ro');
+
+    expect(result.status).toBe('success');
+  });
+
   it('combines NewsAPI and Tavily results', async () => {
     process.env.NEWS_API_KEY = 'news-key';
     process.env.TAVILY_API_KEY = 'tavily-key';

@@ -3,6 +3,7 @@ import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { isRelevantToClaim } from './relevance';
 import type { ExpandedQueries } from './query-expander';
+import { settleProviderCalls } from './provider-calls';
 import { ROMANIAN_PUBLIC_FIGURES } from './constants';
 
 interface TwitterSearchResponse {
@@ -147,55 +148,51 @@ async function searchSocialViaTavily(
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey || !queryStr.trim()) return [];
 
-  try {
-    const response = await withCircuitBreaker('tavily', () =>
-      fetchWithRetry(
-        'https://api.tavily.com/search',
-        () => ({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            query: queryStr.slice(0, 300),
-            search_depth: 'basic',
-            max_results: 10,
-            include_domains: SOCIAL_DOMAINS,
-          }),
-          signal: AbortSignal.timeout(8000),
+  const response = await withCircuitBreaker('tavily', () =>
+    fetchWithRetry(
+      'https://api.tavily.com/search',
+      () => ({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          query: queryStr.slice(0, 300),
+          search_depth: 'basic',
+          max_results: 10,
+          include_domains: SOCIAL_DOMAINS,
         }),
-        { label: 'layer4-tavily' }
-      ).then((res) => {
-        if (!res.ok) throw new Error(`Tavily error: ${res.status}`);
-        return res;
-      })
+        signal: AbortSignal.timeout(8000),
+      }),
+      { label: 'layer4-tavily' }
+    ).then((res) => {
+      if (!res.ok) throw new Error(`Tavily error: ${res.status}`);
+      return res;
+    })
+  );
+
+  const data = (await response.json()) as TavilySearchResponse;
+  const items = data.results ?? [];
+
+  return items.map((item): SocialMediaPost => {
+    const platform = determinePlatform(item.url);
+    const author = extractSocialAuthor(item.title, item.url);
+    const authorLower = author.toLowerCase();
+    const isOriginal = namedEntities.some((e) =>
+      authorLower.includes(e.toLowerCase())
     );
 
-    const data = (await response.json()) as TavilySearchResponse;
-    const items = data.results ?? [];
-
-    return items.map((item): SocialMediaPost => {
-      const platform = determinePlatform(item.url);
-      const author = extractSocialAuthor(item.title, item.url);
-      const authorLower = author.toLowerCase();
-      const isOriginal = namedEntities.some((e) =>
-        authorLower.includes(e.toLowerCase())
-      );
-
-      return {
-        platform,
-        author,
-        authorVerified: false,
-        postUrl: item.url,
-        postDate: item.published_date ?? '',
-        content: item.content,
-        isOriginalSource: isOriginal,
-      };
-    });
-  } catch {
-    return [];
-  }
+    return {
+      platform,
+      author,
+      authorVerified: false,
+      postUrl: item.url,
+      postDate: item.published_date ?? '',
+      content: item.content,
+      isOriginalSource: isOriginal,
+    };
+  });
 }
 
 export function calculateLayer4Score(posts: SocialMediaPost[]): number {
@@ -256,13 +253,14 @@ export async function runLayer4(
   }
 
   try {
-    const [roPosts, enPosts] = await Promise.all([
-      searchSocialViaTavily(roQuery, namedEntities),
-      searchSocialViaTavily(enQuery, namedEntities),
+    const { items, failure } = await settleProviderCalls('layer4-social', [
+      { provider: 'tavily', run: searchSocialViaTavily(roQuery, namedEntities) },
+      { provider: 'tavily', run: searchSocialViaTavily(enQuery, namedEntities) },
     ]);
+    if (failure) throw new Error(failure);
 
     const seen = new Set<string>();
-    const allPosts = [...roPosts, ...enPosts].filter((p) => {
+    const allPosts = items.filter((p) => {
       const url = p.postUrl ?? p.content ?? '';
       if (!url || seen.has(url)) return false;
       seen.add(url);

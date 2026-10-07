@@ -370,13 +370,40 @@ describe('Critical Thinking & Investigative Verification Pipeline', () => {
     });
 
     it('still labels a low-scoring claim contradicted when the AI says so', () => {
+      const oneArticle: Layer2Result = {
+        status: 'success',
+        results: [
+          {
+            title: 'Articol',
+            source: 'digi24.ro',
+            articleUrl: 'https://digi24.ro/a',
+            publishedAt: '',
+            snippet: '',
+            sentiment: 'neutral',
+            credibilityScore: 0.8,
+          },
+        ],
+        summary: '',
+        layerScore: 0.5,
+      };
       const status = determineEvidenceStatus({
         score: 45,
-        layers: { layer1: emptyLayer1, layer2: emptyLayer2, layer3: emptyLayer3, layer4: emptyLayer4 },
+        layers: { layer1: emptyLayer1, layer2: oneArticle, layer3: emptyLayer3, layer4: emptyLayer4 },
         ai: { score: 15, verdict: 'contradicts', evidenceStatus: 'contradicted', confidence: 0.8 },
       });
 
       expect(status).toBe('contradicted');
+    });
+
+    it('does not claim documents confirm a claim when no source was found', () => {
+      const status = determineEvidenceStatus({
+        score: 100,
+        layers: { layer1: emptyLayer1, layer2: emptyLayer2, layer3: emptyLayer3, layer4: emptyLayer4 },
+        ai: { score: 100, verdict: 'supports', evidenceStatus: 'corroborated', confidence: 0.95 },
+      });
+
+      expect(status).toBe('unverified_no_sources');
+      expect(calculatePlausibilityTilt(status, 100, undefined, 'ro').direction).toBe('plausible');
     });
   });
 });

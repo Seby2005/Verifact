@@ -85,7 +85,7 @@ describe('runLayer4', () => {
     expect(result.results[0].platform).toBe('facebook');
   });
 
-  it('handles invalid search response gracefully returning empty results', async () => {
+  it('reports itself unavailable when the search response is unusable', async () => {
     process.env.TAVILY_API_KEY = 'tavily-key';
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
@@ -96,7 +96,7 @@ describe('runLayer4', () => {
 
     const result = await runLayer4('Klaus Iohannis a declarat ceva', 'ro');
 
-    expect(result.status).toBe('success');
+    expect(result.status).toBe('unavailable');
     expect(result.results).toEqual([]);
   });
 });

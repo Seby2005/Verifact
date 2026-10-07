@@ -53,6 +53,13 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
   const { tier, isPremium, unlimited, ready } = useUserTier();
   const canAccessDossier = unlimited || tier === 'business';
   const showSummary = isPremium && Boolean(report.executiveSummary);
+  // A search provider that failed (quota, outage) leaves its layer unavailable;
+  // say so, or the reader takes "few sources" for "little evidence exists".
+  const searchDegraded = report.layers
+    ? [report.layers.layer1, report.layers.layer2, report.layers.layer3, report.layers.layer4].some(
+        (l) => l?.status === 'unavailable'
+      )
+    : false;
   const headRef = useRef<HTMLElement>(null);
 
   const activeTilt = useMemo(() => {
@@ -152,6 +159,12 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
       {report.aiAvailable === false ? (
         <Callout label={t('reportView.partialAnalysisLabel')} tone="plain">
           {t('reportView.partialAnalysisText')}
+        </Callout>
+      ) : null}
+
+      {searchDegraded ? (
+        <Callout label={t('reportView.searchDegradedLabel')} tone="plain">
+          {t('reportView.searchDegradedText')}
         </Callout>
       ) : null}
 

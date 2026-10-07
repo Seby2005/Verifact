@@ -311,6 +311,9 @@ export const en: Translations = {
     partialAnalysisLabel: 'Partial analysis',
     partialAnalysisText:
       'Natural language analysis could not be generated for this report. The verdict and sources below are complete from source searching; only the narrative summary is missing.',
+    searchDegradedLabel: 'Incomplete search',
+    searchDegradedText:
+      'Some search sources (news, fact-checking or social media) did not respond at the time of this check. The verdict rests on less evidence than usual: treat it with caution and try again later.',
     summaryLabel: 'Summary',
     sourcesLabel: 'Sources ({count})',
     disclaimerLabel: 'Disclaimer',

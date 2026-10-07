@@ -14,6 +14,7 @@ import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { isRelevantToClaim } from './relevance';
 import { matchesAnyPhrase } from './keyword-match';
 import type { ExpandedQueries } from './query-expander';
+import { settleProviderCalls } from './provider-calls';
 
 // ─── Internal API types ───────────────────────────────────────
 
@@ -140,97 +141,89 @@ async function fetchFromNewsAPI(query: string, language: Language, rawInputText?
     apiKey,
   });
 
-  try {
-    const response = await withCircuitBreaker('newsapi', () =>
-      fetchWithRetry(
-        `https://newsapi.org/v2/everything?${params.toString()}`,
-        () => ({ signal: AbortSignal.timeout(8000) }),
-        { label: 'layer2-newsapi' }
-      ).then((res) => {
-        if (!res.ok) throw new Error(`NewsAPI error: ${res.status}`);
-        return res;
-      })
-    );
+  const response = await withCircuitBreaker('newsapi', () =>
+    fetchWithRetry(
+      `https://newsapi.org/v2/everything?${params.toString()}`,
+      () => ({ signal: AbortSignal.timeout(8000) }),
+      { label: 'layer2-newsapi' }
+    ).then((res) => {
+      if (!res.ok) throw new Error(`NewsAPI error: ${res.status}`);
+      return res;
+    })
+  );
 
-    const data = (await response.json()) as NewsAPIResponse;
-    if (data.status !== 'ok' || !data.articles) return [];
+  const data = (await response.json()) as NewsAPIResponse;
+  if (data.status !== 'ok' || !data.articles) return [];
 
-    return data.articles
-      .filter((article) => !isSocialDomain(article.url))
-      .map((article): NewsArticle => {
-        const credibilityScore = getCredibilityScore(article.url);
-        const sentiment = detectSentiment(article.title, article.description ?? '', rawInputText || query, credibilityScore);
+  return data.articles
+    .filter((article) => !isSocialDomain(article.url))
+    .map((article): NewsArticle => {
+      const credibilityScore = getCredibilityScore(article.url);
+      const sentiment = detectSentiment(article.title, article.description ?? '', rawInputText || query, credibilityScore);
 
-        return {
-          title: article.title,
-          source: article.source.name,
-          sourceUrl: article.url,
-          articleUrl: article.url,
-          publishedAt: article.publishedAt,
-          snippet: article.description ?? '',
-          sentiment,
-          credibilityScore,
-        };
-      });
-  } catch {
-    return [];
-  }
+      return {
+        title: article.title,
+        source: article.source.name,
+        sourceUrl: article.url,
+        articleUrl: article.url,
+        publishedAt: article.publishedAt,
+        snippet: article.description ?? '',
+        sentiment,
+        credibilityScore,
+      };
+    });
 }
 
 async function fetchFromTavily(query: string, rawInputText: string): Promise<NewsArticle[]> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey || !query.trim()) return [];
 
-  try {
-    const response = await withCircuitBreaker('tavily', () =>
-      fetchWithRetry(
-        'https://api.tavily.com/search',
-        () => ({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            query: query.slice(0, 300),
-            search_depth: 'basic',
-            topic: 'general',
-            max_results: 10,
-            exclude_domains: SOCIAL_MEDIA_DOMAINS,
-          }),
-          signal: AbortSignal.timeout(8000),
+  const response = await withCircuitBreaker('tavily', () =>
+    fetchWithRetry(
+      'https://api.tavily.com/search',
+      () => ({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          query: query.slice(0, 300),
+          search_depth: 'basic',
+          topic: 'general',
+          max_results: 10,
+          exclude_domains: SOCIAL_MEDIA_DOMAINS,
         }),
-        { label: 'layer2-tavily' }
-      ).then((res) => {
-        if (!res.ok) throw new Error(`Tavily error: ${res.status}`);
-        return res;
-      })
-    );
+        signal: AbortSignal.timeout(8000),
+      }),
+      { label: 'layer2-tavily' }
+    ).then((res) => {
+      if (!res.ok) throw new Error(`Tavily error: ${res.status}`);
+      return res;
+    })
+  );
 
-    const data = (await response.json()) as TavilySearchResponse;
-    if (!data.results?.length) return [];
+  const data = (await response.json()) as TavilySearchResponse;
+  if (!data.results?.length) return [];
 
-    return data.results
-      .filter((item) => !isSocialDomain(item.url))
-      .map((item): NewsArticle => {
-        const credibilityScore = getCredibilityScore(item.url);
-        const domain = extractDomain(item.url);
-        const sentiment = detectSentiment(item.title, item.content, rawInputText, credibilityScore);
+  return data.results
+    .filter((item) => !isSocialDomain(item.url))
+    .map((item): NewsArticle => {
+      const credibilityScore = getCredibilityScore(item.url);
+      const domain = extractDomain(item.url);
+      const sentiment = detectSentiment(item.title, item.content, rawInputText, credibilityScore);
 
-        return {
-          title: item.title,
-          source: domain,
-          sourceUrl: domain,
-          articleUrl: item.url,
-          publishedAt: item.published_date ?? '',
-          snippet: item.content,
-          sentiment,
-          credibilityScore,
-        };
-      });
-  } catch {
-    return [];
-  }
+      return {
+        title: item.title,
+        source: domain,
+        sourceUrl: domain,
+        articleUrl: item.url,
+        publishedAt: item.published_date ?? '',
+        snippet: item.content,
+        sentiment,
+        credibilityScore,
+      };
+    });
 }
 
 interface GdeltArticle {
@@ -348,25 +341,24 @@ export async function runLayer2(
   // English-language searches are judged for relevance against enQuery, not
   // the claim text: an English article shares almost no tokens with a
   // Romanian claim, so checking it against `text` silently drops all of them.
-  const [newsRo, newsEn, tavilyRo, tavilyEn, tavilyContext, gdelt] = await Promise.allSettled([
-    fetchFromNewsAPI(roQuery, 'ro', text),
-    fetchFromNewsAPI(enQuery, 'en'),
-    fetchFromTavily(roQuery, text),
-    fetchFromTavily(enQuery, enQuery),
-    contextQuery && contextQuery !== roQuery ? fetchFromTavily(contextQuery, text) : Promise.resolve([]),
+  //
+  // GDELT is a bonus that fails open on its own (it is rate-limited per IP), so
+  // it does not count toward deciding whether press search worked at all.
+  const primaryCalls = [
+    { provider: 'newsapi', run: fetchFromNewsAPI(roQuery, 'ro', text) },
+    { provider: 'newsapi', run: fetchFromNewsAPI(enQuery, 'en') },
+    { provider: 'tavily', run: fetchFromTavily(roQuery, text) },
+    { provider: 'tavily', run: fetchFromTavily(enQuery, enQuery) },
+  ];
+  if (contextQuery && contextQuery !== roQuery) {
+    primaryCalls.push({ provider: 'tavily', run: fetchFromTavily(contextQuery, text) });
+  }
+  const [primary, gdelt] = await Promise.all([
+    settleProviderCalls('layer2-news', primaryCalls),
     fetchFromGDELT(enQuery, enQuery),
   ]);
 
-  const allArticles: NewsArticle[] = [
-    ...(newsRo.status === 'fulfilled' ? newsRo.value : []),
-    ...(newsEn.status === 'fulfilled' ? newsEn.value : []),
-    ...(tavilyRo.status === 'fulfilled' ? tavilyRo.value : []),
-    ...(tavilyEn.status === 'fulfilled' ? tavilyEn.value : []),
-    ...(tavilyContext.status === 'fulfilled' ? tavilyContext.value : []),
-    ...(gdelt.status === 'fulfilled' ? gdelt.value : []),
-  ];
-
-  const unique = deduplicateArticles(allArticles);
+  const unique = deduplicateArticles([...primary.items, ...gdelt]);
   const relevant = unique.filter((a) => a.sentiment !== 'unrelated');
 
   relevant.sort((a, b) => {
@@ -382,6 +374,21 @@ export async function runLayer2(
   });
 
   const layerScore = calculateLayer2Score(relevant);
+
+  if (primary.failure) {
+    // NewsAPI and Tavily both failed: whatever GDELT found is shown, but the
+    // layer is not a full press search and must not score as one.
+    return {
+      status: 'unavailable',
+      articles: relevant.slice(0, 12),
+      results: relevant.slice(0, 12),
+      summary: 'News search unavailable',
+      layerScore: 0.5,
+      processingTime: Date.now() - startTime,
+      sourcesChecked: unique.length,
+      error: primary.failure,
+    };
+  }
 
   return {
     status: 'success',

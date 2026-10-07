@@ -268,6 +268,18 @@ export function determineEvidenceStatus(input: EvidenceStatusInput): EvidenceSta
   const l3Results = layers.layer3.results ?? [];
   const totalEvidenceResults = l1Results.length + l2Results.length + l3Results.length;
 
+  // Nothing found (or search was down): "corroborated" and "contradicted" are
+  // labelled as confirmed/contradicted *by documents*, which would be untrue
+  // with none on the page. The score still carries the model's own judgement,
+  // and the plausibility tilt follows it. The model's nuanced readings (missing
+  // context, open debate) make no claim about documents and pass through.
+  if (totalEvidenceResults === 0) {
+    if (ai?.evidenceStatus === 'missing_context' || ai?.evidenceStatus === 'open_debate') {
+      return ai.evidenceStatus;
+    }
+    return 'unverified_no_sources';
+  }
+
   const hasFactCheckDebunk = l1Results.some(
     (r) => r.ratingValue !== undefined && r.ratingValue <= 0.25
   );
@@ -315,18 +327,6 @@ export function determineEvidenceStatus(input: EvidenceStatusInput): EvidenceSta
   // 4. Model-assessed evidence status for nuanced states (missing context, open debate)
   if (ai?.evidenceStatus && ['missing_context', 'open_debate'].includes(ai.evidenceStatus)) {
     return ai.evidenceStatus;
-  }
-
-  // 5. Zero credible evidence identified (the rumor / unsubstantiated claim):
-  // When search yields nothing and AI lacks high confidence in a known historical/scientific fact
-  if (totalEvidenceResults === 0) {
-    if (ai?.verdict === 'supports' && (ai?.confidence ?? 0) >= 0.85 && score >= 80) {
-      return 'corroborated';
-    }
-    if (ai?.verdict === 'contradicts' && (ai?.confidence ?? 0) >= 0.75 && score <= 25) {
-      return 'contradicted';
-    }
-    return 'unverified_no_sources';
   }
 
   if (ai?.evidenceStatus === 'unverified_no_sources') {
@@ -414,6 +414,24 @@ export function calculatePlausibilityTilt(
       };
 
     case 'unverified_no_sources':
+      // With no sources the score is the model's own judgement; a well-known
+      // fact it rates highly must not read "toward implausible".
+      if (score >= 60) {
+        return {
+          direction: 'plausible',
+          score,
+          label: isRo
+            ? 'Înclinație spre Verosimil — fără surse găsite, conform evaluării AI'
+            : isFr
+            ? 'Plutôt plausible — aucune source trouvée, selon l’évaluation IA'
+            : 'Tilt toward Plausible — no sources found, per the AI assessment',
+          rationale: isRo
+            ? 'Căutarea nu a returnat surse pentru această afirmație; înclinația reflectă doar evaluarea modelului AI și trebuie confirmată din surse independente.'
+            : isFr
+            ? 'La recherche n’a renvoyé aucune source ; cette tendance reflète uniquement l’évaluation du modèle IA et doit être confirmée par des sources indépendantes.'
+            : 'Search returned no sources for this claim; the tilt reflects only the AI model’s assessment and should be confirmed from independent sources.',
+        };
+      }
       return {
         direction: score < 40 ? 'unlikely' : 'neutral',
         score,
