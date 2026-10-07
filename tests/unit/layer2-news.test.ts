@@ -116,6 +116,15 @@ describe('calculateLayer2Score', () => {
     expect(calculateLayer2Score(articles)).toBeLessThan(0.5);
   });
 
+  it('lets neutral articles abstain instead of pulling the score toward 0.5', () => {
+    const articles = [
+      article({ sentiment: 'confirms', credibilityScore: 0.9 }),
+      article({ sentiment: 'neutral', credibilityScore: 0.9 }),
+      article({ sentiment: 'neutral', credibilityScore: 0.9 }),
+    ];
+    expect(calculateLayer2Score(articles)).toBe(1);
+  });
+
   it('weighs confirming and contradicting articles by credibility', () => {
     const articles = [
       article({ sentiment: 'confirms', credibilityScore: 0.2 }),

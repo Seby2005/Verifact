@@ -4,11 +4,13 @@ import type { Layer1Result, Layer2Result, Layer3Result, Layer4Result } from '@/t
 function layer1(layerScore: number, resultCount: number, status: Layer1Result['status'] = 'success'): Layer1Result {
   return { status, results: Array.from({ length: resultCount }, () => ({})) as never, layerScore };
 }
+// Press and official results only earn their layer weight when they take a
+// side, so the fixtures give each one a stance; layerScore sets the direction.
 function layer2(layerScore: number, resultCount: number, status: Layer2Result['status'] = 'success'): Layer2Result {
-  return { status, results: Array.from({ length: resultCount }, () => ({})) as never, layerScore };
+  return { status, results: Array.from({ length: resultCount }, () => ({ sentiment: 'confirms' })) as never, layerScore };
 }
 function layer3(layerScore: number, resultCount: number, status: Layer3Result['status'] = 'success'): Layer3Result {
-  return { status, results: Array.from({ length: resultCount }, () => ({})) as never, layerScore };
+  return { status, results: Array.from({ length: resultCount }, () => ({ supportsOrDenies: 'supports' })) as never, layerScore };
 }
 function layer4(layerScore: number, resultCount: number, status: Layer4Result['status'] = 'success'): Layer4Result {
   return { status, results: Array.from({ length: resultCount }, () => ({})) as never, layerScore };

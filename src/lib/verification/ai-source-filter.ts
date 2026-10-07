@@ -127,6 +127,13 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
 
   const keepSet = new Set(judgement.relevant);
   const oppositeSet = new Set(judgement.opposite);
+  const supportSet = new Set(judgement.supports);
+  const contradictSet = new Set(judgement.contradicts);
+
+  // The model read each source against the claim, so its stance replaces the
+  // keyword guess the layers made. Contradiction wins if listed in both.
+  const stanceOf = (id: string): 'supports' | 'contradicts' | 'neutral' =>
+    contradictSet.has(id) ? 'contradicts' : supportSet.has(id) ? 'supports' : 'neutral';
 
   // A fact-check of the claim's opposite speaks to the claim with its rating
   // inverted: "X is a hoax" rated False is evidence *for* X. The rating label
@@ -134,8 +141,18 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
   const l1Surviving = layers.layer1.results
     .map((r, i) => (oppositeSet.has(`l1:${i}`) ? { ...r, ratingValue: 1 - r.ratingValue } : r))
     .filter((_, i) => keepSet.has(`l1:${i}`));
-  const l2Surviving = layers.layer2.results.filter((_, i) => keepSet.has(`l2:${i}`));
-  const l3Surviving = layers.layer3.results.filter((_, i) => keepSet.has(`l3:${i}`));
+  const l2Surviving = layers.layer2.results
+    .map((a, i) => {
+      const stance = stanceOf(`l2:${i}`);
+      return { ...a, sentiment: stance === 'supports' ? ('confirms' as const) : stance };
+    })
+    .filter((_, i) => keepSet.has(`l2:${i}`));
+  const l3Surviving = layers.layer3.results
+    .map((s, i) => {
+      const stance = stanceOf(`l3:${i}`);
+      return { ...s, supportsOrDenies: stance === 'contradicts' ? ('denies' as const) : stance };
+    })
+    .filter((_, i) => keepSet.has(`l3:${i}`));
   const l4Surviving = layers.layer4.results.filter((_, i) => keepSet.has(`l4:${i}`));
 
   const layer1: Layer1Result = {

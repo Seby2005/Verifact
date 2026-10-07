@@ -139,7 +139,7 @@ REGULI METODOLOGICE:
 
 Întoarce EXCLUSIV un JSON valid:
 {
-  "score": <număr 0-100>,
+  "score": <veridicitatea afirmației, 0-100: 0 = sigur falsă, 50 = nu se poate stabili, 100 = sigur adevărată — NU încrederea ta în verdict>,
   "verdict": "supports" | "contradicts" | "mixed" | "insufficient",
   "evidenceStatus": "corroborated" | "contradicted" | "missing_context" | "unverified_no_sources" | "open_debate",
   "plausibilityTilt": "<scurtă înclinație de plauzibilitate în română>",
@@ -207,13 +207,23 @@ export interface SourceCandidate {
 export interface SourceFilterResult {
   /** Ids of candidates that are about the claim. */
   relevant: string[];
+  /** Ids of press/official sources whose content confirms the claim. */
+  supports: string[];
+  /** Ids of press/official sources whose content refutes the claim. */
+  contradicts: string[];
   /** Ids of fact-checks whose reviewed statement is the claim's opposite. */
   opposite: string[];
 }
 
 /**
- * Asks the model which candidate sources actually concern the claim, and which
- * fact-checks reviewed the claim's opposite.
+ * Asks the model which candidate sources actually concern the claim, what each
+ * press/official source says about it, and which fact-checks reviewed the
+ * claim's opposite.
+ *
+ * The stance replaces the keyword guess made by layers 2-3, which only fired on
+ * words like "confirmat" or "fals": an article headlined "2004 – România intră
+ * în NATO" contains neither, read as neutral, and left a plainly true claim
+ * stuck at "partial".
  *
  * `opposite` exists because a fact-check is matched to the claim by keywords:
  * "Climate change is a hoax" (rated False) matches "climate change is caused by
@@ -239,7 +249,11 @@ export async function filterRelevantSourcesWithOpenRouter(
   const key = apiKey || process.env.OPENROUTER_API_KEY;
   if (!key || candidates.length === 0) return null;
 
-  const model = modelName || 'google/gemini-2.5-flash-lite';
+  // Not flash-lite: once this call also reads each source's stance, the score
+  // depends on it, and flash-lite missed that "aceleași drepturi" refutes
+  // "mai mare" and flipped same-claim fact-checks to "opposite". flash got
+  // both right in ~1.1s, inside the timeout below.
+  const model = modelName || 'google/gemini-2.5-flash';
 
   // Short extracts on purpose: a full snippet per candidate pushed the prompt
   // large enough that the call timed out on a ~18-source report — which fails
@@ -267,18 +281,19 @@ ${claim}
 SURSE CANDIDATE:
 ${list}
 
-SARCINA: Decide care surse se referă efectiv la afirmația de mai sus.
+SARCINA: Decide care surse se referă efectiv la afirmația de mai sus și ce spune fiecare despre ea.
 
 REGULI:
 1. Păstrează o sursă dacă discută subiectul afirmației, indiferent dacă o confirmă sau o infirmă. O sursă care demontează afirmația ESTE relevantă.
 2. Elimină sursele care doar menționează aceleași persoane, locuri sau organizații, dar tratează un subiect diferit. Un articol despre Donald Trump nu este relevant pentru afirmația "Donald Trump a murit" decât dacă vorbește despre moartea lui.
 3. Extrasele sunt fragmente lipite din document, nu propoziții continue. Cuvinte din afirmație apărute în fragmente diferite NU înseamnă că documentul tratează afirmația.
-4. Nu evalua dacă afirmația este adevărată. Decide doar dacă sursa este pe subiect.
+4. Nu folosi propriile cunoștințe despre afirmație. Judecă doar după ce spune sursa.
 5. Dacă ești nesigur, păstreaz-o — dar o coincidență de cuvinte nu înseamnă nesiguranță, înseamnă că sursa nu e pe subiect.
-6. Pentru sursele cu id "l1:..." (fact-check-uri), titlul este afirmația verificată de fact-checker. Pune id-ul și în "opposite" dacă acea afirmație susține CONTRARIUL afirmației de mai sus (ex: afirmația "schimbările climatice sunt cauzate de om" vs fact-check pe "schimbările climatice sunt o farsă"). Dacă susține același lucru sau nu ești sigur, nu o pune în "opposite".
+6. Pentru sursele cu id "l1:..." (fact-check-uri), titlul este afirmația pe care a verificat-o fact-checker-ul. Compară DOAR sensul acestui titlu cu afirmația de mai sus, ignorând verdictul fact-checker-ului. Pune id-ul în "opposite" numai dacă titlul spune CONTRARIUL afirmației (ex: afirmația "schimbările climatice sunt cauzate de om" vs titlul "schimbările climatice sunt o farsă"). Un fact-check pe ACEEAȘI afirmație, chiar dacă a fost găsită falsă, NU intră în "opposite". Dacă nu ești sigur, nu o pune. Nu pune id-urile "l1:..." în "supports" sau "contradicts".
+7. Pentru sursele relevante cu id "l2:..." (presă) și "l3:..." (oficiale), pune id-ul în "supports" dacă sursa relatează afirmația ca fapt sau conține informații care o confirmă (ex: "2004 – România intră în NATO" susține "România este membră NATO din 2004"), sau în "contradicts" dacă sursa o dezminte ori relatează fapte incompatibile cu ea. Citește atent cifrele, datele și comparațiile: dacă afirmația spune "mai mare" și sursa spune "aceeași" sau "mai mică", sursa o contrazice. Dacă sursa e pe subiect dar nu tranșează afirmația, nu o pune în niciuna. Nu te lua după cuvinte ca "dezinformare" sau "precizări" — contează ce susține sursa despre afirmație.
 
 Întoarce EXCLUSIV un obiect JSON:
-{"relevant": ["id1", "id2"], "opposite": []}`;
+{"relevant": ["id1", "id2"], "supports": [], "contradicts": [], "opposite": []}`;
 
   try {
     const data = await withRetry<{
@@ -316,12 +331,15 @@ REGULI:
     for (const candidateJson of [fenced?.[1], braced?.[0], content]) {
       if (!candidateJson) continue;
       try {
-        const parsed = JSON.parse(candidateJson.trim()) as { relevant?: unknown; opposite?: unknown };
+        const parsed = JSON.parse(candidateJson.trim()) as Record<string, unknown>;
         if (Array.isArray(parsed.relevant)) {
-          const ids = (list: unknown[]) => list.filter((id): id is string => typeof id === 'string');
+          const ids = (list: unknown) =>
+            Array.isArray(list) ? list.filter((id): id is string => typeof id === 'string') : [];
           return {
             relevant: ids(parsed.relevant),
-            opposite: Array.isArray(parsed.opposite) ? ids(parsed.opposite) : [],
+            supports: ids(parsed.supports),
+            contradicts: ids(parsed.contradicts),
+            opposite: ids(parsed.opposite),
           };
         }
       } catch {

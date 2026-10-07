@@ -305,22 +305,25 @@ async function fetchFromGDELT(query: string, rawInputText: string): Promise<News
   }
 }
 
+/**
+ * Credibility-weighted balance of the articles that take a side (0 = all
+ * contradict, 1 = all confirm, 0.5 = none take a side).
+ *
+ * Neutral articles abstain: being on topic without settling the claim is no
+ * evidence either way, and counting them as 0.5 dragged every well-reported
+ * true claim toward "partial".
+ */
 export function calculateLayer2Score(articles: NewsArticle[]): number {
-  const relevant = articles.filter((a) => a.sentiment !== 'unrelated');
-  if (relevant.length === 0) return 0.5;
+  const withStance = articles.filter((a) => a.sentiment === 'confirms' || a.sentiment === 'contradicts');
+  if (withStance.length === 0) return 0.5;
 
   let signedScore = 0;
   let totalWeight = 0;
 
-  for (const article of relevant) {
+  for (const article of withStance) {
     const weight = article.credibilityScore ?? 0.5;
     totalWeight += weight;
-
-    if (article.sentiment === 'confirms') {
-      signedScore += weight;
-    } else if (article.sentiment === 'contradicts') {
-      signedScore -= weight;
-    }
+    signedScore += article.sentiment === 'confirms' ? weight : -weight;
   }
 
   if (totalWeight === 0) return 0.5;

@@ -203,7 +203,7 @@ REGULI METODOLOGICE:
 
 Întoarce EXCLUSIV un JSON valid:
 {
-  "score": <număr 0-100>,
+  "score": <veridicitatea afirmației, 0-100: 0 = sigur falsă, 50 = nu se poate stabili, 100 = sigur adevărată — NU încrederea ta în verdict>,
   "verdict": "supports" | "contradicts" | "mixed" | "insufficient",
   "evidenceStatus": "corroborated" | "contradicted" | "missing_context" | "unverified_no_sources" | "open_debate",
   "plausibilityTilt": "<scurtă înclinație de plauzibilitate în română>",

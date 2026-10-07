@@ -46,8 +46,28 @@ const VERDICT_THRESHOLD = {
  */
 const CORROBORATION_TARGET = 3;
 
-function corroboration(layer: { results?: unknown[] }): number {
-  return Math.min(1, (layer.results?.length ?? 0) / CORROBORATION_TARGET);
+/**
+ * Results that take a side on the claim. Press and official sources that are
+ * merely on topic carry no direction — their layer score already ignores them
+ * — so they do not earn the layer its weight either.
+ */
+function signalCount(key: 'layer1' | 'layer2' | 'layer3' | 'layer4', layers: {
+  layer1: Layer1Result;
+  layer2: Layer2Result;
+  layer3: Layer3Result;
+  layer4: Layer4Result;
+}): number {
+  if (key === 'layer2') {
+    return layers.layer2.results.filter((a) => a.sentiment === 'confirms' || a.sentiment === 'contradicts').length;
+  }
+  if (key === 'layer3') {
+    return layers.layer3.results.filter((s) => s.supportsOrDenies === 'supports' || s.supportsOrDenies === 'denies').length;
+  }
+  return layers[key].results?.length ?? 0;
+}
+
+function corroboration(count: number): number {
+  return Math.min(1, count / CORROBORATION_TARGET);
 }
 
 /**
@@ -127,7 +147,7 @@ export function calculateScore(layers: {
   // The AI is not a search layer — it has nothing to corroborate against, so
   // it keeps its full weight.
   const effectiveWeight = (key: keyof typeof available): number =>
-    key === 'ai' ? WEIGHTS.ai : WEIGHTS[key] * corroboration(layers[key]);
+    key === 'ai' ? WEIGHTS.ai : WEIGHTS[key] * corroboration(signalCount(key, layers));
 
   const totalAvailableWeight = availableKeys.reduce((sum, key) => sum + WEIGHTS[key], 0);
   const earnedWeight = availableKeys.reduce((sum, key) => sum + effectiveWeight(key), 0);

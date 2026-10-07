@@ -23,7 +23,7 @@ const empty = { status: 'success' as const, results: [], layerScore: 0.5, proces
 
 describe('applyAISourceFilter', () => {
   it('inverts the rating of a fact-check that reviewed the opposite claim', async () => {
-    mockFilter.mockResolvedValue({ relevant: ['l1:0', 'l1:1'], opposite: ['l1:0'] });
+    mockFilter.mockResolvedValue({ relevant: ['l1:0', 'l1:1'], supports: [], contradicts: [], opposite: ['l1:0'] });
 
     const result = await applyAISourceFilter(
       {
@@ -42,6 +42,32 @@ describe('applyAISourceFilter', () => {
     // The publisher's label is kept as written; only the scoring value flips.
     expect(result.layer1.results[0].rating).toBe('False');
     expect(result.layer1.layerScore).toBe(1);
+  });
+
+  it('replaces the keyword stance of press sources with the model reading', async () => {
+    mockFilter.mockResolvedValue({ relevant: ['l2:0', 'l2:1'], supports: ['l2:0'], contradicts: [], opposite: [] });
+    const press = (title: string) => ({
+      title,
+      source: 'mediafax.ro',
+      articleUrl: 'https://mediafax.ro/' + title,
+      publishedAt: '',
+      snippet: '',
+      sentiment: 'neutral' as const,
+      credibilityScore: 0.8,
+    });
+
+    const result = await applyAISourceFilter(
+      {
+        layer1: empty,
+        layer2: { ...empty, sourcesChecked: 2, results: [press('2004 – România intră în NATO'), press('Summitul NATO de la Ankara')] },
+        layer3: empty,
+        layer4: empty,
+      },
+      'România este membră NATO din 2004'
+    );
+
+    expect(result.layer2.results.map((a) => a.sentiment)).toEqual(['confirms', 'neutral']);
+    expect(result.layer2.layerScore).toBe(1);
   });
 
   it('keeps every source when the model judgement is unavailable', async () => {

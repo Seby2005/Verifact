@@ -209,27 +209,17 @@ async function fetchWikipedia(queryStr: string, lang: 'ro' | 'en' | 'fr'): Promi
   }
 }
 
+/**
+ * Share of the sources taking a side that support the claim (0.5 when none
+ * do). Neutral sources abstain rather than voting 0.5 — see calculateLayer2Score.
+ */
 export function calculateLayer3Score(sources: OfficialSource[]): number {
-  const scored = sources.filter((s) => s.organizationType !== 'encyclopedia');
-  if (scored.length === 0) return 0.5;
+  const withStance = sources.filter(
+    (s) => s.organizationType !== 'encyclopedia' && (s.supportsOrDenies === 'supports' || s.supportsOrDenies === 'denies')
+  );
+  if (withStance.length === 0) return 0.5;
 
-  let totalScore = 0;
-  let count = 0;
-
-  for (const s of scored) {
-    if (s.supportsOrDenies === 'denies') {
-      totalScore += 0.0;
-      count++;
-    } else if (s.supportsOrDenies === 'supports') {
-      totalScore += 1.0;
-      count++;
-    } else {
-      totalScore += 0.5;
-      count++;
-    }
-  }
-
-  return count > 0 ? totalScore / count : 0.5;
+  return withStance.filter((s) => s.supportsOrDenies === 'supports').length / withStance.length;
 }
 
 export async function runLayer3(
