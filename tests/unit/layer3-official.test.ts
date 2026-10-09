@@ -7,7 +7,7 @@ jest.mock('@/lib/utils/circuit-breaker', () => ({
   withCircuitBreaker: (_name: string, fn: () => Promise<unknown>) => fn(),
 }));
 
-import { runLayer3 } from '@/lib/verification/layer3-official';
+import { runLayer3, calculateLayer3Score } from '@/lib/verification/layer3-official';
 
 function jsonResponse(body: unknown, ok = true, status = 200) {
   return { ok, status, statusText: ok ? 'OK' : 'Error', json: () => Promise.resolve(body) };
@@ -90,5 +90,22 @@ describe('runLayer3', () => {
     expect(result.status).toBe('success');
     expect(result.results).toEqual([]);
     expect(result.layerScore).toBe(0.5);
+  });
+});
+
+describe('calculateLayer3Score', () => {
+  const source = (organizationType: string, supportsOrDenies: 'supports' | 'denies' | 'neutral') => ({
+    title: 't',
+    organizationType,
+    supportsOrDenies,
+  });
+
+  it('counts a Wikipedia excerpt once the source filter has given it a stance', () => {
+    expect(calculateLayer3Score([source('encyclopedia', 'supports'), source('encyclopedia', 'supports')])).toBe(1);
+    expect(calculateLayer3Score([source('encyclopedia', 'supports'), source('government', 'denies')])).toBe(0.5);
+  });
+
+  it('lets stance-less sources abstain', () => {
+    expect(calculateLayer3Score([source('encyclopedia', 'neutral')])).toBe(0.5);
   });
 });

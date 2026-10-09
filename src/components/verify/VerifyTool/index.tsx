@@ -90,7 +90,8 @@ export const VerifyTool: React.FC<VerifyToolProps> = ({ examples }) => {
   const tabs: ReadonlyArray<TabItem<VerificationInputKind>> = [
     { id: 'text', label: t('verifyTool.tabs.text') },
     { id: 'screenshot', label: t('verifyTool.tabs.screenshot') },
-    { id: 'video', label: t('verifyTool.tabs.video') },
+    // Video is hidden for now; the tab is the only entry point, so re-adding
+    // `{ id: 'video', label: t('verifyTool.tabs.video') }` here restores it.
     { id: 'url', label: t('verifyTool.tabs.url') },
   ];
 

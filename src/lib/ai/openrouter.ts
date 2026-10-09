@@ -1,9 +1,10 @@
 import type { AIAnalysisContext, TokenUsageDetail, EvidenceStatus } from '@/types/verification';
-import { buildAnalysisPrompt } from './prompts';
+import { buildAnalysisPrompt, buildAssessmentPrompt } from './prompts';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { logger } from '@/lib/utils/logger';
 import type { AIAssessment, AIAnalysisResult } from './gemini';
+import { PRIMARY_MODEL, NO_REASONING } from './models';
 
 // When AI_GATEWAY_BASE_URL is set, requests route through a custom OpenAI-compatible endpoint
 // instead of hitting openrouter.ai directly. Trailing slashes are trimmed.
@@ -11,7 +12,7 @@ const AI_GATEWAY_BASE_URL = process.env.AI_GATEWAY_BASE_URL?.replace(/\/+$/, '')
 const OPENROUTER_API_URL = AI_GATEWAY_BASE_URL
   ? `${AI_GATEWAY_BASE_URL}/chat/completions`
   : 'https://openrouter.ai/api/v1/chat/completions';
-const DEFAULT_MODEL = process.env.OPENROUTER_MODEL ?? 'google/gemini-2.5-flash';
+const DEFAULT_MODEL = PRIMARY_MODEL;
 
 const ASSESSMENT_FALLBACK: AIAssessment = {
   score: 50,
@@ -82,26 +83,6 @@ function parseAssessment(raw: string): AIAssessment | null {
 }
 
 /**
- * Summarizes evidence from search layers for the prompt.
- */
-function summariseEvidence(context: AIAnalysisContext): string {
-  const lines: string[] = [];
-  context.layers?.layer1?.results?.slice(0, 5).forEach((r) =>
-    lines.push(`[fact-check] ${r.publisher}: "${r.claimReviewed}" — verdict: ${r.rating}`)
-  );
-  context.layers?.layer2?.results?.slice(0, 5).forEach((a) =>
-    lines.push(`[presă] ${a.source}: ${a.title} — ${a.snippet?.slice(0, 180) ?? ''}`)
-  );
-  context.layers?.layer3?.results?.slice(0, 5).forEach((o) =>
-    lines.push(`[oficial] ${o.organization ?? o.publisher}: ${o.title} — ${(o.relevantQuote ?? o.snippet ?? '').slice(0, 180)}`)
-  );
-  context.layers?.layer4?.results?.slice(0, 3).forEach((p) =>
-    lines.push(`[declarație] ${p.author}: ${(p.content ?? p.text ?? '').slice(0, 150)}`)
-  );
-  return lines.join('\n');
-}
-
-/**
  * Generates an AI assessment score and verdict using OpenRouter API.
  */
 export async function generateOpenRouterAssessment(
@@ -115,39 +96,7 @@ export async function generateOpenRouterAssessment(
   }
 
   const model = modelName || DEFAULT_MODEL;
-  const evidence = summariseEvidence(context);
-  const claim = context.claim ?? context.inputText ?? '';
-
-  const prompt = `Ești un analist critic și investigator de fact-checking la Verifact. Evaluează afirmația de mai jos:
-
-AFIRMAȚIA:
-<claim>
-${claim}
-</claim>
-
-DOVEZI GĂSITE PRIN CĂUTARE (pot fi goale):
-${evidence || '(nicio dovadă găsită prin căutare)'}
-
-REGULI METODOLOGICE:
-1. Examinează dovezile culese: detectează dacă este vorba de satiră/parodie (ex: Times New Roman, The Onion), raportare circulară (site-uri care doar reciclează o postare pe rețele sociale fără verificare) sau omisiune gravă de context.
-2. Plauzibilitate deductivă: Dacă lipsesc articole explicite de demontare (debunk), aplică deducția logică și cunoștințele instituționale: Are instituția menționată atribuții? Există legi/hotărâri atestate? Un eveniment de această magnitudine ar fi putut avea loc fără nicio urmă oficială sau mediatică?
-3. Dacă nu există nicio sursă primară sau dovadă pentru un zvon senzaționalist, alege evidenceStatus "unverified_no_sources", scor redus (15-30) și o înclinație clară spre neverosimil (nu claca într-un neutru 50 "insuficient").
-4. Dacă tema este o dezbatere sau evaluare prospectivă, folosește "open_debate".
-5. Nu lua poziții politice părtinitoare.
-6. Citește direcția fiecărei surse: un articol care doar menționează un zvon pentru a-l demonta NU confirmă afirmația, iar un articol care relatează faptul ca atare NU o infirmă doar pentru că pomenește cuvinte ca „dezinformare” sau „precizări”. Judecă după ce susține sursa despre afirmație, nu după cuvinte-cheie.
-7. DATA DE AZI este ${new Date().toISOString().slice(0, 10)}. Cunoștințele tale pot fi depășite: pentru evenimente recente (alegeri, numiri în funcții, legi, taxe noi), sursele de mai sus au prioritate față de memoria ta. Nu infirma o afirmație doar pentru că nu o știi din antrenament.
-
-Întoarce EXCLUSIV un JSON valid:
-{
-  "score": <veridicitatea afirmației, 0-100: 0 = sigur falsă, 50 = nu se poate stabili, 100 = sigur adevărată — NU încrederea ta în verdict>,
-  "verdict": "supports" | "contradicts" | "mixed" | "insufficient",
-  "evidenceStatus": "corroborated" | "contradicted" | "missing_context" | "unverified_no_sources" | "open_debate",
-  "plausibilityTilt": "<scurtă înclinație de plauzibilitate în română>",
-  "isSatireOrParody": false,
-  "circularReportingDetected": false,
-  "confidence": <număr 0-1>,
-  "reasoning": "<o analiză deductivă scurtă în română>"
-}`;
+  const prompt = buildAssessmentPrompt(context);
 
   try {
     const data = await withRetry<{
@@ -162,7 +111,9 @@ REGULI METODOLOGICE:
           'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
           'X-Title': 'Verifact AI Fact-Checker',
         },
-        signal: AbortSignal.timeout(8000),
+        // Reasoning stays on here (recall of recent facts depends on it), so
+        // this needs more room than the old 8s sized for gemini-2.5-flash.
+        signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           model,
           messages: [{ role: 'user', content: prompt }],
@@ -249,11 +200,11 @@ export async function filterRelevantSourcesWithOpenRouter(
   const key = apiKey || process.env.OPENROUTER_API_KEY;
   if (!key || candidates.length === 0) return null;
 
-  // Not flash-lite: once this call also reads each source's stance, the score
-  // depends on it, and flash-lite missed that "aceleași drepturi" refutes
-  // "mai mare" and flipped same-claim fact-checks to "opposite". flash got
-  // both right in ~1.1s, inside the timeout below.
-  const model = modelName || 'google/gemini-2.5-flash';
+  // The score depends on these stances, so this needs a capable model: a
+  // small one (gemini-2.5-flash-lite) missed that "aceleași drepturi" refutes
+  // "mai mare", and gemini-2.5-flash marked "Dan co-chaired the Vilnius
+  // summit" as confirming "Dan signed Romania into war at Vilnius".
+  const model = modelName || DEFAULT_MODEL;
 
   // Short extracts on purpose: a full snippet per candidate pushed the prompt
   // large enough that the call timed out on a ~18-source report — which fails
@@ -290,7 +241,7 @@ REGULI:
 4. Nu folosi propriile cunoștințe despre afirmație. Judecă doar după ce spune sursa.
 5. Dacă ești nesigur, păstreaz-o — dar o coincidență de cuvinte nu înseamnă nesiguranță, înseamnă că sursa nu e pe subiect.
 6. Pentru sursele cu id "l1:..." (fact-check-uri), titlul este afirmația pe care a verificat-o fact-checker-ul. Compară DOAR sensul acestui titlu cu afirmația de mai sus, ignorând verdictul fact-checker-ului. Pune id-ul în "opposite" numai dacă titlul spune CONTRARIUL afirmației (ex: afirmația "schimbările climatice sunt cauzate de om" vs titlul "schimbările climatice sunt o farsă"). Un fact-check pe ACEEAȘI afirmație, chiar dacă a fost găsită falsă, NU intră în "opposite". Dacă nu ești sigur, nu o pune. Nu pune id-urile "l1:..." în "supports" sau "contradicts".
-7. Pentru sursele relevante cu id "l2:..." (presă) și "l3:..." (oficiale), pune id-ul în "supports" dacă sursa relatează afirmația ca fapt sau conține informații care o confirmă (ex: "2004 – România intră în NATO" susține "România este membră NATO din 2004"), sau în "contradicts" dacă sursa o dezminte ori relatează fapte incompatibile cu ea. Citește atent cifrele, datele și comparațiile: dacă afirmația spune "mai mare" și sursa spune "aceeași" sau "mai mică", sursa o contrazice. Dacă sursa e pe subiect dar nu tranșează afirmația, nu o pune în niciuna. Nu te lua după cuvinte ca "dezinformare" sau "precizări" — contează ce susține sursa despre afirmație.
+7. Pentru sursele relevante cu id "l2:..." (presă) și "l3:..." (oficiale), pune id-ul în "supports" dacă sursa relatează afirmația ca fapt sau conține informații care o confirmă (ex: "2004 – România intră în NATO" susține "România este membră NATO din 2004"), sau în "contradicts" dacă sursa o dezminte ori relatează fapte incompatibile cu ea. Citește atent cifrele, datele și comparațiile: dacă afirmația spune "mai mare" și sursa spune "aceeași" sau "mai mică", sursa o contrazice. Dacă sursa e pe subiect dar nu tranșează afirmația, nu o pune în niciuna. Nu te lua după cuvinte ca "dezinformare" sau "precizări" — contează ce susține sursa despre afirmație. Ține cont de timp: data de azi este ${new Date().toISOString().slice(0, 10)}, iar o sursă care descrie o situație mai veche (ex: "aderarea a fost respinsă" într-un an anterior) NU contrazice o schimbare petrecută ulterior; pune-o în "contradicts" doar dacă se referă la aceeași perioadă ca afirmația.
 
 Întoarce EXCLUSIV un obiect JSON:
 {"relevant": ["id1", "id2"], "supports": [], "contradicts": [], "opposite": []}`;
@@ -308,7 +259,7 @@ REGULI:
           'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
           'X-Title': 'Verifact AI Fact-Checker',
         },
-        signal: AbortSignal.timeout(4000),
+        signal: AbortSignal.timeout(10000),
         body: JSON.stringify({
           model,
           messages: [{ role: 'user', content: prompt }],
@@ -400,12 +351,13 @@ export async function generateOpenRouterAnalysis(
         'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
         'X-Title': 'Verifact AI Fact-Checker',
       },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(12000),
       body: JSON.stringify({
         model,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
         max_tokens: 1024,
+        ...NO_REASONING,
       }),
     }),
     'analysis'

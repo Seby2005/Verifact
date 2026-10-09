@@ -119,7 +119,7 @@ Stratul 4 (Rețele Sociale și declarații publice):
 ${data.socialPosts}
 
 Indice calculat al surselor: ${data.calculatedScore}% (din ${data.availableLayers} straturi cu date)
-Data de azi: ${new Date().toISOString().slice(0, 10)}. Pentru evenimente recente, sursele de mai sus au prioritate față de cunoștințele tale din antrenament.
+Data de azi: ${new Date().toISOString().slice(0, 10)}. Memoria ta se oprește înaintea acestei date: un eveniment datat înainte de azi este în trecut, nu „în viitor”, iar sursele de mai sus sunt reale și au prioritate față de cunoștințele tale din antrenament (cine conduce acum țara, legi, taxe noi).
 
 PRINCIPII METODOLOGICE OBLIGATORII:
 1. GÂNDIRE CRITICĂ, FĂRĂ DOGME:
@@ -166,7 +166,7 @@ Niveau 4 (Réseaux Sociaux et déclarations publiques) :
 ${data.socialPosts}
 
 Indice calculé des sources : ${data.calculatedScore}% (sur ${data.availableLayers} niveaux disponibles)
-Date du jour : ${new Date().toISOString().slice(0, 10)}. Pour les événements récents, les sources ci-dessus priment sur tes connaissances d’entraînement.
+Date du jour : ${new Date().toISOString().slice(0, 10)}. Ta mémoire s’arrête avant cette date : un événement daté d’avant aujourd’hui appartient au passé, pas « au futur », et les sources ci-dessus sont réelles et priment sur tes connaissances d’entraînement (qui dirige le pays, nouvelles lois, taxes).
 
 DIRECTIVES MÉTHODOLOGIQUES :
 1. ESPRIT CRITIQUE ET OBJECTIVITÉ :
@@ -212,7 +212,7 @@ Layer 4 (Social Media & Public Statements):
 ${data.socialPosts}
 
 Calculated source index: ${data.calculatedScore}% (across ${data.availableLayers} layers with data)
-Today is ${new Date().toISOString().slice(0, 10)}. For recent events, the sources above take precedence over your training knowledge.
+Today is ${new Date().toISOString().slice(0, 10)}. Your memory stops before this date: an event dated before today is in the past, not "in the future", and the sources above are real and take precedence over your training knowledge (who leads the country now, new laws, taxes).
 
 CORE METHODOLOGICAL PRINCIPLES:
 1. CRITICAL THINKING OVER DOGMA:
@@ -235,4 +235,80 @@ REPORT STRUCTURE (plain text, no markdown ### headers):
 - Examination of Sources & Facts: Detailed cross-examination of findings or the notable absence of documentation.
 - Context & Propagation: Provenance, potential omissions, satire, or circular amplification.
 - Critical Thinking Inquiries: 2-3 reflective questions for the reader, ending with: "Here is what the evidence shows and what is missing — review the sources and decide for yourself."`;
+}
+
+/** Romanian label for the stance the AI source filter assigned, or '' when it took none. */
+function stanceLabel(stance?: string): string {
+  if (stance === 'supports' || stance === 'confirms') return ' · CONFIRMĂ';
+  if (stance === 'denies' || stance === 'contradicts') return ' · INFIRMĂ';
+  return '';
+}
+
+/** Compact, URL-free digest of what the search layers found, with each source's stance. */
+function summariseEvidence(context: AIAnalysisContext): string {
+  const lines: string[] = [];
+  context.layers?.layer1?.results?.slice(0, 5).forEach((r) =>
+    lines.push(`[fact-check] ${r.publisher}: "${r.claimReviewed}" — verdict: ${r.rating}`)
+  );
+  context.layers?.layer2?.results?.slice(0, 5).forEach((a) =>
+    lines.push(`[presă${stanceLabel(a.sentiment)}] ${a.source}: ${a.title} — ${a.snippet?.slice(0, 180) ?? ''}`)
+  );
+  context.layers?.layer3?.results?.slice(0, 5).forEach((o) =>
+    lines.push(
+      `[oficial${stanceLabel(o.supportsOrDenies)}] ${o.organization ?? o.publisher}: ${o.title} — ${(o.relevantQuote ?? o.snippet ?? '').slice(0, 180)}`
+    )
+  );
+  context.layers?.layer4?.results?.slice(0, 3).forEach((p) =>
+    lines.push(`[declarație] ${p.author}: ${(p.content ?? p.text ?? '').slice(0, 150)}`)
+  );
+  return lines.join('\n');
+}
+
+/**
+ * The prompt for the structured veracity assessment that feeds the score. One
+ * copy for every provider, so the rules cannot drift between them.
+ *
+ * The model's training ends before today, and left alone it "corrects" recent
+ * facts from memory (it called the May 2025 presidential oath false because it
+ * still believed Iohannis was president, dismissing the Wikipedia entries it was
+ * shown as fictitious). Rule 7 therefore makes the retrieved sources outrank its
+ * memory, and rule 8 keeps input that asserts nothing checkable at a neutral 50
+ * instead of a confident verdict.
+ */
+export function buildAssessmentPrompt(context: AIAnalysisContext): string {
+  const evidence = summariseEvidence(context);
+  const claim = context.claim ?? context.inputText ?? '';
+  const today = new Date().toISOString().slice(0, 10);
+
+  return `Ești un analist critic și investigator de fact-checking la Verifact. Evaluează afirmația de mai jos:
+
+AFIRMAȚIA:
+<claim>
+${claim}
+</claim>
+
+DOVEZI GĂSITE PRIN CĂUTARE (pot fi goale; CONFIRMĂ/INFIRMĂ = poziția sursei față de afirmație):
+${evidence || '(nicio dovadă găsită prin căutare)'}
+
+REGULI METODOLOGICE:
+1. Examinează dovezile culese: detectează dacă este vorba de satiră/parodie (ex: Times New Roman, The Onion), raportare circulară (site-uri care doar reciclează o postare pe rețele sociale fără verificare) sau omisiune gravă de context.
+2. Plauzibilitate deductivă: Dacă lipsesc articole explicite de demontare (debunk), aplică deducția logică și cunoștințele instituționale: Are instituția menționată atribuții? Există legi/hotărâri atestate? Un eveniment de această magnitudine ar fi putut avea loc fără nicio urmă oficială sau mediatică?
+3. Dacă nu există nicio sursă primară sau dovadă pentru un zvon senzaționalist cu fapte concrete (cine, ce, când), alege evidenceStatus "unverified_no_sources", scor redus (15-30) și o înclinație clară spre neverosimil (nu claca într-un neutru 50 "insuficient").
+4. Dacă tema este o dezbatere sau evaluare prospectivă, folosește "open_debate".
+5. Nu lua poziții politice părtinitoare.
+6. Citește direcția fiecărei surse: un articol care doar menționează un zvon pentru a-l demonta NU confirmă afirmația, iar un articol care relatează faptul ca atare NU o infirmă doar pentru că pomenește cuvinte ca „dezinformare” sau „precizări”. Judecă după ce susține sursa despre afirmație, nu după cuvinte-cheie.
+7. DATA DE AZI este ${today}. Memoria ta se oprește înainte de această dată și NU cunoaște evenimentele recente: cine conduce acum țara, alegeri, guverne, legi, taxe. Dovezile de mai sus sunt reale și au fost extrase chiar acum; nu le numi niciodată fictive, greșite sau „din viitor”. Un eveniment datat înainte de ${today} este în trecut. Când dovezile confirmă afirmația, scorul trebuie să fie ridicat (80-100) chiar dacă memoria ta spune altceva. Infirmă doar pe baza unei dovezi de mai sus, a unei imposibilități evidente (fizică, logică) sau a unei farse cunoscute — niciodată doar pentru că nu știi faptul din antrenament.
+8. Dacă textul NU conține o afirmație factuală verificabilă — o opinie sau judecată de valoare („cel mai bun”, „cel mai prost”), o predicție sau un zvon vag fără fapte concrete, text fără sens, doar nume de utilizator/hashtag-uri/elemente de interfață — întoarce score 50, verdict "insufficient" și evidenceStatus "missing_context" (sau "open_debate" pentru o dezbatere reală). Nu o declara falsă doar pentru că nu are surse. Regula 8 are prioritate față de regula 3.
+
+Întoarce EXCLUSIV un JSON valid:
+{
+  "score": <veridicitatea afirmației, 0-100: 0 = sigur falsă, 50 = nu se poate stabili, 100 = sigur adevărată — NU încrederea ta în verdict>,
+  "verdict": "supports" | "contradicts" | "mixed" | "insufficient",
+  "evidenceStatus": "corroborated" | "contradicted" | "missing_context" | "unverified_no_sources" | "open_debate",
+  "plausibilityTilt": "<scurtă înclinație de plauzibilitate în română>",
+  "isSatireOrParody": false,
+  "circularReportingDetected": false,
+  "confidence": <număr 0-1>,
+  "reasoning": "<o analiză deductivă scurtă în română>"
+}`;
 }

@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { AIAnalysisContext, TokenUsageDetail, EvidenceStatus } from '@/types/verification';
-import { buildAnalysisPrompt } from './prompts';
+import { buildAnalysisPrompt, buildAssessmentPrompt } from './prompts';
 import { withRetry as sharedWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { logger } from '@/lib/utils/logger';
@@ -179,39 +179,7 @@ export async function generateAIAssessment(context: AIAnalysisContext): Promise<
     },
   });
 
-  const evidence = summariseEvidence(context);
-  const claim = context.claim ?? context.inputText ?? '';
-
-  const prompt = `Ești un analist critic și investigator de fact-checking la Verifact. Evaluează afirmația de mai jos:
-
-AFIRMAȚIA:
-<claim>
-${claim}
-</claim>
-
-DOVEZI GĂSITE PRIN CĂUTARE (pot fi goale):
-${evidence || '(nicio dovadă găsită prin căutare)'}
-
-REGULI METODOLOGICE:
-1. Examinează dovezile culese: detectează dacă este vorba de satiră/parodie (ex: Times New Roman, The Onion), raportare circulară (site-uri care doar reciclează o postare pe rețele sociale fără verificare) sau omisiune gravă de context.
-2. Plauzibilitate deductivă: Dacă lipsesc articole explicite de demontare (debunk), aplică deducția logică și cunoștințele instituționale: Are instituția menționată atribuții? Există legi/hotărâri atestate? Un eveniment de această magnitudine ar fi putut avea loc fără nicio urmă oficială sau mediatică?
-3. Dacă nu există nicio sursă primară sau dovadă pentru un zvon senzaționalist, alege evidenceStatus "unverified_no_sources", scor redus (15-30) și o înclinație clară spre neverosimil (nu claca într-un neutru 50 "insuficient").
-4. Dacă tema este o dezbatere sau evaluare prospectivă, folosește "open_debate".
-5. Nu lua poziții politice părtinitoare.
-6. Citește direcția fiecărei surse: un articol care doar menționează un zvon pentru a-l demonta NU confirmă afirmația, iar un articol care relatează faptul ca atare NU o infirmă doar pentru că pomenește cuvinte ca „dezinformare” sau „precizări”. Judecă după ce susține sursa despre afirmație, nu după cuvinte-cheie.
-7. DATA DE AZI este ${new Date().toISOString().slice(0, 10)}. Cunoștințele tale pot fi depășite: pentru evenimente recente (alegeri, numiri în funcții, legi, taxe noi), sursele de mai sus au prioritate față de memoria ta. Nu infirma o afirmație doar pentru că nu o știi din antrenament.
-
-Întoarce EXCLUSIV un JSON valid:
-{
-  "score": <veridicitatea afirmației, 0-100: 0 = sigur falsă, 50 = nu se poate stabili, 100 = sigur adevărată — NU încrederea ta în verdict>,
-  "verdict": "supports" | "contradicts" | "mixed" | "insufficient",
-  "evidenceStatus": "corroborated" | "contradicted" | "missing_context" | "unverified_no_sources" | "open_debate",
-  "plausibilityTilt": "<scurtă înclinație de plauzibilitate în română>",
-  "isSatireOrParody": false,
-  "circularReportingDetected": false,
-  "confidence": <număr 0-1>,
-  "reasoning": "<o analiză deductivă scurtă în română>"
-}`;
+  const prompt = buildAssessmentPrompt(context);
 
   try {
     const result = await withRetry(() => model.generateContent(prompt), 'assessment');
@@ -232,24 +200,6 @@ REGULI METODOLOGICE:
     logger.error('AI assessment failed, using fallback', { service: 'gemini', error });
     return ASSESSMENT_FALLBACK;
   }
-}
-
-/** Compact, URL-free digest of what the search layers actually found. */
-function summariseEvidence(context: AIAnalysisContext): string {
-  const lines: string[] = [];
-  context.layers?.layer1?.results?.slice(0, 5).forEach((r) =>
-    lines.push(`[fact-check] ${r.publisher}: "${r.claimReviewed}" — verdict: ${r.rating}`)
-  );
-  context.layers?.layer2?.results?.slice(0, 5).forEach((a) =>
-    lines.push(`[presă] ${a.source}: ${a.title} — ${a.snippet?.slice(0, 180) ?? ''}`)
-  );
-  context.layers?.layer3?.results?.slice(0, 5).forEach((o) =>
-    lines.push(`[oficial] ${o.organization ?? o.publisher}: ${o.title} — ${(o.relevantQuote ?? o.snippet ?? '').slice(0, 180)}`)
-  );
-  context.layers?.layer4?.results?.slice(0, 3).forEach((p) =>
-    lines.push(`[declarație] ${p.author}: ${(p.content ?? p.text ?? '').slice(0, 150)}`)
-  );
-  return lines.join('\n');
 }
 
 /**

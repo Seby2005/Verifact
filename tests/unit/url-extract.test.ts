@@ -274,7 +274,53 @@ describe('extractArticleText', () => {
       ].join(' ');
       mockHtmlResponse(`<html><head><title>Site de Știri</title></head><body><main><p>${feed}</p></main></body></html>`);
 
+      await expect(extractArticleText('https://example.com/stiri')).rejects.toMatchObject({ code: 'NO_CONTENT' });
+    });
+
+    const PROSE = `<html><body><article>
+      <p>Ministerul a anunțat luni noi măsuri pentru reducerea cheltuielilor publice în tot anul.</p>
+      <p>Măsurile intră în vigoare de la începutul lunii viitoare, potrivit comunicatului oficial.</p>
+    </article></body></html>`;
+
+    it("rejects a site's front page even when its lead story reads as prose", async () => {
+      mockHtmlResponse(PROSE);
+
       await expect(extractArticleText('https://example.com/')).rejects.toMatchObject({ code: 'NO_CONTENT' });
+    });
+
+    it('rejects a dead article link that the publisher redirects to its front page', async () => {
+      global.fetch = jest
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 301,
+          headers: { get: (name: string) => (name.toLowerCase() === 'location' ? 'https://example.com/' : null) },
+          text: () => Promise.resolve(''),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          headers: { get: (name: string) => (name.toLowerCase() === 'content-type' ? 'text/html' : null) },
+          text: () => Promise.resolve(PROSE),
+        });
+
+      await expect(extractArticleText('https://example.com/stiri/articol-sters-123')).rejects.toMatchObject({
+        code: 'NO_CONTENT',
+      });
+    });
+
+    it('drops wiki template residue and judges only the text that will be verified', async () => {
+      const navbox = Array.from({ length: 30 }, (_, i) => `Șef de stat ${i}`).join(' • ');
+      mockHtmlResponse(`<html><body><main>
+        <p>[[Fișier:Padlock-silver.svg|20px|link=Wikipedia:Pagină protejată|Acest articol este semiprotejat.]]</p>
+        <p>${'Nicușor Dan este un politician și matematician român, președinte al României din anul 2025. '.repeat(30)}</p>
+        <p>${navbox}</p>
+      </main></body></html>`);
+
+      const text = await extractArticleText('https://example.com/wiki/Nicusor_Dan');
+
+      expect(text).toContain('Nicușor Dan este un politician');
+      expect(text).not.toContain('[[');
     });
 
     it('decodes &bull;, numeric-hex and drops leftover named entities inside real prose', async () => {

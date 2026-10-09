@@ -212,10 +212,15 @@ async function fetchWikipedia(queryStr: string, lang: 'ro' | 'en' | 'fr'): Promi
 /**
  * Share of the sources taking a side that support the claim (0.5 when none
  * do). Neutral sources abstain rather than voting 0.5 — see calculateLayer2Score.
+ *
+ * Wikipedia counts like any other source: it arrives neutral from search and
+ * only gains a stance from the AI source filter, which reads what the excerpt
+ * actually says about the claim. It used to be citation-only, which left the
+ * score to the model's memory whenever press search was down.
  */
 export function calculateLayer3Score(sources: OfficialSource[]): number {
   const withStance = sources.filter(
-    (s) => s.organizationType !== 'encyclopedia' && (s.supportsOrDenies === 'supports' || s.supportsOrDenies === 'denies')
+    (s) => s.supportsOrDenies === 'supports' || s.supportsOrDenies === 'denies'
   );
   if (withStance.length === 0) return 0.5;
 

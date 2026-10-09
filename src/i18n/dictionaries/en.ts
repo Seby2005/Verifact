@@ -188,7 +188,7 @@ export const en: Translations = {
       q3: 'Can I trust the results?',
       a3: 'Every report cites the sources it used in full, so you can check for yourself. The score is an estimate based on the sources available at the time of verification, not a final editorial decision, and the algorithm is open source.',
       q4: 'What types of content can I check?',
-      a4: 'A text (a written claim), a link to an article, a screenshot from social media, or a short video clip. Verifact extracts the claim and verifies it the same way in every case.',
+      a4: 'A text (a written claim), a link to an article, or a screenshot from social media. Verifact extracts the claim and verifies it the same way in every case.',
       q5: 'How much does it cost?',
       a5: 'Basic verification is free, with 3 checks per month. The Pro plan offers over 10 times more checks, a downloadable PDF report and a direct link to the exact passage in the source.',
     },

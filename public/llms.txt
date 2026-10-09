@@ -14,8 +14,8 @@ cu interfață în limba română.
 
 ## Ce face
 
-- Verifică o afirmație, un articol (după URL), o captură de ecran sau un clip
-  scurt și returnează un scor de veridicitate (0–100) cu verdict.
+- Verifică o afirmație, un articol (după URL) sau o captură de ecran și
+  returnează un scor de veridicitate (0–100) cu verdict.
 - Separă afirmația factuală de comentariul celui care a distribuit-o, ca să poată
   fi căutată corect în surse.
 - Citează integral sursele folosite (fact-checkeri, presă, instituții oficiale)

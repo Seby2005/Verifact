@@ -127,6 +127,43 @@ function makeUnavailableLayer4(error: string): Layer4Result {
   return { status: 'unavailable', results: [], layerScore: 0.5, processingTime: 0, error };
 }
 
+const NO_CLAIM_MESSAGE = {
+  ro: 'Textul trimis nu conține o afirmație factuală care poate fi verificată — doar elemente de interfață, etichete sau o opinie personală. O opinie nu este nici adevărată, nici falsă. Dacă postarea conține un fapt concret, copiază-l în câmpul de text și verifică-l separat.',
+  en: 'The submitted text does not contain a factual claim that can be checked — only interface elements, tags or a personal opinion. An opinion is neither true nor false. If the post states a concrete fact, paste it into the text field and verify it on its own.',
+  fr: 'Le texte envoyé ne contient pas d’affirmation factuelle vérifiable — seulement des éléments d’interface, des étiquettes ou une opinion personnelle. Une opinion n’est ni vraie ni fausse. Si la publication énonce un fait concret, collez-le dans le champ de texte et vérifiez-le séparément.',
+} as const;
+
+/**
+ * The report for input that asserts nothing checkable: no search, no score
+ * beyond a neutral "unclear", and a plain explanation instead of a verdict.
+ */
+function buildNoClaimReport(
+  input: VerificationInput,
+  commentary: string | undefined,
+  startTime: number,
+  emit: (event: VerifyStatusEvent) => void
+): VerificationReport {
+  const skipped = { status: 'skipped' as const, results: [], layerScore: 0.5, processingTime: 0 };
+  const layers = { layer1: { ...skipped }, layer2: { ...skipped }, layer3: { ...skipped }, layer4: { ...skipped } };
+  for (const step of ['layer1', 'layer2', 'layer3', 'layer4', 'analysis'] as const) {
+    emit({ step, status: 'skipped' });
+  }
+  const message = NO_CLAIM_MESSAGE[input.language === 'en' || input.language === 'fr' ? input.language : 'ro'];
+  const report = buildReport({
+    input,
+    posterCommentary: commentary,
+    layers,
+    ...layers,
+    scoreBreakdown: calculateScore({ ...layers, ai: { score: 50, confidence: 0 } }),
+    evidenceStatus: 'missing_context',
+    aiAnalysis: message,
+    aiAssessment: { score: 50, verdict: 'insufficient', evidenceStatus: 'missing_context', confidence: 0, reasoning: message },
+    processingTime: Date.now() - startTime,
+  });
+  report.aiAvailable = true;
+  return report;
+}
+
 export async function verifyContent(
   input: VerificationInput,
   onEvent?: (event: VerifyStatusEvent) => void
@@ -162,6 +199,12 @@ export async function verifyContent(
     }
   }
   const commentary = extraction?.commentary?.trim() || undefined;
+
+  // Nothing checkable (only interface chrome, hashtags or a bare opinion):
+  // searching would return loosely related pages that then "confirm" noise.
+  if (extraction && !extraction.hasClaim) {
+    return buildNoClaimReport(input, commentary, startTime, emit);
+  }
 
   // 1b. Interrogative-to-Declarative normalization
   const questionNorm = normalizeQuestionToHypothesis(claimForSearch);

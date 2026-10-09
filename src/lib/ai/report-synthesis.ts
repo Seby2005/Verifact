@@ -16,10 +16,11 @@ import type {
   JournalistQA,
   CombinedSource,
 } from '@/types/verification';
+import { PRIMARY_MODEL } from './models';
 
 export type ReportSynthesis = ProReportSynthesis;
 
-const MODEL = process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash';
+const MODEL = PRIMARY_MODEL;
 const MAX_SOURCES = 10;
 
 function str(value: unknown): string {

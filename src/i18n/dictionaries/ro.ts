@@ -187,7 +187,7 @@ export const ro = {
       q3: 'Pot avea încredere în rezultate?',
       a3: 'Fiecare raport citează integral sursele folosite, ca să poți verifica singur. Scorul este o estimare bazată pe sursele disponibile la momentul verificării, nu o decizie editorială finală, iar algoritmul este open source.',
       q4: 'Ce tipuri de conținut pot verifica?',
-      a4: 'Un text (o afirmație scrisă), un link către un articol, o captură de ecran dintr-o rețea socială sau un clip video scurt. Verifact extrage afirmația și o verifică la fel în toate cazurile.',
+      a4: 'Un text (o afirmație scrisă), un link către un articol sau o captură de ecran dintr-o rețea socială. Verifact extrage afirmația și o verifică la fel în toate cazurile.',
       q5: 'Cât costă verificarea?',
       a5: 'Verificarea de bază este gratuită, cu 3 verificări pe lună. Planul Pro oferă de peste 10 ori mai multe verificări, raport PDF descărcabil și link direct către pasajul exact din sursă.',
     },

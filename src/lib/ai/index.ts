@@ -10,6 +10,7 @@ import { logger } from '@/lib/utils/logger';
 import { normalizeRomanianDiacritics } from '@/lib/utils/romanian-text';
 import type { AIAnalysisContext } from '@/types/verification';
 import type { AIAssessment, AIAnalysisResult } from './gemini';
+import { FALLBACK_MODELS } from './models';
 
 export type { AIAssessment, AIAnalysisResult };
 export type { SourceCandidate, SourceFilterResult };
@@ -92,7 +93,7 @@ export async function generateAIAnalysis(context: AIAnalysisContext): Promise<AI
 // the fallback inside OpenRouter (rather than the direct Gemini SDK, which needs
 // its own often-misconfigured key) is why a slow primary no longer strands the
 // report without an AI section.
-const OPENROUTER_FALLBACK_MODEL = 'google/gemini-2.5-flash-lite';
+const OPENROUTER_FALLBACK_MODEL = FALLBACK_MODELS[0];
 
 async function requestAnalysis(context: AIAnalysisContext): Promise<AIAnalysisResult> {
   const provider = resolveProvider();

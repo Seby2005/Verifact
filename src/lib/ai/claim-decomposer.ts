@@ -2,6 +2,7 @@ import { logger } from '@/lib/utils/logger';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import type { TokenUsageDetail } from '@/types/verification';
+import { MODEL_CHAIN, NO_REASONING } from './models';
 
 export type HarmRiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
@@ -22,11 +23,7 @@ export const DEFAULT_DECOMPOSITION: DecomposedClaim = {
   category: 'general',
 };
 
-const OPENROUTER_MODELS = [
-  process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash',
-  'google/gemini-2.5-flash-lite',
-  'meta-llama/llama-3.3-70b-instruct',
-];
+const OPENROUTER_MODELS = MODEL_CHAIN;
 
 /**
  * Uses LLM to decompose a claim into sub-claims and evaluate misinformation risk/harm.
@@ -76,6 +73,7 @@ Răspunde EXCLUSIV cu un obiect JSON structurat:
               model,
               messages: [{ role: 'user', content: prompt }],
               temperature: 0.1,
+              ...NO_REASONING,
             }),
           }),
           { label: `Decompose ${model}` }

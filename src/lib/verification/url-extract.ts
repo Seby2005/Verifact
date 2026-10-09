@@ -328,7 +328,10 @@ function paragraphsOf(html: string): string {
 
   while ((match = re.exec(html)) !== null) {
     const text = textOf(match[1]);
-    if (text.length > 60) paragraphs.push(text);
+    // Wiki template residue ("[[Fișier:…|20px|…]]") leaks out of attributes
+    // the tag regex cannot parse; one such paragraph used to sink the whole
+    // page in looksLikeProse's separator check.
+    if (text.length > 60 && !/\[\[|\]\]|\{\{|\}\}/.test(text)) paragraphs.push(text);
   }
   return paragraphs.join(' ');
 }
@@ -388,10 +391,11 @@ function looksLikeProse(text: string): boolean {
   if (separators >= 4) return false;
 
   const sentences = text
-    .split(/(?<=[.!?])\s+/)
+    // "…" ends the teaser of a paywalled article as surely as a full stop.
+    .split(/(?<=[.!?…])\s+/)
     .filter((part) => {
       const trimmed = part.trim();
-      return /[.!?]["'’)\]]?$/.test(trimmed) && trimmed.split(/\s+/).length >= 6;
+      return /[.!?…]["'’)\]]?$/.test(trimmed) && trimmed.split(/\s+/).length >= 6;
     }).length;
 
   if (sentences === 0) return false;
@@ -469,6 +473,16 @@ export async function extractArticleText(rawUrl: string): Promise<string> {
     );
   }
 
+  // A site's front page is a feed of headlines, never one article — and many
+  // publishers answer a dead article link with a redirect to it, so this also
+  // catches broken links that would otherwise "verify" today's headlines.
+  if (new URL(currentUrl).pathname.replace(/\/+$/, '') === '') {
+    throw new UrlExtractionError(
+      'Link-ul duce la prima pagină a site-ului, nu la un articol. Deschide articolul și copiază link-ul lui.',
+      'NO_CONTENT'
+    );
+  }
+
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('html') && !contentType.includes('text')) {
     throw new UrlExtractionError(
@@ -508,7 +522,9 @@ export async function extractArticleText(rawUrl: string): Promise<string> {
   ];
 
   for (const candidate of candidates) {
-    const text = candidate?.replace(/\s+/g, ' ').trim();
+    // Judge only the part that will be verified: a footer navbox far below the
+    // article (Wikipedia's "Van der Bellen • Filip • …") must not reject it.
+    const text = candidate?.replace(/\s+/g, ' ').trim().slice(0, MAX_CHARS);
     if (!text || !looksLikeProse(text)) continue;
 
     return [title, text].filter(Boolean).join('. ').slice(0, MAX_CHARS);

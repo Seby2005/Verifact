@@ -189,7 +189,7 @@ export const fr: Translations = {
       q3: 'Puis-je faire confiance aux résultats ?',
       a3: 'Chaque rapport cite intégralement les sources utilisées, pour que vous puissiez vérifier vous-même. Le score est une estimation fondée sur les sources disponibles au moment de la vérification, et non une décision éditoriale définitive ; l’algorithme est open source.',
       q4: 'Quels types de contenu puis-je vérifier ?',
-      a4: 'Un texte (une affirmation écrite), un lien vers un article, une capture d’écran d’un réseau social ou un court clip vidéo. Verifact extrait l’affirmation et la vérifie de la même manière dans tous les cas.',
+      a4: 'Un texte (une affirmation écrite), un lien vers un article ou une capture d’écran d’un réseau social. Verifact extrait l’affirmation et la vérifie de la même manière dans tous les cas.',
       q5: 'Combien ça coûte ?',
       a5: 'La vérification de base est gratuite, avec 3 vérifications par mois. Le forfait Pro offre plus de 10 fois plus de vérifications, un rapport PDF téléchargeable et un lien direct vers le passage exact de la source.',
     },

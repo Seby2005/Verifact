@@ -80,6 +80,23 @@ export const DEFAULT_MODEL_PRICING: Record<string, ModelPricing> = {
     currency: 'USD',
   },
 
+  // OpenRouter — current verification chain (see src/lib/ai/models.ts), Oct 2026 list prices
+  'openai/gpt-5.6-luna': {
+    pricePerMillionInputTokens: 0.20,
+    pricePerMillionOutputTokens: 1.20,
+    currency: 'USD',
+  },
+  'anthropic/claude-haiku-5.5': {
+    pricePerMillionInputTokens: 0.10,
+    pricePerMillionOutputTokens: 0.50,
+    currency: 'USD',
+  },
+  'deepseek/deepseek-v4.1-flash': {
+    pricePerMillionInputTokens: 0.30,
+    pricePerMillionOutputTokens: 1.20,
+    currency: 'USD',
+  },
+
   // OpenRouter — Meta Llama
   'meta-llama/llama-3.3-70b-instruct': {
     pricePerMillionInputTokens: 0.12,

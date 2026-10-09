@@ -3,6 +3,7 @@ import { logger } from '@/lib/utils/logger';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import type { TokenUsageDetail } from '@/types/verification';
+import { PRIMARY_MODEL, NO_REASONING } from '@/lib/ai/models';
 
 export interface ExpandedQueries {
   primary: string;
@@ -187,7 +188,7 @@ export async function expandClaimQueries(
 
   if (openRouterKey) {
     try {
-      const model = process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash';
+      const model = PRIMARY_MODEL;
       const response = await withCircuitBreaker('openrouter', () =>
         fetchWithRetry(
           'https://openrouter.ai/api/v1/chat/completions',
@@ -204,6 +205,7 @@ export async function expandClaimQueries(
               messages: [{ role: 'user', content: EXPANSION_PROMPT(text) }],
               temperature: 0.1,
               response_format: { type: 'json_object' },
+              ...NO_REASONING,
             }),
             signal: AbortSignal.timeout(3500),
           }),
@@ -219,7 +221,8 @@ export async function expandClaimQueries(
 
       const content = response.choices?.[0]?.message?.content;
       if (content) {
-        const parsed = JSON.parse(content) as Partial<ExpandedQueries>;
+        // Some models wrap the object in a ```json fence despite json_object mode.
+        const parsed = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] ?? content) as Partial<ExpandedQueries>;
         if (parsed.romanianQuery && parsed.englishQuery) {
           return {
             primary: text,
