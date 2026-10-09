@@ -9,9 +9,11 @@
  *
  * claude-haiku-5.5 leads on the same benchmark: 56/64 correct and 3 inverted
  * verdicts, against 50/64 and 9 for gpt-5.6-luna, at the lowest price of the
- * three. OPENROUTER_MODEL overrides the primary for every step.
+ * three. VERIFACT_AI_MODEL overrides the primary for every step. It is not
+ * OPENROUTER_MODEL on purpose: deployments still carry that variable set to
+ * gemini-2.5-flash, which would silently undo this choice.
  */
-export const PRIMARY_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-haiku-5.5';
+export const PRIMARY_MODEL = process.env.VERIFACT_AI_MODEL || 'anthropic/claude-haiku-5.5';
 
 /** Tried in order when the primary fails or times out. */
 export const FALLBACK_MODELS = ['openai/gpt-5.6-luna', 'deepseek/deepseek-v4.1-flash'] as const;
