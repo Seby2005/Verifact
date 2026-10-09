@@ -4,33 +4,38 @@ import React, { useState } from 'react';
 import { Button, Modal } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import type { VerificationReport } from '@/types/verification';
+import { Onest } from 'next/font/google';
 import styles from './ShareCardButton.module.css';
 
 export interface ShareCardButtonProps {
   report: VerificationReport;
 }
 
-/** Light-theme brand tokens, mirrored from globals.css so the exported PNG looks
- * the same for every viewer regardless of their active theme. */
+// Onest carries the whole card (design 2b, "Verdict pe culoare"). Not preloaded:
+// it is only fetched when the share modal draws, via document.fonts.load.
+const onest = Onest({
+  weight: ['500', '600', '700', '800'],
+  subsets: ['latin', 'latin-ext'],
+  preload: false,
+  display: 'swap',
+});
+const FONT = `${onest.style.fontFamily}, 'Helvetica Neue', Arial, sans-serif`;
+
+/** Fixed light palette so the exported PNG looks the same for every viewer. */
 const PALETTE = {
-  paper: '#f3f2ed',
-  surface: '#ffffff',
-  ink: '#17140f',
-  inkSecondary: '#524d44',
-  inkMuted: '#8a8478',
-  line: '#e5e3db',
-  accent: '#d63a2c',
+  card: '#ffffff',
+  ink: '#111111',
+  inkMuted: '#8a8a92',
+  brandDot: '#e5484d',
 } as const;
 
+/** The verdict panel colour — the card is read by this colour first. */
 const VERDICT_COLOR: Record<VerificationReport['verdict'], string> = {
   true: '#2f7d5b',
   partial: '#c0892e',
   unclear: '#6c7480',
-  false: '#d63a2c',
+  false: '#e5484d',
 };
-
-const SANS = "'Helvetica Neue', Arial, system-ui, sans-serif";
-const SERIF = "Georgia, 'Times New Roman', serif";
 
 /** Wrap `text` to `maxWidth`, capped at `maxLines` with a trailing ellipsis. */
 function wrapLines(
@@ -67,135 +72,128 @@ function wrapLines(
   return lines;
 }
 
+/** Set font + tracking (em) together; letterSpacing is skipped where unsupported. */
+function setFont(ctx: CanvasRenderingContext2D, weight: number, size: number, trackingEm = 0): void {
+  ctx.font = `${weight} ${size}px ${FONT}`;
+  if ('letterSpacing' in ctx) {
+    (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${trackingEm * size}px`;
+  }
+}
+
+/** Design 2b ("Verdict pe culoare") at 2.5×: 432×540 artboard → 1080×1350 export. */
 function drawCard(report: VerificationReport, locale: string, labels: {
-  eyebrow: string;
   tagline: string;
-  scoreLabel: string;
+  verdictTitle: string;
   verdictLabel: string;
 }): HTMLCanvasElement {
   const W = 1080;
   const H = 1350;
-  const P = 88;
+  const INSET = 25; // card padding around the verdict panel
+  const P = INSET + 60; // text inset for header + claim
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d')!;
   const vc = VERDICT_COLOR[report.verdict];
+  const score = Math.round(Math.min(100, Math.max(0, report.score)));
 
-  // Background.
-  ctx.fillStyle = PALETTE.paper;
+  ctx.fillStyle = PALETTE.card;
   ctx.fillRect(0, 0, W, H);
-
-  // Left accent rule — the single spine of colour.
-  ctx.fillStyle = vc;
-  ctx.fillRect(0, 0, 12, H);
-
-  // Wordmark.
   ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = PALETTE.accent;
-  ctx.beginPath();
-  ctx.arc(P + 10, P + 26, 12, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = PALETTE.ink;
-  ctx.font = `700 40px ${SANS}`;
   ctx.textAlign = 'left';
-  ctx.save();
-  drawTracked(ctx, 'VERIFACT', P + 34, P + 40, 4);
-  ctx.restore();
 
-  // Date, right-aligned on the wordmark baseline.
+  // Header: "verifact." wordmark + date.
+  const headerBase = P + 34;
+  setFont(ctx, 700, 45, -0.02);
+  ctx.fillStyle = PALETTE.ink;
+  ctx.fillText('verifact', P, headerBase);
+  const markW = ctx.measureText('verifact').width;
+  ctx.fillStyle = PALETTE.brandDot;
+  ctx.fillText('.', P + markW, headerBase);
+
   const dateStr = formatDate(report.createdAt, locale);
   if (dateStr) {
+    setFont(ctx, 500, 32.5);
     ctx.fillStyle = PALETTE.inkMuted;
-    ctx.font = `500 26px ${SANS}`;
     ctx.textAlign = 'right';
-    ctx.fillText(dateStr, W - P, P + 36);
+    ctx.fillText(dateStr, W - P, headerBase);
     ctx.textAlign = 'left';
   }
 
-  // Header hairline.
-  ctx.strokeStyle = PALETTE.line;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(P, P + 88);
-  ctx.lineTo(W - P, P + 88);
-  ctx.stroke();
-
-  // Eyebrow.
-  ctx.fillStyle = PALETTE.inkMuted;
-  ctx.font = `700 24px ${SANS}`;
-  drawTracked(ctx, labels.eyebrow.toUpperCase(), P, P + 168, 3);
-
-  // Claim — the verified question, editorial serif.
-  const claim = (report.claim ?? report.inputText ?? '').trim();
-  ctx.fillStyle = PALETTE.ink;
-  ctx.font = `600 54px ${SERIF}`;
-  const claimLines = wrapLines(ctx, `“${claim}”`, W - P * 2, 5);
-  let cy = P + 240;
-  for (const line of claimLines) {
-    ctx.fillText(line, P, cy);
-    cy += 68;
-  }
-
-  // Verdict block, anchored toward the lower third.
-  const vy = 1000;
+  // Verdict panel, pinned to the bottom. Rows inside the 60px padding:
+  // "Verdict" (33) · 5 · label + score (89) · 40 · bar (15) · 40 · tagline (33).
+  const pad = 60;
+  const panelH = pad * 2 + 33 + 5 + 89 + 40 + 15 + 40 + 33;
+  const panelW = W - INSET * 2;
+  const panelY = H - INSET - panelH;
+  roundRect(ctx, INSET, panelY, panelW, panelH, 50);
   ctx.fillStyle = vc;
-  ctx.beginPath();
-  ctx.arc(P + 16, vy - 18, 18, 0, Math.PI * 2);
   ctx.fill();
-  ctx.font = `700 66px ${SERIF}`;
-  ctx.fillText(labels.verdictLabel, P + 52, vy);
 
-  // Score label + big number.
-  ctx.fillStyle = PALETTE.inkMuted;
-  ctx.font = `700 24px ${SANS}`;
-  drawTracked(ctx, labels.scoreLabel.toUpperCase(), P, vy + 78, 3);
+  const left = INSET + pad;
+  const right = INSET + panelW - pad;
+  let y = panelY + pad;
 
-  ctx.fillStyle = vc;
-  ctx.font = `700 88px ${SANS}`;
+  setFont(ctx, 500, 32.5);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText(labels.verdictTitle, left, y + 27);
+  y += 33 + 5;
+
+  // Score on the right; the verdict label shrinks to fit what is left of the row.
+  const rowBase = y + 72;
+  setFont(ctx, 800, 85, -0.03);
+  ctx.fillStyle = '#ffffff';
+  const scoreText = `${score}%`;
+  const scoreW = ctx.measureText(scoreText).width;
   ctx.textAlign = 'right';
-  ctx.fillText(`${Math.round(report.score)}%`, W - P, vy + 96);
+  ctx.fillText(scoreText, right, rowBase);
   ctx.textAlign = 'left';
 
-  // Score bar.
-  const barY = vy + 140;
-  const barW = W - P * 2;
-  roundRect(ctx, P, barY, barW, 16, 8);
-  ctx.fillStyle = PALETTE.line;
-  ctx.fill();
-  const fillW = Math.max(16, (Math.min(100, Math.max(0, report.score)) / 100) * barW);
-  roundRect(ctx, P, barY, fillW, 16, 8);
-  ctx.fillStyle = vc;
-  ctx.fill();
+  const labelMax = right - left - scoreW - 40;
+  let labelSize = 85;
+  setFont(ctx, 800, labelSize, -0.03);
+  while (ctx.measureText(labels.verdictLabel).width > labelMax && labelSize > 48) {
+    labelSize -= 2;
+    setFont(ctx, 800, labelSize, -0.03);
+  }
+  ctx.fillText(labels.verdictLabel, left, rowBase);
+  y += 89 + 40;
 
-  // Footer hairline + tagline.
-  ctx.strokeStyle = PALETTE.line;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(P, H - P - 44);
-  ctx.lineTo(W - P, H - P - 44);
-  ctx.stroke();
+  const barW = right - left;
+  roundRect(ctx, left, y, barW, 15, 7.5);
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fill();
+  roundRect(ctx, left, y, Math.max(15, (score / 100) * barW), 15, 7.5);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  y += 15 + 40;
 
-  ctx.fillStyle = PALETTE.inkSecondary;
-  ctx.font = `500 28px ${SANS}`;
-  ctx.fillText(labels.tagline, P, H - P + 4);
+  setFont(ctx, 500, 32.5);
+  ctx.fillText(labels.tagline, left, y + 27);
+
+  // Claim, vertically centred between header and panel. Long claims step down
+  // a size before they get ellipsized.
+  const claim = (report.claim ?? report.inputText ?? '').trim();
+  const quoted = locale === 'ro' ? `„${claim}”` : locale === 'fr' ? `« ${claim} »` : `“${claim}”`;
+  const top = headerBase + 30;
+  const bottom = panelY - 30;
+  let size = 67.5;
+  let lines: string[] = [];
+  for (const s of [67.5, 56, 48]) {
+    size = s;
+    setFont(ctx, 600, size, -0.02);
+    lines = wrapLines(ctx, quoted, W - P * 2, Math.floor((bottom - top) / (size * 1.22)));
+    if (!lines[lines.length - 1]?.endsWith('…')) break;
+  }
+  const lineH = size * 1.22;
+  let cy = top + (bottom - top - lines.length * lineH) / 2 + size * 0.95;
+  ctx.fillStyle = PALETTE.ink;
+  for (const line of lines) {
+    ctx.fillText(line, P, cy);
+    cy += lineH;
+  }
 
   return canvas;
-}
-
-/** Manual letter-spacing — canvas has no letterSpacing in older engines. */
-function drawTracked(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  tracking: number,
-): void {
-  let cx = x;
-  for (const ch of text) {
-    ctx.fillText(ch, cx, y);
-    cx += ctx.measureText(ch).width + tracking;
-  }
 }
 
 function roundRect(
@@ -220,7 +218,10 @@ function formatDate(iso?: string, locale = 'ro'): string | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   const tag = locale === 'en' ? 'en-US' : locale === 'fr' ? 'fr-FR' : 'ro-RO';
-  return new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  // Short month without the abbreviation dot: "8 oct 2026".
+  return new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short', year: 'numeric' })
+    .format(d)
+    .replace('.', '');
 }
 
 const FILE_TYPE = 'image/png';
@@ -249,11 +250,14 @@ export const ShareCardButton: React.FC<ShareCardButtonProps> = ({ report }) => {
     if (imgUrl) return; // Already rendered this session.
     setBusy(true);
     try {
-      if (document.fonts?.ready) await document.fonts.ready;
+      if (document.fonts) {
+        await Promise.all(
+          ['500', '600', '700', '800'].map((w) => document.fonts.load(`${w} 40px ${FONT}`)),
+        ).catch(() => undefined);
+      }
       const canvas = drawCard(report, locale, {
-        eyebrow: t('reportView.shareCard.eyebrow'),
         tagline: t('reportView.shareCard.tagline'),
-        scoreLabel: t('reportView.downloadScoreLabel'),
+        verdictTitle: t('cite.verdictLabel'),
         verdictLabel: t(`verdict.copy.${report.verdict}`),
       });
       const b: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, FILE_TYPE));
