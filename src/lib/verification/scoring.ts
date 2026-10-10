@@ -105,10 +105,7 @@ function hasEvidence(layer: { status: string; results?: unknown[]; layerScore: n
  *   40-59  → unclear
  *   0-39   → false
  *
- * Confidence level (based on available layers):
- *   4 layers → high
- *   2-3 layers → medium
- *   1 layer → low
+ * Confidence is a separate reading of the same evidence: see scoreToConfidence.
  */
 export function calculateScore(layers: {
   layer1: Layer1Result;
@@ -184,6 +181,9 @@ export function calculateScore(layers: {
   const finalScore = Math.round(Math.max(0, Math.min(100, rawScore * 100)));
   // Confidence reflects corroborating search layers, not the AI assessment.
   const availableLayers = searchLayersWithEvidence;
+  const sidingSources = (['layer1', 'layer2', 'layer3', 'layer4'] as const)
+    .filter((key) => available[key])
+    .reduce((sum, key) => sum + signalCount(key, layers), 0);
 
   return {
     weights: {
@@ -204,6 +204,7 @@ export function calculateScore(layers: {
     layer4Score: Math.round(layers.layer4.layerScore * 100),
     finalScore,
     availableLayers,
+    sidingSources,
     adjustedForAvailability: availableLayers < 4,
   };
 }
@@ -219,13 +220,31 @@ export function scoreToVerdict(score: number): Verdict {
 }
 
 /**
- * Converts the number of available layers to a confidence level.
+ * The verdict label a report carries: the score's band, overruled when the
+ * evidence itself is firmer than the number — documents that contradict the
+ * claim make it false whatever the average says, and a claim the documents
+ * confirm is not left at "partly true" for falling a few points short.
+ */
+export function resolveVerdict(score: number, evidenceStatus: EvidenceStatus): Verdict {
+  if (evidenceStatus === 'contradicted') return 'false';
+  if (evidenceStatus === 'corroborated' && score >= 70) return 'true';
+  return scoreToVerdict(score);
+}
+
+/**
+ * How firmly the search backs the verdict: how many sources took a side on
+ * the claim, and whether they came from more than one kind of source.
+ *
+ * Counting layers alone called a claim confirmed by eleven press articles
+ * "low confidence" because only the press layer spoke, and could never reach
+ * "high" at all without the optional social layer.
  */
 export function scoreToConfidence(
-  availableLayers: number
+  breakdown: Pick<ScoreBreakdown, 'availableLayers' | 'sidingSources'>
 ): 'high' | 'medium' | 'low' {
-  if (availableLayers === 4) return 'high';
-  if (availableLayers >= 2) return 'medium';
+  const siding = breakdown.sidingSources ?? 0;
+  if (breakdown.availableLayers >= 2 && siding >= 6) return 'high';
+  if (breakdown.availableLayers >= 2 || siding >= 3) return 'medium';
   return 'low';
 }
 
@@ -248,8 +267,13 @@ export interface EvidenceStatusInput {
   };
 }
 
-/** At or above this score a claim is in the partial/true band and is never "contradicted". */
-const CONTRADICTION_CEILING = VERDICT_THRESHOLD.partial;
+/**
+ * At or above this score the evidence does not lean against the claim, so it
+ * is never "contradicted". The neutral midpoint rather than the start of the
+ * partial band: one debunked narrative among the fact-checks used to turn a
+ * score of 59 into "Probabil fals · 59%", a verdict its own number argued with.
+ */
+const CONTRADICTION_CEILING = 50;
 
 /**
  * Determines the descriptive, non-dogmatic evidence status of a claim.
@@ -293,8 +317,8 @@ export function determineEvidenceStatus(input: EvidenceStatusInput): EvidenceSta
   // Only below CONTRADICTION_CEILING: a fact-check match is fuzzy (a debunk of
   // the *opposite* claim — "climate change is a hoax" rated False — matches
   // "climate change is caused by humans"), and the press-layer stance is a
-  // keyword guess. When the weighted evidence still lands in the partial/true
-  // band, labelling the claim "contradicted" would contradict its own score.
+  // keyword guess. When the weighted evidence does not lean against the claim,
+  // labelling it "contradicted" would contradict its own score.
   if (
     score < CONTRADICTION_CEILING &&
     (hasFactCheckDebunk ||
@@ -432,8 +456,27 @@ export function calculatePlausibilityTilt(
             : 'Search returned no sources for this claim; the tilt reflects only the AI model’s assessment and should be confirmed from independent sources.',
         };
       }
+      // Nothing found either way and nothing implausible about the claim: a
+      // local event or a little-known person leaves no trace in a search, and
+      // saying "implausible" there would be an accusation without evidence.
+      if (score >= 40) {
+        return {
+          direction: 'neutral',
+          score,
+          label: isRo
+            ? 'Neverificabil — nicio sursă nu confirmă și nici nu infirmă'
+            : isFr
+            ? 'Invérifiable — aucune source ne confirme ni n’infirme'
+            : 'Unverifiable — no source confirms or refutes it',
+          rationale: isRo
+            ? 'Căutarea nu a găsit surse despre această afirmație. Lipsa surselor nu o face falsă: poate fi un fapt local, recent sau despre o persoană puțin cunoscută.'
+            : isFr
+            ? 'La recherche n’a trouvé aucune source sur cette affirmation. L’absence de sources ne la rend pas fausse : il peut s’agir d’un fait local, récent ou concernant une personne peu connue.'
+            : 'Search found no sources about this claim. That does not make it false: it may be local, recent, or about a little-known person.',
+        };
+      }
       return {
-        direction: score < 40 ? 'unlikely' : 'neutral',
+        direction: 'unlikely',
         score,
         label: isRo
           ? 'Înclinație spre Neverosimil — absență totală a surselor credibile'

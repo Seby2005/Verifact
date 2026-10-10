@@ -92,15 +92,44 @@ describe('applyAISourceFilter', () => {
     expect(result.layer3.results.map((r) => r.title)).toEqual(['Regulamentul (UE) 2025/1106 (SAFE)']);
   });
 
-  it('keeps every source when the model judgement is unavailable', async () => {
+  it('keeps every source but takes no side when the model judgement is unavailable', async () => {
     mockFilter.mockResolvedValue(null);
-    const layer1 = { ...empty, results: [factCheck('Climate change is a hoax', 0)] };
+    const layer1 = { ...empty, layerScore: 0, results: [factCheck('Climate change is a hoax', 0)] };
+    const debunkHeadline = {
+      title: 'FALS | Vaccinul ROR este sigur și nu provoacă autism',
+      source: 'factual.ro',
+      articleUrl: 'https://factual.ro/x',
+      publishedAt: '',
+      snippet: '',
+      sentiment: 'contradicts' as const,
+      credibilityScore: 0.9,
+    };
 
     const result = await applyAISourceFilter(
-      { layer1, layer2: { ...empty, sourcesChecked: 0 }, layer3: empty, layer4: empty },
+      { layer1, layer2: { ...empty, sourcesChecked: 1, results: [debunkHeadline] }, layer3: empty, layer4: empty },
+      'Vaccinul ROR nu provoacă autism'
+    );
+
+    expect(result.layer1.results).toEqual(layer1.results);
+    expect(result.layer1.layerScore).toBe(0.5);
+    expect(result.layer2.results.map((a) => a.sentiment)).toEqual(['neutral']);
+    expect(result.layer2.layerScore).toBe(0.5);
+  });
+
+  it('reads each layer in its own request', async () => {
+    mockFilter.mockClear();
+    mockFilter.mockResolvedValue({ relevant: [], supports: [], contradicts: [], opposite: [] });
+
+    await applyAISourceFilter(
+      {
+        layer1: { ...empty, results: [factCheck('Humans cause climate change', 1)] },
+        layer2: { ...empty, sourcesChecked: 0 },
+        layer3: { ...empty, results: [{ title: 'Raport IPCC', documentUrl: 'https://ipcc.ch/r' }] },
+        layer4: empty,
+      },
       'Climate change is mainly caused by human activity'
     );
 
-    expect(result.layer1).toBe(layer1);
+    expect(mockFilter.mock.calls.map(([, candidates]) => candidates.map((c) => c.id))).toEqual([['l1:0'], ['l3:0']]);
   });
 });

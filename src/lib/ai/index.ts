@@ -39,8 +39,8 @@ function resolveProvider(): Provider {
  * equivalent because this step was added while Gemini sat at a zero free-tier
  * quota, and writing a second implementation nothing would call was not worth
  * it. When no OpenRouter key is configured this returns null, which the caller
- * reads as "keep every source" — the pipeline degrades to the keyword filter
- * in verification/relevance.ts rather than failing.
+ * reads as "keep every source, take no side" — the report still lists what the
+ * keyword filter in verification/relevance.ts let through, rather than failing.
  */
 export async function filterRelevantSources(
   claim: string,

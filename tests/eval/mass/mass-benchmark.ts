@@ -51,6 +51,8 @@ export interface CaseResult {
   verdict?: string;
   score?: number;
   evidenceStatus?: string;
+  confidence?: string;
+  aiScore?: number;
   expected: string[];
   claim?: string;
   ocrText?: string;
@@ -112,7 +114,11 @@ async function runCase(c: Case): Promise<CaseResult> {
   let ocrText: string | undefined;
   let extractedChars: number | undefined;
 
-  if (c.kind === 'screenshot') {
+  if (c.extracted) {
+    text = c.extracted;
+    if (c.kind === 'screenshot') ocrText = text;
+    else extractedChars = text.length;
+  } else if (c.kind === 'screenshot') {
     try {
       const b64 = fs.readFileSync(path.resolve('tests/eval/mass/screens', c.input)).toString('base64');
       const ocr = await withTimeout(processOCR(b64), 30_000);
@@ -122,10 +128,12 @@ async function runCase(c: Case): Promise<CaseResult> {
     }
   }
 
-  const v = validateVerifyInput({ text, inputType: c.kind, language: c.language ?? 'ro', isPublic: false });
+  // Pre-extracted article text is no longer a URL, so it is validated as text.
+  const inputType = c.kind === 'url' && c.extracted ? 'text' : c.kind;
+  const v = validateVerifyInput({ text, inputType, language: c.language ?? 'ro', isPublic: false });
   if (!v.success) return rejected('validate', v.error);
 
-  if (c.kind === 'url') {
+  if (c.kind === 'url' && !c.extracted) {
     try {
       text = await withTimeout(extractArticleText(v.data.text), 30_000);
       extractedChars = text.length;
@@ -157,6 +165,8 @@ async function runCase(c: Case): Promise<CaseResult> {
       verdict: r.verdict,
       score: r.score,
       evidenceStatus: r.evidenceStatus,
+      confidence: r.confidenceLevel,
+      aiScore: r.scoreBreakdown?.aiScore,
       claim: r.verifiedClaim || r.claim,
       ocrText: ocrText?.slice(0, 400),
       extractedChars,
@@ -179,7 +189,10 @@ async function main() {
     fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l).id) : []
   );
   const only = process.env.ONLY?.split(',');
-  const todo = shuffle(CASES).filter((c) => !doneIds.has(c.id) && (!only || only.includes(c.id)));
+  const categories = process.env.CATEGORY?.split(',');
+  const todo = shuffle(CASES).filter(
+    (c) => !doneIds.has(c.id) && (!only || only.includes(c.id)) && (!categories || categories.includes(c.category))
+  );
   console.log(`run ${RUN}: ${todo.length} cases to go (${doneIds.size} already done)`);
   let n = 0;
   for (const c of todo) {

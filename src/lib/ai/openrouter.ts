@@ -25,12 +25,12 @@ const ASSESSMENT_FALLBACK: AIAssessment = {
 /**
  * Retries transient OpenRouter API failures with circuit breaker protection.
  */
-function withRetry<T>(createInit: () => RequestInit, label: string): Promise<T> {
+function withRetry<T>(createInit: () => RequestInit, label: string, attempts = 2): Promise<T> {
   return withCircuitBreaker('openrouter', async () => {
     const res = await fetchWithRetry(
       OPENROUTER_API_URL,
       createInit,
-      { label: `OpenRouter ${label}`, attempts: 2 }
+      { label: `OpenRouter ${label}`, attempts }
     );
     if (!res.ok) throw new Error(`OpenRouter API HTTP error: ${res.status}`);
     return res.json() as Promise<T>;
@@ -181,10 +181,9 @@ export interface SourceFilterResult {
  * humans", and its False rating then counted against a true claim. Only the
  * model can tell the two statements point in opposite directions.
  *
- * Returns the ids to keep and the opposite-polarity ids, or null when the
- * judgement could not be obtained —
- * callers treat null as "keep everything" rather than dropping evidence
- * because a model call failed.
+ * Returns the ids to keep, their stances and the opposite-polarity ids, or
+ * null when the judgement could not be obtained — callers then keep every
+ * source rather than dropping evidence because a model call failed.
  *
  * This is deliberately a separate prompt from the assessment and the prose
  * analysis: it is a triage question ("is this document about the claim?"),
@@ -242,6 +241,7 @@ REGULI:
 5. Dacă ești nesigur, păstreaz-o — dar o coincidență de cuvinte nu înseamnă nesiguranță, înseamnă că sursa nu e pe subiect.
 6. Pentru sursele cu id "l1:..." (fact-check-uri), titlul este afirmația pe care a verificat-o fact-checker-ul. Aici regula 1 NU ajunge: pune id-ul în "relevant" DOAR dacă titlul afirmă același lucru ca afirmația de mai sus sau exact contrariul ei. Un fact-check despre o ALTĂ afirmație pe aceeași temă — aceleași persoane, țări sau evenimente, dar alt fapt susținut — NU este relevant, fiindcă verdictul lui nu spune nimic despre afirmația de față (ex: pentru "fragmente de drone au căzut în România", fact-check-ul "incidentul cu drona este folosit pentru a împinge România în război" NU este relevant). Compară DOAR sensul acestui titlu cu afirmația de mai sus, ignorând verdictul fact-checker-ului. Pune id-ul în "opposite" numai dacă titlul spune CONTRARIUL afirmației (ex: afirmația "schimbările climatice sunt cauzate de om" vs titlul "schimbările climatice sunt o farsă"). Un fact-check pe ACEEAȘI afirmație, chiar dacă a fost găsită falsă, NU intră în "opposite". Dacă nu ești sigur, nu o pune. Nu pune id-urile "l1:..." în "supports" sau "contradicts".
 7. Pentru sursele relevante cu id "l2:..." (presă) și "l3:..." (oficiale), pune id-ul în "supports" dacă sursa relatează afirmația ca fapt sau conține informații care o confirmă (ex: "2004 – România intră în NATO" susține "România este membră NATO din 2004"), sau în "contradicts" dacă sursa o dezminte ori relatează fapte incompatibile cu ea. Citește atent cifrele, datele și comparațiile: dacă afirmația spune "mai mare" și sursa spune "aceeași" sau "mai mică", sursa o contrazice. Dacă sursa e pe subiect dar nu tranșează afirmația, nu o pune în niciuna. Nu te lua după cuvinte ca "dezinformare" sau "precizări" — contează ce susține sursa despre afirmație. Ține cont de timp: data de azi este ${new Date().toISOString().slice(0, 10)}, iar o sursă care descrie o situație mai veche (ex: "aderarea a fost respinsă" într-un an anterior) NU contrazice o schimbare petrecută ulterior; pune-o în "contradicts" doar dacă se referă la aceeași perioadă ca afirmația.
+8. Atenție la negații: stabilește întâi ce susține afirmația. Dacă afirmația NEAGĂ ceva („X nu provoacă Y”, „nu este adevărat că X”, „este fals că X”), o sursă care spune că X nu are loc sau că nu există legătură o SUSȚINE ("supports"), iar o sursă care afirmă X o contrazice. Un fact-check care a verificat „X” (forma afirmativă) are ca titlu CONTRARIUL afirmației și intră în "opposite".
 
 Întoarce EXCLUSIV un obiect JSON:
 {"relevant": ["id1", "id2"], "supports": [], "contradicts": [], "opposite": []}`;
@@ -259,20 +259,24 @@ REGULI:
           'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
           'X-Title': 'Verifact AI Fact-Checker',
         },
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(12000),
         body: JSON.stringify({
           model,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0,
           // The reply itself is a short id list, but reasoning models spend
-          // completion tokens thinking before they emit it — measured at ~520
-          // for a 16-source list. Too low a cap truncates the response before
-          // the JSON arrives, which parses as nothing and fails open.
-          max_tokens: 2000,
+          // completion tokens thinking before they emit it — measured at ~85
+          // per source (2,500 for a 30-source list, which is why the caller
+          // sends one layer at a time). A cap the thinking can reach returns
+          // no JSON at all, so this one sits well above it.
+          max_tokens: 4000,
           response_format: { type: 'json_object' },
         }),
       }),
-      'source-filter'
+      'source-filter',
+      // The same list takes the same time to read; a second try only doubles
+      // the wait before the layer abstains.
+      1
     );
 
     const content = data.choices?.[0]?.message?.content ?? '';

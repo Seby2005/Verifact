@@ -188,6 +188,8 @@ export interface ScoreBreakdown {
   finalScore: number;
   aiScore?: number;
   availableLayers: number;
+  /** Sources that took a side on the claim, across the layers that count. */
+  sidingSources?: number;
   layer1Score?: number;
   layer2Score?: number;
   layer3Score?: number;
@@ -394,6 +396,11 @@ export interface AIAnalysisContext {
   layer3?: Layer3Result;
   layer4?: Layer4Result;
   scoreBreakdown?: ScoreBreakdown;
+  /**
+   * The verdict the report will carry, when it is already decided. The prose
+   * analysis explains it instead of reaching a conclusion of its own.
+   */
+  conclusion?: { verdict: Verdict; score: number; reasoning?: string };
 }
 
 export interface ReportBuilderParams {

@@ -67,9 +67,15 @@ describe('Critical Thinking & Investigative Verification Pipeline', () => {
       expect(status).toBe('unverified_no_sources');
 
       const tilt = calculatePlausibilityTilt(status, 45, undefined, 'ro');
+      // In the unclear band nothing was found either way: unverifiable, not implausible.
       expect(tilt.direction).toBe('neutral');
-      expect(tilt.label).toContain('Înclinație spre Neverosimil');
-      expect(tilt.rationale).toContain('Nu a fost identificată nicio dovadă primară');
+      expect(tilt.label).toContain('Neverificabil');
+      expect(tilt.rationale).toContain('Lipsa surselor nu o face falsă');
+
+      const lowTilt = calculatePlausibilityTilt(status, 20, undefined, 'ro');
+      expect(lowTilt.direction).toBe('unlikely');
+      expect(lowTilt.label).toContain('Înclinație spre Neverosimil');
+      expect(lowTilt.rationale).toContain('Nu a fost identificată nicio dovadă primară');
 
       const prompt = generateCriticalThinkingPrompt(status, 'Afirmație neverificată', 'ro');
       expect(prompt).toContain('Iată ce spun sursele, iată ce lipsește, decide tu pe baza dovezilor.');
@@ -364,6 +370,36 @@ describe('Critical Thinking & Investigative Verification Pipeline', () => {
           layer4: emptyLayer4,
         },
         ai: { score: 90, verdict: 'supports', evidenceStatus: 'corroborated', confidence: 0.9 },
+      });
+
+      expect(status).not.toBe('contradicted');
+    });
+
+    it('does not let one debunked narrative among the sources overrule evidence that leans the other way', () => {
+      // "Were the drones Ukrainian or Russian?": the Ukrainian branch is a
+      // debunked narrative, the Russian one is confirmed, and the score says so.
+      const status = determineEvidenceStatus({
+        score: 59,
+        layers: {
+          layer1: {
+            status: 'success',
+            results: [
+              {
+                claimReviewed: 'Ucraina atacă România cu drone rusești',
+                rating: 'FAKE NEWS',
+                ratingValue: 0.05,
+                publisher: 'Veridica',
+                reviewUrl: 'https://www.veridica.ro/x',
+              } as never,
+            ],
+            summary: '',
+            layerScore: 0.05,
+          },
+          layer2: emptyLayer2,
+          layer3: emptyLayer3,
+          layer4: emptyLayer4,
+        },
+        ai: { score: 85, verdict: 'mixed', evidenceStatus: 'missing_context', confidence: 0.7 },
       });
 
       expect(status).not.toBe('contradicted');

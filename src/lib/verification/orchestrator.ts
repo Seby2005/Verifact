@@ -12,9 +12,9 @@ import { runLayer1 } from './layer1-factcheck';
 import { runLayer2 } from './layer2-news';
 import { runLayer3 } from './layer3-official';
 import { runLayer4 } from './layer4-social';
-import { calculateScore } from './scoring';
+import { calculateScore, determineEvidenceStatus, resolveVerdict } from './scoring';
 import { buildReport } from './report-builder';
-import { generateAIAnalysis, generateAIAssessment } from '@/lib/ai';
+import { generateAIAnalysis, generateAIAssessment, type AIAssessment } from '@/lib/ai';
 import { applyAISourceFilter } from './ai-source-filter';
 import { getCached, setCached } from './cache';
 import { createContentHash } from '@/lib/utils/hash';
@@ -26,6 +26,15 @@ import { normalizeQuestionToHypothesis } from './question-normalizer';
 import { sanitizeOcrText } from './ocr-cleaner';
 
 const LAYER_TIMEOUT_MS = 8_500; // per layer; 3.5s timed out most Tavily/NewsAPI calls and emptied the press layer
+
+/**
+ * When the prose analysis must have answered, measured from the start of the
+ * verification. It runs last, so it gets whatever is left of the 60s the
+ * serverless function is allowed; past this the report ships with the plain
+ * summary of what the layers found instead of not shipping at all.
+ */
+const ANALYSIS_DEADLINE_MS = 50_000;
+const ANALYSIS_MIN_TIMEOUT_MS = 5_000;
 
 function buildFallbackSummary(
   layers: { layer1: Layer1Result; layer2: Layer2Result; layer3: Layer3Result; layer4: Layer4Result },
@@ -285,17 +294,11 @@ export async function verifyContent(
     layer4,
   };
 
-  // Run AI Assessment and AI Analysis IN PARALLEL for maximum speed
-  const [assessmentResult, analysisResult] = await Promise.allSettled([
-    generateAIAssessment(aiContext),
-    generateAIAnalysis(aiContext),
-  ]);
-
-  const assessment = assessmentResult.status === 'fulfilled'
-    ? assessmentResult.value
-    : { score: 50, verdict: 'insufficient' as const, confidence: 0, reasoning: '' };
-
-  emit({ step: 'analysis', status: 'done' });
+  // The verdict is settled before the prose is written, so the analysis the
+  // reader sees explains that verdict rather than arriving at one of its own.
+  const assessment = await generateAIAssessment(aiContext).catch(
+    (): AIAssessment => ({ score: 50, verdict: 'insufficient', confidence: 0, reasoning: '' })
+  );
 
   const scoreBreakdown = calculateScore({
     layer1,
@@ -304,6 +307,29 @@ export async function verifyContent(
     layer4,
     ai: { score: assessment.score, confidence: assessment.confidence },
   });
+  const evidenceStatus = determineEvidenceStatus({
+    score: scoreBreakdown.finalScore,
+    layers: { layer1, layer2, layer3, layer4 },
+    ai: assessment,
+  });
+
+  const [analysisResult] = await Promise.allSettled([
+    withTimeout(
+      generateAIAnalysis({
+        ...aiContext,
+        scoreBreakdown,
+        conclusion: {
+          verdict: resolveVerdict(scoreBreakdown.finalScore, evidenceStatus),
+          score: scoreBreakdown.finalScore,
+          reasoning: assessment.reasoning,
+        },
+      }),
+      Math.max(ANALYSIS_MIN_TIMEOUT_MS, ANALYSIS_DEADLINE_MS - (Date.now() - startTime)),
+      'analysis'
+    ),
+  ]);
+
+  emit({ step: 'analysis', status: 'done' });
 
   let aiAnalysis: string;
   let aiAvailable = true;
@@ -333,6 +359,7 @@ export async function verifyContent(
     layer3,
     layer4,
     scoreBreakdown,
+    evidenceStatus,
     aiAnalysis,
     aiAssessment: assessment,
     processingTime: Date.now() - startTime,

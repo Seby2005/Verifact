@@ -1,4 +1,4 @@
-import { calculateScore, scoreToVerdict, scoreToConfidence } from '@/lib/verification/scoring';
+import { calculateScore, scoreToVerdict, scoreToConfidence, resolveVerdict } from '@/lib/verification/scoring';
 import type { Layer1Result, Layer2Result, Layer3Result, Layer4Result } from '@/types/verification';
 
 function layer1(layerScore: number, resultCount: number, status: Layer1Result['status'] = 'success'): Layer1Result {
@@ -38,7 +38,7 @@ describe('calculateScore', () => {
     expect(result.availableLayers).toBe(4);
     expect(result.adjustedForAvailability).toBe(false);
     expect(scoreToVerdict(result.finalScore)).toBe('false');
-    expect(scoreToConfidence(result.availableLayers)).toBe('high');
+    expect(scoreToConfidence(result)).toBe('high');
   });
 
   it('falls back to a neutral 50 when nothing has evidence and the AI has low confidence', () => {
@@ -52,7 +52,7 @@ describe('calculateScore', () => {
 
     expect(result.finalScore).toBe(50);
     expect(result.availableLayers).toBe(0);
-    expect(scoreToConfidence(result.availableLayers)).toBe('low');
+    expect(scoreToConfidence(result)).toBe('low');
     expect(scoreToVerdict(result.finalScore)).toBe('unclear');
   });
 
@@ -85,7 +85,7 @@ describe('calculateScore', () => {
     expect(result.availableLayers).toBe(2);
     expect(result.adjustedForAvailability).toBe(true);
     expect(scoreToVerdict(result.finalScore)).toBe('true');
-    expect(scoreToConfidence(result.availableLayers)).toBe('medium');
+    expect(scoreToConfidence(result)).toBe('high');
   });
 
   it('excludes a layer that returned results but scored exactly neutral (no real signal)', () => {
@@ -207,7 +207,7 @@ describe('calculateScore', () => {
     it('still reports low confidence, since nothing corroborates the score', () => {
       const result = calculateScore({ ...NOTHING_FOUND, ai: { score: 100, confidence: 0.95 } });
 
-      expect(scoreToConfidence(result.availableLayers)).toBe('low');
+      expect(scoreToConfidence(result)).toBe('low');
     });
   });
 
@@ -254,12 +254,33 @@ describe('scoreToVerdict', () => {
 
 describe('scoreToConfidence', () => {
   it.each([
-    [4, 'high'],
-    [3, 'medium'],
-    [2, 'medium'],
-    [1, 'low'],
-    [0, 'low'],
-  ] as const)('maps %d available layers to confidence %s', (available, expected) => {
-    expect(scoreToConfidence(available)).toBe(expected);
+    [3, 8, 'high'],
+    [2, 6, 'high'],
+    [2, 5, 'medium'],
+    [2, 2, 'medium'],
+    // One kind of source only: many articles agree, but nothing independent of the press does.
+    [1, 11, 'medium'],
+    [1, 3, 'medium'],
+    [1, 2, 'low'],
+    [0, 0, 'low'],
+  ] as const)('maps %d layers with %d siding sources to confidence %s', (availableLayers, sidingSources, expected) => {
+    expect(scoreToConfidence({ availableLayers, sidingSources })).toBe(expected);
+  });
+
+  it('reads a breakdown saved before siding sources were counted by its layers alone', () => {
+    expect(scoreToConfidence({ availableLayers: 2 })).toBe('medium');
+    expect(scoreToConfidence({ availableLayers: 1 })).toBe('low');
+  });
+});
+
+describe('resolveVerdict', () => {
+  it.each([
+    [72, 'corroborated', 'true'],
+    [65, 'corroborated', 'partial'],
+    [45, 'contradicted', 'false'],
+    [45, 'unverified_no_sources', 'unclear'],
+    [20, 'unverified_no_sources', 'false'],
+  ] as const)('score %d with evidence "%s" is %s', (score, status, expected) => {
+    expect(resolveVerdict(score, status)).toBe(expected);
   });
 });

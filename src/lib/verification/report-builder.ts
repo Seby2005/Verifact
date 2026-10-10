@@ -10,7 +10,7 @@ import type {
   EvidenceStatus,
 } from '@/types/verification';
 import {
-  scoreToVerdict,
+  resolveVerdict,
   scoreToConfidence,
   determineEvidenceStatus,
   calculatePlausibilityTilt,
@@ -365,14 +365,9 @@ export function buildReport(params: ReportBuilderParams): VerificationReport {
       ai: aiAssessment,
     });
 
-  let verdict = scoreToVerdict(score);
-  if (evidenceStatus === 'contradicted' && verdict !== 'false') {
-    verdict = 'false';
-  } else if (evidenceStatus === 'corroborated' && verdict !== 'true' && score >= 70) {
-    verdict = 'true';
-  }
+  const verdict = resolveVerdict(score, evidenceStatus);
 
-  const confidenceLevel = scoreToConfidence(breakdown.availableLayers);
+  const confidenceLevel = scoreToConfidence(breakdown);
   const reportLocale = input.language === 'fr' ? 'fr' : input.language === 'en' ? 'en' : 'ro';
 
   const plausibilityTilt = calculatePlausibilityTilt(

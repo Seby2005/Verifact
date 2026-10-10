@@ -1,4 +1,5 @@
 import type { Verdict, Language } from '../../../src/types/verification';
+import { HISTORY_CASES } from './history-cases';
 
 /**
  * One benchmark case. Ground truth is expressed as verdict sets rather than a
@@ -18,6 +19,11 @@ export interface Case {
   category: string;
   /** Text, URL, or screenshot file name under screens/. */
   input: string;
+  /**
+   * Screenshot/URL only: the OCR or article text as a real reader's upload
+   * produced it, used instead of running OCR or fetching `input`.
+   */
+  extracted?: string;
   language?: Language;
   accept: Verdict[];
   aberrant: Verdict[];
@@ -145,4 +151,6 @@ export const CASES: Case[] = [
   { id: 'u-edge-facebook', kind: 'url', category: 'link limită', input: 'https://www.facebook.com/share/p/1ABCdefGHI/', accept: ['unclear'], aberrant: ['true', 'false'], expectReject: true },
   { id: 'u-edge-ssrf', kind: 'url', category: 'link limită', input: 'http://127.0.0.1:3000/api/admin', accept: [], aberrant: [], expectReject: true, note: 'SSRF: trebuie refuzat' },
   { id: 'u-edge-notaurl', kind: 'url', category: 'link limită', input: 'nu este un link valid', accept: [], aberrant: [], expectReject: true },
+
+  ...HISTORY_CASES,
 ];

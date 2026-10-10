@@ -1,6 +1,5 @@
 import type {
   AIAnalysisContext,
-  ScoreBreakdown,
   FactCheckResult,
   NewsArticle,
   OfficialSource,
@@ -14,8 +13,8 @@ export interface PromptData {
   newsArticles: string;
   officialDocs: string;
   socialPosts: string;
-  calculatedScore: number;
-  availableLayers: number;
+  /** The verdict the report already carries, phrased for the prompt; '' when undecided. */
+  conclusion: string;
 }
 
 export function buildAnalysisPrompt(context: AIAnalysisContext): string {
@@ -26,12 +25,6 @@ export function buildAnalysisPrompt(context: AIAnalysisContext): string {
   const layer2 = context.layer2 || layers.layer2;
   const layer3 = context.layer3 || layers.layer3;
   const layer4 = context.layer4 || layers.layer4;
-
-  const scoreBreakdown: ScoreBreakdown = context.scoreBreakdown || {
-    finalScore: 50,
-    availableLayers: 4,
-    weights: { factCheck: 0.4, news: 0.3, official: 0.3 },
-  };
 
   // Format layer 1 results
   const factChecks = ((layer1?.results as FactCheckResult[]) || []).length > 0
@@ -84,8 +77,7 @@ export function buildAnalysisPrompt(context: AIAnalysisContext): string {
     newsArticles,
     officialDocs,
     socialPosts,
-    calculatedScore: scoreBreakdown.finalScore,
-    availableLayers: scoreBreakdown.availableLayers,
+    conclusion: describeConclusion(context),
   };
 
   if (language === 'ro') {
@@ -95,6 +87,42 @@ export function buildAnalysisPrompt(context: AIAnalysisContext): string {
     return buildFrenchPrompt(data);
   }
   return buildEnglishPrompt(data);
+}
+
+const VERDICT_WORDS = {
+  ro: { true: 'Adevărat', partial: 'Parțial adevărat', unclear: 'Neclar', false: 'Probabil fals' },
+  fr: { true: 'Vrai', partial: 'Partiellement vrai', unclear: 'Incertain', false: 'Probablement faux' },
+  en: { true: 'True', partial: 'Partly true', unclear: 'Unclear', false: 'Probably false' },
+} as const;
+
+/**
+ * Tells the prose analysis which verdict the report shows above it.
+ *
+ * The analysis used to be written without knowing the verdict, and a reader
+ * could find "confirmed by multiple sources" printed under "Unclear": the
+ * press did confirm the resignation the claim mentions, just not in the year
+ * it gives. The verdict is settled first now, and the prose explains it.
+ */
+function describeConclusion(context: AIAnalysisContext): string {
+  const conclusion = context.conclusion;
+  if (!conclusion) return '';
+  const locale = context.language === 'fr' ? 'fr' : context.language === 'en' ? 'en' : 'ro';
+  const verdict = VERDICT_WORDS[locale][conclusion.verdict];
+  const reasoning = conclusion.reasoning?.trim();
+
+  if (locale === 'fr') {
+    return `CONCLUSION DE LA VÉRIFICATION (déjà établie, affichée au lecteur au-dessus de ton texte) : ${verdict}, score ${conclusion.score}/100.${reasoning ? `
+Motif : ${reasoning}` : ''}
+Ton rapport explique cette conclusion et ne la contredit pas. Si des sources confirment une partie de l’affirmation mais pas le détail décisif (date, chiffre, auteur, lien de cause), dis précisément ce qui est confirmé et ce qui ne l’est pas.`;
+  }
+  if (locale === 'en') {
+    return `VERIFICATION OUTCOME (already settled, shown to the reader above your text): ${verdict}, score ${conclusion.score}/100.${reasoning ? `
+Reasoning: ${reasoning}` : ''}
+Your report explains this outcome and does not contradict it. If sources confirm part of the claim but not the deciding detail (a date, a figure, who did it, a causal link), say exactly what is confirmed and what is not.`;
+  }
+  return `CONCLUZIA VERIFICĂRII (deja stabilită, afișată cititorului deasupra textului tău): ${verdict}, scor ${conclusion.score}/100.${reasoning ? `
+Motivare: ${reasoning}` : ''}
+Raportul tău explică această concluzie și nu o contrazice. Dacă sursele confirmă o parte din afirmație, dar nu și detaliul decisiv (o dată, o cifră, autorul, legătura de cauzalitate), spune exact ce este confirmat și ce nu.`;
 }
 
 function buildRomanianPrompt(data: PromptData): string {
@@ -118,7 +146,7 @@ ${data.officialDocs}
 Stratul 4 (Rețele Sociale și declarații publice):
 ${data.socialPosts}
 
-Indice calculat al surselor: ${data.calculatedScore}% (din ${data.availableLayers} straturi cu date)
+${data.conclusion}
 Data de azi: ${new Date().toISOString().slice(0, 10)}. Memoria ta se oprește înaintea acestei date: un eveniment datat înainte de azi este în trecut, nu „în viitor”, iar sursele de mai sus sunt reale și au prioritate față de cunoștințele tale din antrenament (cine conduce acum țara, legi, taxe noi).
 
 PRINCIPII METODOLOGICE OBLIGATORII:
@@ -165,7 +193,7 @@ ${data.officialDocs}
 Niveau 4 (Réseaux Sociaux et déclarations publiques) :
 ${data.socialPosts}
 
-Indice calculé des sources : ${data.calculatedScore}% (sur ${data.availableLayers} niveaux disponibles)
+${data.conclusion}
 Date du jour : ${new Date().toISOString().slice(0, 10)}. Ta mémoire s’arrête avant cette date : un événement daté d’avant aujourd’hui appartient au passé, pas « au futur », et les sources ci-dessus sont réelles et priment sur tes connaissances d’entraînement (qui dirige le pays, nouvelles lois, taxes).
 
 DIRECTIVES MÉTHODOLOGIQUES :
@@ -211,7 +239,7 @@ ${data.officialDocs}
 Layer 4 (Social Media & Public Statements):
 ${data.socialPosts}
 
-Calculated source index: ${data.calculatedScore}% (across ${data.availableLayers} layers with data)
+${data.conclusion}
 Today is ${new Date().toISOString().slice(0, 10)}. Your memory stops before this date: an event dated before today is in the past, not "in the future", and the sources above are real and take precedence over your training knowledge (who leads the country now, new laws, taxes).
 
 CORE METHODOLOGICAL PRINCIPLES:
@@ -297,12 +325,15 @@ ${evidence || '(nicio dovadă găsită prin căutare)'}
 REGULI METODOLOGICE:
 1. Examinează dovezile culese: detectează dacă este vorba de satiră/parodie (ex: Times New Roman, The Onion), raportare circulară (site-uri care doar reciclează o postare pe rețele sociale fără verificare) sau omisiune gravă de context.
 2. Plauzibilitate deductivă: Dacă lipsesc articole explicite de demontare (debunk), aplică deducția logică și cunoștințele instituționale: Are instituția menționată atribuții? Există legi/hotărâri atestate? Un eveniment de această magnitudine ar fi putut avea loc fără nicio urmă oficială sau mediatică?
-3. Dacă nu există nicio sursă primară sau dovadă pentru un zvon senzaționalist cu fapte concrete (cine, ce, când), alege evidenceStatus "unverified_no_sources", scor redus (15-30) și o înclinație clară spre neverosimil (nu claca într-un neutru 50 "insuficient").
+3. Lipsa surselor NU înseamnă automat fals. Întreabă-te cât de vizibil ar fi fost faptul dacă era adevărat:
+   a) Un fapt de anvergură națională sau internațională (moartea unui om politic cunoscut, o lege, un război, o decizie de guvern, un dezastru) lasă inevitabil urme în presă și la instituții. Dacă pentru un asemenea zvon cu fapte concrete (cine, ce, când) nu există nicio urmă, alege evidenceStatus "unverified_no_sources", scor redus (15-30) și o înclinație clară spre neverosimil (nu claca într-un neutru 50 "insuficient").
+   b) Un fapt despre o persoană privată sau puțin cunoscută, un eveniment local, ori o cifră sau o declarație punctuală atribuită unei surse numite (o publicație, un oficial, o instituție) poate fi adevărat fără să apară în căutare. Dacă nu ai dovezi nici pentru, nici contra și afirmația nu este imposibilă, alege "unverified_no_sources" cu scor 40-50: „nu se poate verifica” nu este același lucru cu „fals”. Nu acuza și nu disculpa o persoană fără dovezi. La fel, când fenomenul descris este real, dar cifra exactă din afirmație nu apare în nicio dovadă, alege "missing_context" cu scor 40-55, nu fals.
+   c) Coboară sub 40 doar când afirmația este contrazisă de o dovadă de mai sus, de un fapt bine stabilit, este imposibilă sau intră la litera a).
 4. Dacă tema este o dezbatere sau evaluare prospectivă, folosește "open_debate".
 5. Nu lua poziții politice părtinitoare.
 6. Citește direcția fiecărei surse: un articol care doar menționează un zvon pentru a-l demonta NU confirmă afirmația, iar un articol care relatează faptul ca atare NU o infirmă doar pentru că pomenește cuvinte ca „dezinformare” sau „precizări”. Judecă după ce susține sursa despre afirmație, nu după cuvinte-cheie.
 7. DATA DE AZI este ${today}. Memoria ta se oprește înainte de această dată și NU cunoaște evenimentele recente: cine conduce acum țara, alegeri, guverne, legi, taxe. Dovezile de mai sus sunt reale și au fost extrase chiar acum; nu le numi niciodată fictive, greșite sau „din viitor”. Un eveniment datat înainte de ${today} este în trecut. Când dovezile confirmă afirmația, scorul trebuie să fie ridicat (80-100) chiar dacă memoria ta spune altceva. Infirmă doar pe baza unei dovezi de mai sus, a unei imposibilități evidente (fizică, logică) sau a unei farse cunoscute — niciodată doar pentru că nu știi faptul din antrenament.
-8. Dacă textul NU conține o afirmație factuală verificabilă — o opinie sau judecată de valoare („cel mai bun”, „cel mai prost”), o predicție sau un zvon vag fără fapte concrete, text fără sens, doar nume de utilizator/hashtag-uri/elemente de interfață — întoarce score 50, verdict "insufficient" și evidenceStatus "missing_context" (sau "open_debate" pentru o dezbatere reală). Nu o declara falsă doar pentru că nu are surse. Regula 8 are prioritate față de regula 3.
+8. Dacă textul NU conține o afirmație factuală verificabilă — o opinie sau judecată de valoare („cel mai bun”, „cel mai prost”, „este dăunător”, „este nebun”), o generalizare despre un grup întreg spusă ca reproș sau laudă („toți politicienii sunt hoți”), o predicție sau un zvon vag fără fapte concrete, text fără sens, doar nume de utilizator/hashtag-uri/elemente de interfață — întoarce score 50, verdict "insufficient" și evidenceStatus "missing_context" (sau "open_debate" pentru o dezbatere reală). Nu o declara falsă doar pentru că nu are surse. Regula 8 are prioritate față de regula 3.
 
 Întoarce EXCLUSIV un JSON valid:
 {

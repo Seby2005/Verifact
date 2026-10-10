@@ -4,7 +4,7 @@ import type {
   Layer3Result,
   Layer4Result,
 } from '@/types/verification';
-import { filterRelevantSources, type SourceCandidate } from '@/lib/ai';
+import { filterRelevantSources, type SourceCandidate, type SourceFilterResult } from '@/lib/ai';
 import { calculateLayer1Score } from './layer1-factcheck';
 import { calculateLayer2Score } from './layer2-news';
 import { calculateLayer3Score } from './layer3-official';
@@ -85,91 +85,103 @@ export function assignSourceTier(urlStr?: string, publisher?: string): SourceTie
   return 2;
 }
 
+/** The reading of a layer that had nothing to read. */
+const NOTHING_TO_JUDGE: SourceFilterResult = { relevant: [], supports: [], contradicts: [], opposite: [] };
+
+/**
+ * Has the model read every source against the claim: drops the ones that are
+ * off topic and replaces the layers' keyword-guessed stances with what each
+ * source actually says.
+ *
+ * Each layer is read in its own request, all in parallel. One request for the
+ * whole report made the model think through ~30 sources at once, which on a
+ * well-covered topic ran past both its token budget and its timeout — so the
+ * step silently did nothing exactly where there was the most evidence.
+ *
+ * A layer the model could not read keeps its sources but takes no side: its
+ * stances are a keyword guess ("FALS" in a headline, a fact-check matched by
+ * shared words), and scoring on them called "the MMR vaccine does not cause
+ * autism" false because the debunks of the opposite claim counted against it.
+ */
 export async function applyAISourceFilter(layers: LayerSet, claim: string): Promise<LayerSet> {
-  const candidates: SourceCandidate[] = [];
+  const l1Candidates: SourceCandidate[] = layers.layer1.results.map((r, i) => ({
+    id: `l1:${i}`,
+    title: r.claimReviewed || r.title || '',
+    snippet: `${r.publisher ?? ''} — verdict: ${r.rating ?? ''}`,
+    source: origin(publisherSiteOf(r.reviewUrl || r.url || '', r.publisherUrl) ?? r.reviewUrl ?? r.url),
+  }));
 
-  layers.layer1.results.forEach((r, i) => {
-    candidates.push({
-      id: `l1:${i}`,
-      title: r.claimReviewed || r.title || '',
-      snippet: `${r.publisher ?? ''} — verdict: ${r.rating ?? ''}`,
-      source: origin(publisherSiteOf(r.reviewUrl || r.url || '', r.publisherUrl) ?? r.reviewUrl ?? r.url),
-    });
-  });
+  const l2Candidates: SourceCandidate[] = layers.layer2.results.map((a, i) => ({
+    id: `l2:${i}`,
+    title: a.title,
+    snippet: a.snippet ?? '',
+    source: origin(publisherSiteOf(a.articleUrl || a.url || '', a.sourceUrl) ?? a.articleUrl ?? a.url),
+  }));
 
-  layers.layer2.results.forEach((a, i) => {
-    candidates.push({
-      id: `l2:${i}`,
-      title: a.title,
-      snippet: a.snippet ?? '',
-      source: origin(publisherSiteOf(a.articleUrl || a.url || '', a.sourceUrl) ?? a.articleUrl ?? a.url),
-    });
-  });
+  const l3Candidates: SourceCandidate[] = layers.layer3.results.map((s, i) => ({
+    id: `l3:${i}`,
+    title: s.title,
+    snippet: s.relevantQuote ?? s.snippet ?? '',
+    source: origin(publisherSiteOf(s.documentUrl || s.url || '', s.url) ?? s.documentUrl ?? s.url),
+  }));
 
-  layers.layer3.results.forEach((s, i) => {
-    candidates.push({
-      id: `l3:${i}`,
-      title: s.title,
-      snippet: s.relevantQuote ?? s.snippet ?? '',
-      source: origin(publisherSiteOf(s.documentUrl || s.url || '', s.url) ?? s.documentUrl ?? s.url),
-    });
-  });
+  const l4Candidates: SourceCandidate[] = layers.layer4.results.map((p, i) => ({
+    id: `l4:${i}`,
+    title: p.author,
+    snippet: p.content ?? p.text ?? '',
+    source: origin(p.postUrl || p.url),
+  }));
 
-  layers.layer4.results.forEach((p, i) => {
-    candidates.push({
-      id: `l4:${i}`,
-      title: p.author,
-      snippet: p.content ?? p.text ?? '',
-      source: origin(p.postUrl || p.url),
-    });
-  });
+  const judge = (candidates: SourceCandidate[]) =>
+    candidates.length === 0 ? Promise.resolve(NOTHING_TO_JUDGE) : filterRelevantSources(claim, candidates);
+  const [j1, j2, j3, j4] = await Promise.all([
+    judge(l1Candidates),
+    judge(l2Candidates),
+    judge(l3Candidates),
+    judge(l4Candidates),
+  ]);
 
-  // If no candidates found across all layers, nothing to filter.
-  if (candidates.length === 0) return layers;
-
-  const judgement = await filterRelevantSources(claim, candidates);
-  if (judgement === null) return layers;
-
-  const keepSet = new Set(judgement.relevant);
-  const oppositeSet = new Set(judgement.opposite);
-  const supportSet = new Set(judgement.supports);
-  const contradictSet = new Set(judgement.contradicts);
-
-  // The model read each source against the claim, so its stance replaces the
-  // keyword guess the layers made. Contradiction wins if listed in both.
-  const stanceOf = (id: string): 'supports' | 'contradicts' | 'neutral' =>
-    contradictSet.has(id) ? 'contradicts' : supportSet.has(id) ? 'supports' : 'neutral';
+  // Contradiction wins if the model listed a source on both sides.
+  const stanceOf = (j: SourceFilterResult, id: string): 'supports' | 'contradicts' | 'neutral' =>
+    j.contradicts.includes(id) ? 'contradicts' : j.supports.includes(id) ? 'supports' : 'neutral';
 
   // A fact-check of the claim's opposite speaks to the claim with its rating
   // inverted: "X is a hoax" rated False is evidence *for* X. The rating label
   // stays as the publisher wrote it; only the value used for scoring flips.
-  const l1Surviving = layers.layer1.results
-    .map((r, i) => (oppositeSet.has(`l1:${i}`) ? { ...r, ratingValue: 1 - r.ratingValue } : r))
-    .filter((_, i) => keepSet.has(`l1:${i}`));
-  const l2Surviving = layers.layer2.results
-    .map((a, i) => {
-      const stance = stanceOf(`l2:${i}`);
-      return { ...a, sentiment: stance === 'supports' ? ('confirms' as const) : stance };
-    })
-    .filter((_, i) => keepSet.has(`l2:${i}`));
-  const l3Surviving = layers.layer3.results
-    .map((s, i) => {
-      const stance = stanceOf(`l3:${i}`);
-      return { ...s, supportsOrDenies: stance === 'contradicts' ? ('denies' as const) : stance };
-    })
-    // Register records stay whatever the triage says: it judges topical
-    // overlap, and "the EU's defence-industry regulation" does not look like
-    // "the EU is taking us to war" — yet it is exactly the evidence that
-    // answers it.
-    .filter((s, i) => s.fromRegister || keepSet.has(`l3:${i}`));
-  const l4Surviving = layers.layer4.results.filter((_, i) => keepSet.has(`l4:${i}`));
+  const l1Surviving = j1
+    ? layers.layer1.results
+        .map((r, i) => (j1.opposite.includes(`l1:${i}`) ? { ...r, ratingValue: 1 - r.ratingValue } : r))
+        .filter((_, i) => j1.relevant.includes(`l1:${i}`))
+    : layers.layer1.results;
+  const l2Surviving = j2
+    ? layers.layer2.results
+        .map((a, i) => {
+          const stance = stanceOf(j2, `l2:${i}`);
+          return { ...a, sentiment: stance === 'supports' ? ('confirms' as const) : stance };
+        })
+        .filter((_, i) => j2.relevant.includes(`l2:${i}`))
+    : layers.layer2.results.map((a) => ({ ...a, sentiment: 'neutral' as const }));
+  const l3Surviving = j3
+    ? layers.layer3.results
+        .map((s, i) => {
+          const stance = stanceOf(j3, `l3:${i}`);
+          return { ...s, supportsOrDenies: stance === 'contradicts' ? ('denies' as const) : stance };
+        })
+        // Register records stay whatever the triage says: it judges topical
+        // overlap, and "the EU's defence-industry regulation" does not look like
+        // "the EU is taking us to war" — yet it is exactly the evidence that
+        // answers it.
+        .filter((s, i) => s.fromRegister || j3.relevant.includes(`l3:${i}`))
+    : layers.layer3.results.map((s) => ({ ...s, supportsOrDenies: 'neutral' as const }));
+  const l4Surviving = j4 ? layers.layer4.results.filter((_, i) => j4.relevant.includes(`l4:${i}`)) : layers.layer4.results;
 
   const layer1: Layer1Result = {
     ...layers.layer1,
     results: l1Surviving,
     matches: l1Surviving,
     summary: `${l1Surviving.length} fact-checks found`,
-    layerScore: calculateLayer1Score(l1Surviving),
+    // Unread fact-checks may have reviewed a different or the opposite claim.
+    layerScore: j1 ? calculateLayer1Score(l1Surviving) : 0.5,
   };
 
   const layer2: Layer2Result = {
@@ -198,7 +210,8 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
 
   logger.info('AI source filter applied', {
     service: 'verification',
-    before: candidates.length,
+    before: l1Candidates.length + l2Candidates.length + l3Candidates.length + l4Candidates.length,
+    unreadLayers: [j1, j2, j3, j4].filter((j) => j === null).length,
     after: l1Surviving.length + l2Surviving.length + l3Surviving.length + l4Surviving.length,
   });
 
