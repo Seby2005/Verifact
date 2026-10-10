@@ -7,6 +7,10 @@ jest.mock('@/lib/utils/circuit-breaker', () => ({
   withCircuitBreaker: (_name: string, fn: () => Promise<unknown>) => fn(),
 }));
 
+jest.mock('@/lib/news-index', () => ({
+  searchNewsIndex: jest.fn(),
+}));
+
 jest.mock('@/lib/verification/news-rss', () => ({
   searchBingNews: jest.fn(),
   searchGoogleNews: jest.fn(),
@@ -14,6 +18,7 @@ jest.mock('@/lib/verification/news-rss', () => ({
 
 import { runLayer2, detectSentiment, calculateLayer2Score } from '@/lib/verification/layer2-news';
 import { searchBingNews, searchGoogleNews, type RssNewsItem } from '@/lib/verification/news-rss';
+import { searchNewsIndex } from '@/lib/news-index';
 import type { NewsArticle } from '@/types/verification';
 
 function jsonResponse(body: unknown, ok = true, status = 200) {
@@ -145,6 +150,7 @@ describe('runLayer2', () => {
   const originalFetch = global.fetch;
   const bing = searchBingNews as jest.Mock;
   const google = searchGoogleNews as jest.Mock;
+  const ownIndex = searchNewsIndex as jest.Mock;
 
   const item = (overrides: Partial<RssNewsItem> = {}): RssNewsItem => ({
     title: 'Coverage of the claim being verified today',
@@ -170,6 +176,7 @@ describe('runLayer2', () => {
   beforeEach(() => {
     bing.mockReset().mockResolvedValue([]);
     google.mockReset().mockResolvedValue([]);
+    ownIndex.mockReset().mockResolvedValue([]);
     mockFetch({ ok: true });
   });
 
@@ -217,6 +224,27 @@ describe('runLayer2', () => {
     const result = await runLayer2('orice afirmatie', 'ro');
 
     expect(result.status).toBe('unavailable');
+  });
+
+  it('stays available on the own index alone when every search engine is down', async () => {
+    bing.mockRejectedValue(new Error('bing-news HTTP 429'));
+    google.mockRejectedValue(new Error('google-news HTTP 503'));
+    ownIndex.mockResolvedValue([item({ url: 'https://digi24.ro/stiri/a-1', sourceName: 'Digi24', sourceDomain: 'digi24.ro' })]);
+
+    const result = await runLayer2('the claim being verified today', 'en');
+
+    expect(result.status).toBe('success');
+    expect(result.results[0].source).toBe('Digi24');
+  });
+
+  it('carries on without the own index when it cannot be searched', async () => {
+    ownIndex.mockRejectedValue(new Error('relation "news_index" does not exist'));
+    bing.mockResolvedValue([item()]);
+
+    const result = await runLayer2('the claim being verified today', 'en');
+
+    expect(result.status).toBe('success');
+    expect(result.results).toHaveLength(1);
   });
 
   it('stays available when one free engine still works', async () => {

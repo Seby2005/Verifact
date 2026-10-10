@@ -180,6 +180,21 @@ export interface ContentOpportunity {
   status: OpportunityStatus;
 }
 
+/** One headline in the own news index (migration 020). */
+export interface NewsIndexRow {
+  id: number;
+  url: string;
+  title: string;
+  snippet: string;
+  source_name: string;
+  source_domain: string;
+  kind: 'news' | 'factcheck' | 'official';
+  published_at: string;
+  fetched_at: string;
+}
+
+export type NewsIndexInsert = Omit<NewsIndexRow, 'id' | 'fetched_at'>;
+
 export interface Database {
   public: {
     Tables: {
@@ -302,6 +317,11 @@ export interface Database {
         };
         Update: Partial<ContentOpportunity>;
       };
+      news_index: {
+        Row: NewsIndexRow;
+        Insert: NewsIndexInsert;
+        Update: Partial<NewsIndexRow>;
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -324,6 +344,10 @@ export interface Database {
       release_usage_slot_for: {
         Args: { p_user_id: string };
         Returns: undefined;
+      };
+      search_news_index: {
+        Args: { p_query: string; p_limit?: number };
+        Returns: (Omit<NewsIndexRow, 'id' | 'fetched_at'> & { rank: number })[];
       };
       check_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_ms: number };

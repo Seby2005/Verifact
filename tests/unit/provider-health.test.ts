@@ -1,3 +1,7 @@
+jest.mock('@/lib/news-index', () => ({
+  newsIndexLastUpdate: jest.fn(),
+}));
+
 jest.mock('@/lib/verification/news-rss', () => ({
   searchBingNews: jest.fn(),
   searchGoogleNews: jest.fn(),
@@ -5,6 +9,7 @@ jest.mock('@/lib/verification/news-rss', () => ({
 
 import { checkSearchProviders } from '@/lib/health/search-providers';
 import { searchBingNews, searchGoogleNews } from '@/lib/verification/news-rss';
+import { newsIndexLastUpdate } from '@/lib/news-index';
 
 function response(status: number, body: unknown = {}): Response {
   return {
@@ -20,6 +25,7 @@ describe('checkSearchProviders', () => {
   const originalEnv = { ...process.env };
   const bing = searchBingNews as jest.Mock;
   const google = searchGoogleNews as jest.Mock;
+  const lastUpdate = newsIndexLastUpdate as jest.Mock;
   const oneItem = [{ title: 't', url: 'u', sourceName: 's', sourceDomain: 'd', publishedAt: '', snippet: 't' }];
 
   beforeEach(() => {
@@ -27,6 +33,7 @@ describe('checkSearchProviders', () => {
     process.env.OPENROUTER_API_KEY = 'o';
     bing.mockReset().mockResolvedValue(oneItem);
     google.mockReset().mockResolvedValue(oneItem);
+    lastUpdate.mockReset().mockResolvedValue(new Date(Date.now() - 20 * 60_000));
     global.fetch = jest.fn().mockResolvedValue(response(200, { data: { total_credits: 5, total_usage: 0 } }));
   });
 
@@ -41,7 +48,26 @@ describe('checkSearchProviders', () => {
     const byName = await check();
 
     expect(Object.values(byName).every((c) => c.ok)).toBe(true);
-    expect(Object.keys(byName)).toEqual(['Google News RSS', 'Bing News RSS', 'Google Fact Check', 'OpenRouter']);
+    expect(Object.keys(byName)).toEqual([
+      'Index propriu de știri',
+      'Google News RSS',
+      'Bing News RSS',
+      'Google Fact Check',
+      'OpenRouter',
+    ]);
+  });
+
+  it.each([
+    ['has stopped being refreshed', () => Promise.resolve(new Date(Date.now() - 9 * 3_600_000)), 'acum 9.0 ore'],
+    ['is still empty', () => Promise.resolve(null), 'gol'],
+    ['cannot be read', () => Promise.reject(new Error('relation "news_index" does not exist')), 'does not exist'],
+  ])('flags the own news index when it %s', async (_case, state, detail) => {
+    lastUpdate.mockImplementation(state);
+
+    const byName = await check();
+
+    expect(byName['Index propriu de știri'].ok).toBe(false);
+    expect(byName['Index propriu de știri'].detail).toContain(detail);
   });
 
   it('flags a free engine that is blocked or returns nothing', async () => {

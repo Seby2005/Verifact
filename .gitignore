@@ -229,4 +229,6 @@ docker-compose.yml
 docker/
 services/
 workflows/
+# ...but not GitHub Actions, which the rule above would also swallow.
+!.github/workflows/
 

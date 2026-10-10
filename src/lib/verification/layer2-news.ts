@@ -16,6 +16,8 @@ import { matchesAnyPhrase } from './keyword-match';
 import type { ExpandedQueries } from './query-expander';
 import { settleProviderCalls } from './provider-calls';
 import { searchBingNews, searchGoogleNews, type RssNewsItem } from './news-rss';
+import { searchNewsIndex } from '@/lib/news-index';
+import { logger } from '@/lib/utils/logger';
 
 // ─── Internal API types ───────────────────────────────────────
 
@@ -137,6 +139,20 @@ function toNewsArticles(items: RssNewsItem[], claimText: string): NewsArticle[] 
         credibilityScore,
       };
     });
+}
+
+/**
+ * Verifact's own index of Romanian outlets. Fails open: it is an extra source,
+ * and until its migration is applied or its first ingestion has run it simply
+ * has nothing to add.
+ */
+async function searchOwnIndex(query: string, claimText: string): Promise<NewsArticle[]> {
+  try {
+    return toNewsArticles(await searchNewsIndex(query), claimText);
+  } catch (error) {
+    logger.warn('Own news index search failed', { service: 'layer2-news', error: String(error) });
+    return [];
+  }
 }
 
 /**
@@ -304,8 +320,7 @@ export async function runLayer2(
   const enQuery = expandedQueries?.englishQuery || text;
   const contextQuery = expandedQueries?.contextOriginAngle;
 
-  // Free RSS engines carry the layer. Bing is listed first: it has the
-  // publisher's own URL and a description, so its copy of a story wins dedup.
+  // Verifact's own index and the free RSS engines carry the layer.
   //
   // English-language searches are judged for relevance against enQuery, not
   // the claim text: an English article shares almost no tokens with a
@@ -314,7 +329,8 @@ export async function runLayer2(
   // One GDELT call only (it rate-limits to 1 req / 5s). It is a bonus that
   // fails open on its own, so it does not count toward deciding whether press
   // search worked at all.
-  const [primary, gdelt] = await Promise.all([
+  const [ownIndex, primary, gdelt] = await Promise.all([
+    searchOwnIndex(roQuery, text),
     settleProviderCalls('layer2-news', [
       { provider: 'bing-news', run: searchBingNews(roQuery, 'ro').then((r) => toNewsArticles(r, text)) },
       { provider: 'google-news', run: searchGoogleNews(roQuery, 'ro').then((r) => toNewsArticles(r, text)) },
@@ -325,8 +341,14 @@ export async function runLayer2(
   ]);
 
   const isRelevant = (a: NewsArticle) => a.sentiment !== 'unrelated';
-  let unique = deduplicateArticles([...primary.items, ...gdelt]);
-  let failure = primary.failure;
+  // Order is dedup priority: the own index and Bing carry the publisher's own
+  // URL and a description, so their copy of a story wins over Google's
+  // redirect link.
+  let unique = deduplicateArticles([...ownIndex, ...primary.items, ...gdelt]);
+  // The own index vouches that the press was searched only when it actually
+  // returned something: an empty or not-yet-populated index must not hide
+  // that every search engine was down.
+  let failure = ownIndex.length > 0 ? undefined : primary.failure;
 
   if (!unique.some(isRelevant) && process.env.TAVILY_API_KEY) {
     const reserve = await settleProviderCalls('layer2-news', [

@@ -13,6 +13,7 @@
  */
 
 import { searchBingNews, searchGoogleNews, type RssNewsItem } from '@/lib/verification/news-rss';
+import { newsIndexLastUpdate } from '@/lib/news-index';
 
 export interface ProviderCheck {
   provider: string;
@@ -67,8 +68,31 @@ async function probeFeed(
   }
 }
 
+/** Ingestion runs every 30 minutes; several missed runs in a row mean the schedule has stopped. */
+const MAX_INDEX_AGE_HOURS = 6;
+
+/** The own news index is healthy while its scheduled ingestion keeps adding items. */
+async function probeNewsIndex(): Promise<ProviderCheck> {
+  const provider = 'Index propriu de știri';
+  const affects = 'presă';
+  try {
+    const lastUpdate = await newsIndexLastUpdate();
+    if (!lastUpdate) return { provider, affects, ok: false, detail: 'Indexul este gol — colectarea nu a rulat încă' };
+    const ageHours = (Date.now() - lastUpdate.getTime()) / 3_600_000;
+    return {
+      provider,
+      affects,
+      ok: ageHours <= MAX_INDEX_AGE_HOURS,
+      detail: `Ultima actualizare acum ${ageHours.toFixed(1)} ore`,
+    };
+  } catch (error) {
+    return { provider, affects, ok: false, detail: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 export function checkSearchProviders(): Promise<ProviderCheck[]> {
   return Promise.all([
+    probeNewsIndex(),
     probeFeed('Google News RSS', 'presă, surse oficiale', () => searchGoogleNews('România', 'ro')),
     probeFeed('Bing News RSS', 'presă', () => searchBingNews('România', 'ro')),
     probe({

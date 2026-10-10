@@ -12,7 +12,9 @@ import { searchGoogleNews, type RssNewsItem } from './news-rss';
  * covers its subdomains (gov.ro includes mfinante.gov.ro, mai.gov.ro, …).
  */
 const OFFICIAL_SITES = {
-  ro: ['gov.ro', 'presidency.ro', 'mae.ro', 'mapn.ro', 'ms.ro', 'edu.ro', 'bnr.ro', 'insse.ro'],
+  // Parliament and the legislative portal are here so a claim about a bill or
+  // a law reaches the institutions that hold its text and its status.
+  ro: ['gov.ro', 'presidency.ro', 'cdep.ro', 'senat.ro', 'just.ro', 'mae.ro', 'mapn.ro', 'ms.ro', 'edu.ro', 'bnr.ro', 'insse.ro'],
   international: ['europa.eu', 'who.int', 'nato.int', 'un.org', 'cdc.gov', 'fda.gov'],
   fr: ['gouv.fr', 'service-public.fr', 'insee.fr', 'santepubliquefrance.fr'],
 } as const;
@@ -26,6 +28,10 @@ const KNOWN_ORGANIZATIONS: Record<string, { name: string; type: string }> = {
   'mfinante.gov.ro': { name: 'Ministerul Finanțelor', type: 'government' },
   'mae.ro': { name: 'Ministerul Afacerilor Externe', type: 'government' },
   'mapn.ro': { name: 'Ministerul Apărării Naționale', type: 'government' },
+  'cdep.ro': { name: 'Camera Deputaților', type: 'government' },
+  'senat.ro': { name: 'Senatul României', type: 'government' },
+  'just.ro': { name: 'Ministerul Justiției', type: 'government' },
+  'legislatie.just.ro': { name: 'Portalul Legislativ', type: 'government' },
   'bnr.ro': { name: 'Banca Națională a României', type: 'regulator' },
   'insse.ro': { name: 'Institutul Național de Statistică', type: 'government' },
   'service-public.fr': { name: 'Service-Public.fr', type: 'government' },
