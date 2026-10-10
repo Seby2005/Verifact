@@ -1,9 +1,18 @@
-import { PDFDocument, PDFFont, PDFName, PDFString, rgb, type RGB } from 'pdf-lib';
+import {
+  PDFDocument,
+  PDFFont,
+  PDFName,
+  PDFString,
+  LineCapStyle,
+  rgb,
+  setCharacterSpacing,
+  type RGB,
+} from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import type { VerificationReport, Verdict } from '@/types/verification';
 import type { ReportSynthesis } from '@/lib/ai/report-synthesis';
 import { sourceHref } from '@/components/verify/ReportView/sourceLink';
-import { interRegular, interBold, sourceSerif } from './font-data';
+import { sansRegular, sansSemiBold, sansBold } from './font-data';
 
 /**
  * The downloadable PDF report, drawn with pdf-lib — pure JavaScript, no React
@@ -11,6 +20,10 @@ import { interRegular, interBold, sourceSerif } from './font-data';
  * implementation threw React #31 on Vercel's serverless runtime). Fonts are
  * embedded from base64 (font-data.ts) so Romanian diacritics render and nothing
  * is fetched at request time.
+ *
+ * The layout is design 3d, "Pași de verificare": the claim, three verdict
+ * tiles, then the verification told as a numbered timeline that ends in the
+ * conclusion. The design's 600px artboard maps 1px → 1pt onto A4.
  */
 
 const VERDICT_WORD: Record<'ro' | 'en' | 'fr', Record<Verdict, string>> = {
@@ -46,91 +59,121 @@ export function getReportFilename(report: VerificationReport): string {
   return `Raport Verifact - ${cleanClaim}.pdf`;
 }
 
-const INK = rgb(0.09, 0.078, 0.059);
-const INK_SEC = rgb(0.322, 0.302, 0.267);
-const INK_MUTED = rgb(0.541, 0.518, 0.471);
-const LINE = rgb(0.898, 0.89, 0.859);
-const LINE_STRONG = rgb(0.839, 0.824, 0.784);
-const ACCENT = rgb(0.753, 0.224, 0.169);
+function hex(value: string): RGB {
+  const channel = (i: number) => parseInt(value.slice(i, i + 2), 16) / 255;
+  return rgb(channel(1), channel(3), channel(5));
+}
 
-const VERDICT_COLOR: Record<Verdict, RGB> = {
-  true: rgb(0.102, 0.42, 0.329),
-  partial: rgb(0.596, 0.396, 0.086),
-  unclear: rgb(0.302, 0.345, 0.4),
-  false: rgb(0.651, 0.227, 0.224),
+const INK = hex('#111111');
+const BODY = hex('#3a3a40');
+const MUTED = hex('#6b6b73');
+const FAINT = hex('#8a8a92');
+const WHITE = hex('#ffffff');
+const ON_INK_MUTED = hex('#a1a1aa');
+const TILE = hex('#f5f5f7');
+const LINE = hex('#ececee');
+const WARN_BG = hex('#fff4db');
+const WARN_INK = hex('#6b4a00');
+const ALERT_BG = hex('#fde8e8');
+const ALERT_INK = hex('#c22b31');
+
+/** Per verdict: the solid fill that carries white text, and the darker tone for text on white. */
+const VERDICT_TONE: Record<Verdict, { fill: RGB; ink: RGB }> = {
+  true: { fill: hex('#2f7d5b'), ink: hex('#256b4c') },
+  partial: { fill: hex('#c0892e'), ink: hex('#8f6212') },
+  unclear: { fill: hex('#6c7480'), ink: hex('#555c66') },
+  false: { fill: hex('#e5484d'), ink: ALERT_INK },
 };
+
+type Stance = 'confirms' | 'contradicts' | 'context';
+
+const STANCE_DOT: Record<Stance, RGB> = {
+  confirms: VERDICT_TONE.true.fill,
+  contradicts: VERDICT_TONE.false.fill,
+  context: FAINT,
+};
+
+/** A source's stance, from the synthesis wording (any locale) or else the source's own flag. */
+function stanceOf(insightStance: string | undefined, supports: boolean | null | undefined): Stance {
+  if (insightStance) {
+    if (/confirm/i.test(insightStance)) return 'confirms';
+    if (/contr/i.test(insightStance)) return 'contradicts';
+    return 'context';
+  }
+  return supports === true ? 'confirms' : supports === false ? 'contradicts' : 'context';
+}
 
 const STRINGS = {
   ro: {
-    docKind: 'Raport de Fact-Checking',
-    generatedOn: 'Generat la',
+    report: 'Raport',
     reportId: 'ID raport',
-    scoreLabel: 'Scor de veridicitate',
-    confidenceLabel: 'Nivel de încredere',
-    claimLabel: 'Afirmația verificată',
+    quote: (s: string) => `„${s}”`,
+    verdict: 'Verdict',
+    veracity: 'Veridicitate',
+    confidence: 'Încredere',
+    confidenceWord: { low: 'Scăzută', medium: 'Medie', high: 'Ridicată' },
     commentaryLabel: 'Comentariul distribuitorului (neverificat)',
     commentaryNote: 'Verdictul se referă la afirmația factuală de mai sus, nu la această interpretare.',
-    rationaleLabel: 'De ce acest verdict',
-    deepReasoningLabel: 'Raționamentul detaliat al AI-ului',
-    subClaimsLabel: 'Descompunerea afirmației pe sub-componente',
-    manipulationLabel: 'Tehnici de manipulare detectate',
-    motiveLabel: 'Motivație și impact estimat',
-    rememberLabel: 'Ce e de reținut',
-    sourcesConsensusLabel: 'Ce spun sursele',
+    stepBreakdown: 'Am descompus afirmația',
+    stepSources: 'Am căutat surse',
+    stepMissing: 'Ce nu am găsit',
+    stepFraming: 'Cum a fost prezentată',
+    stepConclusion: 'Concluzia',
+    subVerdict: { true: 'Adevărat', false: 'Fals', partial: 'Parțial', unverified: 'Neverificat' },
+    stance: { confirms: 'confirmă', contradicts: 'contrazice', context: 'context' },
     agreementsLabel: 'Convergență',
     contradictionsLabel: 'Diferențe',
-    sourcesLabel: (n: number) => `Surse citate și verificate (${n})`,
     seePassage: 'Vezi pasajul exact',
-    missingEvidenceLabel: 'Dovezi lipsă sau neconfirmate',
-    journalistFaqLabel: 'Ghid și întrebări frecvente pentru jurnaliști (FAQ)',
+    rememberLabel: 'Ce e de reținut',
+    journalistsLabel: 'Pentru jurnaliști',
     disclaimerLabel: 'Precizare legală și metodologie',
   },
   en: {
-    docKind: 'Fact-Checking Report',
-    generatedOn: 'Generated on',
+    report: 'Report',
     reportId: 'Report ID',
-    scoreLabel: 'Veracity score',
-    confidenceLabel: 'Confidence level',
-    claimLabel: 'Verified claim',
+    quote: (s: string) => `“${s}”`,
+    verdict: 'Verdict',
+    veracity: 'Veracity',
+    confidence: 'Confidence',
+    confidenceWord: { low: 'Low', medium: 'Medium', high: 'High' },
     commentaryLabel: "The sharer's commentary (unverified)",
     commentaryNote: 'The verdict concerns the factual claim above, not this interpretation.',
-    rationaleLabel: 'Why this verdict',
-    deepReasoningLabel: 'AI Deep Reasoning & Analysis',
-    subClaimsLabel: 'Claim-by-Claim Breakdown',
-    manipulationLabel: 'Detected Disinformation Techniques',
-    motiveLabel: 'Potential Motive & Public Impact',
-    rememberLabel: 'What to remember',
-    sourcesConsensusLabel: 'What the sources say',
+    stepBreakdown: 'We broke the claim down',
+    stepSources: 'We searched for sources',
+    stepMissing: 'What we did not find',
+    stepFraming: 'How it was presented',
+    stepConclusion: 'The conclusion',
+    subVerdict: { true: 'True', false: 'False', partial: 'Partial', unverified: 'Unverified' },
+    stance: { confirms: 'confirms', contradicts: 'contradicts', context: 'context' },
     agreementsLabel: 'Agreement',
     contradictionsLabel: 'Differences',
-    sourcesLabel: (n: number) => `Cited & verified sources (${n})`,
     seePassage: 'Go to the exact passage',
-    missingEvidenceLabel: 'Missing or Unverified Evidence',
-    journalistFaqLabel: 'Journalist Reference & FAQ',
+    rememberLabel: 'What to remember',
+    journalistsLabel: 'For journalists',
     disclaimerLabel: 'Legal disclaimer & methodology',
   },
   fr: {
-    docKind: 'Rapport de Fact-Checking',
-    generatedOn: 'Généré le',
+    report: 'Rapport',
     reportId: 'ID du rapport',
-    scoreLabel: 'Score de véracité',
-    confidenceLabel: 'Niveau de confiance',
-    claimLabel: 'Affirmation vérifiée',
+    quote: (s: string) => `« ${s} »`,
+    verdict: 'Verdict',
+    veracity: 'Véracité',
+    confidence: 'Confiance',
+    confidenceWord: { low: 'Faible', medium: 'Moyenne', high: 'Élevée' },
     commentaryLabel: 'Commentaire du diffuseur (non vérifié)',
     commentaryNote: 'Le verdict concerne l’affirmation factuelle ci-dessus, et non cette interprétation.',
-    rationaleLabel: 'Fondement du verdict',
-    deepReasoningLabel: 'Raisonnement approfondi de l’IA',
-    subClaimsLabel: 'Décomposition de l’affirmation par sous-composants',
-    manipulationLabel: 'Techniques de manipulation identifiées',
-    motiveLabel: 'Motivation et impact public estimé',
-    rememberLabel: 'Points essentiels à retenir',
-    sourcesConsensusLabel: 'Synthèse des sources',
+    stepBreakdown: 'Nous avons décomposé l’affirmation',
+    stepSources: 'Nous avons cherché des sources',
+    stepMissing: 'Ce que nous n’avons pas trouvé',
+    stepFraming: 'Comment elle a été présentée',
+    stepConclusion: 'La conclusion',
+    subVerdict: { true: 'Vrai', false: 'Faux', partial: 'Partiel', unverified: 'Non vérifié' },
+    stance: { confirms: 'confirme', contradicts: 'contredit', context: 'contexte' },
     agreementsLabel: 'Convergences',
     contradictionsLabel: 'Divergences',
-    sourcesLabel: (n: number) => `Sources citées et vérifiées (${n})`,
     seePassage: 'Consulter le passage exact',
-    missingEvidenceLabel: 'Preuves manquantes ou non confirmées',
-    journalistFaqLabel: 'Guide & FAQ pour les journalistes',
+    rememberLabel: 'Points essentiels à retenir',
+    journalistsLabel: 'Pour les journalistes',
     disclaimerLabel: 'Mentions légales & méthodologie',
   },
 } as const;
@@ -152,12 +195,6 @@ function formatDate(iso: string | undefined, locale: 'ro' | 'en' | 'fr'): string
   }).format(d);
 }
 
-function stanceColor(stance: string): RGB {
-  if (/confirm/i.test(stance)) return VERDICT_COLOR.true;
-  if (/contra|contrad/i.test(stance)) return VERDICT_COLOR.false;
-  return INK_MUTED;
-}
-
 interface DocProps {
   report: VerificationReport;
   synthesis: ReportSynthesis;
@@ -166,80 +203,153 @@ interface DocProps {
 
 const PAGE_W = 595.28;
 const PAGE_H = 841.89;
-const MARGIN = 46;
+const MARGIN = 36;
+const BOTTOM = 48; // the flow stops here; page numbers sit below
 const CONTENT_W = PAGE_W - MARGIN * 2;
+const MARKER = 32; // diameter of a timeline step's circle
+const STEP_INDENT = MARKER + 16;
+/** Baseline offset below a line's centre, in em: (ascent − descent) / 2 for the sans. */
+const BASELINE = 0.36;
+
+interface Style {
+  font: PDFFont;
+  size: number;
+  color: RGB;
+  /** Line height as a multiple of the size. */
+  lh: number;
+  /** Letter spacing in em. */
+  tracking: number;
+}
+/** A run inside a paragraph that overrides the paragraph's font or colour. */
+interface Span {
+  text: string;
+  font?: PDFFont;
+  color?: RGB;
+}
+interface Line {
+  pieces: Array<{ text: string; font: PDFFont; color: RGB; x: number }>;
+  width: number;
+}
+/** Something already measured that can be painted with its top-left corner at (x, top). */
+interface Box {
+  w: number;
+  h: number;
+  draw: (x: number, top: number) => void;
+}
+interface Card {
+  body: Box;
+  w: number;
+  fill: RGB;
+}
 
 export async function renderReportPdf({ report, synthesis, locale }: DocProps): Promise<Buffer> {
   const t = STRINGS[locale];
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  const reg = await doc.embedFont(dataUriToBytes(interRegular), { subset: false });
-  const bold = await doc.embedFont(dataUriToBytes(interBold), { subset: false });
-  const serif = await doc.embedFont(dataUriToBytes(sourceSerif), { subset: false });
+  // Ligatures stay off: a full (non-subset) embed only records the advances of
+  // glyphs reachable from the cmap, so an "fi" ligature would be drawn with the
+  // default 1em advance and leave a gap after it.
+  const embed = (dataUri: string) =>
+    doc.embedFont(dataUriToBytes(dataUri), { subset: false, features: { liga: false } });
+  const reg = await embed(sansRegular);
+  const semi = await embed(sansSemiBold);
+  const bold = await embed(sansBold);
 
   const pages: ReturnType<typeof doc.addPage>[] = [];
   let page = doc.addPage([PAGE_W, PAGE_H]);
   pages.push(page);
+  // The flow cursor: `y` is the top edge of the next thing drawn, inside the
+  // column that starts at `x` and is `w` wide.
   let y = PAGE_H - MARGIN;
+  let x = MARGIN;
+  let w = CONTENT_W;
+  // Top of the open timeline step's rail on the current page, if a step is open.
+  let rail: number | null = null;
+
+  const drawRail = (from: number, to: number): void => {
+    page.drawRectangle({ x: MARGIN + MARKER / 2 - 1, y: to, width: 2, height: from - to, color: LINE });
+  };
 
   const newPage = () => {
+    if (rail !== null) {
+      drawRail(rail, BOTTOM);
+      rail = PAGE_H - MARGIN;
+    }
     page = doc.addPage([PAGE_W, PAGE_H]);
     pages.push(page);
     y = PAGE_H - MARGIN;
   };
 
   const need = (h: number) => {
-    if (y - h < MARGIN + 40) newPage();
+    if (y - h < BOTTOM) newPage();
   };
 
   const clean = (s: string) => (s || '').replace(/\s+/g, ' ').trim();
 
-  const wrap = (str: string, font: PDFFont, size: number, maxW: number): string[] => {
-    const out: string[] = [];
-    const words = clean(str).split(' ');
-    let line = '';
-    for (const w of words) {
-      const test = line ? `${line} ${w}` : w;
-      if (font.widthOfTextAtSize(test, size) > maxW && line) {
-        out.push(line);
-        line = w;
-      } else {
-        line = test;
+  const style = (font: PDFFont, size: number, color: RGB, lh: number, tracking = 0): Style => ({
+    font,
+    size,
+    color,
+    lh,
+    tracking,
+  });
+
+  // Text width as the sum of its characters' advances, memoised per font at
+  // size 1. Shaping whole strings is the slow part of a render, and a PDF viewer
+  // places glyphs by advance alone (no kerning), so this is also what gets drawn.
+  const advances = new Map<PDFFont, Map<string, number>>();
+  const measure = (str: string, font: PDFFont, size: number): number => {
+    let cache = advances.get(font);
+    if (!cache) advances.set(font, (cache = new Map()));
+    let total = 0;
+    for (const ch of str) {
+      let unit = cache.get(ch);
+      if (unit === undefined) cache.set(ch, (unit = font.widthOfTextAtSize(ch, 1)));
+      total += unit;
+    }
+    return total * size;
+  };
+
+  /** Wraps plain or mixed-style text to `maxW`; a token wider than the column is cut to fit. */
+  const layout = (content: string | Span[], s: Style, maxW: number): Line[] => {
+    const spans = typeof content === 'string' ? [{ text: content }] : content;
+    const lines: Line[] = [];
+    let pieces: Line['pieces'] = [];
+    let cursor = 0;
+
+    for (const span of spans) {
+      const font = span.font ?? s.font;
+      const color = span.color ?? s.color;
+      const widthOf = (str: string) => measure(str, font, s.size) + s.tracking * s.size * str.length;
+      const space = widthOf(' ');
+
+      const add = (word: string): void => {
+        const wordW = widthOf(word);
+        if (cursor > 0 && cursor + space + wordW > maxW) {
+          lines.push({ pieces, width: cursor });
+          pieces = [];
+          cursor = 0;
+        }
+        const str = cursor > 0 ? ` ${word}` : word;
+        const last = pieces[pieces.length - 1];
+        if (last && last.font === font && last.color === color) last.text += str;
+        else pieces.push({ text: str, font, color, x: cursor });
+        cursor += cursor > 0 ? space + wordW : wordW;
+      };
+
+      for (let word of clean(span.text).split(' ')) {
+        if (!word) continue;
+        while (widthOf(word) > maxW && word.length > 1) {
+          let n = word.length - 1;
+          while (n > 1 && widthOf(word.slice(0, n)) > maxW) n--;
+          add(word.slice(0, n));
+          word = word.slice(n);
+        }
+        add(word);
       }
     }
-    if (line) out.push(line);
-    return out;
-  };
-
-  interface TextOpts {
-    font?: PDFFont;
-    size?: number;
-    color?: RGB;
-    x?: number;
-    maxW?: number;
-    lh?: number;
-    gap?: number;
-  }
-  const drawText = (str: string, o: TextOpts = {}): void => {
-    const font = o.font ?? reg;
-    const size = o.size ?? 9.5;
-    const color = o.color ?? INK_SEC;
-    const x = o.x ?? MARGIN;
-    const maxW = o.maxW ?? CONTENT_W;
-    const lineHeight = size * (o.lh ?? 1.45);
-    for (const line of wrap(str, font, size, maxW)) {
-      need(lineHeight);
-      page.drawText(line, { x, y: y - size, size, font, color });
-      y -= lineHeight;
-    }
-    y -= o.gap ?? 0;
-  };
-
-  const drawLabel = (str: string): void => {
-    need(24);
-    y -= 4;
-    page.drawText(str.toUpperCase(), { x: MARGIN, y: y - 8, size: 8, font: bold, color: INK_MUTED });
-    y -= 8 * 1.3 + 6;
+    if (pieces.length > 0) lines.push({ pieces, width: cursor });
+    return lines;
   };
 
   const addLink = (x1: number, y1: number, x2: number, y2: number, url: string): void => {
@@ -260,202 +370,388 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
     }
   };
 
-  const drawLink = (str: string, url: string, o: TextOpts = {}): void => {
-    const font = o.font ?? reg;
-    const size = o.size ?? 10;
-    const color = o.color ?? ACCENT;
-    const x = o.x ?? MARGIN;
-    const maxW = o.maxW ?? CONTENT_W;
-    const lineHeight = size * (o.lh ?? 1.35);
-    for (const line of wrap(str, font, size, maxW)) {
-      need(lineHeight);
-      const w = font.widthOfTextAtSize(line, size);
-      page.drawText(line, { x, y: y - size, size, font, color });
-      addLink(x, y - size - 1.5, x + w, y + 1.5, url);
-      y -= lineHeight;
+  const drawLine = (line: Line, s: Style, lx: number, top: number, link?: string): void => {
+    const lineH = s.size * s.lh;
+    const baseline = top - lineH / 2 - s.size * BASELINE;
+    if (s.tracking) page.pushOperators(setCharacterSpacing(s.tracking * s.size));
+    for (const piece of line.pieces) {
+      page.drawText(piece.text, { x: lx + piece.x, y: baseline, size: s.size, font: piece.font, color: piece.color });
     }
-    y -= o.gap ?? 0;
+    if (s.tracking) page.pushOperators(setCharacterSpacing(0));
+    if (link) addLink(lx, top - lineH, lx + line.width, top, link);
   };
 
-  const rule = (color: RGB = LINE, thickness: number = 0.75): void => {
-    page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness, color });
+  const roundRect = (bx: number, top: number, bw: number, bh: number, radius: number, fill?: RGB, stroke?: RGB): void => {
+    const r = Math.min(radius, bw / 2, bh / 2);
+    const path =
+      `M ${r} 0 H ${bw - r} A ${r} ${r} 0 0 1 ${bw} ${r} V ${bh - r} A ${r} ${r} 0 0 1 ${bw - r} ${bh} ` +
+      `H ${r} A ${r} ${r} 0 0 1 0 ${bh - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
+    page.drawSvgPath(path, { x: bx, y: top, color: fill, borderColor: stroke, borderWidth: stroke ? 1 : 0 });
   };
 
+  // ── Boxes: measured first, painted once they are known to fit ─────────────
+
+  const textBox = (content: string | Span[], s: Style, maxW: number, link?: string): Box => {
+    const lines = layout(content, s, maxW);
+    const lineH = s.size * s.lh;
+    return {
+      w: Math.max(0, ...lines.map((l) => l.width)),
+      h: lines.length * lineH,
+      draw: (bx, top) => lines.forEach((line, i) => drawLine(line, s, bx, top - i * lineH, link)),
+    };
+  };
+
+  const stack = (boxes: Box[], gap: number): Box => ({
+    w: Math.max(0, ...boxes.map((b) => b.w)),
+    h: boxes.reduce((sum, b) => sum + b.h, 0) + gap * Math.max(0, boxes.length - 1),
+    draw: (bx, top) => {
+      let cy = top;
+      for (const b of boxes) {
+        b.draw(bx, cy);
+        cy -= b.h + gap;
+      }
+    },
+  });
+
+  /** `body` padded inside a rounded rectangle `bw` wide. */
+  const boxed = (body: Box, bw: number, padX: number, padY: number, radius: number, fill?: RGB, stroke?: RGB): Box => {
+    const h = body.h + padY * 2;
+    return {
+      w: bw,
+      h,
+      draw: (bx, top) => {
+        roundRect(bx, top, bw, h, radius, fill, stroke);
+        body.draw(bx + padX, top - padY);
+      },
+    };
+  };
+
+  // ── Flow: these advance the cursor and break pages ────────────────────────
+
+  /** Keeps `box` whole: it moves to the next page rather than splitting. */
+  const place = (box: Box): void => {
+    need(box.h);
+    box.draw(x, y);
+    y -= box.h;
+  };
+
+  /** Running text; may break across pages between lines. */
+  const para = (content: string | Span[], s: Style): void => {
+    const lineH = s.size * s.lh;
+    for (const line of layout(content, s, w)) {
+      need(lineH);
+      drawLine(line, s, x, y);
+      y -= lineH;
+    }
+  };
+
+  /** Cards side by side, all stretched to the tallest — a CSS grid or flex-wrap row. */
+  const placeRow = (cards: Card[], gap: number, padX: number, padY: number, radius: number): void => {
+    const h = Math.max(...cards.map((c) => c.body.h)) + padY * 2;
+    need(h);
+    let bx = x;
+    for (const card of cards) {
+      roundRect(bx, y, card.w, h, radius, card.fill);
+      card.body.draw(bx + padX, y - padY);
+      bx += card.w + gap;
+    }
+    y -= h;
+  };
+
+  const tone = VERDICT_TONE[report.verdict];
+  let stepCount = 0;
+
+  /**
+   * One step of the verification timeline: a numbered marker on the rail, the
+   * title, then `items` 10pt apart. A step with nothing to show is skipped, so
+   * the numbering stays continuous. The closing step carries a check mark in
+   * the verdict colour and ends the rail.
+   */
+  const step = (title: string, items: Array<() => void>, closing = false): void => {
+    if (items.length === 0 && !closing) return;
+    need(96); // never strand a marker and title at the foot of a page
+    const cx = MARGIN + MARKER / 2;
+    const cy = y - MARKER / 2;
+    page.drawCircle({ x: cx, y: cy, size: MARKER / 2, color: closing ? tone.fill : INK });
+    if (closing) {
+      page.drawSvgPath('M -5.5 0.5 L -1.5 4.5 L 5.5 -4', {
+        x: cx,
+        y: cy,
+        borderColor: WHITE,
+        borderWidth: 2,
+        borderLineCap: LineCapStyle.Round,
+      });
+    } else {
+      const label = String(++stepCount);
+      page.drawText(label, { x: cx - measure(label, bold, 13) / 2, y: cy - 4.6, size: 13, font: bold, color: WHITE });
+    }
+
+    rail = closing ? null : y - MARKER;
+    x = MARGIN + STEP_INDENT;
+    w = CONTENT_W - STEP_INDENT;
+    y -= 4;
+    para(title, style(bold, 19, INK, 1.25, -0.01));
+    for (const item of items) {
+      y -= 10;
+      item();
+    }
+    if (rail !== null) {
+      y -= 30;
+      drawRail(rail, y);
+      rail = null;
+    }
+    x = MARGIN;
+    w = CONTENT_W;
+  };
+
+  const bodyText = style(reg, 15, BODY, 1.6);
   const claim = report.verifiedClaim ?? report.claim ?? report.inputText ?? '';
   const sources = report.sources ?? [];
   const insightBy = new Map(synthesis.sourceInsights.map((s) => [s.index, s]));
 
-  // ── Masthead ──────────────────────────────────────────────────────────────
-  const brandSize = 15;
-  let bx = MARGIN;
-  page.drawText('[', { x: bx, y: y - brandSize, size: brandSize, font: bold, color: ACCENT });
-  bx += bold.widthOfTextAtSize('[', brandSize);
-  page.drawText('Verifact', { x: bx, y: y - brandSize, size: brandSize, font: bold, color: INK });
-  bx += bold.widthOfTextAtSize('Verifact', brandSize);
-  page.drawText(']', { x: bx, y: y - brandSize, size: brandSize, font: bold, color: ACCENT });
-
-  const dateStr = `${t.generatedOn} ${formatDate(report.createdAt ?? new Date().toISOString(), locale)}`;
-  const idStr = `${t.reportId}: ${report.id}`;
-  page.drawText(dateStr, { x: PAGE_W - MARGIN - reg.widthOfTextAtSize(dateStr, 8), y: y - 8, size: 8, font: reg, color: INK_MUTED });
-  page.drawText(idStr, { x: PAGE_W - MARGIN - reg.widthOfTextAtSize(idStr, 8), y: y - 19, size: 8, font: reg, color: INK_MUTED });
-
-  y -= brandSize + 4;
-  page.drawText(t.docKind.toUpperCase(), { x: MARGIN, y: y - 8, size: 8, font: reg, color: INK_MUTED });
-  y -= 8 + 9;
-  rule(INK, 1.5);
-  y -= 18;
-
-  // ── Verdict Header Box ───────────────────────────────────────────────────
-  need(45);
-  page.drawText(verdictWordFor(report.verdict, locale), { x: MARGIN, y: y - 21, size: 21, font: bold, color: VERDICT_COLOR[report.verdict] });
-  y -= 21 * 1.15;
-  const scoreInfo = `${t.scoreLabel}: ${report.score}/100  ·  ${t.confidenceLabel}: ${(report.confidenceLevel || 'medium').toUpperCase()}`;
-  page.drawText(scoreInfo, { x: MARGIN, y: y - 9, size: 9, font: reg, color: INK_MUTED });
-  y -= 9 * 1.4 + 16;
+  // ── Header ────────────────────────────────────────────────────────────────
+  const wordmark = textBox('verifact', style(bold, 20, INK, 1.2, -0.02), w);
+  const dateline = textBox(
+    [t.report, formatDate(report.createdAt ?? new Date().toISOString(), locale)].filter(Boolean).join(' · '),
+    style(reg, 12, FAINT, 1.2),
+    w
+  );
+  wordmark.draw(x, y);
+  dateline.draw(x + w - dateline.w, y - (wordmark.h - dateline.h) / 2);
+  y -= wordmark.h + 36;
 
   // ── Claim ─────────────────────────────────────────────────────────────────
-  drawLabel(t.claimLabel);
-  drawText(`“${claim}”`, { font: serif, size: 13, color: INK, lh: 1.4, gap: 14 });
+  // Long claims step down a size so the headline never swallows the first page.
+  const claimSize = claim.length > 320 ? 20 : claim.length > 160 ? 24 : 30;
+  para(t.quote(claim), style(semi, claimSize, INK, 1.2, -0.025));
+  y -= 24;
+
+  // ── Verdict tiles ─────────────────────────────────────────────────────────
+  const tileW = (w - 8 * 2) / 3;
+  const tile = (label: string, value: string, fill: RGB, labelColor: RGB, valueColor: RGB): Card => ({
+    w: tileW,
+    fill,
+    body: stack(
+      [
+        textBox(label, style(reg, 12, labelColor, 1.2), tileW - 32),
+        textBox(value, style(bold, 20, valueColor, 1.2, -0.02), tileW - 32),
+      ],
+      4
+    ),
+  });
+  placeRow(
+    [
+      tile(t.verdict, verdictWordFor(report.verdict, locale), tone.fill, WHITE, WHITE),
+      tile(t.veracity, `${Math.round(report.score)} / 100`, TILE, MUTED, INK),
+      tile(t.confidence, t.confidenceWord[report.confidenceLevel || 'medium'], TILE, MUTED, INK),
+    ],
+    8,
+    16,
+    16,
+    18
+  );
 
   // ── Commentary ────────────────────────────────────────────────────────────
   if (report.posterCommentary) {
-    drawLabel(t.commentaryLabel);
-    drawText(`“${report.posterCommentary}”`, { font: serif, size: 10.5, color: INK_SEC, gap: 4 });
-    drawText(t.commentaryNote, { font: reg, size: 8, color: INK_MUTED, gap: 3 });
-    if (synthesis.commentaryAssessment) drawText(synthesis.commentaryAssessment, { font: reg, size: 8.5, color: INK_SEC, gap: 0 });
-    y -= 14;
-  }
-
-  // ── Rationale ─────────────────────────────────────────────────────────────
-  if (synthesis.verdictRationale) {
-    drawLabel(t.rationaleLabel);
-    drawText(synthesis.verdictRationale, { gap: 14 });
-  }
-
-  // ── Deep AI Reasoning ─────────────────────────────────────────────────────
-  if (synthesis.deepReasoning) {
-    drawLabel(t.deepReasoningLabel);
-    drawText(synthesis.deepReasoning, { font: reg, size: 9.5, color: INK, lh: 1.5, gap: 16 });
-  }
-
-  // ── Sub-Claims Breakdown Table (Clean Multi-line Cards) ────────────────────
-  if (synthesis.subClaims && synthesis.subClaims.length > 0) {
-    drawLabel(t.subClaimsLabel);
-    for (const sc of synthesis.subClaims) {
-      need(36);
-      const vColor = sc.verdict === 'true' ? VERDICT_COLOR.true : sc.verdict === 'false' ? VERDICT_COLOR.false : VERDICT_COLOR.partial;
-      page.drawText(`[${sc.verdict.toUpperCase()}]`, { x: MARGIN, y: y - 9, size: 8.5, font: bold, color: vColor });
-      drawText(sc.subClaim, { font: bold, size: 9.5, color: INK, x: MARGIN + 55, maxW: CONTENT_W - 55, gap: 3 });
-      drawText(sc.explanation, { font: reg, size: 8.5, color: INK_SEC, x: MARGIN + 14, maxW: CONTENT_W - 14, gap: 10 });
-    }
+    y -= 24;
+    para(t.commentaryLabel, style(semi, 12, MUTED, 1.4));
     y -= 6;
-  }
-
-  // ── Manipulation Techniques (Clean Block Titles & Indented Descriptions) ───
-  const manipulationList = synthesis.manipulationAnalysis?.techniques ?? [];
-  if (manipulationList.length > 0) {
-    drawLabel(t.manipulationLabel);
-    for (const tech of manipulationList) {
-      need(32);
-      drawText(`• ${tech.name}`, { font: bold, size: 9.5, color: ACCENT, x: MARGIN, maxW: CONTENT_W, gap: 2 });
-      const fullDesc = tech.manifestationInClaim ? `${tech.description} — ${tech.manifestationInClaim}` : tech.description;
-      drawText(fullDesc, { font: reg, size: 8.5, color: INK_SEC, x: MARGIN + 14, maxW: CONTENT_W - 14, gap: 8 });
-    }
+    para(t.quote(report.posterCommentary), bodyText);
     y -= 6;
+    para(t.commentaryNote, style(reg, 12, FAINT, 1.5));
+    if (synthesis.commentaryAssessment) {
+      y -= 6;
+      para(synthesis.commentaryAssessment, style(reg, 13, MUTED, 1.5));
+    }
   }
+  y -= 36;
 
-  // ── Motive & Impact ───────────────────────────────────────────────────────
+  // ── 1 · Sub-claims ────────────────────────────────────────────────────────
+  step(
+    t.stepBreakdown,
+    (synthesis.subClaims ?? []).map((sc) => () => {
+      const verdictTone =
+        sc.verdict === 'true' || sc.verdict === 'false' || sc.verdict === 'partial'
+          ? VERDICT_TONE[sc.verdict]
+          : VERDICT_TONE.unclear;
+      const tag = textBox(t.subVerdict[sc.verdict], style(bold, 13, verdictTone.ink, 1.4), w);
+      const innerW = w - 28;
+      const text = stack(
+        [
+          textBox(sc.subClaim, style(semi, 15, INK, 1.4), innerW - tag.w - 12),
+          textBox(sc.explanation, style(reg, 13, MUTED, 1.45), innerW - tag.w - 12),
+        ],
+        4
+      );
+      const body: Box = {
+        w: innerW,
+        h: text.h,
+        draw: (bx, top) => {
+          text.draw(bx, top);
+          tag.draw(bx + innerW - tag.w, top);
+        },
+      };
+      place(boxed(body, w, 14, 14, 14, TILE));
+    })
+  );
+
+  // ── 2 · Sources ───────────────────────────────────────────────────────────
+  const sourceItems: Array<() => void> = [];
+  for (const paragraph of (synthesis.deepReasoning ?? '').split(/\n{2,}/)) {
+    if (paragraph.trim()) sourceItems.push(() => para(paragraph, bodyText));
+  }
+  sources.forEach((s, i) => {
+    sourceItems.push(() => {
+      const insight = insightBy.get(i + 1);
+      const stance = stanceOf(insight?.stance, s.supports);
+      const innerW = w - 28;
+      const textW = innerW - 20; // past the stance dot
+      const meta = [s.publisher, formatDate(s.date, locale), t.stance[stance]].filter(Boolean).join(' · ');
+      const head = stack(
+        [
+          textBox(s.title, style(semi, 14, INK, 1.35), textW, s.url),
+          textBox(meta, style(reg, 12, FAINT, 1.4), textW),
+        ],
+        2
+      );
+      const rows: Box[] = [head];
+      if (insight?.takeaway && clean(insight.takeaway) !== clean(s.title)) {
+        rows.push(textBox(insight.takeaway, style(reg, 13, MUTED, 1.45), textW));
+      }
+      if (s.excerpt) {
+        rows.push(textBox(`${t.seePassage} →`, style(semi, 12, INK, 1.4), textW, sourceHref(s.url, s.excerpt, true)));
+      }
+      const text = stack(rows, 6);
+      const body: Box = {
+        w: innerW,
+        h: text.h,
+        draw: (bx, top) => {
+          page.drawCircle({ x: bx + 4, y: top - head.h / 2, size: 4, color: STANCE_DOT[stance] });
+          text.draw(bx + 20, top);
+        },
+      };
+      place(boxed(body, w, 14, 12, 14, undefined, LINE));
+    });
+  });
+  const consensus: Span[] = [];
+  const crossSource = synthesis.crossSourceAnalysis;
+  if (crossSource?.agreements) {
+    consensus.push({ text: `${t.agreementsLabel}:`, font: semi, color: INK }, { text: crossSource.agreements });
+  }
+  if (crossSource?.contradictions) {
+    consensus.push({ text: `${t.contradictionsLabel}:`, font: semi, color: INK }, { text: crossSource.contradictions });
+  }
+  if (consensus.length > 0) sourceItems.push(() => para(consensus, bodyText));
+  step(t.stepSources, sourceItems);
+
+  // ── 3 · Missing evidence ──────────────────────────────────────────────────
+  const toolkit = synthesis.investigatorToolkit;
+  const missingEvidence = toolkit?.missingEvidence ?? [];
+  step(
+    t.stepMissing,
+    missingEvidence.length === 0
+      ? []
+      : [
+          () => {
+            // flex-wrap: chips share a row while they fit, else start the next one.
+            const rows: Card[][] = [[]];
+            let used = 0;
+            for (const item of missingEvidence) {
+              const body = textBox(item, style(reg, 14, WARN_INK, 1.4), w - 24);
+              const chipW = body.w + 24;
+              if (used > 0 && used + 8 + chipW > w) {
+                rows.push([]);
+                used = 0;
+              }
+              rows[rows.length - 1].push({ body, w: chipW, fill: WARN_BG });
+              used += (used > 0 ? 8 : 0) + chipW;
+            }
+            rows.forEach((row, i) => {
+              if (i > 0) y -= 8;
+              placeRow(row, 8, 12, 8, 12);
+            });
+          },
+        ]
+  );
+
+  // ── 4 · Manipulation techniques, motive and impact ────────────────────────
+  const framingItems: Array<() => void> = [];
+  for (const tech of synthesis.manipulationAnalysis?.techniques ?? []) {
+    framingItems.push(() => {
+      const name = textBox(tech.name, style(bold, 13, ALERT_INK, 1.3), w - 24);
+      need(name.h + 12 + 10 + bodyText.size * bodyText.lh * 2); // the pill stays with its description
+      place(boxed(name, name.w + 24, 12, 6, 99, ALERT_BG));
+    });
+    framingItems.push(() => para([tech.description, tech.manifestationInClaim].filter(Boolean).join(' '), bodyText));
+  }
   const narrative = synthesis.narrativeAndImpact;
   const motiveText = narrative
     ? [narrative.originAndPropagation, narrative.motiveAssessment, narrative.publicImpact].filter(Boolean).join(' ')
-    : undefined;
-  if (motiveText) {
-    drawLabel(t.motiveLabel);
-    drawText(motiveText, { font: reg, size: 9, color: INK_SEC, gap: 14 });
+    : '';
+  if (motiveText) framingItems.push(() => para(motiveText, bodyText));
+  step(t.stepFraming, framingItems);
+
+  // ── ✓ · Conclusion ────────────────────────────────────────────────────────
+  const conclusionItems: Array<() => void> = [];
+  if (synthesis.verdictRationale) {
+    // A short "Label:" opening is set in ink, as the design does for the rationale.
+    const lead = /^([^:.!?]{2,40}:)\s+(.+)$/.exec(clean(synthesis.verdictRationale));
+    const rationale: Span[] = lead
+      ? [{ text: lead[1], font: semi, color: INK }, { text: lead[2] }]
+      : [{ text: synthesis.verdictRationale }];
+    conclusionItems.push(() => para(rationale, bodyText));
   }
-
-  // ── What to remember ──────────────────────────────────────────────────────
-  if (synthesis.whatToRemember && synthesis.whatToRemember.length > 0) {
-    drawLabel(t.rememberLabel);
-    for (const item of synthesis.whatToRemember) {
-      need(14);
-      page.drawText('•', { x: MARGIN, y: y - 9.5, size: 9.5, font: reg, color: ACCENT });
-      drawText(item, { x: MARGIN + 12, maxW: CONTENT_W - 12, gap: 4 });
-    }
-    y -= 12;
-  }
-
-  // ── What the sources say ──────────────────────────────────────────────────
-  const crossSource = synthesis.crossSourceAnalysis;
-  const agreements = crossSource?.agreements;
-  const contradictions = crossSource?.contradictions;
-  if (agreements || contradictions) {
-    drawLabel(t.sourcesConsensusLabel);
-    if (agreements) drawText(`${t.agreementsLabel}: ${agreements}`, { gap: 4 });
-    if (contradictions) drawText(`${t.contradictionsLabel}: ${contradictions}`, { gap: 4 });
-    y -= 12;
-  }
-
-  // ── Sources ───────────────────────────────────────────────────────────────
-  if (sources.length > 0) {
-    drawLabel(t.sourcesLabel(sources.length));
-    sources.forEach((s, i) => {
-      need(48);
-      const bodyX = MARGIN + 20;
-      const bodyW = CONTENT_W - 20;
-      page.drawText(String(i + 1).padStart(2, '0'), { x: MARGIN, y: y - 9, size: 8, font: bold, color: INK_MUTED });
-      drawLink(s.title, s.url, { font: bold, size: 9.5, color: INK, x: bodyX, maxW: bodyW, lh: 1.3, gap: 2 });
-
-      const insight = insightBy.get(i + 1);
-      const metaBase = [s.publisher, formatDate(s.date, locale)].filter(Boolean).join(' · ');
-      page.drawText(metaBase, { x: bodyX, y: y - 8, size: 8, font: reg, color: INK_MUTED });
-      if (insight) {
-        const mw = reg.widthOfTextAtSize(`${metaBase}    `, 8);
-        page.drawText(insight.stance.toUpperCase(), { x: bodyX + mw, y: y - 8, size: 7, font: bold, color: stanceColor(insight.stance) });
-      }
-      y -= 8 * 1.3 + 3;
-
-      if (insight?.takeaway) drawText(insight.takeaway, { font: reg, size: 8.5, color: INK_SEC, x: bodyX, maxW: bodyW, gap: 3 });
-      if (s.excerpt) drawText(`“${s.excerpt.slice(0, 260)}”`, { font: serif, size: 8.5, color: INK_SEC, x: bodyX + 9, maxW: bodyW - 9, gap: 3 });
-      if (s.excerpt) drawLink(`${t.seePassage} →`, sourceHref(s.url, s.excerpt, true), { font: reg, size: 8, color: ACCENT, x: bodyX, maxW: bodyW, gap: 6 });
-
-      need(8);
-      page.drawLine({ start: { x: bodyX, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 0.75, color: LINE });
-      y -= 9;
+  const remember = synthesis.whatToRemember ?? [];
+  if (remember.length > 0) {
+    conclusionItems.push(() => {
+      const innerW = w - 36;
+      const body = stack(
+        [
+          textBox(t.rememberLabel, style(semi, 12, ON_INK_MUTED, 1.4), innerW),
+          ...remember.map((item) => textBox(item, style(reg, 15, WHITE, 1.5), innerW)),
+        ],
+        8
+      );
+      place(boxed(body, w, 18, 18, 16, INK));
     });
   }
+  step(t.stepConclusion, conclusionItems, true);
 
-  // ── Missing Evidence ──────────────────────────────────────────────────────
-  const toolkit = synthesis.investigatorToolkit;
-  const missingEvidence = toolkit?.missingEvidence ?? [];
-  if (missingEvidence.length > 0) {
-    drawLabel(t.missingEvidenceLabel);
-    for (const item of missingEvidence) {
-      need(14);
-      page.drawText('⚠', { x: MARGIN, y: y - 9, size: 8, font: bold, color: ACCENT });
-      drawText(item, { x: MARGIN + 14, maxW: CONTENT_W - 14, gap: 4 });
-    }
-    y -= 10;
-  }
-
-  // ── Journalist FAQ ────────────────────────────────────────────────────────
+  // ── For journalists, disclaimer ───────────────────────────────────────────
+  y -= 36;
+  need(72);
+  page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 1, color: LINE });
+  y -= 24;
   const journalistFaq = toolkit?.journalistFaq ?? [];
   if (journalistFaq.length > 0) {
-    drawLabel(t.journalistFaqLabel);
-    for (const faq of journalistFaq) {
-      need(32);
-      drawText(`Q: ${faq.question}`, { font: bold, size: 9, color: INK, gap: 3 });
-      drawText(`A: ${faq.answer}`, { font: reg, size: 8.5, color: INK_SEC, x: MARGIN + 12, maxW: CONTENT_W - 12, gap: 8 });
+    para(t.journalistsLabel, style(bold, 15, INK, 1.3));
+    y -= 14;
+    const cardW = (w - 8) / 2;
+    for (let i = 0; i < journalistFaq.length; i += 2) {
+      if (i > 0) y -= 8;
+      placeRow(
+        journalistFaq.slice(i, i + 2).map((faq) => ({
+          w: cardW,
+          fill: TILE,
+          body: stack(
+            [
+              textBox(faq.question, style(semi, 14, INK, 1.35), cardW - 28),
+              textBox(faq.answer, style(reg, 13, MUTED, 1.5), cardW - 28),
+            ],
+            4
+          ),
+        })),
+        8,
+        14,
+        14,
+        14
+      );
     }
-    y -= 10;
+    y -= 20;
   }
-
-  // ── Disclaimer ────────────────────────────────────────────────────────────
-  y -= 8;
-  need(34);
-  rule(LINE_STRONG, 0.75);
-  y -= 11;
-  drawText(`${t.disclaimerLabel}: ${report.disclaimer ?? ''}`, { font: reg, size: 7.5, color: INK_MUTED, lh: 1.45 });
+  place(
+    textBox(`${t.disclaimerLabel}: ${report.disclaimer ?? ''} ${t.reportId}: ${report.id}`, style(reg, 12, FAINT, 1.55), w)
+  );
 
   // ── Page Numbers Footers ────────────────────────────────────────────────
   const totalPages = pages.length;
@@ -471,7 +767,7 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
       y: 20,
       size: 7.5,
       font: reg,
-      color: INK_MUTED,
+      color: FAINT,
     });
     const footerBrand =
       locale === 'fr'
@@ -484,7 +780,7 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
       y: 20,
       size: 7.5,
       font: reg,
-      color: INK_MUTED,
+      color: FAINT,
     });
   });
 
