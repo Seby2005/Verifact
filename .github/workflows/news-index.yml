@@ -32,9 +32,11 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ vars.APP_URL || 'https://verifact.ro' }}
         run: |
+          # Not configured yet: skip instead of failing, or GitHub would mail a
+          # failure notice every half hour until the secret is added.
           if [ -z "$CRON_SECRET" ]; then
-            echo "::error::The CRON_SECRET repository secret is not set."
-            exit 1
+            echo "::warning::The CRON_SECRET repository secret is not set; skipping the refresh."
+            exit 0
           fi
           curl --fail-with-body --silent --show-error --max-time 90 \
             -X POST -H "Authorization: Bearer $CRON_SECRET" \
