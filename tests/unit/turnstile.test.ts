@@ -13,13 +13,23 @@ describe('validateTurnstileToken', () => {
     process.env = originalEnv;
   });
 
-  it('bypasses verification when no secret is configured', async () => {
+  it('bypasses verification when no secret is configured in development/test', async () => {
+    delete process.env.TURNSTILE_SECRET_KEY;
+    delete process.env.TURNSTILE_SECRET;
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'development';
+
+    const result = await validateTurnstileToken(undefined);
+    expect(result.success).toBe(true);
+  });
+
+  it('fails closed when no secret is configured in production', async () => {
     delete process.env.TURNSTILE_SECRET_KEY;
     delete process.env.TURNSTILE_SECRET;
     (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
 
     const result = await validateTurnstileToken(undefined);
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/indisponibil/i);
   });
 
   it('rejects empty or missing token when secret is set', async () => {

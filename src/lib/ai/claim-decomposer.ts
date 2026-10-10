@@ -2,6 +2,7 @@ import { logger } from '@/lib/utils/logger';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import type { TokenUsageDetail } from '@/types/verification';
+import { MODEL_CHAIN, NO_REASONING } from './models';
 
 export type HarmRiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
@@ -14,7 +15,7 @@ export interface DecomposedClaim {
   tokenUsage?: TokenUsageDetail;
 }
 
-const DEFAULT_DECOMPOSITION: DecomposedClaim = {
+export const DEFAULT_DECOMPOSITION: DecomposedClaim = {
   originalText: '',
   subClaims: [],
   riskLevel: 'low',
@@ -22,12 +23,7 @@ const DEFAULT_DECOMPOSITION: DecomposedClaim = {
   category: 'general',
 };
 
-const OPENROUTER_MODELS = [
-  process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat',
-  'google/gemini-2.0-flash-lite-001:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'deepseek/deepseek-r1:free',
-];
+const OPENROUTER_MODELS = MODEL_CHAIN;
 
 /**
  * Uses LLM to decompose a claim into sub-claims and evaluate misinformation risk/harm.
@@ -72,11 +68,12 @@ Răspunde EXCLUSIV cu un obiect JSON structurat:
               'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
               'X-Title': 'Verifact Decomposer',
             },
-            signal: AbortSignal.timeout(6000),
+            signal: AbortSignal.timeout(5000),
             body: JSON.stringify({
               model,
               messages: [{ role: 'user', content: prompt }],
               temperature: 0.1,
+              ...NO_REASONING,
             }),
           }),
           { label: `Decompose ${model}` }

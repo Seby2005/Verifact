@@ -40,6 +40,7 @@ export interface Verification {
   verdict: VerdictType | null;
   score: number | null;
   report_json: Record<string, unknown> | null;
+  image_urls: string[];
   is_public: boolean;
   visibility_status: VisibilityStatus;
   show_author: boolean;
@@ -157,6 +158,18 @@ export interface AdminAction {
   created_at: string;
 }
 
+export interface ApiKey {
+  id: string;
+  user_id: string;
+  key_hash: string;
+  key_prefix: string;
+  name: string;
+  scopes: string[];
+  last_used_at: string | null;
+  created_at: string;
+  revoked_at: string | null;
+}
+
 export interface ContentOpportunity {
   id: string;
   title: string;
@@ -167,6 +180,21 @@ export interface ContentOpportunity {
   status: OpportunityStatus;
 }
 
+/** One headline in the own news index (migration 020). */
+export interface NewsIndexRow {
+  id: number;
+  url: string;
+  title: string;
+  snippet: string;
+  source_name: string;
+  source_domain: string;
+  kind: 'news' | 'factcheck' | 'official';
+  published_at: string;
+  fetched_at: string;
+}
+
+export type NewsIndexInsert = Omit<NewsIndexRow, 'id' | 'fetched_at'>;
+
 export interface Database {
   public: {
     Tables: {
@@ -174,6 +202,16 @@ export interface Database {
         Row: Profile;
         Insert: Pick<Profile, 'id'> & Partial<Omit<Profile, 'id'>>;
         Update: Partial<Profile>;
+      };
+      api_keys: {
+        Row: ApiKey;
+        Insert: Omit<ApiKey, 'id' | 'created_at' | 'last_used_at' | 'revoked_at'> & {
+          id?: string;
+          last_used_at?: string | null;
+          created_at?: string;
+          revoked_at?: string | null;
+        };
+        Update: Partial<ApiKey>;
       };
       verifications: {
         Row: Verification;
@@ -279,6 +317,11 @@ export interface Database {
         };
         Update: Partial<ContentOpportunity>;
       };
+      news_index: {
+        Row: NewsIndexRow;
+        Insert: NewsIndexInsert;
+        Update: Partial<NewsIndexRow>;
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -293,6 +336,18 @@ export interface Database {
       release_usage_slot: {
         Args: Record<PropertyKey, never>;
         Returns: undefined;
+      };
+      reserve_usage_slot_for: {
+        Args: { p_user_id: string };
+        Returns: { allowed: boolean; usage_limit: number; used: number }[];
+      };
+      release_usage_slot_for: {
+        Args: { p_user_id: string };
+        Returns: undefined;
+      };
+      search_news_index: {
+        Args: { p_query: string; p_limit?: number };
+        Returns: (Omit<NewsIndexRow, 'id' | 'fetched_at'> & { rank: number })[];
       };
       check_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_ms: number };

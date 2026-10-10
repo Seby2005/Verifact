@@ -1,19 +1,20 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { VerdictLabel, Callout } from '@/components/ui';
 import type { VerificationReport } from '@/types/verification';
 import { useLanguage } from '@/i18n';
 import { ReportDeepDive } from '@/components/report/ReportDeepDive';
-import { ProReportDossier } from '@/components/report/ProReportDossier';
-import { CiteButton } from './CiteButton';
 import { DisputeButton } from './DisputeButton';
 import { DownloadButton } from './DownloadButton';
 import { PublishReportButton } from './PublishReportButton';
+import { ShareCardButton } from './ShareCardButton';
 import { StickyVerdict } from './StickyVerdict';
 import { useUserTier } from './useUserTier';
 import { sourceHref } from './sourceLink';
 import { stripMarkdown } from '@/lib/utils/romanian-text';
+import { calculatePlausibilityTilt } from '@/lib/verification/scoring';
+import { generateKeyTakeaways } from '@/lib/verification/report-builder';
 import styles from './ReportView.module.css';
 
 export interface ReportViewProps {
@@ -36,38 +37,50 @@ function formatDate(iso?: string, locale: string = 'ro'): string | null {
   return dateStyle.format(parsed);
 }
 
-function renderTierBadge(tier?: 1 | 2 | 3, locale: string = 'ro'): React.ReactNode {
-  const isEn = locale === 'en';
-  const isFr = locale === 'fr';
-
-  if (tier === 1) {
-    const text = isEn
-      ? 'Tier 1: Trusted Source / Fact-Checker'
-      : isFr
-      ? 'Tier 1: Source de Confiance / Fact-Checker'
-      : 'Tier 1: Sursă de Încredere / Fact-Checker';
-    return <span className={styles.tier1Badge}>{text}</span>;
+function getDomain(url?: string): string {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.replace(/^www\./, '');
+  } catch {
+    return '';
   }
-  if (tier === 3) {
-    const text = isEn
-      ? 'Tier 3: Social / General Web'
-      : isFr
-      ? 'Tier 3: Réseaux Sociaux / Web Général'
-      : 'Tier 3: Social / Web General';
-    return <span className={styles.tier3Badge}>{text}</span>;
-  }
-  const text = isEn
-    ? 'Tier 2: Mainstream Press'
-    : isFr
-    ? 'Tier 2: Presse de Référence'
-    : 'Tier 2: Presă Generală';
-  return <span className={styles.tier2Badge}>{text}</span>;
 }
 
 export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interactive = true }) => {
   const { locale, t } = useLanguage();
   const { isPremium, ready } = useUserTier();
+  const showSummary = isPremium && Boolean(report.executiveSummary);
+  // A search provider that failed (quota, outage) leaves its layer unavailable;
+  // say so, or the reader takes "few sources" for "little evidence exists".
+  const searchDegraded = report.layers
+    ? [report.layers.layer1, report.layers.layer2, report.layers.layer3, report.layers.layer4].some(
+        (l) => l?.status === 'unavailable'
+      )
+    : false;
   const headRef = useRef<HTMLElement>(null);
+
+  const activeTilt = useMemo(() => {
+    if (report.evidenceStatus) {
+      return calculatePlausibilityTilt(report.evidenceStatus, report.score, undefined, locale);
+    }
+    return report.plausibilityTilt;
+  }, [report.evidenceStatus, report.score, report.plausibilityTilt, locale]);
+
+  const activeTakeaways = useMemo(() => {
+    return generateKeyTakeaways(
+      report.claim ?? report.inputText,
+      report.executiveSummary,
+      report.sources,
+      report.score,
+      locale,
+      report.verifiedClaim,
+      report.inputText,
+      report.evidenceStatus
+    );
+  }, [report, locale]);
+
+  const claimText = report.verifiedClaim ?? report.claim ?? report.inputText;
 
   return (
     <article className={styles.report} data-print-root>
@@ -81,7 +94,12 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
       <header className={styles.head} ref={headRef}>
         <div>
           {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-          <VerdictLabel kind={report.verdict} score={report.score} />
+          <VerdictLabel
+            kind={report.verdict}
+            evidenceStatus={report.evidenceStatus}
+            plausibilityTilt={activeTilt}
+            score={report.score}
+          />
         </div>
         <p className={styles.meta}>
           {formatDate(report.createdAt, locale)}
@@ -97,16 +115,23 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
       {interactive ? (
         <StickyVerdict
           kind={report.verdict}
+          evidenceStatus={report.evidenceStatus}
           score={report.score}
-          claim={report.claim ?? report.inputText ?? ''}
+          claim={claimText}
           watch={headRef}
         />
       ) : null}
 
       <div>
         <p className={styles.sectionLabel}>{t('reportView.claimLabel')}</p>
-        <p className={styles.claim}>&ldquo;{report.claim ?? report.inputText}&rdquo;</p>
+        <p className={styles.claim}>&ldquo;{claimText}&rdquo;</p>
       </div>
+
+      {activeTilt?.rationale ? (
+        <div className={styles.plausibilityBlock}>
+          <p className={styles.plausibilityRationale}>{activeTilt.rationale}</p>
+        </div>
+      ) : null}
 
       {report.posterCommentary ? (
         <div className={styles.commentaryBlock}>
@@ -116,11 +141,11 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </div>
       ) : null}
 
-      {report.keyTakeaways && report.keyTakeaways.length > 0 ? (
+      {!showSummary && activeTakeaways && activeTakeaways.length > 0 ? (
         <div className={styles.takeawaysContainer}>
           <p className={styles.sectionLabel}>{t('reportView.keyIdeasLabel')}</p>
           <ul className={styles.takeawaysList}>
-            {report.keyTakeaways.map((item, idx) => (
+            {activeTakeaways.map((item, idx) => (
               <li key={idx} className={styles.takeawayItem}>
                 {stripMarkdown(item)}
               </li>
@@ -135,7 +160,13 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </Callout>
       ) : null}
 
-      {isPremium && report.executiveSummary ? (
+      {searchDegraded ? (
+        <Callout label={t('reportView.searchDegradedLabel')} tone="plain">
+          {t('reportView.searchDegradedText')}
+        </Callout>
+      ) : null}
+
+      {showSummary && report.executiveSummary ? (
         <div>
           <p className={styles.sectionLabel}>{t('reportView.summaryLabel')}</p>
           <p className={styles.summary}>{stripMarkdown(report.executiveSummary)}</p>
@@ -147,35 +178,72 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
           {t('reportView.sourcesLabel', { count: report.sources.length })}
         </p>
         <ol className={styles.sources}>
-          {report.sources.map((source, index) => (
-            <li key={source.url} className={styles.source}>
-              <span className={styles.sourceIndex}>{String(index + 1).padStart(2, '0')}</span>
-              <span className={styles.sourceBody}>
-                <div className={styles.sourceHeaderLine}>
-                  <a
-                    href={sourceHref(source.url, source.excerpt, isPremium)}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className={styles.sourceTitle}
-                  >
-                    {source.title}
-                  </a>
-                  {renderTierBadge(source.tier, locale)}
-                </div>
-                <span className={styles.sourceMeta}>
-                  {source.publisher}
-                  {formatDate(source.date, locale) ? ` · ${formatDate(source.date, locale)}` : null}
+          {report.sources.map((source, index) => {
+            const domain = getDomain(source.siteUrl ?? source.url);
+            const faviconUrl = domain
+              ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
+              : null;
+
+            return (
+              <li key={source.url ?? index} className={styles.source}>
+                <span className={styles.sourceIndex}>{String(index + 1).padStart(2, '0')}</span>
+                <span className={styles.sourceBody}>
+                  <div className={styles.sourceHeaderLine}>
+                    {faviconUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={faviconUrl}
+                        alt=""
+                        width={16}
+                        height={16}
+                        className={styles.sourceFavicon}
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : null}
+                    <a
+                      href={sourceHref(source.url, source.excerpt, isPremium, source.siteUrl)}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className={styles.sourceTitle}
+                    >
+                      {source.title}
+                    </a>
+                    {source.tier === 1 ? (
+                      <span className={styles.tier1Badge}>
+                        {t('reportView.evidenceCards.tier1Label')}
+                      </span>
+                    ) : source.tier === 3 ? (
+                      <span className={styles.tier3Badge}>
+                        {t('reportView.evidenceCards.tier3Label')}
+                      </span>
+                    ) : (
+                      <span className={styles.tier2Badge}>
+                        {t('reportView.evidenceCards.tier2Label')}
+                      </span>
+                    )}
+                  </div>
+                  <span className={styles.sourceMeta}>
+                    {source.publisher}
+                    {formatDate(source.publishedAt ?? source.date, locale)
+                      ? ` · ${formatDate(source.publishedAt ?? source.date, locale)}`
+                      : null}
+                  </span>
+                  {source.excerpt ? (
+                    <q className={styles.sourceExcerpt}>{source.excerpt.slice(0, 300)}</q>
+                  ) : null}
                 </span>
-                {source.excerpt ? (
-                  <q className={styles.sourceExcerpt}>{source.excerpt.slice(0, 300)}</q>
-                ) : null}
-              </span>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ol>
       </div>
 
-      <ProReportDossier report={report} isPremium={isPremium} />
+      {/* The Business intelligence dossier is switched off for now. To restore it,
+          render <ProReportDossier report isPremium canAccessDossier /> here, where
+          canAccessDossier is `unlimited || tier === 'business'` from useUserTier. */}
 
       {interactive ? <ReportDeepDive report={report} /> : null}
 
@@ -185,8 +253,8 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </Callout>
         {interactive ? (
           <div className={styles.footerActions} data-print-hide>
+            <ShareCardButton report={report} />
             <PublishReportButton report={report} />
-            <CiteButton report={report} />
             <DownloadButton report={report} isPremium={isPremium} ready={ready} />
             <DisputeButton reportId={report.id} />
           </div>

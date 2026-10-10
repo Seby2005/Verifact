@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Callout } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import { ContactModal } from '@/components/contact/ContactModal';
+import { trackEvent } from '@/lib/analytics/events';
 import shell from '../page-shell.module.css';
 import styles from './page.module.css';
 
@@ -73,10 +74,12 @@ export default function PreturiPage() {
   const handleProCheckout = async () => {
     setIsSubmitting(true);
     setCheckoutError(null);
+    trackEvent('checkout_started', { billing });
     try {
       const res = await fetch('/api/checkout/creem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billing }),
       });
 
       const data = await res.json();
@@ -88,7 +91,12 @@ export default function PreturiPage() {
 
       if (!res.ok || !data.checkoutUrl) {
         setCheckoutError(
-          data.error || (isEn ? 'Failed to initiate checkout session.' : 'Nu am putut iniția sesiunea de plată.')
+          data.error ||
+            (isEn
+              ? 'Failed to initiate checkout session.'
+              : locale === 'fr'
+              ? 'Impossible de démarrer la session de paiement.'
+              : 'Nu am putut iniția sesiunea de plată.')
         );
         setIsSubmitting(false);
         return;
@@ -122,6 +130,12 @@ export default function PreturiPage() {
             price: 'Gratuit',
             tagline: 'Pour vérifier facilement les publications de votre fil d’actualité.',
             checks: '3 vérifications par mois',
+            features: [
+              '3 vérifications par mois',
+              'Vérification texte, capture (OCR) et URL',
+              'Verdict, score 0–100 et sources citées',
+              'Carte visuelle de verdict à partager',
+            ],
             cta: 'Commencer gratuitement',
           },
           pro: {
@@ -130,13 +144,26 @@ export default function PreturiPage() {
             priceYearly: '2,99 €',
             tagline: 'Pour journalistes, chercheurs et utilisateurs quotidiens.',
             checks: 'Plus de 10× plus de vérifications que l’offre gratuite.',
+            features: [
+              'De plus de 10× plus de vérifications',
+              'AI Report Deep-Dive (questions/réponses sur le rapport)',
+              'Téléchargement du rapport complet en PDF',
+              'Lien direct vers la phrase citée dans chaque source',
+              'Support prioritaire par e-mail',
+            ],
             cta: isSubmitting ? 'Connexion à Creem...' : 'Choisir Pro',
           },
           business: {
             name: 'Business',
             price: 'Sur devis',
             tagline: 'Pour rédactions, ONG et équipes professionnelles.',
-            checks: 'Volume sur-mesure et fonctionnalités dédiées',
+            checks: 'Volume et fonctionnalités sur-mesure',
+            features: [
+              'Volume sur-mesure de vérifications',
+              'Dossier avancé d’analyse & consensus des sources',
+              'Accès API REST & intégrations',
+              'Comptes d’équipe & gestion multi-utilisateurs',
+            ],
             cta: 'Nous contacter',
           },
           compareTitle: 'Comparatif des forfaits',
@@ -144,11 +171,15 @@ export default function PreturiPage() {
           excluded: 'Non inclus',
           rows: [
             { label: 'Vérifications mensuelles', free: '3', pro: 'Plus de 10×', business: 'Sur devis' },
-            { label: 'Vérification texte, capture et URL', free: true, pro: true, business: true },
+            { label: 'Vérification texte, capture (OCR) et URL', free: true, pro: true, business: true },
             { label: 'Verdict, score et sources citées', free: true, pro: true, business: true },
+            { label: 'Carte de verdict à partager (réseaux sociaux, chat)', free: true, pro: true, business: true },
+            { label: 'Historique personnel et favoris', free: true, pro: true, business: true },
             { label: 'Téléchargement du rapport en PDF', free: false, pro: true, business: true },
             { label: 'Lien direct vers la phrase citée', free: false, pro: true, business: true },
+            { label: 'AI Report Deep-Dive (Q&R interactif)', free: false, pro: true, business: true },
             { label: 'Support prioritaire', free: false, pro: true, business: true },
+            { label: 'Dossier avancé d’analyse & consensus', free: false, pro: false, business: true },
             { label: 'Accès API & intégrations', free: false, pro: false, business: true },
             { label: 'Comptes d’équipe & licences multiples', free: false, pro: false, business: true },
           ],
@@ -169,6 +200,12 @@ export default function PreturiPage() {
             price: 'Free',
             tagline: 'For anyone who wants to check what they see in their feed.',
             checks: '3 verifications a month',
+            features: [
+              '3 verifications per month',
+              'Text, screenshot (OCR), and URL checks',
+              'Verdict, score, and cited sources',
+              'Shareable visual verdict card',
+            ],
             cta: 'Start free',
           },
           pro: {
@@ -177,6 +214,13 @@ export default function PreturiPage() {
             priceYearly: '€2.99',
             tagline: 'For journalists, researchers, and anyone who checks daily.',
             checks: 'Over 10× more checks than the free plan.',
+            features: [
+              'Over 10× more monthly checks',
+              'AI Report Deep-Dive (interactive Q&A)',
+              'Download the full report as PDF',
+              'Exact link & highlight to cited sentence',
+              'Priority email support',
+            ],
             cta: isSubmitting ? 'Connecting to Creem...' : 'Choose Pro',
           },
           business: {
@@ -184,6 +228,12 @@ export default function PreturiPage() {
             price: 'Contact',
             tagline: 'For newsrooms, NGOs, and teams.',
             checks: 'Custom volume and features',
+            features: [
+              'Custom verification volume',
+              'Advanced Intelligence Dossier & cross-source consensus',
+              'REST API access & integrations',
+              'Team accounts & multi-seat billing',
+            ],
             cta: 'Get in touch',
           },
           compareTitle: 'Compare the plans',
@@ -191,12 +241,16 @@ export default function PreturiPage() {
           excluded: 'Not included',
           rows: [
             { label: 'Verifications per month', free: '3', pro: 'Over 10×', business: 'Custom' },
-            { label: 'Text, screenshot, and URL checks', free: true, pro: true, business: true },
+            { label: 'Text, screenshot (OCR), and URL checks', free: true, pro: true, business: true },
             { label: 'Verdict, score, and cited sources', free: true, pro: true, business: true },
-            { label: 'Download the report as PDF', free: false, pro: true, business: true },
-            { label: 'Exact link to the sentence in each source', free: false, pro: true, business: true },
+            { label: 'Shareable verdict card (Social & Chat)', free: true, pro: true, business: true },
+            { label: 'Personal search history and bookmarks', free: true, pro: true, business: true },
+            { label: 'Download the full report as PDF', free: false, pro: true, business: true },
+            { label: 'Exact link & highlight to cited sentence', free: false, pro: true, business: true },
+            { label: 'AI Report Deep-Dive (interactive Q&A)', free: false, pro: true, business: true },
             { label: 'Priority support', free: false, pro: true, business: true },
-            { label: 'API access', free: false, pro: false, business: true },
+            { label: 'Advanced Intelligence Dossier & consensus', free: false, pro: false, business: true },
+            { label: 'REST API access', free: false, pro: false, business: true },
             { label: 'Team billing and seats', free: false, pro: false, business: true },
           ],
           footnotePrefix: 'No card needed for the free plan. For anything custom, write to ',
@@ -215,6 +269,12 @@ export default function PreturiPage() {
             price: 'Gratuit',
             tagline: 'Pentru oricine vrea să verifice ce vede în feed.',
             checks: '3 verificări pe lună',
+            features: [
+              '3 verificări pe lună',
+              'Verificare din text, capturi (OCR) și link-uri',
+              'Verdict, scor de veridicitate și surse citate',
+              'Card de verdict share-abil pentru social media',
+            ],
             cta: 'Începe gratuit',
           },
           pro: {
@@ -223,6 +283,13 @@ export default function PreturiPage() {
             priceYearly: '€2,99',
             tagline: 'Pentru jurnaliști, cercetători și oricine verifică zilnic.',
             checks: 'De peste 10× mai multe verificări ca planul gratuit.',
+            features: [
+              'De peste 10× mai multe verificări ca Free',
+              'AI Report Deep-Dive (întrebări și răspunsuri pe raport)',
+              'Descarcă raportul complet în format PDF',
+              'Link direct cu highlight pe fraza exactă din sursă',
+              'Suport prioritar prin email',
+            ],
             cta: isSubmitting ? 'Se conectează la Creem...' : 'Alege Pro',
           },
           business: {
@@ -230,6 +297,12 @@ export default function PreturiPage() {
             price: 'Contact',
             tagline: 'Pentru redacții, ONG-uri și echipe.',
             checks: 'Volum și funcții la cerere',
+            features: [
+              'Volum personalizat de verificări',
+              'Dosar avansat de analiză & consens între surse',
+              'Acces API REST & integrări',
+              'Conturi de echipă & locuri multiple',
+            ],
             cta: 'Scrie-ne',
           },
           compareTitle: 'Compară planurile',
@@ -239,9 +312,13 @@ export default function PreturiPage() {
             { label: 'Verificări pe lună', free: '3', pro: 'Peste 10×', business: 'La cerere' },
             { label: 'Verificare din text, screenshot și URL', free: true, pro: true, business: true },
             { label: 'Verdict, scor și surse citate', free: true, pro: true, business: true },
+            { label: 'Card de verdict share-abil (WhatsApp, social media)', free: true, pro: true, business: true },
+            { label: 'Istoric personal și marcaje salvate', free: true, pro: true, business: true },
             { label: 'Descarcă raportul ca PDF', free: false, pro: true, business: true },
             { label: 'Link exact la propoziția din fiecare sursă', free: false, pro: true, business: true },
+            { label: 'AI Report Deep-Dive (Q&A pe raport)', free: false, pro: true, business: true },
             { label: 'Suport prioritar', free: false, pro: true, business: true },
+            { label: 'Dosar avansat de analiză & consens între surse', free: false, pro: false, business: true },
             { label: 'Acces API', free: false, pro: false, business: true },
             { label: 'Facturare și locuri pentru echipă', free: false, pro: false, business: true },
           ],
@@ -249,6 +326,26 @@ export default function PreturiPage() {
         };
 
   const proPrice = billing === 'yearly' ? c.pro.priceYearly : c.pro.priceMonthly;
+
+  const renderCardFeatures = (features: string[]) => (
+    <ul className={styles.featureList}>
+      {features.map((feat, idx) => (
+        <li key={idx} className={styles.featureItem}>
+          <svg viewBox="0 0 20 20" className={styles.featureIcon} aria-hidden="true">
+            <path
+              d="M4 10.5 8 14.5 16 5.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>{feat}</span>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <div className={`container ${shell.page}`}>
@@ -305,6 +402,7 @@ export default function PreturiPage() {
               </p>
               <p className={styles.checks}>{c.free.checks}</p>
               <p className={styles.forWho}>{c.free.tagline}</p>
+              {renderCardFeatures(c.free.features)}
             </div>
             <div className={styles.planCta}>
               <Button variant="secondary" size="md" fullWidth href="/cont">
@@ -327,6 +425,7 @@ export default function PreturiPage() {
               </p>
               <p className={styles.checks}>{c.pro.checks}</p>
               <p className={styles.forWho}>{c.pro.tagline}</p>
+              {renderCardFeatures(c.pro.features)}
             </div>
             <div className={styles.planCta}>
               <Button
@@ -350,6 +449,7 @@ export default function PreturiPage() {
               </p>
               <p className={styles.checks}>{c.business.checks}</p>
               <p className={styles.forWho}>{c.business.tagline}</p>
+              {renderCardFeatures(c.business.features)}
             </div>
             <div className={styles.planCta}>
               <Button variant="secondary" size="md" fullWidth onClick={() => setContactOpen(true)}>

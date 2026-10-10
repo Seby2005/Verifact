@@ -1,5 +1,3 @@
-import { withSentryConfig } from '@sentry/nextjs';
-
 /**
  * The browser only ever talks directly to this app's own origin and to
  * Supabase (REST + Auth, from the browser client in src/lib/supabase/client.ts).
@@ -31,27 +29,31 @@ const originOf = (value) => {
     return '';
   }
 };
-// GlitchTip DSN host: the Sentry browser SDK POSTs events here. new URL().origin
-// drops the public key in the DSN userinfo, leaving just scheme + host.
-const glitchtipOrigin = originOf(process.env.NEXT_PUBLIC_SENTRY_DSN);
-// Formbricks: loads its UMD script and calls its ingest API from the browser.
-const formbricksOrigin = originOf(process.env.NEXT_PUBLIC_FORMBRICKS_APP_URL);
-
 // Google Identity Services (One Tap / "Sign in with Google"): the browser loads
 // its script, opens its popup in an iframe, and posts the ID token — all on
 // accounts.google.com. Only widened when a Google Client ID is configured.
 const googleAuthOrigin = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? 'https://accounts.google.com' : '';
 const turnstileOrigin = 'https://challenges.cloudflare.com';
+// Umami uses two hosts: the tracker script is served from cloud.umami.is, but
+// every pageview and event is POSTed to gateway.umami.is. Listing only the
+// script host made analytics look installed while the browser silently blocked
+// every beacon, so both belong in the policy.
+const umamiOrigin = 'https://cloud.umami.is';
+const umamiIngestOrigin = 'https://gateway.umami.is';
+// @vercel/analytics (mounted in the root layout) loads its script from, and
+// beacons to, this host.
+const vercelAnalyticsOrigin = 'https://va.vercel-scripts.com';
 
 const connectSrc = [
   "'self'",
   supabaseOrigin,
   'https://*.supabase.co',
   'wss://*.supabase.co',
-  glitchtipOrigin,
-  formbricksOrigin,
   googleAuthOrigin,
   turnstileOrigin,
+  umamiOrigin,
+  umamiIngestOrigin,
+  vercelAnalyticsOrigin,
 ]
   .filter(Boolean)
   .join(' ');
@@ -73,9 +75,21 @@ const csp = [
   // (no nonce plumbing set up yet) — 'unsafe-inline' is required for the
   // app to boot, not an oversight. Tightening this to a nonce-based policy
   // is tracked as follow-up work, not part of this pass.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${formbricksOrigin ? ` ${formbricksOrigin}` : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''} ${turnstileOrigin}`,
+  // 'wasm-unsafe-eval' lets the browser compile WebAssembly — required by
+  // onnxruntime-web, which runs the Whisper transcription model client-side
+  // (src/lib/transcription/browser-whisper.ts). It permits only WASM
+  // compilation, not arbitrary eval(), so it stays far tighter than the
+  // 'unsafe-eval' that dev's HMR needs.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''} ${turnstileOrigin} ${umamiOrigin} ${vercelAnalyticsOrigin}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data:${googleAuthOrigin ? ' https://*.googleusercontent.com' : ''}`,
+  // Video clip verification loads the uploaded file into a <video> element via a
+  // blob: URL to sample frames for OCR (src/lib/transcription/video-frames.ts).
+  // The file never leaves the browser, so only 'self' and blob: are needed.
+  "media-src 'self' blob:",
+  // Supabase Storage serves public report images (bucket report-images) — the
+  // browser renders them via <img>, so the storage host must be allowed here
+  // (connect-src already lists it; img-src is a separate directive).
+  `img-src 'self' data: ${supabaseOrigin} https://*.supabase.co${googleAuthOrigin ? ' https://*.googleusercontent.com' : ''}`,
   "font-src 'self'",
   `connect-src ${connectSrc}`,
   `frame-src ${frameSources}`,
@@ -111,8 +125,8 @@ const nextConfig = {
   experimental: {
     workerThreads: false,
     cpus: 1,
-    optimizePackageImports: ['@sentry/nextjs'],
   },
+  turbopack: {},
   // @react-pdf's yoga layout engine is WebAssembly; allow the bundled module to
   // load it in the server build.
   webpack: (config) => {
@@ -145,12 +159,4 @@ const nextConfig = {
   },
 };
 
-// withSentryConfig injects the client config into the browser bundle and wires
-// the server/edge instrumentation. Source-map upload is intentionally left off
-// (no org/project/authToken): self-hosted GlitchTip doesn't require it, and the
-// build must not depend on a token. When NEXT_PUBLIC_SENTRY_DSN is unset the
-// whole SDK is inert (see the sentry.*.config.ts guards).
-export default withSentryConfig(nextConfig, {
-  silent: true,
-  disableLogger: true,
-});
+export default nextConfig;

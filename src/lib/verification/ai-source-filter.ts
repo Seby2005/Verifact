@@ -9,6 +9,7 @@ import { calculateLayer1Score } from './layer1-factcheck';
 import { calculateLayer2Score } from './layer2-news';
 import { calculateLayer3Score } from './layer3-official';
 import { calculateLayer4Score } from './layer4-social';
+import { publisherSiteOf } from './publisher-site';
 import { logger } from '@/lib/utils/logger';
 
 export interface LayerSet {
@@ -53,6 +54,9 @@ export function assignSourceTier(urlStr?: string, publisher?: string): SourceTie
     url.includes('who.int') ||
     url.includes('europa.eu') ||
     url.includes('.gov') ||
+    url.includes('cdep.ro') ||
+    url.includes('senat.ro') ||
+    url.includes('presidency.ro') ||
     pub.includes('snopes') ||
     pub.includes('factual') ||
     pub.includes('veridica') ||
@@ -97,7 +101,7 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
       id: `l2:${i}`,
       title: a.title,
       snippet: a.snippet ?? '',
-      source: origin(a.articleUrl || a.url),
+      source: origin(publisherSiteOf(a.articleUrl || a.url || '', a.sourceUrl) ?? a.articleUrl ?? a.url),
     });
   });
 
@@ -106,7 +110,7 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
       id: `l3:${i}`,
       title: s.title,
       snippet: s.relevantQuote ?? s.snippet ?? '',
-      source: origin(s.documentUrl || s.url),
+      source: origin(publisherSiteOf(s.documentUrl || s.url || '', s.url) ?? s.documentUrl ?? s.url),
     });
   });
 
@@ -119,16 +123,44 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
     });
   });
 
+  // If no candidates found across all layers, nothing to filter.
   if (candidates.length === 0) return layers;
 
-  const relevantIds = await filterRelevantSources(claim, candidates);
-  if (relevantIds === null) return layers;
+  const judgement = await filterRelevantSources(claim, candidates);
+  if (judgement === null) return layers;
 
-  const keepSet = new Set(relevantIds);
+  const keepSet = new Set(judgement.relevant);
+  const oppositeSet = new Set(judgement.opposite);
+  const supportSet = new Set(judgement.supports);
+  const contradictSet = new Set(judgement.contradicts);
 
-  const l1Surviving = layers.layer1.results.filter((_, i) => keepSet.has(`l1:${i}`));
-  const l2Surviving = layers.layer2.results.filter((_, i) => keepSet.has(`l2:${i}`));
-  const l3Surviving = layers.layer3.results.filter((_, i) => keepSet.has(`l3:${i}`));
+  // The model read each source against the claim, so its stance replaces the
+  // keyword guess the layers made. Contradiction wins if listed in both.
+  const stanceOf = (id: string): 'supports' | 'contradicts' | 'neutral' =>
+    contradictSet.has(id) ? 'contradicts' : supportSet.has(id) ? 'supports' : 'neutral';
+
+  // A fact-check of the claim's opposite speaks to the claim with its rating
+  // inverted: "X is a hoax" rated False is evidence *for* X. The rating label
+  // stays as the publisher wrote it; only the value used for scoring flips.
+  const l1Surviving = layers.layer1.results
+    .map((r, i) => (oppositeSet.has(`l1:${i}`) ? { ...r, ratingValue: 1 - r.ratingValue } : r))
+    .filter((_, i) => keepSet.has(`l1:${i}`));
+  const l2Surviving = layers.layer2.results
+    .map((a, i) => {
+      const stance = stanceOf(`l2:${i}`);
+      return { ...a, sentiment: stance === 'supports' ? ('confirms' as const) : stance };
+    })
+    .filter((_, i) => keepSet.has(`l2:${i}`));
+  const l3Surviving = layers.layer3.results
+    .map((s, i) => {
+      const stance = stanceOf(`l3:${i}`);
+      return { ...s, supportsOrDenies: stance === 'contradicts' ? ('denies' as const) : stance };
+    })
+    // Register records stay whatever the triage says: it judges topical
+    // overlap, and "the EU's defence-industry regulation" does not look like
+    // "the EU is taking us to war" — yet it is exactly the evidence that
+    // answers it.
+    .filter((s, i) => s.fromRegister || keepSet.has(`l3:${i}`));
   const l4Surviving = layers.layer4.results.filter((_, i) => keepSet.has(`l4:${i}`));
 
   const layer1: Layer1Result = {

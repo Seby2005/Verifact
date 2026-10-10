@@ -18,11 +18,44 @@ export const fr: Translations = {
       menuOpen: 'Ouvrir le menu',
       menuClose: 'Fermer le menu',
       toggleLangAria: 'Changer la langue',
+      homeAria: 'Verifact — accueil',
+      langOptions: 'Options de langue',
     },
     theme: {
       toDark: 'Passer au thème sombre',
       toLight: 'Passer au thème clair',
     },
+  },
+  notFound: {
+    code: '404',
+    title: 'Page introuvable',
+    lead: 'La page que vous cherchez n’existe pas ou a été déplacée.',
+    back: 'Retour à l’accueil',
+    genericError: 'Une erreur inattendue s’est produite. Rechargez la page.',
+  },
+  auditTrail: {
+    eyebrow: 'Méthodologie & Intégrité',
+    title: 'Piste d’audit de la vérification',
+    bylineLabel: 'Note de transparence : ',
+    byline:
+      'Analyse générée automatiquement par Verifact Core v1.0 • Évaluée à partir de sources publiques ouvertes • Publiée le {date}.',
+    processingTime: 'Temps d’analyse',
+    confidenceLevel: 'Niveau de confiance',
+    totalSources: 'Sources consultées',
+    engine: 'Moteur de vérification',
+    confidenceHigh: 'Élevée',
+    confidenceMedium: 'Moyenne',
+    confidenceModerate: 'Modérée',
+    pipelineTitle: 'Couverture du pipeline multi-niveaux',
+    layer1: '1. Bases de fact-checking',
+    layer2: '2. Presse & médias fiables',
+    layer3: '3. Sources officielles & archives',
+    layer4: '4. Contexte des réseaux sociaux',
+    unitMatches: 'correspondances',
+    unitArticles: 'articles',
+    unitRecords: 'documents',
+    unitSignals: 'signaux',
+    uniqueId: 'ID unique de vérification :',
   },
   publicReports: {
     title: 'Rapports de Vérification Publics',
@@ -58,6 +91,13 @@ export const fr: Translations = {
     note: {
       partial: 'Contexte manquant',
       unclear: 'Insuffisamment vérifié',
+    },
+    evidenceStatus: {
+      corroborated: 'Confirmé par des sources multiples',
+      contradicted: 'Contredit par les faits documentés',
+      missing_context: 'Contexte vérifiable manquant',
+      unverified_no_sources: 'Aucune source crédible identifiée',
+      open_debate: 'Débat ouvert / Opinions divergentes',
     },
     scoreLabel: 'Score de véracité : ',
   },
@@ -104,6 +144,7 @@ export const fr: Translations = {
     },
     trust: {
       line: 'Ne nous croyez pas sur parole — nous vous montrons les sources.',
+      resourcesLink: 'Ressources & Glossaire',
     },
     sample: {
       eyebrow: 'Exemple de rapport',
@@ -137,6 +178,21 @@ export const fr: Translations = {
       methodologyLink: 'Découvrir la méthodologie',
       openSourceLink: 'Open source et confidentialité',
     },
+    faq: {
+      title: 'Vérification indépendante de l’information',
+      intro:
+        'Verifact est un outil roumain de vérification de l’information (fact-checking) assisté par intelligence artificielle. Vous l’utilisez lorsque vous voyez une actualité, une affirmation ou une publication et voulez savoir si elle est vraie avant de la partager. Vous saisissez le texte, le lien, la capture d’écran ou le clip, et Verifact recherche dans des sources publiques vérifiables — fact-checkers, presse et institutions officielles — et vous donne un score de véracité avec les sources citées intégralement, pour repartir mieux informé.',
+      q1: 'Qu’est-ce que Verifact ?',
+      a1: 'Verifact est une plateforme indépendante et open source de vérification de l’information, basée en Roumanie. Elle analyse une affirmation, un article, une capture d’écran ou un court clip et renvoie un score de véracité avec les sources citées intégralement.',
+      q2: 'Comment Verifact vérifie-t-il une affirmation ?',
+      a2: 'Il sépare l’affirmation factuelle du commentaire de celui qui l’a partagée, puis cherche des preuves dans des sources publiques vérifiables — fact-checkers, presse et institutions officielles. Il compare l’affirmation à ce qu’il trouve et calcule un score de véracité de 0 à 100.',
+      q3: 'Puis-je faire confiance aux résultats ?',
+      a3: 'Chaque rapport cite intégralement les sources utilisées, pour que vous puissiez vérifier vous-même. Le score est une estimation fondée sur les sources disponibles au moment de la vérification, et non une décision éditoriale définitive ; l’algorithme est open source.',
+      q4: 'Quels types de contenu puis-je vérifier ?',
+      a4: 'Un texte (une affirmation écrite), un lien vers un article ou une capture d’écran d’un réseau social. Verifact extrait l’affirmation et la vérifie de la même manière dans tous les cas.',
+      q5: 'Combien ça coûte ?',
+      a5: 'La vérification de base est gratuite, avec 3 vérifications par mois. Le forfait Pro offre plus de 10 fois plus de vérifications, un rapport PDF téléchargeable et un lien direct vers le passage exact de la source.',
+    },
   },
   verifyTool: {
     layers: {
@@ -156,6 +212,7 @@ export const fr: Translations = {
       text: 'Texte',
       screenshot: 'Capture d’écran',
       url: 'URL',
+      video: 'Vidéo',
     },
     textarea: {
       label: 'Affirmation à vérifier',
@@ -166,6 +223,17 @@ export const fr: Translations = {
       title: 'Sélectionnez une image ou glissez-la ici',
       hint: 'PNG, JPG ou WebP — maximum 10 Mo',
       fileSelected: 'Fichier sélectionné : {name}',
+    },
+    videoDropzone: {
+      title: 'Sélectionnez une vidéo ou glissez-la ici',
+      hint: 'MP4, WebM ou MOV — clip court (jusqu’à ~30 s), maximum 50 Mo',
+      fileSelected: 'Clip sélectionné : {name}',
+    },
+    video: {
+      transcribing: 'Transcription de l’audio…',
+      preparingModel: 'Préparation du modèle de transcription… {percent} %',
+      reading: 'Lecture du texte à l’écran…',
+      note: 'La transcription s’exécute dans votre navigateur — le clip n’est jamais téléversé.',
     },
     urlInput: {
       label: 'Lien vers l’article ou la publication',
@@ -180,6 +248,13 @@ export const fr: Translations = {
     errors: {
       emptyText: 'Veuillez saisir le contenu que vous souhaitez vérifier.',
       emptyImage: 'Veuillez choisir une image avant de lancer la vérification.',
+      emptyVideo: 'Veuillez choisir une vidéo avant de lancer la vérification.',
+      videoTooLarge: 'Ce clip est trop volumineux. Choisissez un fichier de 50 Mo maximum.',
+      videoTooLong: 'Ce clip est trop long. Utilisez un court extrait (jusqu’à 2 minutes).',
+      videoFailed:
+        'Impossible de traiter le clip. Essayez un fichier MP4, WebM ou MOV plus court.',
+      emptyVideoText:
+        'Aucun texte parlé ou affiché n’a été trouvé dans le clip. Essayez-en un avec une voix plus claire ou des sous-titres.',
       ocrFailed:
         'Impossible d’extraire du texte lisible de l’image. Essayez une capture plus nette ou saisissez le texte manuellement.',
       generic: 'Une erreur est survenue lors de la vérification.',
@@ -197,6 +272,36 @@ export const fr: Translations = {
     },
   },
   reportView: {
+    eyebrow: 'Rapport de Vérification Factuelle',
+    hypothesisLabel: 'Hypothèse Factuelle Analysée',
+    commentaryBadge: 'Commentaire du partageur',
+    commentaryNoteShort: 'opinion distincte de l’affirmation factuelle',
+    criticalThinkingDefault: 'Voici ce que documentent les sources et ce qui fait défaut — examinez les preuves et jugez par vous-même.',
+    scoreTitle: 'Score de véracité',
+    visualEvidenceAlt: 'Preuve visuelle {index} pour l’affirmation vérifiée',
+    executiveBreakdown: {
+      title: 'Synthèse exécutive',
+      subtitle: 'Évaluation structurée de l’hypothèse, des preuves documentées et des omissions critiques.',
+      whatClaimAsserts: 'Que soutient l’affirmation ?',
+      whatFactsProve: 'Que prouvent les faits ?',
+      whatIsMissing: 'Que manque-t-il ?',
+      claimSubtext: 'L’hypothèse factuelle isolée des commentaires personnels.',
+      factsSubtext: 'Conclusions tirées des sources documentées et vérifiées.',
+      missingSubtext: 'Éléments de contexte déterminants omis ou non démontrés.',
+    },
+    evidenceCards: {
+      title: 'Sources et preuves documentées',
+      subtitle: 'Articles de presse, rapports officiels et fact-checks certifiés consultés.',
+      tier1Label: 'Tier 1 : Source de Confiance / Fact-Checker',
+      tier2Label: 'Tier 2 : Presse de Référence',
+      tier3Label: 'Tier 3 : Réseaux Sociaux / Web Général',
+      stanceConfirms: 'Confirme',
+      stanceContradicts: 'Contredit',
+      stanceContext: 'Contexte / Neutre',
+      openSourceArticle: 'Consulter l’article source',
+      publisherUnknown: 'Publication en ligne',
+      noSourcesFound: 'Aucune source publique pertinente n’a été identifiée pour cette affirmation.',
+    },
     analyzedIn: 'analysé en {seconds}s',
     layersWithEvidence: '{count}/4 niveaux avec preuves',
     claimLabel: 'Affirmation vérifiée',
@@ -207,6 +312,9 @@ export const fr: Translations = {
     partialAnalysisLabel: 'Analyse partielle',
     partialAnalysisText:
       'L’analyse narrative en langage naturel n’a pas pu être générée. Le verdict et les sources ci-dessous proviennent directement des recherches et sont complets.',
+    searchDegradedLabel: 'Recherche incomplète',
+    searchDegradedText:
+      'Certaines sources de recherche (presse, fact-checking ou réseaux sociaux) n’ont pas répondu au moment de la vérification. Le verdict repose sur moins de preuves que d’habitude : à considérer avec prudence, réessayez plus tard.',
     summaryLabel: 'Résumé',
     sourcesLabel: 'Sources ({count})',
     disclaimerLabel: 'Avertissement',
@@ -223,10 +331,33 @@ export const fr: Translations = {
     premiumSourcesLabel: 'Aperçu des sources',
     premiumUpgradeCta: 'Voir les forfaits',
     premiumCloseCta: 'Fermer',
+    errorLoginPdf: 'Vous devez être connecté pour télécharger le rapport PDF.',
+    errorPdfFailed: 'Impossible de générer le fichier PDF. Réessayez dans un instant.',
+    errorPdfConnect: 'Impossible de se connecter au serveur pour générer le PDF.',
+    errorLoginDownload: 'Connectez-vous à votre compte pour télécharger le rapport PDF.',
+    errorPublish: 'Une erreur est survenue lors de la publication du rapport.',
+    errorPublishNetwork: 'Une erreur réseau est survenue. Veuillez réessayer.',
     printId: 'ID du rapport',
+    shareCard: {
+      button: 'Partager la carte',
+      eyebrow: 'Affirmation vérifiée',
+      tagline: 'Vérifiez vous-même sur verifact.ro',
+      shareTitle: 'Verifact — verdict',
+      generating: 'Génération...',
+      error: 'Impossible de générer la carte. Réessayez.',
+      modalTitle: 'Partager le verdict',
+      modalLead: 'Téléchargez l’image et publiez-la sur Instagram, TikTok, WhatsApp ou ailleurs.',
+      download: 'Télécharger l’image',
+      copy: 'Copier l’image',
+      copied: 'Copié !',
+      copyFail: 'Votre navigateur ne prend pas en charge la copie. Téléchargez l’image.',
+      nativeShare: 'Partager…',
+      linkLabel: 'Ou envoyez un lien :',
+      socialNote: 'Instagram et TikTok ne permettent pas la publication depuis le navigateur — téléchargez l’image et importez-la dans l’application.',
+    },
   },
   proDossier: {
-    badge: 'DOSSIER PRO',
+    badge: 'DOSSIER BUSINESS',
     title: 'Dossier d’Intelligence Factuelle',
     subtitle: 'Analyse comparative approfondie des sources, décomposition granulaire et détection avancée de la désinformation.',
     tabs: {
@@ -366,6 +497,8 @@ export const fr: Translations = {
     errorNetwork: 'Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.',
   },
   auth: {
+    googleAuthFailed: 'La connexion Google a échoué. Réessayez.',
+    googleLoadFailed: 'Impossible de charger Google Sign-In.',
     tabs: {
       login: 'Connexion',
       signup: 'Inscription',
@@ -511,6 +644,7 @@ export const fr: Translations = {
     adminLink: 'Panneau Admin',
     adminFinancialLink: 'Tableau de bord financier & coûts',
     adminOpportunitiesLink: 'Opportunités de contenu',
+    adminVerificationsLink: 'Toutes les vérifications',
     tabs: {
       history: 'Historique des Vérifications',
       bookmarks: 'Favoris / Enregistrés',
@@ -522,6 +656,7 @@ export const fr: Translations = {
       bookmarked: 'Favoris',
       activePlan: 'Forfait Actif',
       currentUsage: 'Utilisation ce mois',
+      statusActive: 'Compte actif',
     },
     usageCard: {
       title: 'Quota mensuel de vérifications',
@@ -599,18 +734,29 @@ export const fr: Translations = {
     metadata: {
       title: 'Mission',
       description:
-        'Pourquoi Verifact existe : un accès universel et instantané à la vérification factuelle, grâce à une IA transparente et des sources ouvertes.',
+        'Pourquoi Verifact existe : un accès universel et transparent à la vérification factuelle et aux sources ouvertes.',
     },
     eyebrow: 'Mission',
     title: 'Pourquoi Verifact existe',
     calloutLabel: 'Notre engagement',
     calloutText:
-      'Offrir à chaque citoyen un accès immédiat à la vérité factuelle, grâce à une intelligence artificielle transparente et des sources vérifiables.',
-    problemTitle: 'Le problème que nous combattons',
+      'Nous concevons des outils simples et accessibles pour permettre à chacun de vérifier rapidement rumeurs, affirmations et captures d’écran grâce à des preuves factuelles et des sources ouvertes.',
+    problemTitle: 'Le problème de désinformation que nous traitons',
     problemText1:
-      'Une fausse information touche des millions de personnes en quelques heures. Les démentis n’arrivent souvent que des jours plus tard — quand ils arrivent.',
+      'Chaque jour, des millions de personnes font face à de fausses citations, des captures décontextualisées et des rumeurs virales sur WhatsApp, Facebook ou TikTok. Une fausse information circule en quelques minutes parce qu’elle suscite une vive émotion, alors qu’une enquête minutieuse exige du temps.',
     problemText2:
-      'Verifact rend la vérification instantanée, transparente et accessible gratuitement à tous.',
+      'Verifact intervient précisément au moment du doute — offrant un moyen rapide et transparent de vérifier la solidité factuelle d’une affirmation avant de la relayer.',
+    criticalThinkingTitle: 'Pourquoi l’esprit critique est essentiel',
+    criticalThinkingText1:
+      'La désinformation fonctionne parce qu’elle contourne la raison et mise sur la réaction impulsive. Lorsqu’une nouvelle suscite colère ou indignation, le premier réflexe est souvent de la partager immédiatement sans s’interroger.',
+    criticalThinkingText2:
+      'L’esprit critique ne consiste pas à douter de tout avec méfiance, mais à faire une courte pause pour poser trois questions clés : Qui l’affirme ? Sur quelles preuves ? Quel contexte manque-t-il ? Verifact n’est pas un juge infaillible, mais un outil d’analyse qui vous donne les faits pour forger votre propre opinion.',
+    algorithmTitle: 'Comment l’algorithme vous aide (concrètement, sans jargon)',
+    algorithmSteps: [
+      'Isole les affirmations clés : le système identifie les faits vérifiables (dates, chiffres, citations, événements).',
+      'Consulte des sources de référence : croisement automatisé avec les bases de fact-checking, les archives officielles et la presse documentée.',
+      'Expose preuves et nuances : loin d’un simple score opaque, il met en évidence les faits établis, le contexte omis et les liens directs.',
+    ],
     romaniaTitle: 'Notre vision d’ouverture',
     romaniaBullets: [
       'Fournir des outils automatisés et multilingues de fact-checking en accès libre et open source.',
@@ -647,6 +793,177 @@ export const fr: Translations = {
     methodologyLink: 'méthodologie de vérification',
     orText: ' ou notre ',
     openSourceLink: 'code source et politique de confidentialité',
+  },
+  despreDezinformarePage: {
+    metadata: {
+      title: 'Comprendre la désinformation',
+      description:
+        'Guide pratique d’autodéfense numérique : pourquoi les fausses informations prospèrent, pièges fréquents et méthode en 5 étapes.',
+    },
+    eyebrow: 'Guide d’autodéfense numérique',
+    title: 'Comprendre la désinformation : comment la déceler et la stopper',
+    lead:
+      'Les infox modernes ne ressemblent plus à des mensonges grossiers. Elles exploitent des demi-vérités, de vieux enregistrements décontextualisés et des titres anxiogènes. Voici comment fonctionne la manipulation et comment s’en protéger en 5 étapes simples.',
+    calloutLabel: 'Règle d’or',
+    calloutText:
+      'Le rempart le plus efficace contre la désinformation, c’est vous, durant les 5 secondes précédant le clic sur « Partager ». Une courte pause brise la chaîne de propagation.',
+    pillarsTitle: 'Anatomie de la manipulation : pourquoi les fausses nouvelles prennent-elles ?',
+    pillarsLead:
+      'La désinformation ne se propage pas par naïveté, mais parce qu’elle est calibrée pour contourner le filtre rationnel.',
+    pillars: [
+      {
+        badge: '01 · Émotion',
+        title: 'Le levier de la peur et de la colère',
+        text:
+          'Un contenu alarmiste ou clivant circule jusqu’à 6 fois plus vite qu’une analyse factuelle. L’indignation neutralise le recul critique.',
+      },
+      {
+        badge: '02 · Psychologie',
+        title: 'Le piège de la confirmation',
+        text:
+          'Nous tendons naturellement à croire les rumeurs qui confortent nos inquiétudes préexistantes. Les créateurs de fausses nouvelles le savent parfaitement.',
+      },
+      {
+        badge: '03 · Algorithme',
+        title: 'L’asymétrie de vitesse',
+        text:
+          'Un mensonge sensationnel fait le tour du web en deux heures, tandis qu’un démenti documenté nécessite du temps et touche un public restreint.',
+      },
+    ],
+    techniquesTitle: 'Mécanismes et stratagèmes récurrents (exemples concrets)',
+    techniquesLead:
+      'Voici les schémas les plus fréquemment observés et la manière de les déjouer immédiatement :',
+    techniques: [
+      {
+        tag: 'Faux contexte',
+        title: 'Recyclage d’images et vidéos anciennes',
+        trap:
+          'Une séquence spectaculaire (manœuvres militaires passées, sinistre industriel ancien) est republiée avec la mention « EN DIRECT : Attaque en cours ! ».',
+        reality:
+          'L’image est authentique, mais la date et le lieu sont trompeurs. Le stratagème mise sur l’absence de vérification d’origine.',
+        example:
+          'Exemple concret : Vidéos d’exercices d’il y a deux ans présentées comme des mouvements de troupes récents.',
+      },
+      {
+        tag: 'Alarmisme extrême',
+        title: 'Victimisation et bilans inventés',
+        trap:
+          'Messages dramatiques affirmant que des pertes massives sont dissimulées par les autorités ou les hôpitaux.',
+        reality:
+          'L’objectif est de semer la panique et de saper toute confiance institutionnelle.',
+        example:
+          'Exemple concret : Messages en chaîne sur messagerie évoquant des convois médicaux tenus secrets.',
+      },
+      {
+        tag: 'Théorie du complot',
+        title: 'Le récit de la duplicité institutionnelle',
+        trap:
+          'Affirmations selon lesquelles les institutions ou les alliés « savaient d’avance et ont sciemment laissé faire ».',
+        reality:
+          'Cherche à détruire la cohésion civique et la confiance dans les mécanismes de protection publique.',
+        example:
+          'Exemple concret : Spéculations sur des incidents frontaliers supposément dissimulés par les autorités.',
+      },
+      {
+        tag: 'Piège à clics',
+        title: 'Titres racoleurs en contradiction avec l’article',
+        trap:
+          'Titres en majuscules annonçant des mesures choc qui ne sont que de simples suggestions ou sondages dans le texte.',
+        reality:
+          'La majorité des partages se fait sans ouvrir l’article, monétisant l’angoisse des internautes.',
+        example:
+          'Exemple concret : Une déclaration publique tronquée de toutes ses conditions restrictives.',
+      },
+    ],
+    stepsTitle: 'Checklist pratique en 5 étapes (moins d’une minute)',
+    stepsLead:
+      'Nul besoin d’être journaliste d’investigation. Adoptez ces réflexes simples face à tout contenu suspect :',
+    steps: [
+      {
+        num: '01',
+        title: 'Le réflexe des 5 secondes : observez votre réaction',
+        text:
+          'Si un message déclenche une vive émotion, respirez. Ne relayez jamais sous le coup de l’impulsion.',
+      },
+      {
+        num: '02',
+        title: 'Remontez à la source originelle',
+        text:
+          'Qui est l’émetteur initial ? Existe-t-il un document officiel ou une allocution enregistrée intégrale ?',
+      },
+      {
+        num: '03',
+        title: 'Vérifiez la couverture médiatique globale',
+        text:
+          'Un événement d’envergure nationale ou internationale est invariablement couvert par de multiples rédactions indépendantes.',
+      },
+      {
+        num: '04',
+        title: 'Vérifiez les images par recherche inversée',
+        text:
+          'Utilisez Google Lens ou Verifact pour retrouver l’historique et la date réelle de publication d’une image.',
+      },
+      {
+        num: '05',
+        title: 'Passez l’affirmation au crible de Verifact',
+        text:
+          'Collez le texte ou téléchargez la capture sur verifact.ro pour consulter l’état des preuves et le consensus factuel.',
+      },
+    ],
+    labelTrap: 'Dans le flux (Le Piège)',
+    labelReality: 'La Réalité',
+    familyTitle: 'Comment dialoguer avec ses proches sur les réseaux',
+    familyLead:
+      'La plupart des fausses nouvelles proviennent de discussions familiales ou d’amis partageant ces contenus de bonne foi, par précaution. Voici comment réagir avec bienveillance :',
+    familyRules: [
+      {
+        title: '1. Échangez en privé',
+        text:
+          'Ne contredisez pas la personne publiquement sur le groupe. Les gens se braquent lorsqu’ils sont repris devant d’autres. Un message privé et calme est bien plus constructif.',
+      },
+      {
+        title: '2. Partagez des sources, pas des jugements',
+        text:
+          'Plutôt que « Comment peux-tu croire ça ? », écrivez : « J’ai eu un doute aussi, mais j’ai vérifié et voici ce qu’indiquent les sources officielles et la presse : [lien] ».',
+      },
+      {
+        title: '3. Faites preuve d’empathie',
+        text:
+          'Les fausses informations actuelles sont sophistiquées. N’importe qui peut se faire piéger. Privilégiez l’explication plutôt que la confrontation.',
+      },
+    ],
+    guidesTitle: 'Guides pratiques et outils Verifact',
+    guidesLead:
+      'Approfondissez vos compétences de vérification et testez les déclarations suspectes :',
+    guides: [
+      {
+        tag: 'Guide Pratique',
+        title: 'Comment repérer un Deepfake',
+        desc: 'Apprenez à déceler les voix synthétisées et les visages manipulés par IA.',
+        href: '/despre-dezinformare/cum-identifici-deepfake',
+        action: 'Lire le guide →',
+      },
+      {
+        tag: 'Sécurité',
+        title: 'Arnaques et Phishing sur les Réseaux',
+        desc: 'Protégez-vous contre l’usurpation d’identité et les liens frauduleux.',
+        href: '/despre-dezinformare/scheme-phishing-social-media',
+        action: 'En savoir plus →',
+      },
+      {
+        tag: 'Pédagogie',
+        title: 'Glossaire de la Désinformation',
+        desc: 'Définitions claires : mésinformation, fermes à trolls, bulles de filtres et sources primaires.',
+        href: '/resurse/glosar-dezinformare',
+        action: 'Explorer le glossaire →',
+      },
+    ],
+    closingText: 'Un doute sur une information repérée sur internet ? ',
+    verifyLink: 'Vérifier sur Verifact',
+    orText: ' ou consulter ',
+    methodologyLink: 'notre méthodologie de vérification',
+    sourcesNote:
+      'Inspiré des standards de sensibilisation développés par des plateformes de référence comme InfoRadar (MApN) et EUvsDisinfo.',
   },
   transparentaPage: {
     metadata: {
@@ -746,6 +1063,18 @@ export const fr: Translations = {
       'Notre méthodologie de vérification est 100% transparente. Le code informatique qui l’exécute est accessible publiquement dans notre dépôt GitHub.',
     openSourceLead: 'L’ensemble du code source est public. ',
     openSourceLink: 'Voir la page Open Source',
+    statsTitle: 'Verifact en chiffres & normes d’intégrité',
+    statsIntro:
+      'Notre mission se mesure par une transparence radicale, une méthodologie reproductible et des verdicts 100% vérifiables.',
+    stat1Title: 'Niveaux indépendants',
+    stat1Desc: 'Fact-checkers, presse, registres officiels et signaux des réseaux sociaux.',
+    stat2Title: 'Code open source',
+    stat2Desc: 'Base de code publique sur GitHub, auditable par tout chercheur ou citoyen.',
+    stat3Title: 'Affiliations politiques',
+    stat3Desc: 'Principes non partisans selon les standards internationaux de fact-checking (IFCN).',
+    stat4Title: 'Citation des sources',
+    stat4Desc: 'Chaque verdict inclut des citations directes et des liens vers les sources primaires.',
+    teamLink: 'Équipe & Gouvernance',
   },
   openSourcePage: {
     metadata: {

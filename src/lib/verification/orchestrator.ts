@@ -20,11 +20,12 @@ import { getCached, setCached } from './cache';
 import { createContentHash } from '@/lib/utils/hash';
 import { logger } from '@/lib/utils/logger';
 import { expandClaimQueries } from './query-expander';
-import { decomposeAndAssessRisk } from '@/lib/ai/claim-decomposer';
+import { decomposeAndAssessRisk, DEFAULT_DECOMPOSITION, type DecomposedClaim } from '@/lib/ai/claim-decomposer';
 import { extractClaim, shouldExtractClaim, type ExtractedClaim } from '@/lib/ai/claim-extractor';
-import { synthesizeReport } from '@/lib/ai/report-synthesis';
+import { normalizeQuestionToHypothesis } from './question-normalizer';
+import { sanitizeOcrText } from './ocr-cleaner';
 
-const LAYER_TIMEOUT_MS = 5_000; // 5 seconds per layer (fast search)
+const LAYER_TIMEOUT_MS = 8_500; // per layer; 3.5s timed out most Tavily/NewsAPI calls and emptied the press layer
 
 function buildFallbackSummary(
   layers: { layer1: Layer1Result; layer2: Layer2Result; layer3: Layer3Result; layer4: Layer4Result },
@@ -126,6 +127,43 @@ function makeUnavailableLayer4(error: string): Layer4Result {
   return { status: 'unavailable', results: [], layerScore: 0.5, processingTime: 0, error };
 }
 
+const NO_CLAIM_MESSAGE = {
+  ro: 'Textul trimis nu conține o afirmație factuală care poate fi verificată — doar elemente de interfață, etichete sau o opinie personală. O opinie nu este nici adevărată, nici falsă. Dacă postarea conține un fapt concret, copiază-l în câmpul de text și verifică-l separat.',
+  en: 'The submitted text does not contain a factual claim that can be checked — only interface elements, tags or a personal opinion. An opinion is neither true nor false. If the post states a concrete fact, paste it into the text field and verify it on its own.',
+  fr: 'Le texte envoyé ne contient pas d’affirmation factuelle vérifiable — seulement des éléments d’interface, des étiquettes ou une opinion personnelle. Une opinion n’est ni vraie ni fausse. Si la publication énonce un fait concret, collez-le dans le champ de texte et vérifiez-le séparément.',
+} as const;
+
+/**
+ * The report for input that asserts nothing checkable: no search, no score
+ * beyond a neutral "unclear", and a plain explanation instead of a verdict.
+ */
+function buildNoClaimReport(
+  input: VerificationInput,
+  commentary: string | undefined,
+  startTime: number,
+  emit: (event: VerifyStatusEvent) => void
+): VerificationReport {
+  const skipped = { status: 'skipped' as const, results: [], layerScore: 0.5, processingTime: 0 };
+  const layers = { layer1: { ...skipped }, layer2: { ...skipped }, layer3: { ...skipped }, layer4: { ...skipped } };
+  for (const step of ['layer1', 'layer2', 'layer3', 'layer4', 'analysis'] as const) {
+    emit({ step, status: 'skipped' });
+  }
+  const message = NO_CLAIM_MESSAGE[input.language === 'en' || input.language === 'fr' ? input.language : 'ro'];
+  const report = buildReport({
+    input,
+    posterCommentary: commentary,
+    layers,
+    ...layers,
+    scoreBreakdown: calculateScore({ ...layers, ai: { score: 50, confidence: 0 } }),
+    evidenceStatus: 'missing_context',
+    aiAnalysis: message,
+    aiAssessment: { score: 50, verdict: 'insufficient', evidenceStatus: 'missing_context', confidence: 0, reasoning: message },
+    processingTime: Date.now() - startTime,
+  });
+  report.aiAvailable = true;
+  return report;
+}
+
 export async function verifyContent(
   input: VerificationInput,
   onEvent?: (event: VerifyStatusEvent) => void
@@ -150,8 +188,9 @@ export async function verifyContent(
 
   const startTime = Date.now();
 
-  // 1a. Extract primary claim if input is noisy/long
-  let claimForSearch = input.text;
+  // 1a. Pre-Extraction Cleaner & Sanitizer
+  const sanitized = sanitizeOcrText(input.text);
+  let claimForSearch = sanitized.length >= 15 ? sanitized : input.text;
   let extraction: ExtractedClaim | null = null;
   if (shouldExtractClaim(input.inputType, input.text)) {
     extraction = await extractClaim(input.text, input.language);
@@ -161,13 +200,25 @@ export async function verifyContent(
   }
   const commentary = extraction?.commentary?.trim() || undefined;
 
-  // 1b. AI Query Expansion & Risk Assessment in Parallel
-  const [queries, decomposed] = await Promise.all([
-    expandClaimQueries(claimForSearch),
-    decomposeAndAssessRisk(claimForSearch),
-  ]);
+  // Nothing checkable (only interface chrome, hashtags or a bare opinion):
+  // searching would return loosely related pages that then "confirm" noise.
+  if (extraction && !extraction.hasClaim) {
+    return buildNoClaimReport(input, commentary, startTime, emit);
+  }
 
-  // 2. Run all 4 layers in parallel with individual 6s timeouts.
+  // 1b. Interrogative-to-Declarative normalization
+  const questionNorm = normalizeQuestionToHypothesis(claimForSearch);
+  let verifiedHypothesis: string | undefined = undefined;
+  if (questionNorm.isQuestion) {
+    claimForSearch = questionNorm.hypothesis;
+    verifiedHypothesis = questionNorm.hypothesis;
+  }
+
+  // 1c. Fast Query Expansion
+  const queries = await expandClaimQueries(claimForSearch);
+
+  // 2. Run all 4 search layers AND risk decomposition concurrently
+  const pRisk = decomposeAndAssessRisk(claimForSearch);
   const p1 = withTimeout(runLayer1(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer1');
   const p2 = withTimeout(runLayer2(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer2');
   const p3 = withTimeout(runLayer3(claimForSearch, input.language, queries), LAYER_TIMEOUT_MS, 'layer3');
@@ -187,7 +238,11 @@ export async function verifyContent(
   tap('layer3', p3);
   tap('layer4', p4);
 
-  const [l1Result, l2Result, l3Result, l4Result] = await Promise.allSettled([p1, p2, p3, p4]);
+  const [l1Result, l2Result, l3Result, l4Result, riskResult] = await Promise.allSettled([p1, p2, p3, p4, pRisk]);
+
+  const decomposed: DecomposedClaim = riskResult.status === 'fulfilled'
+    ? riskResult.value
+    : DEFAULT_DECOMPOSITION;
 
   const rawLayer1 = l1Result.status === 'fulfilled'
     ? l1Result.value
@@ -270,7 +325,7 @@ export async function verifyContent(
 
   const report = buildReport({
     input,
-    verifiedClaim: extraction && claimForSearch !== input.text ? claimForSearch : undefined,
+    verifiedClaim: verifiedHypothesis || (extraction && claimForSearch !== input.text ? claimForSearch : undefined),
     posterCommentary: commentary,
     layers: { layer1, layer2, layer3, layer4 },
     layer1,
@@ -279,6 +334,7 @@ export async function verifyContent(
     layer4,
     scoreBreakdown,
     aiAnalysis,
+    aiAssessment: assessment,
     processingTime: Date.now() - startTime,
   });
 
@@ -307,35 +363,19 @@ export async function verifyContent(
   report.riskLevel = decomposed.riskLevel;
   report.aiAvailable = aiAvailable;
 
-  // Enrich Pro Synthesis with AI deep analysis if available
-  if (aiAvailable && report.sources.length > 0) {
-    try {
-      const locale: 'ro' | 'en' | 'fr' =
-        input.language === 'fr' ? 'fr' : input.language === 'en' ? 'en' : 'ro';
-      const verdictWord =
-        locale === 'fr'
-          ? (report.verdict === 'true' ? 'Probablement vrai' : report.verdict === 'false' ? 'Probablement faux' : 'Partiellement vrai')
-          : locale === 'en'
-          ? (report.verdict === 'true' ? 'Likely true' : report.verdict === 'false' ? 'Likely false' : 'Partially true')
-          : (report.verdict === 'true' ? 'Probabil adevărat' : report.verdict === 'false' ? 'Probabil fals' : 'Parțial adevărat');
-      const enrichedSynthesis = await withTimeout(
-        synthesizeReport(report, verdictWord, locale),
-        6000,
-        'proSynthesis'
-      );
-      if (enrichedSynthesis) {
-        report.proSynthesis = enrichedSynthesis;
-      }
-    } catch {
-      // Deterministic fallback attached by buildReport is preserved
-    }
-  }
+  // Pro Synthesis dossier is already deterministically built and attached by buildReport
+  // via buildFallbackSynthesis with 0ms latency and zero serverless timeout risk.
+
+  // Never cache degraded runs where any search layer timed out or failed
+  const hasUnavailableLayer = [rawLayer1, rawLayer2, rawLayer3, rawLayer4].some(
+    (l) => l.status === 'unavailable'
+  );
 
   const layersWithData = [layer1, layer2, layer3, layer4].filter(
     (l) => l.status === 'success' && l.results.length > 0
   ).length;
 
-  if (layersWithData >= 2 && aiAvailable) {
+  if (!hasUnavailableLayer && layersWithData >= 2 && aiAvailable) {
     void setCached(contentHash, report);
   }
 

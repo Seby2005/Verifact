@@ -7,7 +7,18 @@ jest.mock('@/lib/utils/circuit-breaker', () => ({
   withCircuitBreaker: (_name: string, fn: () => Promise<unknown>) => fn(),
 }));
 
+jest.mock('@/lib/news-index', () => ({
+  searchNewsIndex: jest.fn(),
+}));
+
+jest.mock('@/lib/verification/news-rss', () => ({
+  searchBingNews: jest.fn(),
+  searchGoogleNews: jest.fn(),
+}));
+
 import { runLayer2, detectSentiment, calculateLayer2Score } from '@/lib/verification/layer2-news';
+import { searchBingNews, searchGoogleNews, type RssNewsItem } from '@/lib/verification/news-rss';
+import { searchNewsIndex } from '@/lib/news-index';
 import type { NewsArticle } from '@/types/verification';
 
 function jsonResponse(body: unknown, ok = true, status = 200) {
@@ -51,6 +62,18 @@ describe('detectSentiment', () => {
       0.9
     );
     expect(sentiment).toBe('contradicts');
+  });
+
+  it('does not read ordinary reporting verbs as a debunk', () => {
+    // "precizează", "nu a fost" and "speculații" occur in most Romanian news
+    // stories; treating them as debunk markers flipped true claims to false.
+    const sentiment = detectSentiment(
+      'Nicușor Dan a depus jurământul ca președinte al României',
+      'Administrația Prezidențială precizează că ceremonia nu a fost amânată, în ciuda speculațiilor.',
+      'Nicușor Dan este președintele României',
+      0.9
+    );
+    expect(sentiment).not.toBe('contradicts');
   });
 
   it('detects a plain contradiction', () => {
@@ -104,6 +127,15 @@ describe('calculateLayer2Score', () => {
     expect(calculateLayer2Score(articles)).toBeLessThan(0.5);
   });
 
+  it('lets neutral articles abstain instead of pulling the score toward 0.5', () => {
+    const articles = [
+      article({ sentiment: 'confirms', credibilityScore: 0.9 }),
+      article({ sentiment: 'neutral', credibilityScore: 0.9 }),
+      article({ sentiment: 'neutral', credibilityScore: 0.9 }),
+    ];
+    expect(calculateLayer2Score(articles)).toBe(1);
+  });
+
   it('weighs confirming and contradicting articles by credibility', () => {
     const articles = [
       article({ sentiment: 'confirms', credibilityScore: 0.2 }),
@@ -116,16 +148,44 @@ describe('calculateLayer2Score', () => {
 
 describe('runLayer2', () => {
   const originalFetch = global.fetch;
+  const bing = searchBingNews as jest.Mock;
+  const google = searchGoogleNews as jest.Mock;
+  const ownIndex = searchNewsIndex as jest.Mock;
+
+  const item = (overrides: Partial<RssNewsItem> = {}): RssNewsItem => ({
+    title: 'Coverage of the claim being verified today',
+    url: 'https://reuters.com/article-1',
+    sourceName: 'Reuters',
+    sourceDomain: 'reuters.com',
+    publishedAt: '2026-01-01T00:00:00.000Z',
+    snippet: 'A neutral description of the claim being verified today, with enough overlap.',
+    ...overrides,
+  });
+
+  /** Tavily reserve + GDELT both go through fetch; the RSS engines are mocked above. */
+  function mockFetch(tavily: { ok: boolean; status?: number; results?: unknown[] }) {
+    global.fetch = jest.fn().mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('tavily.com')
+          ? jsonResponse({ results: tavily.results ?? [] }, tavily.ok, tavily.status ?? 200)
+          : { ok: true, status: 200, text: () => Promise.resolve('{"articles":[]}') }
+      )
+    );
+  }
+
+  beforeEach(() => {
+    bing.mockReset().mockResolvedValue([]);
+    google.mockReset().mockResolvedValue([]);
+    ownIndex.mockReset().mockResolvedValue([]);
+    mockFetch({ ok: true });
+  });
 
   afterEach(() => {
     global.fetch = originalFetch;
-    delete process.env.NEWS_API_KEY;
     delete process.env.TAVILY_API_KEY;
   });
 
-  it('returns a neutral, success result when neither provider is configured', async () => {
-    global.fetch = jest.fn().mockResolvedValue(jsonResponse({ articles: [] }));
-
+  it('succeeds with nothing found when the free engines answer but have no coverage', async () => {
     const result = await runLayer2('orice afirmatie', 'ro');
 
     expect(result.status).toBe('success');
@@ -133,116 +193,119 @@ describe('runLayer2', () => {
     expect(result.layerScore).toBe(0.5);
   });
 
-  it('combines NewsAPI and Tavily results', async () => {
-    process.env.NEWS_API_KEY = 'news-key';
-    process.env.TAVILY_API_KEY = 'tavily-key';
-
-    global.fetch = jest.fn().mockImplementation((url: string) => {
-      if (url.includes('newsapi.org')) {
-        return Promise.resolve(
-          jsonResponse({
-            status: 'ok',
-            articles: [
-              {
-                title: 'Reuters headline about the claim being verified',
-                description: 'A neutral description of the claim verified today, with enough overlap.',
-                url: 'https://reuters.com/article-1',
-                urlToImage: null,
-                publishedAt: '2024-01-01',
-                source: { id: 'reuters', name: 'Reuters' },
-              },
-            ],
-          })
-        );
-      }
-      return Promise.resolve(
-        jsonResponse({
-          results: [
-            {
-              title: 'G4Media coverage of the same claim being verified',
-              url: 'https://g4media.ro/article-1',
-              content: 'A neutral summary covering the same claim, verified today, in Romanian press.',
-              score: 0.8,
-            },
-          ],
-        })
-      );
-    });
+  it('searches without any API key configured', async () => {
+    bing.mockResolvedValue([item()]);
 
     const result = await runLayer2('the claim being verified today', 'en');
 
     expect(result.status).toBe('success');
-    expect(result.results).toHaveLength(2);
-    expect(result.sourcesChecked).toBe(2);
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].source).toBe('Reuters');
+    expect(result.results[0].articleUrl).toBe('https://reuters.com/article-1');
   });
 
-  it('degrades gracefully when NewsAPI fails but Tavily succeeds', async () => {
-    process.env.NEWS_API_KEY = 'news-key';
+  it('reports itself unavailable when every engine fails, rather than finding nothing', async () => {
     process.env.TAVILY_API_KEY = 'tavily-key';
+    bing.mockRejectedValue(new Error('bing-news HTTP 429'));
+    google.mockRejectedValue(new Error('google-news returned a non-RSS page'));
+    mockFetch({ ok: false, status: 432 });
 
-    global.fetch = jest.fn().mockImplementation((url: string) => {
-      if (url.includes('newsapi.org')) {
-        return Promise.resolve(jsonResponse({}, false, 503));
-      }
-      return Promise.resolve(
-        jsonResponse({
-          results: [
-            {
-              title: 'Coverage of the claim from Tavily only',
-              url: 'https://example.com/only-tavily',
-              content: 'Tavily still found coverage of this claim even though NewsAPI failed.',
-              score: 0.7,
-            },
-          ],
-        })
-      );
-    });
+    const result = await runLayer2('orice afirmatie', 'ro');
 
-    const result = await runLayer2('a claim', 'en');
+    expect(result.status).toBe('unavailable');
+    expect(result.error).toContain('bing-news');
+    expect(result.error).toContain('google-news');
+  });
+
+  it('reports itself unavailable when the free engines fail and no reserve is configured', async () => {
+    bing.mockRejectedValue(new Error('bing-news HTTP 429'));
+    google.mockRejectedValue(new Error('google-news HTTP 503'));
+
+    const result = await runLayer2('orice afirmatie', 'ro');
+
+    expect(result.status).toBe('unavailable');
+  });
+
+  it('stays available on the own index alone when every search engine is down', async () => {
+    bing.mockRejectedValue(new Error('bing-news HTTP 429'));
+    google.mockRejectedValue(new Error('google-news HTTP 503'));
+    ownIndex.mockResolvedValue([item({ url: 'https://digi24.ro/stiri/a-1', sourceName: 'Digi24', sourceDomain: 'digi24.ro' })]);
+
+    const result = await runLayer2('the claim being verified today', 'en');
+
+    expect(result.status).toBe('success');
+    expect(result.results[0].source).toBe('Digi24');
+  });
+
+  it('carries on without the own index when it cannot be searched', async () => {
+    ownIndex.mockRejectedValue(new Error('relation "news_index" does not exist'));
+    bing.mockResolvedValue([item()]);
+
+    const result = await runLayer2('the claim being verified today', 'en');
 
     expect(result.status).toBe('success');
     expect(result.results).toHaveLength(1);
+  });
+
+  it('stays available when one free engine still works', async () => {
+    bing.mockRejectedValue(new Error('bing-news HTTP 429'));
+
+    const result = await runLayer2('orice afirmatie', 'ro');
+
+    expect(result.status).toBe('success');
+  });
+
+  it('keeps one copy of a story both engines returned, preferring the one with the publisher URL', async () => {
+    bing.mockResolvedValue([item()]);
+    google.mockResolvedValue([
+      item({ url: 'https://news.google.com/rss/articles/abc', snippet: 'Coverage of the claim being verified today' }),
+    ]);
+
+    const result = await runLayer2('the claim being verified today', 'en');
+
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].articleUrl).toBe('https://reuters.com/article-1');
+  });
+
+  it('does not spend a paid search when the free engines found coverage', async () => {
+    process.env.TAVILY_API_KEY = 'tavily-key';
+    bing.mockResolvedValue([item()]);
+
+    await runLayer2('the claim being verified today', 'en');
+
+    const calledTavily = (global.fetch as jest.Mock).mock.calls.some(([url]) => String(url).includes('tavily.com'));
+    expect(calledTavily).toBe(false);
+  });
+
+  it('falls back to one paid search when the free engines found nothing', async () => {
+    process.env.TAVILY_API_KEY = 'tavily-key';
+    mockFetch({
+      ok: true,
+      results: [
+        {
+          title: 'Coverage of the claim from the reserve search',
+          url: 'https://example.com/only-reserve',
+          content: 'The reserve search still found coverage of this claim being verified.',
+          score: 0.7,
+        },
+      ],
+    });
+
+    const result = await runLayer2('the claim being verified', 'en');
+
+    const tavilyCalls = (global.fetch as jest.Mock).mock.calls.filter(([url]) => String(url).includes('tavily.com'));
+    expect(tavilyCalls).toHaveLength(1);
+    expect(result.status).toBe('success');
     expect(result.results[0].source).toBe('example.com');
   });
 
-  it('deduplicates articles from the same domain, keeping the more credible one', async () => {
-    process.env.NEWS_API_KEY = 'news-key';
+  it('counts as searched when the free engines are down but the reserve gets through', async () => {
     process.env.TAVILY_API_KEY = 'tavily-key';
+    bing.mockRejectedValue(new Error('bing-news HTTP 429'));
+    google.mockRejectedValue(new Error('google-news HTTP 503'));
 
-    global.fetch = jest.fn().mockImplementation((url: string) => {
-      if (url.includes('newsapi.org')) {
-        return Promise.resolve(
-          jsonResponse({
-            status: 'ok',
-            articles: [
-              {
-                title: 'Reuters via NewsAPI',
-                description: 'Some description with enough words to be relevant to the claim text here.',
-                url: 'https://reuters.com/dup',
-                urlToImage: null,
-                publishedAt: '2024-01-01',
-                source: { id: 'reuters', name: 'Reuters' },
-              },
-            ],
-          })
-        );
-      }
-      return Promise.resolve(
-        jsonResponse({
-          results: [
-            {
-              title: 'Reuters via Tavily',
-              url: 'https://reuters.com/dup', // same URL as NewsAPI's
-              content: 'Some description with enough words to be relevant to the claim text here.',
-              score: 0.9,
-            },
-          ],
-        })
-      );
-    });
+    const result = await runLayer2('orice afirmatie', 'ro');
 
-    const result = await runLayer2('the claim text here to be verified', 'en');
-
-    expect(result.results).toHaveLength(1);
+    expect(result.status).toBe('success');
   });
 });

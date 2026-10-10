@@ -4,11 +4,13 @@ import type { Layer1Result, Layer2Result, Layer3Result, Layer4Result } from '@/t
 function layer1(layerScore: number, resultCount: number, status: Layer1Result['status'] = 'success'): Layer1Result {
   return { status, results: Array.from({ length: resultCount }, () => ({})) as never, layerScore };
 }
+// Press and official results only earn their layer weight when they take a
+// side, so the fixtures give each one a stance; layerScore sets the direction.
 function layer2(layerScore: number, resultCount: number, status: Layer2Result['status'] = 'success'): Layer2Result {
-  return { status, results: Array.from({ length: resultCount }, () => ({})) as never, layerScore };
+  return { status, results: Array.from({ length: resultCount }, () => ({ sentiment: 'confirms' })) as never, layerScore };
 }
 function layer3(layerScore: number, resultCount: number, status: Layer3Result['status'] = 'success'): Layer3Result {
-  return { status, results: Array.from({ length: resultCount }, () => ({})) as never, layerScore };
+  return { status, results: Array.from({ length: resultCount }, () => ({ supportsOrDenies: 'supports' })) as never, layerScore };
 }
 function layer4(layerScore: number, resultCount: number, status: Layer4Result['status'] = 'success'): Layer4Result {
   return { status, results: Array.from({ length: resultCount }, () => ({})) as never, layerScore };
@@ -100,6 +102,20 @@ describe('calculateScore', () => {
     // Only layer1 counts: 0.05*0.35/0.35 * 100 = 5
     expect(result.finalScore).toBe(5);
     expect(result.availableLayers).toBe(1);
+    expect(scoreToVerdict(result.finalScore)).toBe('false');
+  });
+
+  it('allows an AI assessment with directional signal to carry score even with moderate confidence', () => {
+    const result = calculateScore({
+      layer1: NEUTRAL_L1,
+      layer2: NEUTRAL_L2,
+      layer3: NEUTRAL_L3,
+      layer4: NEUTRAL_L4,
+      ai: { score: 15, confidence: 0.2 },
+    });
+
+    expect(result.finalScore).toBe(15);
+    expect(scoreToVerdict(result.finalScore)).toBe('false');
   });
 
   it('returns 50 when every layer is unavailable/errored and there is no AI input', () => {

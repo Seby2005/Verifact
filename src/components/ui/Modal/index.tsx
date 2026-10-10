@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useLanguage } from '@/i18n';
 import styles from './Modal.module.css';
 
@@ -74,7 +75,10 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  // Rendered into <body>: left in place, the overlay is trapped in its
+  // ancestor's stacking context (the home hero isolates one) and later page
+  // sections paint over the dialog.
+  return createPortal(
     <div
       className={styles.overlay}
       onClick={onClose}
@@ -105,6 +109,7 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
         <div className={styles.body}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

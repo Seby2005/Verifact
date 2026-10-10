@@ -2,11 +2,14 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import type { VerdictKind } from '@/components/ui';
+import type { EvidenceStatus } from '@/types/verification';
+import { getEvidenceStatusConfig } from '@/lib/constants/verdicts';
 import { useLanguage } from '@/i18n';
 import styles from './StickyVerdict.module.css';
 
 export interface StickyVerdictProps {
   kind: VerdictKind;
+  evidenceStatus?: EvidenceStatus;
   score: number;
   claim: string;
   /** The report header. The bar appears once this scrolls out of view. */
@@ -24,8 +27,15 @@ export interface StickyVerdictProps {
  * layout and the desktop row, and guessing it would leave the bar tucked
  * underneath.
  */
-export const StickyVerdict: React.FC<StickyVerdictProps> = ({ kind, score, claim, watch }) => {
-  const { t } = useLanguage();
+export const StickyVerdict: React.FC<StickyVerdictProps> = ({
+  kind,
+  evidenceStatus,
+  score,
+  claim,
+  watch,
+}) => {
+  const { locale, t } = useLanguage();
+  const statusConfig = evidenceStatus ? getEvidenceStatusConfig(evidenceStatus) : null;
   const [shown, setShown] = useState(false);
   const [offset, setOffset] = useState(0);
   const barRef = useRef<HTMLDivElement>(null);
@@ -74,8 +84,22 @@ export const StickyVerdict: React.FC<StickyVerdictProps> = ({ kind, score, claim
       aria-hidden="true"
       data-print-hide
     >
-      <span className={[styles.verdict, styles[kind]].filter(Boolean).join(' ')}>
-        {t(`verdict.copy.${kind}`)}
+      <span
+        className={[
+          styles.verdict,
+          styles[kind],
+          evidenceStatus ? styles[evidenceStatus] : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
+        {statusConfig
+          ? locale === 'en'
+            ? statusConfig.labelEn
+            : locale === 'fr'
+            ? statusConfig.labelFr
+            : statusConfig.labelRo
+          : t(`verdict.copy.${kind}`)}
       </span>
       <span className={[styles.score, styles[kind]].filter(Boolean).join(' ')}>{score}%</span>
       <span className={styles.claim}>&ldquo;{claim}&rdquo;</span>

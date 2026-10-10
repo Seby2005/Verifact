@@ -69,7 +69,7 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
       if (!res.ok || !data.success) {
         setResult({
           success: false,
-          error: data.error || 'A apărut o eroare la publicarea raportului.',
+          error: data.error || t('reportView.errorPublish'),
         });
       } else {
         setResult({
@@ -83,7 +83,7 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
     } catch {
       setResult({
         success: false,
-        error: 'A apărut o eroare de rețea. Te rugăm să reîncerci.',
+        error: t('reportView.errorPublishNetwork'),
       });
     } finally {
       setIsSubmitting(false);

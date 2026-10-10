@@ -101,6 +101,10 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
           </div>
           <AdminDeleteReportButton reportId={report.id} variant="icon" />
         </div>
+        {report.imageUrls.length > 0 && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={report.imageUrls[0]} alt="" className={styles.feedThumb} loading="lazy" />
+        )}
         <h2 className={`${styles.claimTitle} ${styles.feedTitle}`}>&ldquo;{claimText}&rdquo;</h2>
         <div className={styles.metaRow}>
           <span className={styles.authorText}>{authorLabel}</span>

@@ -219,9 +219,9 @@
 
 ### S3-4 · Sistem de limite per tier
 - [ ] Creează `src/lib/rate-limit.ts` pentru limitele de verificare
-- [ ] Free: 10 verificări/lună, reset la 1 ale lunii
-- [ ] Pro: 200 verificări/lună
-- [ ] Business: 2000 verificări/lună
+- [ ] Free: 3 verificări/lună, reset la 1 ale lunii
+- [ ] Pro: 35 verificări/lună (avertisment la 30)
+- [ ] Business: 1000 verificări/lună (implicit; volumul real e negociat)
 - [ ] Când limita este atinsă → mesaj clar cu call-to-action upgrade
 - [ ] Verificările anonime (fără cont): maxim 3 total (persistent prin localStorage)
 - [ ] **Criteriu de acceptare:** Utilizatorul Free nu poate face verificarea #11 fără upgrade

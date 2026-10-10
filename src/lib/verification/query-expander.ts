@@ -1,12 +1,28 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { logger } from '@/lib/utils/logger';
+import { fetchWithRetry } from '@/lib/utils/retry';
+import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import type { TokenUsageDetail } from '@/types/verification';
+import { PRIMARY_MODEL, NO_REASONING } from '@/lib/ai/models';
 
 export interface ExpandedQueries {
+  primary: string;
   romanianQuery: string;
   englishQuery: string;
   keywords: string[];
   namedEntities: string[];
+  /** Targeted query for existing debunks and fact-check registries */
+  factCheckAngle: string;
+  /** Targeted query for official government, institutional, or legislative records */
+  officialAngle: string;
+  /** Targeted query for original reporting, context, origin, and viral distribution */
+  contextOriginAngle: string;
+  /**
+   * Set only when the claim blames or credits a European Union law: the words
+   * the official title of such an act would contain, for the EU-register
+   * search (see eu-legislation.ts). Empty or absent for every other claim.
+   */
+  euLawTerms?: string[];
   tokenUsage?: TokenUsageDetail;
 }
 
@@ -75,7 +91,7 @@ const RO_EN_LEXICON: Record<string, string> = {
   vindecă: 'cure',
 };
 
-function buildFallbackQueries(text: string): ExpandedQueries {
+export function buildFallbackQueries(text: string, language: 'ro' | 'en' | 'fr' = 'ro'): ExpandedQueries {
   const words = text
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
@@ -93,87 +109,212 @@ function buildFallbackQueries(text: string): ExpandedQueries {
     (e) => !['Imaginea', 'Afirmația', 'Stirea', 'Poza'].includes(e)
   );
 
+  const baseRo = roStr || text.slice(0, 100);
+  const baseEn = enStr || text.slice(0, 100);
+
+  if (language === 'en') {
+    return {
+      primary: text,
+      romanianQuery: baseRo,
+      englishQuery: baseEn,
+      keywords: unique.slice(0, 8),
+      namedEntities,
+      factCheckAngle: `${baseEn} fact check debunk false claim`,
+      officialAngle: `${baseEn} official statement press release document government`,
+      contextOriginAngle: `${baseEn} news media origin background context report`,
+    };
+  }
+
+  if (language === 'fr') {
+    return {
+      primary: text,
+      romanianQuery: baseRo,
+      englishQuery: baseEn,
+      keywords: unique.slice(0, 8),
+      namedEntities,
+      factCheckAngle: `${baseRo} fact check vérification faux désintox`,
+      officialAngle: `${baseRo} gouvernement officiel communiqué déclaration`,
+      contextOriginAngle: `${baseRo} actualité presse contexte origine rapport`,
+    };
+  }
+
   return {
-    romanianQuery: roStr || text.slice(0, 100),
-    englishQuery: enStr || text.slice(0, 100),
+    primary: text,
+    romanianQuery: baseRo,
+    englishQuery: baseEn,
     keywords: unique.slice(0, 8),
     namedEntities,
+    factCheckAngle: `${baseRo} fact check verificare fals debunk`,
+    officialAngle: `${baseRo} guvern minister oficial comunicat decizie lege`,
+    contextOriginAngle: `${baseRo} stire presa context declaratie origine`,
   };
 }
 
-export async function expandClaimQueries(text: string): Promise<ExpandedQueries> {
-  // Short claims (< 80 chars) are processed instantly via algorithmic extraction (0ms latency)
-  if (!text || text.trim().length < 80) {
-    return buildFallbackQueries(text);
-  }
+const EXPANSION_PROMPT = (claim: string) => `Ești un specialist în regăsirea informației și investigație jurnalistică la Verifact.
+Analizează afirmația de mai jos și generează 3 unghiuri de căutare precise pentru verificare jurnalistică, fără zgomot:
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  // If GEMINI_API_KEY is not a valid Gemini API Key (e.g. starts with AQ), fallback immediately
-  if (!apiKey || apiKey.startsWith('AQ')) {
-    return buildFallbackQueries(text);
-  }
+AFIRMAȚIE:
+"${claim}"
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-    });
+Cerințe:
+1. romanianQuery: 2-5 cuvinte cheie în română, fără cuvinte de legătură (ex: "Papa Francisc geacă albă")
+2. englishQuery: traducerea în engleză a cuvintelor cheie (ex: "Pope Francis white puffer jacket")
+3. factCheckAngle: interogare orientată spre depistarea verificărilor existente și a demontărilor (ex: "Papa geacă albă fact check fals debunk")
+4. officialAngle: termeni orientați spre surse oficiale, ministere, legi, monitorul oficial sau instituții competente (ex: "Vatican comunicat oficial Papa geacă")
+5. contextOriginAngle: interogare pentru găsirea originii primare a imaginii/afirmației și contextului de apariție (ex: "origine imagine Midjourney AI Balenciaga")
+6. keywords: 3-6 cuvinte cheie esențiale
+7. namedEntities: persoane, instituții, locații identificate
+8. euLawTerms: DOAR dacă afirmația pune ceva pe seama unei legi, a unui regulament sau a unei directive a Uniunii Europene (inclusiv „Bruxelles ne obligă”, „UE interzice”, „legea băgată de UE”): 6-12 cuvinte românești, cu diacritice, câte un singur cuvânt, exact în formele în care ar apărea în TITLUL oficial al actelor UE pe acea temă — termenii instituționali, nu cei din afirmație, cu formele flexionate uzuale (ex. pentru „UE ne bagă în război”: ["apărare", "apărării", "militar", "militară", "securitate", "securității", "armament", "muniție", "mobilizare"]). Fără cuvinte generice ca „lege”, „european”, „uniune”. În orice alt caz: [].
 
-    const prompt = `Analizează afirmația de mai jos și extrage interogări de căutare optimizate pentru motoare de căutare și baze de fact-checking.
-
-Afirmație: "${text}"
-
-Răspunde EXCLUSIV cu un obiect JSON valid având această structură exactă:
+Răspunde EXCLUSIV cu un obiect JSON valid:
 {
-  "romanianQuery": "2-5 cuvinte cheie în română fără stop-words (ex: Papa Francisc geaca alba AI)",
-  "englishQuery": "2-5 cuvinte cheie traduse în engleză (ex: Pope Francis white puffer jacket AI Midjourney)",
-  "keywords": ["cuvânt1", "cuvânt2", "cuvânt3"],
-  "namedEntities": ["Nume Persoană", "Organizație/Loc/Concept"]
+  "romanianQuery": "...",
+  "englishQuery": "...",
+  "factCheckAngle": "...",
+  "officialAngle": "...",
+  "contextOriginAngle": "...",
+  "keywords": ["..."],
+  "namedEntities": ["..."],
+  "euLawTerms": []
 }`;
 
-    const result = await Promise.race([
-      model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: 'application/json',
-        },
-      }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('LLM query expansion timeout')), 3500)
-      ),
-    ]);
-
-    const responseText = result.response.text();
-    const parsed = JSON.parse(responseText) as Partial<ExpandedQueries>;
-
-    if (parsed.romanianQuery && parsed.englishQuery) {
-      const usage = result.response.usageMetadata;
-      const tokenUsage: TokenUsageDetail | undefined = usage
-        ? {
-            provider: 'gemini',
-            model: modelName,
-            step: 'query_expansion',
-            inputTokens: usage.promptTokenCount ?? 0,
-            outputTokens: usage.candidatesTokenCount ?? 0,
-          }
-        : undefined;
-
-      return {
-        romanianQuery: String(parsed.romanianQuery).trim(),
-        englishQuery: String(parsed.englishQuery).trim(),
-        keywords: Array.isArray(parsed.keywords) ? parsed.keywords.map(String) : [],
-        namedEntities: Array.isArray(parsed.namedEntities) ? parsed.namedEntities.map(String) : [],
-        tokenUsage,
-      };
-    }
-  } catch (error) {
-    logger.warn('AI query expansion fallback used', {
-      service: 'query-expander',
-      error: String(error),
-    });
+/**
+ * Uses LLM to deconstruct a claim into targeted search queries across 3 distinct investigative angles.
+ */
+export async function expandClaimQueries(
+  text: string,
+  language: 'ro' | 'en' | 'fr' = 'ro'
+): Promise<ExpandedQueries> {
+  const fallback = buildFallbackQueries(text, language);
+  if (!text || text.trim().length < 15) {
+    return fallback;
   }
 
-  return buildFallbackQueries(text);
+  // Provider priority: OpenRouter first (if key set), then direct Gemini
+  const openRouterKey = process.env.OPENROUTER_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
+
+  if (openRouterKey) {
+    try {
+      const model = PRIMARY_MODEL;
+      const response = await withCircuitBreaker('openrouter', () =>
+        fetchWithRetry(
+          'https://openrouter.ai/api/v1/chat/completions',
+          () => ({
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${openRouterKey}`,
+              'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
+              'X-Title': 'Verifact Query Expander',
+            },
+            body: JSON.stringify({
+              model,
+              messages: [{ role: 'user', content: EXPANSION_PROMPT(text) }],
+              temperature: 0.1,
+              response_format: { type: 'json_object' },
+              ...NO_REASONING,
+            }),
+            signal: AbortSignal.timeout(3500),
+          }),
+          { label: 'query-expansion-openrouter', attempts: 1 }
+        ).then(async (r) => {
+          if (!r.ok) throw new Error(`OpenRouter HTTP ${r.status}`);
+          return r.json() as Promise<{
+            choices?: Array<{ message?: { content?: string } }>;
+            usage?: { prompt_tokens?: number; completion_tokens?: number };
+          }>;
+        })
+      );
+
+      const content = response.choices?.[0]?.message?.content;
+      if (content) {
+        // Some models wrap the object in a ```json fence despite json_object mode.
+        const parsed = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] ?? content) as Partial<ExpandedQueries>;
+        if (parsed.romanianQuery && parsed.englishQuery) {
+          return {
+            primary: text,
+            romanianQuery: String(parsed.romanianQuery).trim(),
+            englishQuery: String(parsed.englishQuery).trim(),
+            factCheckAngle: String(parsed.factCheckAngle || fallback.factCheckAngle).trim(),
+            officialAngle: String(parsed.officialAngle || fallback.officialAngle).trim(),
+            contextOriginAngle: String(parsed.contextOriginAngle || fallback.contextOriginAngle).trim(),
+            keywords: Array.isArray(parsed.keywords) ? parsed.keywords.map(String) : fallback.keywords,
+            namedEntities: Array.isArray(parsed.namedEntities) ? parsed.namedEntities.map(String) : fallback.namedEntities,
+            euLawTerms: Array.isArray(parsed.euLawTerms) ? parsed.euLawTerms.map(String) : [],
+            tokenUsage: response.usage
+              ? {
+                  provider: 'openrouter',
+                  model,
+                  step: 'query_expansion',
+                  inputTokens: response.usage.prompt_tokens ?? 0,
+                  outputTokens: response.usage.completion_tokens ?? 0,
+                }
+              : undefined,
+          };
+        }
+      }
+    } catch (err) {
+      logger.warn('OpenRouter query expansion failed, checking fallback', {
+        service: 'query-expander',
+        error: String(err),
+      });
+    }
+  }
+
+  // Direct Gemini fallback if key is configured
+  if (geminiKey && !geminiKey.startsWith('AQ')) {
+    try {
+      const genAI = new GoogleGenerativeAI(geminiKey);
+      const modelName = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
+      const model = genAI.getGenerativeModel({ model: modelName });
+
+      const result = await Promise.race([
+        model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: EXPANSION_PROMPT(text) }] }],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json',
+          },
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Gemini query expansion timeout')), 3500)
+        ),
+      ]);
+
+      const responseText = result.response.text();
+      const parsed = JSON.parse(responseText) as Partial<ExpandedQueries>;
+
+      if (parsed.romanianQuery && parsed.englishQuery) {
+        const usage = result.response.usageMetadata;
+        return {
+          primary: text,
+          romanianQuery: String(parsed.romanianQuery).trim(),
+          englishQuery: String(parsed.englishQuery).trim(),
+          factCheckAngle: String(parsed.factCheckAngle || fallback.factCheckAngle).trim(),
+          officialAngle: String(parsed.officialAngle || fallback.officialAngle).trim(),
+          contextOriginAngle: String(parsed.contextOriginAngle || fallback.contextOriginAngle).trim(),
+          keywords: Array.isArray(parsed.keywords) ? parsed.keywords.map(String) : fallback.keywords,
+          namedEntities: Array.isArray(parsed.namedEntities) ? parsed.namedEntities.map(String) : fallback.namedEntities,
+          euLawTerms: Array.isArray(parsed.euLawTerms) ? parsed.euLawTerms.map(String) : [],
+          tokenUsage: usage
+            ? {
+                provider: 'gemini',
+                model: modelName,
+                step: 'query_expansion',
+                inputTokens: usage.promptTokenCount ?? 0,
+                outputTokens: usage.candidatesTokenCount ?? 0,
+              }
+            : undefined,
+        };
+      }
+    } catch (err) {
+      logger.warn('Gemini query expansion failed, using rule-based fallback', {
+        service: 'query-expander',
+        error: String(err),
+      });
+    }
+  }
+
+  return fallback;
 }

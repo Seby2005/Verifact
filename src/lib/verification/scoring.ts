@@ -5,6 +5,8 @@ import type {
   Layer4Result,
   ScoreBreakdown,
   Verdict,
+  EvidenceStatus,
+  PlausibilityTilt,
 } from '@/types/verification';
 
 const WEIGHTS = {
@@ -44,8 +46,28 @@ const VERDICT_THRESHOLD = {
  */
 const CORROBORATION_TARGET = 3;
 
-function corroboration(layer: { results?: unknown[] }): number {
-  return Math.min(1, (layer.results?.length ?? 0) / CORROBORATION_TARGET);
+/**
+ * Results that take a side on the claim. Press and official sources that are
+ * merely on topic carry no direction — their layer score already ignores them
+ * — so they do not earn the layer its weight either.
+ */
+function signalCount(key: 'layer1' | 'layer2' | 'layer3' | 'layer4', layers: {
+  layer1: Layer1Result;
+  layer2: Layer2Result;
+  layer3: Layer3Result;
+  layer4: Layer4Result;
+}): number {
+  if (key === 'layer2') {
+    return layers.layer2.results.filter((a) => a.sentiment === 'confirms' || a.sentiment === 'contradicts').length;
+  }
+  if (key === 'layer3') {
+    return layers.layer3.results.filter((s) => s.supportsOrDenies === 'supports' || s.supportsOrDenies === 'denies').length;
+  }
+  return layers[key].results?.length ?? 0;
+}
+
+function corroboration(count: number): number {
+  return Math.min(1, count / CORROBORATION_TARGET);
 }
 
 /**
@@ -98,14 +120,20 @@ export function calculateScore(layers: {
 }): ScoreBreakdown {
   const aiScore01 = layers.ai ? layers.ai.score / 100 : 0.5;
 
+  // AI is available if present and either has meaningful confidence (>= 0.15)
+  // or has made a clear directional judgment (|score - 50| >= 10).
+  // We only exclude AI when it has near-zero confidence AND is sitting at 50%.
+  const aiHasSignal = Boolean(
+    layers.ai && (layers.ai.confidence >= 0.15 || Math.abs(layers.ai.score - 50) >= 10)
+  );
+
   // A layer counts only if it actually found something (see hasEvidence).
-  // The AI assessment counts only when the model expressed real confidence.
   const available = {
     layer1: hasEvidence(layers.layer1),
     layer2: hasEvidence(layers.layer2),
     layer3: hasEvidence(layers.layer3),
     layer4: hasEvidence(layers.layer4),
-    ai: Boolean(layers.ai && layers.ai.confidence >= 0.3),
+    ai: aiHasSignal,
   };
 
   // When search turned up nothing at all, the model's assessment is the only
@@ -119,7 +147,7 @@ export function calculateScore(layers: {
   // The AI is not a search layer — it has nothing to corroborate against, so
   // it keeps its full weight.
   const effectiveWeight = (key: keyof typeof available): number =>
-    key === 'ai' ? WEIGHTS.ai : WEIGHTS[key] * corroboration(layers[key]);
+    key === 'ai' ? WEIGHTS.ai : WEIGHTS[key] * corroboration(signalCount(key, layers));
 
   const totalAvailableWeight = availableKeys.reduce((sum, key) => sum + WEIGHTS[key], 0);
   const earnedWeight = availableKeys.reduce((sum, key) => sum + effectiveWeight(key), 0);
@@ -127,17 +155,16 @@ export function calculateScore(layers: {
   let rawScore: number;
 
   if (totalAvailableWeight === 0) {
-    // Nothing found anywhere and no usable AI assessment.
-    rawScore = 0.5;
+    // If search found nothing and AI had low confidence/no signal,
+    // check if AI at least provided a non-neutral score before defaulting to 0.5.
+    if (layers.ai && Math.abs(layers.ai.score - 50) >= 5) {
+      rawScore = aiScore01;
+    } else {
+      rawScore = 0.5;
+    }
   } else if (searchLayersWithEvidence === 0 && available.ai) {
     // Search found nothing to corroborate, so defer to the model's assessment.
-    // It is only trusted here because it already cleared the confidence gate
-    // (>= 0.3) above — an unsure model returns 'insufficient' with low
-    // confidence, which drops out and lands the claim at a neutral 50. The old
-    // behaviour clamped every unsearchable claim into 40–84%, which is exactly
-    // what made a fabrication ("X started a war") read as ~50% "half true" and a
-    // notorious fact ("Romania joined the EU in 2007") stall at 75%. A confident
-    // model now reads false as false and a well-known truth as true.
+    // It is trusted here because it provided directional signal.
     rawScore = aiScore01;
   } else {
     // Weighted average over the components that carry evidence, with the
@@ -201,3 +228,257 @@ export function scoreToConfidence(
   if (availableLayers >= 2) return 'medium';
   return 'low';
 }
+
+export interface EvidenceStatusInput {
+  score: number;
+  layers: {
+    layer1: Layer1Result;
+    layer2: Layer2Result;
+    layer3: Layer3Result;
+    layer4: Layer4Result;
+  };
+  ai?: {
+    score?: number;
+    verdict?: string;
+    evidenceStatus?: EvidenceStatus;
+    confidence?: number;
+    reasoning?: string;
+    isSatireOrParody?: boolean;
+    circularReportingDetected?: boolean;
+  };
+}
+
+/** At or above this score a claim is in the partial/true band and is never "contradicted". */
+const CONTRADICTION_CEILING = VERDICT_THRESHOLD.partial;
+
+/**
+ * Determines the descriptive, non-dogmatic evidence status of a claim.
+ * Replaces binary "true/false" labeling with objective investigative categorization.
+ */
+export function determineEvidenceStatus(input: EvidenceStatusInput): EvidenceStatus {
+  const { score, layers, ai } = input;
+
+  // 1. Explicit satire/parody detection from the LLM cross-examination
+  if (ai?.isSatireOrParody) {
+    return 'contradicted';
+  }
+
+  const l1Results = layers.layer1.results ?? [];
+  const l2Results = layers.layer2.results ?? [];
+  const l3Results = layers.layer3.results ?? [];
+  const totalEvidenceResults = l1Results.length + l2Results.length + l3Results.length;
+
+  // Nothing found (or search was down): "corroborated" and "contradicted" are
+  // labelled as confirmed/contradicted *by documents*, which would be untrue
+  // with none on the page. The score still carries the model's own judgement,
+  // and the plausibility tilt follows it. The model's nuanced readings (missing
+  // context, open debate) make no claim about documents and pass through.
+  if (totalEvidenceResults === 0) {
+    if (ai?.evidenceStatus === 'missing_context' || ai?.evidenceStatus === 'open_debate') {
+      return ai.evidenceStatus;
+    }
+    return 'unverified_no_sources';
+  }
+
+  const hasFactCheckDebunk = l1Results.some(
+    (r) => r.ratingValue !== undefined && r.ratingValue <= 0.25
+  );
+  const hasOfficialDenial = l3Results.some((o) => o.supportsOrDenies === 'denies');
+
+  // 2. Clear Contradiction signals:
+  // - Fact-checkers explicitly rated it false/debunk (layer1)
+  // - Official institutions explicitly deny it (layer3)
+  // - Low composite score (< 35) or explicit contradiction from AI
+  //
+  // Only below CONTRADICTION_CEILING: a fact-check match is fuzzy (a debunk of
+  // the *opposite* claim — "climate change is a hoax" rated False — matches
+  // "climate change is caused by humans"), and the press-layer stance is a
+  // keyword guess. When the weighted evidence still lands in the partial/true
+  // band, labelling the claim "contradicted" would contradict its own score.
+  if (
+    score < CONTRADICTION_CEILING &&
+    (hasFactCheckDebunk ||
+      hasOfficialDenial ||
+      ai?.evidenceStatus === 'contradicted' ||
+      (ai?.verdict === 'contradicts' && score <= 45) ||
+      score < 35)
+  ) {
+    return 'contradicted';
+  }
+
+  // 3. Clear Corroboration signals:
+  // - Fact-checker rated it true/confirmed
+  // - Official sources confirm/support
+  // - High score (>= 70) with corroborating evidence or confident AI support
+  const hasFactCheckConfirmation = l1Results.some(
+    (r) => r.ratingValue !== undefined && r.ratingValue >= 0.75
+  );
+  const hasOfficialSupport = l3Results.some((o) => o.supportsOrDenies === 'supports');
+  if (
+    (hasFactCheckConfirmation ||
+      hasOfficialSupport ||
+      (ai?.evidenceStatus === 'corroborated' && (ai?.confidence ?? 0) >= 0.6) ||
+      (ai?.verdict === 'supports' && (ai?.confidence ?? 0) >= 0.7)) &&
+    score >= 70
+  ) {
+    return 'corroborated';
+  }
+
+  // 4. Model-assessed evidence status for nuanced states (missing context, open debate)
+  if (ai?.evidenceStatus && ['missing_context', 'open_debate'].includes(ai.evidenceStatus)) {
+    return ai.evidenceStatus;
+  }
+
+  if (ai?.evidenceStatus === 'unverified_no_sources') {
+    return 'unverified_no_sources';
+  }
+
+  // 6. Open debate vs. Missing context:
+  const isDebate =
+    ai?.verdict === 'mixed' ||
+    Boolean(
+      ai?.reasoning &&
+        /(dezbatere|divergent|controvers|opinie|perspectiv|estimar|nuan[tț]|prospectiv)/i.test(ai.reasoning)
+    );
+  if (isDebate) {
+    return 'open_debate';
+  }
+
+  // 7. Missing context / decontextualized
+  if (score >= 40 && score <= 79) {
+    return 'missing_context';
+  }
+
+  return score < 40 ? 'contradicted' : 'corroborated';
+}
+
+/**
+ * Calculates a nuanced, non-dogmatic plausibility tilt with an honest rationale.
+ */
+export function calculatePlausibilityTilt(
+  status: EvidenceStatus,
+  score: number,
+  aiReasoning?: string,
+  language: 'ro' | 'en' | 'fr' = 'ro'
+): PlausibilityTilt {
+  const isRo = language === 'ro';
+  const isFr = language === 'fr';
+
+  switch (status) {
+    case 'corroborated':
+      return {
+        direction: 'plausible',
+        score,
+        label: isRo
+          ? 'Înclinație spre Verosimil — confirmat prin surse primare'
+          : isFr
+          ? 'Forte probabilité de véracité — corroboré par des sources primaires'
+          : 'Tilt toward Plausible — corroborated by primary sources',
+        rationale: isRo
+          ? 'Datele și documentele verificate atestă convergent evenimentele sau cifrele menționate.'
+          : isFr
+          ? 'Les données et documents vérifiés attestent de manière concordante les faits ou chiffres mentionnés.'
+          : 'Verified data and primary documentation consistently attest to the mentioned facts.',
+      };
+
+    case 'contradicted':
+      return {
+        direction: 'unlikely',
+        score,
+        label: isRo
+          ? 'Înclinație spre Fals — contrazis de evidențele publice'
+          : isFr
+          ? 'Forte probabilité d’inexactitude — réfuté par les faits établis'
+          : 'Tilt toward False — contradicted by documented facts',
+        rationale: isRo
+          ? 'Documentele oficiale, rapoartele instituționale sau investigațiile independente contrazic direct această afirmație.'
+          : isFr
+          ? 'Les documents officiels, rapports d’institutions ou enquêtes indépendantes contredisent directement cette affirmation.'
+          : 'Official records, institutional reports, or independent investigations directly contradict this claim.',
+      };
+
+    case 'missing_context':
+      return {
+        direction: 'mixed',
+        score,
+        label: isRo
+          ? 'Înclinație spre Denaturare — context esențial omis'
+          : isFr
+          ? 'Probabilité de distorsion — contexte déterminant omis'
+          : 'Tilt toward Misleading — critical context omitted',
+        rationale: isRo
+          ? 'Afirmația preia un element factual real, însă îl prezintă trunchiat, denaturând semnificația sau cauzalitatea.'
+          : isFr
+          ? 'L’affirmation repose sur un fait réel mais le présente de manière tronquée, faussant sa portée ou sa causalité.'
+          : 'The claim relies on a real factual element but presents it out of context, distorting its scope or causality.',
+      };
+
+    case 'unverified_no_sources':
+      // With no sources the score is the model's own judgement; a well-known
+      // fact it rates highly must not read "toward implausible".
+      if (score >= 60) {
+        return {
+          direction: 'plausible',
+          score,
+          label: isRo
+            ? 'Înclinație spre Verosimil — fără surse găsite, conform evaluării AI'
+            : isFr
+            ? 'Plutôt plausible — aucune source trouvée, selon l’évaluation IA'
+            : 'Tilt toward Plausible — no sources found, per the AI assessment',
+          rationale: isRo
+            ? 'Căutarea nu a returnat surse pentru această afirmație; înclinația reflectă doar evaluarea modelului AI și trebuie confirmată din surse independente.'
+            : isFr
+            ? 'La recherche n’a renvoyé aucune source ; cette tendance reflète uniquement l’évaluation du modèle IA et doit être confirmée par des sources indépendantes.'
+            : 'Search returned no sources for this claim; the tilt reflects only the AI model’s assessment and should be confirmed from independent sources.',
+        };
+      }
+      return {
+        direction: score < 40 ? 'unlikely' : 'neutral',
+        score,
+        label: isRo
+          ? 'Înclinație spre Neverosimil — absență totală a surselor credibile'
+          : isFr
+          ? 'Non corroboré — absence totale de sources fiables'
+          : 'Tilt toward Unverified — no credible evidence found',
+        rationale: isRo
+          ? 'Nu a fost identificată nicio dovadă primară sau atestare credibilă. Într-o societate digitală, deciziile majore lasă urme documentare.'
+          : isFr
+          ? 'Aucune preuve primaire ni attestation crédible n’a été identifiée. Les décisions publiques laissent normalement des traces documentaires.'
+          : 'No primary evidence or credible records were found. Significant events leave verifiable public trails.',
+      };
+
+    case 'open_debate':
+      return {
+        direction: 'mixed',
+        score,
+        label: isRo
+          ? 'Perspectivă deschisă — opinii divergente sau consens nedefinit'
+          : isFr
+          ? 'Débat ouvert — avis divergents ou consensus en évolution'
+          : 'Open debate — divergent viewpoints or evolving consensus',
+        rationale: isRo
+          ? 'Subiectul vizează opinii prospective, dispute legislative sau evaluări de politici publice fără consens factual tranșat.'
+          : isFr
+          ? 'Le sujet relève d’analyses prospectives ou de controverses d’experts ne faisant pas l’objet d’un consensus tranché.'
+          : 'The topic involves forward-looking assessments or policy debates where no uniform consensus exists.',
+      };
+  }
+}
+
+/**
+ * Generates an empowering critical thinking invitation for the reader.
+ */
+export function generateCriticalThinkingPrompt(
+  status: EvidenceStatus,
+  claim: string,
+  language: 'ro' | 'en' | 'fr' = 'ro'
+): string {
+  if (language === 'en') {
+    return 'Here is what the evidence shows and what is missing — review the sources and decide for yourself.';
+  }
+  if (language === 'fr') {
+    return 'Voici ce que documentent les sources et ce qui fait défaut — examinez les preuves et jugez par vous-même.';
+  }
+  return 'Iată ce spun sursele, iată ce lipsește, decide tu pe baza dovezilor.';
+}
+

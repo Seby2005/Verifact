@@ -28,12 +28,9 @@ export const AdminDeleteReportButton: React.FC<AdminDeleteReportButtonProps> = (
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data }) => {
       if (data?.user) {
-        const userEmail = data.user.email?.toLowerCase();
-        if (userEmail === 'sebi.iancu23@gmail.com') {
-          setIsAdmin(true);
-          return;
-        }
-
+        // Gate the button on `role` only. The email allowlist is server-side
+        // (see lib/auth/admin-emails) and must not ship to the browser; the
+        // DELETE route is what actually enforces authorization.
         const { data: profile } = await (supabase as any)
           .from('profiles')
           .select('role')

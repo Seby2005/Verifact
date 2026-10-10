@@ -76,12 +76,13 @@ describe('runLayer1', () => {
     expect(result.layerScore).toBe(0.5);
   });
 
-  it('handles fetch errors gracefully returning empty results', async () => {
+  it('reports itself unavailable when the fact-check API fails, rather than finding nothing', async () => {
     global.fetch = jest.fn().mockResolvedValue(jsonResponse({}, false, 500));
 
     const result = await runLayer1('Orice afirmatie', 'ro');
-    expect(result.status).toBe('success');
+    expect(result.status).toBe('unavailable');
     expect(result.results).toEqual([]);
+    expect(result.error).toContain('google-fact-check');
   });
 
   it('deduplicates results by review URL', async () => {

@@ -6,6 +6,24 @@ export type VerifyResponse =
   | { status: 'error'; message: string };
 export type Language = 'ro' | 'en' | 'fr' | 'unknown';
 export type Verdict = 'true' | 'false' | 'partial' | 'unclear';
+
+/**
+ * Objective, descriptive evidence status categories replacing rigid, dogmatic verdicts.
+ */
+export type EvidenceStatus =
+  | 'corroborated'          // "Confirmat de documente / surse multiple"
+  | 'contradicted'          // "Contrazis de sursele oficiale / presă"
+  | 'missing_context'        // "Lipsit de context verificabil"
+  | 'unverified_no_sources' // "Fără surse credibile identificate"
+  | 'open_debate';          // "Dezbatere deschisă / Opinii divergente"
+
+export interface PlausibilityTilt {
+  direction: 'plausible' | 'unlikely' | 'neutral' | 'mixed';
+  score: number;
+  label: string;
+  rationale: string;
+}
+
 export type LayerStatus = 'pending' | 'loading' | 'done' | 'unavailable' | 'error' | 'success' | 'skipped';
 
 export interface OcrRequest {
@@ -100,10 +118,19 @@ export interface OfficialSource {
   relevantQuote?: string;
   relevanceScore?: number;
   supportsOrDenies?: 'supports' | 'denies' | 'neutral';
+  /**
+   * True for a record fetched from an official register because the claim
+   * itself points at it (a bill number, an EU act, the EU laws on its subject).
+   * Such a record is the answer to "what does the register say", so the
+   * relevance triage that prunes search results must not drop it.
+   */
+  fromRegister?: boolean;
 }
 
+export type SocialPlatform = 'twitter' | 'facebook' | 'youtube' | 'tiktok' | 'instagram' | 'other';
+
 export interface SocialMediaPost {
-  platform: 'twitter' | 'facebook' | 'youtube' | 'other';
+  platform: SocialPlatform;
   author: string;
   authorVerified?: boolean;
   authorRole?: string;
@@ -192,6 +219,12 @@ export interface CombinedSource {
   relevance: number;
   tier?: 1 | 2 | 3;
   excerpt?: string;
+  /**
+   * The publisher's own site, set only when `url` is a redirect through an
+   * aggregator (Google News) rather than the publisher's page. Anything that
+   * identifies the source by its link must prefer this.
+   */
+  siteUrl?: string;
 }
 
 export interface VerificationReport {
@@ -213,6 +246,9 @@ export interface VerificationReport {
   inputType: InputType;
   userId?: string;
   verdict: Verdict;
+  evidenceStatus?: EvidenceStatus;
+  plausibilityTilt?: PlausibilityTilt;
+  criticalThinkingPrompt?: string;
   score: number;
   confidenceLevel: 'low' | 'medium' | 'high';
   riskLevel?: 'low' | 'medium' | 'high' | 'critical';
@@ -378,6 +414,17 @@ export interface ReportBuilderParams {
   layer4?: Layer4Result;
   finalScore?: number;
   verdict?: Verdict;
+  evidenceStatus?: EvidenceStatus;
+  aiAssessment?: {
+    score: number;
+    verdict: string;
+    evidenceStatus?: EvidenceStatus;
+    plausibilityTilt?: string;
+    confidence: number;
+    reasoning: string;
+    isSatireOrParody?: boolean;
+    circularReportingDetected?: boolean;
+  };
   executiveSummary?: string;
   scoreBreakdown?: ScoreBreakdown;
   aiAnalysis?: string | { summary: string; scoreAdjustment?: number };
