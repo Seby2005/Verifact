@@ -622,7 +622,7 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
         rows.push(textBox(insight.takeaway, style(reg, 13, MUTED, 1.45), textW));
       }
       if (s.excerpt) {
-        rows.push(textBox(`${t.seePassage} →`, style(semi, 12, INK, 1.4), textW, sourceHref(s.url, s.excerpt, true)));
+        rows.push(textBox(`${t.seePassage} →`, style(semi, 12, INK, 1.4), textW, sourceHref(s.url, s.excerpt, true, s.siteUrl)));
       }
       const text = stack(rows, 6);
       const body: Box = {

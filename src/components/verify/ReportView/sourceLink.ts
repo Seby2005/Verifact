@@ -10,15 +10,21 @@
 export function sourceHref(
   url: string,
   excerpt: string | undefined,
-  isPremium: boolean
+  isPremium: boolean,
+  /** The publisher's site when `url` is an aggregator redirect (see CombinedSource.siteUrl). */
+  siteUrl?: string
 ): string {
   if (!isPremium) {
+    if (siteUrl) return siteUrl;
     try {
       return new URL(url).origin;
     } catch {
       return url;
     }
   }
+
+  // A redirect does not carry a text fragment through to the article.
+  if (siteUrl) return url;
 
   const directive = buildTextDirective(excerpt);
   if (!directive) return url;

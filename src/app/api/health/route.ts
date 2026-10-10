@@ -19,9 +19,8 @@ function runChecks(): Check[] {
   const has = (v: string | undefined) => Boolean(v && v.trim());
   return [
     { name: 'layer1-factcheck', ok: has(process.env.GOOGLE_FACT_CHECK_API_KEY) },
-    { name: 'layer2-news', ok: has(process.env.NEWS_API_KEY) || has(process.env.TAVILY_API_KEY) },
-    { name: 'layer3-official', ok: has(process.env.GOOGLE_CUSTOM_SEARCH_API_KEY) },
-    { name: 'layer4-social', ok: has(process.env.TAVILY_API_KEY) },
+    // Press and official search run on keyless RSS engines and the social
+    // layer is optional, so none of them has a key to be missing.
     { name: 'ai-provider', ok: has(process.env.OPENROUTER_API_KEY) || has(process.env.GEMINI_API_KEY) },
   ];
 }

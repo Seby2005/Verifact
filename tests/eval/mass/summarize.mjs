@@ -49,7 +49,7 @@ p();
 p('## Tool-uri / layere');
 p('| layer | success | unavailable/error | cu rezultate |');
 p('|---|---|---|---|');
-const names = { layer1: 'L1 fact-check (Google FC)', layer2: 'L2 presă (NewsAPI/Tavily/GDELT)', layer3: 'L3 oficial (Tavily/Wiki)', layer4: 'L4 social (Tavily)' };
+const names = { layer1: 'L1 fact-check (Google FC)', layer2: 'L2 presă (Bing/Google News RSS, GDELT)', layer3: 'L3 oficial (Google News site:, Wikipedia)', layer4: 'L4 social (X API, opțional)' };
 for (const k of Object.keys(names)) {
   const ls = graded.map((r) => r.layers?.[k]).filter(Boolean);
   p(`| ${names[k]} | ${count(ls, (l) => l.status === 'success')} | ${count(ls, (l) => l.status !== 'success' && l.status !== 'skipped')} | ${count(ls, (l) => l.results > 0)} |`);

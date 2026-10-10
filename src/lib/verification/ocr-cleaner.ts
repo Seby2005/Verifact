@@ -8,7 +8,10 @@ const STATUS_BAR_REGEX = /\b(?:\d{1,2}:\d{2}(?::\d{2})?|\d{1,3}%|5G[\.\s]?\d*|4G
 
 const SOCIAL_CHROME_REGEX = /\b(?:Urmărește|Urmărești|Distribuie|Distribuiri|Comentarii|Comentează|Apreciază|Aprecieri|Partajează|For You|Pentru tine|TikTok|Reels|Live|Trimite|Salvează|Vezi traducerea|See translation|Following|Friends|Inbox|Profile|Home|Explore|Search|Share|Comment|Like|Follow|Subscribe)\b/gi;
 
-const ARTIFACT_SYMBOLS_REGEX = /[↓↑✓くボбоIIIཁملԺ«»„”~#@&_—+=]+/g;
+/** How many status/chrome tokens a line needs before they are stripped out of it. */
+const MIN_CHROME_TOKENS_TO_STRIP = 3;
+
+const ARTIFACT_SYMBOLS_REGEX =/[↓↑✓くボбоIIIཁملԺ«»„”~#@&_—+=]+/g;
 
 /**
  * Strips known social media UI noise and phone status indicators line by line.
@@ -41,12 +44,18 @@ export function sanitizeOcrText(rawText: string): string {
       continue;
     }
 
-    // Clean inline status bar & chrome tokens from remaining sentences
-    const cleanedLine = trimmed
-      .replace(STATUS_BAR_REGEX, ' ')
-      .replace(SOCIAL_CHROME_REGEX, ' ')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
+    // Strip status-bar and chrome tokens only from a line that is visibly
+    // contaminated with them (OCR ran the status bar and the caption together).
+    // In an ordinary sentence the same words are the subject of the claim:
+    // "Rețelele 5G au răspândit coronavirusul" and "TikTok va fi interzis"
+    // used to reach verification as "Rețelele au răspândit coronavirusul" and
+    // "va fi interzis".
+    const chromeTokens =
+      (trimmed.match(STATUS_BAR_REGEX) ?? []).length + (trimmed.match(SOCIAL_CHROME_REGEX) ?? []).length;
+    const cleanedLine =
+      chromeTokens >= MIN_CHROME_TOKENS_TO_STRIP
+        ? trimmed.replace(STATUS_BAR_REGEX, ' ').replace(SOCIAL_CHROME_REGEX, ' ').replace(/\s{2,}/g, ' ').trim()
+        : trimmed;
 
     if (cleanedLine.length > 0) {
       cleanedLines.push(cleanedLine);

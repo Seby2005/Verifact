@@ -212,6 +212,12 @@ export interface CombinedSource {
   relevance: number;
   tier?: 1 | 2 | 3;
   excerpt?: string;
+  /**
+   * The publisher's own site, set only when `url` is a redirect through an
+   * aggregator (Google News) rather than the publisher's page. Anything that
+   * identifies the source by its link must prefer this.
+   */
+  siteUrl?: string;
 }
 
 export interface VerificationReport {

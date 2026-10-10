@@ -124,7 +124,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ report, isPremiu
               {previewSources.map((source) => (
                 <li key={source.url} className={styles.sourceItem}>
                   <a
-                    href={sourceHref(source.url, source.excerpt, true)}
+                    href={sourceHref(source.url, source.excerpt, true, source.siteUrl)}
                     target="_blank"
                     rel="noreferrer noopener"
                     className={styles.sourceLink}

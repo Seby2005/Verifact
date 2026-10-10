@@ -15,23 +15,9 @@ import { isRelevantToClaim } from './relevance';
 import { matchesAnyPhrase } from './keyword-match';
 import type { ExpandedQueries } from './query-expander';
 import { settleProviderCalls } from './provider-calls';
+import { searchBingNews, searchGoogleNews, type RssNewsItem } from './news-rss';
 
 // ─── Internal API types ───────────────────────────────────────
-
-interface NewsAPIArticle {
-  title: string;
-  description: string | null;
-  url: string;
-  urlToImage: string | null;
-  publishedAt: string;
-  source: { id: string | null; name: string };
-}
-
-interface NewsAPIResponse {
-  status: string;
-  totalResults: number;
-  articles: NewsAPIArticle[];
-}
 
 interface TavilySearchResult {
   title: string;
@@ -118,62 +104,46 @@ export function detectSentiment(
   return 'neutral';
 }
 
+/**
+ * Drops repeats by URL and by headline: the same story arrives from Google
+ * (redirect link) and Bing (publisher link) under different URLs. First one
+ * wins, so callers list the richer source first.
+ */
 function deduplicateArticles(articles: NewsArticle[]): NewsArticle[] {
   const seen = new Set<string>();
   return articles.filter((a) => {
-    const key = a.articleUrl;
-    if (seen.has(key)) return false;
-    seen.add(key);
+    const headline = a.title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().slice(0, 70);
+    if (seen.has(a.articleUrl) || seen.has(headline)) return false;
+    seen.add(a.articleUrl);
+    seen.add(headline);
     return true;
   });
 }
 
-async function fetchFromNewsAPI(query: string, language: Language, rawInputText?: string): Promise<NewsArticle[]> {
-  const apiKey = process.env.NEWS_API_KEY;
-  if (!apiKey || !query.trim()) return [];
-
-  const lang = language === 'ro' ? 'ro' : language === 'fr' ? 'fr' : 'en';
-  const params = new URLSearchParams({
-    q: query.slice(0, 100),
-    language: lang,
-    sortBy: 'relevance',
-    pageSize: '10',
-    apiKey,
-  });
-
-  const response = await withCircuitBreaker('newsapi', () =>
-    fetchWithRetry(
-      `https://newsapi.org/v2/everything?${params.toString()}`,
-      () => ({ signal: AbortSignal.timeout(8000) }),
-      { label: 'layer2-newsapi' }
-    ).then((res) => {
-      if (!res.ok) throw new Error(`NewsAPI error: ${res.status}`);
-      return res;
-    })
-  );
-
-  const data = (await response.json()) as NewsAPIResponse;
-  if (data.status !== 'ok' || !data.articles) return [];
-
-  return data.articles
-    .filter((article) => !isSocialDomain(article.url))
-    .map((article): NewsArticle => {
-      const credibilityScore = getCredibilityScore(article.url);
-      const sentiment = detectSentiment(article.title, article.description ?? '', rawInputText || query, credibilityScore);
-
+/** Maps free RSS search hits to the layer's article shape, judged against `claimText`. */
+function toNewsArticles(items: RssNewsItem[], claimText: string): NewsArticle[] {
+  return items
+    .filter((item) => !isSocialDomain(item.sourceDomain || item.url))
+    .map((item): NewsArticle => {
+      const credibilityScore = getCredibilityScore(item.sourceDomain || item.url);
       return {
-        title: article.title,
-        source: article.source.name,
-        sourceUrl: article.url,
-        articleUrl: article.url,
-        publishedAt: article.publishedAt,
-        snippet: article.description ?? '',
-        sentiment,
+        title: item.title,
+        source: item.sourceName,
+        sourceUrl: item.sourceDomain,
+        articleUrl: item.url,
+        publishedAt: item.publishedAt,
+        snippet: item.snippet,
+        sentiment: detectSentiment(item.title, item.snippet, claimText, credibilityScore),
         credibilityScore,
       };
     });
 }
 
+/**
+ * Paid search, kept only as a reserve: one call, and only when the free RSS
+ * engines found nothing, so the free monthly credits last. Short timeout
+ * because it runs after the RSS round, inside the same layer budget.
+ */
 async function fetchFromTavily(query: string, rawInputText: string): Promise<NewsArticle[]> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey || !query.trim()) return [];
@@ -194,9 +164,9 @@ async function fetchFromTavily(query: string, rawInputText: string): Promise<New
           max_results: 10,
           exclude_domains: SOCIAL_MEDIA_DOMAINS,
         }),
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(4000),
       }),
-      { label: 'layer2-tavily' }
+      { label: 'layer2-tavily', attempts: 1 }
     ).then((res) => {
       if (!res.ok) throw new Error(`Tavily error: ${res.status}`);
       return res;
@@ -334,32 +304,40 @@ export async function runLayer2(
   const enQuery = expandedQueries?.englishQuery || text;
   const contextQuery = expandedQueries?.contextOriginAngle;
 
-  // One GDELT call only (it rate-limits to 1 req / 5s); enQuery casts the widest
-  // net across its global, mostly-English index, complementing the RO-first
-  // NewsAPI/Tavily calls.
+  // Free RSS engines carry the layer. Bing is listed first: it has the
+  // publisher's own URL and a description, so its copy of a story wins dedup.
   //
   // English-language searches are judged for relevance against enQuery, not
   // the claim text: an English article shares almost no tokens with a
   // Romanian claim, so checking it against `text` silently drops all of them.
   //
-  // GDELT is a bonus that fails open on its own (it is rate-limited per IP), so
-  // it does not count toward deciding whether press search worked at all.
-  const primaryCalls = [
-    { provider: 'newsapi', run: fetchFromNewsAPI(roQuery, 'ro', text) },
-    { provider: 'newsapi', run: fetchFromNewsAPI(enQuery, 'en') },
-    { provider: 'tavily', run: fetchFromTavily(roQuery, text) },
-    { provider: 'tavily', run: fetchFromTavily(enQuery, enQuery) },
-  ];
-  if (contextQuery && contextQuery !== roQuery) {
-    primaryCalls.push({ provider: 'tavily', run: fetchFromTavily(contextQuery, text) });
-  }
+  // One GDELT call only (it rate-limits to 1 req / 5s). It is a bonus that
+  // fails open on its own, so it does not count toward deciding whether press
+  // search worked at all.
   const [primary, gdelt] = await Promise.all([
-    settleProviderCalls('layer2-news', primaryCalls),
+    settleProviderCalls('layer2-news', [
+      { provider: 'bing-news', run: searchBingNews(roQuery, 'ro').then((r) => toNewsArticles(r, text)) },
+      { provider: 'google-news', run: searchGoogleNews(roQuery, 'ro').then((r) => toNewsArticles(r, text)) },
+      { provider: 'bing-news', run: searchBingNews(enQuery, 'en').then((r) => toNewsArticles(r, enQuery)) },
+      { provider: 'google-news', run: searchGoogleNews(enQuery, 'en').then((r) => toNewsArticles(r, enQuery)) },
+    ]),
     fetchFromGDELT(enQuery, enQuery),
   ]);
 
-  const unique = deduplicateArticles([...primary.items, ...gdelt]);
-  const relevant = unique.filter((a) => a.sentiment !== 'unrelated');
+  const isRelevant = (a: NewsArticle) => a.sentiment !== 'unrelated';
+  let unique = deduplicateArticles([...primary.items, ...gdelt]);
+  let failure = primary.failure;
+
+  if (!unique.some(isRelevant) && process.env.TAVILY_API_KEY) {
+    const reserve = await settleProviderCalls('layer2-news', [
+      { provider: 'tavily', run: fetchFromTavily(contextQuery || roQuery, text) },
+    ]);
+    unique = deduplicateArticles([...unique, ...reserve.items]);
+    // The layer searched if either round got through.
+    if (!reserve.failure) failure = undefined;
+  }
+
+  const relevant = unique.filter(isRelevant);
 
   relevant.sort((a, b) => {
     // 1. Matching language domain priority (e.g. .ro for Romanian queries)
@@ -375,8 +353,8 @@ export async function runLayer2(
 
   const layerScore = calculateLayer2Score(relevant);
 
-  if (primary.failure) {
-    // NewsAPI and Tavily both failed: whatever GDELT found is shown, but the
+  if (failure) {
+    // Every search engine failed: whatever GDELT found is shown, but the
     // layer is not a full press search and must not score as one.
     return {
       status: 'unavailable',
@@ -386,7 +364,7 @@ export async function runLayer2(
       layerScore: 0.5,
       processingTime: Date.now() - startTime,
       sourcesChecked: unique.length,
-      error: primary.failure,
+      error: failure,
     };
   }
 

@@ -3,41 +3,19 @@ import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import type { ExpandedQueries } from './query-expander';
 import { runAcademicLayer } from './layer-academic';
+import { searchGoogleNews, type RssNewsItem } from './news-rss';
 
-interface TavilySearchResult {
-  title: string;
-  url: string;
-  content: string;
-  score: number;
-  published_date?: string;
-}
-
-interface TavilySearchResponse {
-  results?: TavilySearchResult[];
-}
-
-const OFFICIAL_DOMAINS = [
-  'presidency.ro',
-  'gov.ro',
-  'mai.gov.ro',
-  'ms.ro',
-  'edu.ro',
-  'mfinante.gov.ro',
-  'mae.ro',
-  'service-public.fr',
-  'legifrance.gouv.fr',
-  'gouvernement.fr',
-  'insee.fr',
-  'santepubliquefrance.fr',
-  'interieur.gouv.fr',
-  'who.int',
-  'europa.eu',
-  'ec.europa.eu',
-  'cdc.gov',
-  'fda.gov',
-  'un.org',
-  'nato.int',
-];
+/**
+ * Institutional domains searched for primary documents, in the groups they are
+ * queried in. Grouped rather than one list because the search engine caps a
+ * query at ~32 words and every `site:` filter counts as one. A parent domain
+ * covers its subdomains (gov.ro includes mfinante.gov.ro, mai.gov.ro, …).
+ */
+const OFFICIAL_SITES = {
+  ro: ['gov.ro', 'presidency.ro', 'mae.ro', 'mapn.ro', 'ms.ro', 'edu.ro', 'bnr.ro', 'insse.ro'],
+  international: ['europa.eu', 'who.int', 'nato.int', 'un.org', 'cdc.gov', 'fda.gov'],
+  fr: ['gouv.fr', 'service-public.fr', 'insee.fr', 'santepubliquefrance.fr'],
+} as const;
 
 const KNOWN_ORGANIZATIONS: Record<string, { name: string; type: string }> = {
   'presidency.ro': { name: 'Administrația Prezidențială', type: 'government' },
@@ -47,6 +25,9 @@ const KNOWN_ORGANIZATIONS: Record<string, { name: string; type: string }> = {
   'edu.ro': { name: 'Ministerul Educației', type: 'government' },
   'mfinante.gov.ro': { name: 'Ministerul Finanțelor', type: 'government' },
   'mae.ro': { name: 'Ministerul Afacerilor Externe', type: 'government' },
+  'mapn.ro': { name: 'Ministerul Apărării Naționale', type: 'government' },
+  'bnr.ro': { name: 'Banca Națională a României', type: 'regulator' },
+  'insse.ro': { name: 'Institutul Național de Statistică', type: 'government' },
   'service-public.fr': { name: 'Service-Public.fr', type: 'government' },
   'legifrance.gouv.fr': { name: 'Légifrance', type: 'government' },
   'gouvernement.fr': { name: 'Gouvernement Français', type: 'government' },
@@ -69,11 +50,12 @@ function identifyOrganization(urlStr: string): { name?: string; type?: string } 
     const parsed = new URL(urlStr);
     const host = parsed.hostname.replace(/^www\./, '');
 
-    for (const [domain, info] of Object.entries(KNOWN_ORGANIZATIONS)) {
-      if (host.endsWith(domain)) {
-        return { name: info.name, type: info.type };
-      }
-    }
+    // Most specific domain wins: mfinante.gov.ro is the Finance Ministry, not
+    // "the Government" just because it also ends in gov.ro.
+    const match = Object.entries(KNOWN_ORGANIZATIONS)
+      .filter(([domain]) => host === domain || host.endsWith(`.${domain}`))
+      .sort(([a], [b]) => b.length - a.length)[0];
+    if (match) return { name: match[1].name, type: match[1].type };
 
     if (host.endsWith('.gov.ro') || host.endsWith('.gov') || host.endsWith('.gouv.fr')) {
       return { name: `Instituție guvernamentală (${host})`, type: 'government' };
@@ -104,38 +86,19 @@ function analyzeSupport(content: string): OfficialSource['supportsOrDenies'] {
   return 'neutral';
 }
 
-async function fetchOfficialTavily(queryStr: string): Promise<TavilySearchResult[]> {
-  const apiKey = process.env.TAVILY_API_KEY;
-  if (!apiKey || !queryStr.trim()) return [];
-
+/**
+ * Documents published by the given institutions that match the query. Free
+ * (Google News `site:` search), and best-effort like the other reference
+ * sources in this layer: a failed search adds nothing rather than failing the
+ * layer, since Wikipedia and the academic search still ran.
+ */
+async function fetchOfficial(
+  query: string,
+  language: 'ro' | 'en' | 'fr',
+  sites: readonly string[]
+): Promise<RssNewsItem[]> {
   try {
-    const response = await withCircuitBreaker('tavily', () =>
-      fetchWithRetry(
-        'https://api.tavily.com/search',
-        () => ({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            query: queryStr.slice(0, 300),
-            search_depth: 'basic',
-            topic: 'general',
-            include_domains: OFFICIAL_DOMAINS,
-            max_results: 6,
-          }),
-          signal: AbortSignal.timeout(4000),
-        }),
-        { label: 'layer3-tavily-official', attempts: 1 }
-      ).then((res) => {
-        if (!res.ok) throw new Error(`Tavily error: ${res.status}`);
-        return res;
-      })
-    );
-
-    const data = (await response.json()) as TavilySearchResponse;
-    return data.results ?? [];
+    return (await searchGoogleNews(query, language, sites)).slice(0, 6);
   } catch {
     return [];
   }
@@ -233,7 +196,6 @@ export async function runLayer3(
   expandedQueries?: ExpandedQueries
 ): Promise<Layer3Result> {
   const startTime = Date.now();
-  const apiKey = process.env.TAVILY_API_KEY;
 
   const roQuery = expandedQueries?.romanianQuery || text;
   const enQuery = expandedQueries?.englishQuery || text;
@@ -242,8 +204,10 @@ export async function runLayer3(
 
   // Official search + Wikipedia grounding + Academic/Scientific Research search in parallel
   const [officialItems, enItems, wikiRo, wikiEn, wikiFr, academicItems] = await Promise.all([
-    apiKey ? fetchOfficialTavily(officialQuery) : Promise.resolve([]),
-    apiKey ? fetchOfficialTavily(enQuery) : Promise.resolve([]),
+    isFrench
+      ? fetchOfficial(text, 'fr', OFFICIAL_SITES.fr)
+      : fetchOfficial(officialQuery, 'ro', OFFICIAL_SITES.ro),
+    fetchOfficial(enQuery, 'en', OFFICIAL_SITES.international),
     fetchWikipedia(roQuery, 'ro'),
     fetchWikipedia(enQuery, 'en'),
     isFrench ? fetchWikipedia(text, 'fr') : Promise.resolve([]),
@@ -258,16 +222,18 @@ export async function runLayer3(
       return true;
     })
     .map((item) => {
-      const org = identifyOrganization(item.url);
+      const org = identifyOrganization(`https://${item.sourceDomain}`);
       return {
         title: item.title,
-        publisher: org.name || 'Instituție Oficială',
+        publisher: org.name || item.sourceName || 'Instituție Oficială',
         organization: org.name,
         organizationType: org.type,
+        // The link is a search-engine redirect; `url` keeps the institution's site.
+        url: `https://${item.sourceDomain}`,
         documentUrl: item.url,
-        publishedAt: item.published_date ?? '',
-        relevantQuote: item.content?.slice(0, 400) ?? '',
-        supportsOrDenies: analyzeSupport(item.content ?? ''),
+        publishedAt: item.publishedAt,
+        relevantQuote: item.snippet.slice(0, 400),
+        supportsOrDenies: analyzeSupport(item.snippet),
       };
     });
 
@@ -286,17 +252,6 @@ export async function runLayer3(
 
   // Official and Academic research sources lead; Wikipedia follows.
   const sources = [...officialSources, ...academicSources, ...wikiSources];
-
-  if (sources.length === 0 && !apiKey) {
-    return {
-      status: 'unavailable',
-      results: [],
-      summary: 'Official search provider not configured',
-      layerScore: 0.5,
-      processingTime: Date.now() - startTime,
-      error: 'Official search provider not configured (TAVILY_API_KEY missing)',
-    };
-  }
 
   return {
     status: 'success',

@@ -17,6 +17,7 @@ import {
   generateCriticalThinkingPrompt,
 } from './scoring';
 import { assignSourceTier } from './ai-source-filter';
+import { publisherSiteOf } from './publisher-site';
 import { buildFallbackSynthesis } from '@/lib/ai/report-synthesis';
 import { stripMarkdown } from '@/lib/utils/romanian-text';
 
@@ -237,9 +238,11 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
     for (const a of layer2.results) {
       const url = a.articleUrl || a.url;
       if (!url) continue;
+      const siteUrl = publisherSiteOf(url, a.sourceUrl);
       sources.push({
         title: a.title,
         url,
+        siteUrl,
         publisher: a.source,
         publishedAt: a.publishedAt,
         sourceType: 'news',
@@ -249,7 +252,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
           : a.sentiment === 'contradicts' ? false
           : null,
         excerpt: a.snippet,
-        tier: assignSourceTier(url, a.source),
+        tier: assignSourceTier(siteUrl ?? url, a.source),
       });
     }
   }
@@ -258,9 +261,11 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
     for (const o of layer3.results) {
       const url = o.documentUrl || o.url;
       if (!url) continue;
+      const siteUrl = publisherSiteOf(url, o.url);
       sources.push({
         title: o.title,
         url,
+        siteUrl,
         publisher: o.organization || o.publisher || 'Oficial',
         publishedAt: o.publishedAt || o.publishedDate,
         sourceType: 'official',
@@ -270,7 +275,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
           : o.supportsOrDenies === 'denies' ? false
           : null,
         excerpt: o.relevantQuote ?? o.snippet,
-        tier: assignSourceTier(url, o.organization || o.publisher),
+        tier: assignSourceTier(siteUrl ?? url, o.organization || o.publisher),
       });
     }
   }

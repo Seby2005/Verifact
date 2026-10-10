@@ -179,7 +179,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </p>
         <ol className={styles.sources}>
           {report.sources.map((source, index) => {
-            const domain = getDomain(source.url);
+            const domain = getDomain(source.siteUrl ?? source.url);
             const faviconUrl = domain
               ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
               : null;
@@ -204,7 +204,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
                       />
                     ) : null}
                     <a
-                      href={sourceHref(source.url, source.excerpt, isPremium)}
+                      href={sourceHref(source.url, source.excerpt, isPremium, source.siteUrl)}
                       target="_blank"
                       rel="noreferrer noopener"
                       className={styles.sourceTitle}

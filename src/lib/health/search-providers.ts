@@ -2,14 +2,17 @@
  * Live checks of the external services a verification depends on.
  *
  * Unlike /api/health, which only confirms the keys are set, each check makes
- * one real, minimal request — the only way to see an exhausted quota or a
- * blocked key. Tavily over its plan limit answers HTTP 432 while its usage
- * page still shows credits left, so nothing short of a search reveals it.
+ * one real, minimal request — the only way to see an exhausted quota, a
+ * blocked key, or a free RSS engine that changed its format or started
+ * blocking the server's IP.
  *
- * Costs per run: 1 Tavily credit, 1 of NewsAPI's 100 daily requests, one
- * Fact Check query; the OpenRouter balance lookup is free. Meant to run once a
- * day, not per request.
+ * Costs per run: one Fact Check query; the RSS searches and the OpenRouter
+ * balance lookup are free. Tavily is only a reserve for the press layer now,
+ * so it is not probed — a probe would spend one of its free credits a day to
+ * report a quota the pipeline no longer depends on. Meant to run once a day.
  */
+
+import { searchBingNews, searchGoogleNews, type RssNewsItem } from '@/lib/verification/news-rss';
 
 export interface ProviderCheck {
   provider: string;
@@ -48,27 +51,26 @@ async function probe({ provider, affects, key, request, read }: ProbeSpec): Prom
   }
 }
 
+/** A keyless RSS engine is healthy when a search for a word that is always in the news returns items. */
+async function probeFeed(
+  provider: string,
+  affects: string,
+  search: () => Promise<RssNewsItem[]>
+): Promise<ProviderCheck> {
+  try {
+    const items = await search();
+    return items.length > 0
+      ? { provider, affects, ok: true, detail: `${items.length} rezultate` }
+      : { provider, affects, ok: false, detail: 'Căutarea nu a întors niciun rezultat' };
+  } catch (error) {
+    return { provider, affects, ok: false, detail: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 export function checkSearchProviders(): Promise<ProviderCheck[]> {
   return Promise.all([
-    probe({
-      provider: 'Tavily',
-      affects: 'presă, surse oficiale, rețele sociale',
-      key: process.env.TAVILY_API_KEY,
-      request: (key, signal) =>
-        fetch('https://api.tavily.com/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-          body: JSON.stringify({ query: 'Romania', max_results: 1, search_depth: 'basic' }),
-          signal,
-        }),
-    }),
-    probe({
-      provider: 'NewsAPI',
-      affects: 'presă',
-      key: process.env.NEWS_API_KEY,
-      request: (key, signal) =>
-        fetch(`https://newsapi.org/v2/everything?q=Romania&pageSize=1&apiKey=${encodeURIComponent(key)}`, { signal }),
-    }),
+    probeFeed('Google News RSS', 'presă, surse oficiale', () => searchGoogleNews('România', 'ro')),
+    probeFeed('Bing News RSS', 'presă', () => searchBingNews('România', 'ro')),
     probe({
       provider: 'Google Fact Check',
       affects: 'fact-checking',

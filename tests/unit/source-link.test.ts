@@ -54,3 +54,15 @@ describe('sourceHref — premium', () => {
     expect(sourceHref('https://ex.ro/a', undefined, true)).toBe('https://ex.ro/a');
   });
 });
+
+describe('sourceHref — aggregator redirect links', () => {
+  const GOOGLE = 'https://news.google.com/rss/articles/CBMiABC?oc=5';
+
+  it('sends free plans to the publisher, not to the aggregator', () => {
+    expect(sourceHref(GOOGLE, 'orice text aici', false, 'https://digi24.ro')).toBe('https://digi24.ro');
+  });
+
+  it('gives premium plans the article link without a text fragment the redirect would drop', () => {
+    expect(sourceHref(GOOGLE, 'un pasaj suficient de lung pentru ancorare', true, 'https://digi24.ro')).toBe(GOOGLE);
+  });
+});

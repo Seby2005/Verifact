@@ -9,6 +9,7 @@ import { calculateLayer1Score } from './layer1-factcheck';
 import { calculateLayer2Score } from './layer2-news';
 import { calculateLayer3Score } from './layer3-official';
 import { calculateLayer4Score } from './layer4-social';
+import { publisherSiteOf } from './publisher-site';
 import { logger } from '@/lib/utils/logger';
 
 export interface LayerSet {
@@ -97,7 +98,7 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
       id: `l2:${i}`,
       title: a.title,
       snippet: a.snippet ?? '',
-      source: origin(a.articleUrl || a.url),
+      source: origin(publisherSiteOf(a.articleUrl || a.url || '', a.sourceUrl) ?? a.articleUrl ?? a.url),
     });
   });
 
@@ -106,7 +107,7 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
       id: `l3:${i}`,
       title: s.title,
       snippet: s.relevantQuote ?? s.snippet ?? '',
-      source: origin(s.documentUrl || s.url),
+      source: origin(publisherSiteOf(s.documentUrl || s.url || '', s.url) ?? s.documentUrl ?? s.url),
     });
   });
 
