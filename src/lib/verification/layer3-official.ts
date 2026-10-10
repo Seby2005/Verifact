@@ -4,6 +4,7 @@ import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import type { ExpandedQueries } from './query-expander';
 import { runAcademicLayer } from './layer-academic';
 import { searchGoogleNews, type RssNewsItem } from './news-rss';
+import { lookupCitedLegislation } from './legislation-lookup';
 
 /**
  * Institutional domains searched for primary documents, in the groups they are
@@ -209,7 +210,8 @@ export async function runLayer3(
   const isFrench = _language === 'fr';
 
   // Official search + Wikipedia grounding + Academic/Scientific Research search in parallel
-  const [officialItems, enItems, wikiRo, wikiEn, wikiFr, academicItems] = await Promise.all([
+  const [legislation, officialItems, enItems, wikiRo, wikiEn, wikiFr, academicItems] = await Promise.all([
+    lookupCitedLegislation(text),
     isFrench
       ? fetchOfficial(text, 'fr', OFFICIAL_SITES.fr)
       : fetchOfficial(officialQuery, 'ro', OFFICIAL_SITES.ro),
@@ -256,8 +258,9 @@ export async function runLayer3(
     return true;
   });
 
-  // Official and Academic research sources lead; Wikipedia follows.
-  const sources = [...officialSources, ...academicSources, ...wikiSources];
+  // The register entry for a bill or law the claim cites by number leads: it
+  // is the primary document. Then official and academic sources, then Wikipedia.
+  const sources = [...legislation, ...officialSources, ...academicSources, ...wikiSources];
 
   return {
     status: 'success',

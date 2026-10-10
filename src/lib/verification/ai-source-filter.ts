@@ -54,6 +54,9 @@ export function assignSourceTier(urlStr?: string, publisher?: string): SourceTie
     url.includes('who.int') ||
     url.includes('europa.eu') ||
     url.includes('.gov') ||
+    url.includes('cdep.ro') ||
+    url.includes('senat.ro') ||
+    url.includes('presidency.ro') ||
     pub.includes('snopes') ||
     pub.includes('factual') ||
     pub.includes('veridica') ||

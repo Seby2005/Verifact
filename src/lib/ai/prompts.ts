@@ -58,7 +58,7 @@ export function buildAnalysisPrompt(context: AIAnalysisContext): string {
   // Format layer 3 results
   const officialDocs = ((layer3?.results as OfficialSource[]) || []).length > 0
     ? (layer3?.results || [])
-        .map((o: OfficialSource) => `- ${o.organization || o.publisher || 'Oficial'}: "${(o.relevantQuote || o.snippet || '').slice(0, 200)}"`)
+        .map((o: OfficialSource) => `- ${o.organization || o.publisher || 'Oficial'}: ${o.title} — "${(o.relevantQuote || o.snippet || '').slice(0, 360)}"`)
         .join('\n')
     : language === 'ro'
       ? 'Nicio sursă oficială găsită.'
@@ -255,7 +255,9 @@ function summariseEvidence(context: AIAnalysisContext): string {
   );
   context.layers?.layer3?.results?.slice(0, 5).forEach((o) =>
     lines.push(
-      `[oficial${stanceLabel(o.supportsOrDenies)}] ${o.organization ?? o.publisher}: ${o.title} — ${(o.relevantQuote ?? o.snippet ?? '').slice(0, 180)}`
+      // Longer than a press snippet: a register entry carries a bill's stage
+      // and object, and cutting it at headline length loses the object.
+      `[oficial${stanceLabel(o.supportsOrDenies)}] ${o.organization ?? o.publisher}: ${o.title} — ${(o.relevantQuote ?? o.snippet ?? '').slice(0, 360)}`
     )
   );
   context.layers?.layer4?.results?.slice(0, 3).forEach((p) =>
