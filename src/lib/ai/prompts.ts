@@ -253,7 +253,9 @@ function summariseEvidence(context: AIAnalysisContext): string {
   context.layers?.layer2?.results?.slice(0, 5).forEach((a) =>
     lines.push(`[presă${stanceLabel(a.sentiment)}] ${a.source}: ${a.title} — ${a.snippet?.slice(0, 180) ?? ''}`)
   );
-  context.layers?.layer3?.results?.slice(0, 5).forEach((o) =>
+  // Seven rather than five: register entries (a cited bill, the EU acts on the
+  // subject) come first and would otherwise crowd out every other source.
+  context.layers?.layer3?.results?.slice(0, 7).forEach((o) =>
     lines.push(
       // Longer than a press snippet: a register entry carries a bill's stage
       // and object, and cutting it at headline length loses the object.

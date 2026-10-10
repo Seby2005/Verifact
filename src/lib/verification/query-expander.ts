@@ -17,6 +17,12 @@ export interface ExpandedQueries {
   officialAngle: string;
   /** Targeted query for original reporting, context, origin, and viral distribution */
   contextOriginAngle: string;
+  /**
+   * Set only when the claim blames or credits a European Union law: the words
+   * the official title of such an act would contain, for the EU-register
+   * search (see eu-legislation.ts). Empty or absent for every other claim.
+   */
+  euLawTerms?: string[];
   tokenUsage?: TokenUsageDetail;
 }
 
@@ -158,6 +164,7 @@ Cerințe:
 5. contextOriginAngle: interogare pentru găsirea originii primare a imaginii/afirmației și contextului de apariție (ex: "origine imagine Midjourney AI Balenciaga")
 6. keywords: 3-6 cuvinte cheie esențiale
 7. namedEntities: persoane, instituții, locații identificate
+8. euLawTerms: DOAR dacă afirmația pune ceva pe seama unei legi, a unui regulament sau a unei directive a Uniunii Europene (inclusiv „Bruxelles ne obligă”, „UE interzice”, „legea băgată de UE”): 6-12 cuvinte românești, cu diacritice, câte un singur cuvânt, exact în formele în care ar apărea în TITLUL oficial al actelor UE pe acea temă — termenii instituționali, nu cei din afirmație, cu formele flexionate uzuale (ex. pentru „UE ne bagă în război”: ["apărare", "apărării", "militar", "militară", "securitate", "securității", "armament", "muniție", "mobilizare"]). Fără cuvinte generice ca „lege”, „european”, „uniune”. În orice alt caz: [].
 
 Răspunde EXCLUSIV cu un obiect JSON valid:
 {
@@ -167,7 +174,8 @@ Răspunde EXCLUSIV cu un obiect JSON valid:
   "officialAngle": "...",
   "contextOriginAngle": "...",
   "keywords": ["..."],
-  "namedEntities": ["..."]
+  "namedEntities": ["..."],
+  "euLawTerms": []
 }`;
 
 /**
@@ -233,6 +241,7 @@ export async function expandClaimQueries(
             contextOriginAngle: String(parsed.contextOriginAngle || fallback.contextOriginAngle).trim(),
             keywords: Array.isArray(parsed.keywords) ? parsed.keywords.map(String) : fallback.keywords,
             namedEntities: Array.isArray(parsed.namedEntities) ? parsed.namedEntities.map(String) : fallback.namedEntities,
+            euLawTerms: Array.isArray(parsed.euLawTerms) ? parsed.euLawTerms.map(String) : [],
             tokenUsage: response.usage
               ? {
                   provider: 'openrouter',
@@ -287,6 +296,7 @@ export async function expandClaimQueries(
           contextOriginAngle: String(parsed.contextOriginAngle || fallback.contextOriginAngle).trim(),
           keywords: Array.isArray(parsed.keywords) ? parsed.keywords.map(String) : fallback.keywords,
           namedEntities: Array.isArray(parsed.namedEntities) ? parsed.namedEntities.map(String) : fallback.namedEntities,
+          euLawTerms: Array.isArray(parsed.euLawTerms) ? parsed.euLawTerms.map(String) : [],
           tokenUsage: usage
             ? {
                 provider: 'gemini',

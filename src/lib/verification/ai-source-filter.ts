@@ -156,7 +156,11 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
       const stance = stanceOf(`l3:${i}`);
       return { ...s, supportsOrDenies: stance === 'contradicts' ? ('denies' as const) : stance };
     })
-    .filter((_, i) => keepSet.has(`l3:${i}`));
+    // Register records stay whatever the triage says: it judges topical
+    // overlap, and "the EU's defence-industry regulation" does not look like
+    // "the EU is taking us to war" — yet it is exactly the evidence that
+    // answers it.
+    .filter((s, i) => s.fromRegister || keepSet.has(`l3:${i}`));
   const l4Surviving = layers.layer4.results.filter((_, i) => keepSet.has(`l4:${i}`));
 
   const layer1: Layer1Result = {

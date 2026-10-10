@@ -118,6 +118,13 @@ export interface OfficialSource {
   relevantQuote?: string;
   relevanceScore?: number;
   supportsOrDenies?: 'supports' | 'denies' | 'neutral';
+  /**
+   * True for a record fetched from an official register because the claim
+   * itself points at it (a bill number, an EU act, the EU laws on its subject).
+   * Such a record is the answer to "what does the register say", so the
+   * relevance triage that prunes search results must not drop it.
+   */
+  fromRegister?: boolean;
 }
 
 export type SocialPlatform = 'twitter' | 'facebook' | 'youtube' | 'tiktok' | 'instagram' | 'other';

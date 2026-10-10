@@ -5,6 +5,7 @@ import type { ExpandedQueries } from './query-expander';
 import { runAcademicLayer } from './layer-academic';
 import { searchGoogleNews, type RssNewsItem } from './news-rss';
 import { lookupCitedLegislation } from './legislation-lookup';
+import { lookupEuLegislation } from './eu-legislation';
 
 /**
  * Institutional domains searched for primary documents, in the groups they are
@@ -210,8 +211,9 @@ export async function runLayer3(
   const isFrench = _language === 'fr';
 
   // Official search + Wikipedia grounding + Academic/Scientific Research search in parallel
-  const [legislation, officialItems, enItems, wikiRo, wikiEn, wikiFr, academicItems] = await Promise.all([
+  const [legislation, euLegislation, officialItems, enItems, wikiRo, wikiEn, wikiFr, academicItems] = await Promise.all([
     lookupCitedLegislation(text),
+    lookupEuLegislation(text, expandedQueries?.euLawTerms),
     isFrench
       ? fetchOfficial(text, 'fr', OFFICIAL_SITES.fr)
       : fetchOfficial(officialQuery, 'ro', OFFICIAL_SITES.ro),
@@ -258,9 +260,10 @@ export async function runLayer3(
     return true;
   });
 
-  // The register entry for a bill or law the claim cites by number leads: it
-  // is the primary document. Then official and academic sources, then Wikipedia.
-  const sources = [...legislation, ...officialSources, ...academicSources, ...wikiSources];
+  // Register entries lead — the bill or law the claim cites by number, and
+  // the EU acts on its subject — because they are the primary documents. Then
+  // official and academic sources, then Wikipedia.
+  const sources = [...legislation, ...euLegislation, ...officialSources, ...academicSources, ...wikiSources];
 
   return {
     status: 'success',

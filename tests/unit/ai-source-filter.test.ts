@@ -70,6 +70,28 @@ describe('applyAISourceFilter', () => {
     expect(result.layer2.layerScore).toBe(1);
   });
 
+  it('keeps a register record the triage would drop, while still dropping an off-topic search result', async () => {
+    mockFilter.mockResolvedValue({ relevant: [], supports: [], contradicts: [], opposite: [] });
+
+    const result = await applyAISourceFilter(
+      {
+        layer1: empty,
+        layer2: { ...empty, sourcesChecked: 0 },
+        layer3: {
+          ...empty,
+          results: [
+            { title: 'Regulamentul (UE) 2025/1106 (SAFE)', documentUrl: 'https://eur-lex.europa.eu/x', fromRegister: true },
+            { title: 'Un comunicat fără legătură', documentUrl: 'https://gov.ro/y' },
+          ],
+        },
+        layer4: empty,
+      },
+      'Legea băgată de UE ne bagă în război'
+    );
+
+    expect(result.layer3.results.map((r) => r.title)).toEqual(['Regulamentul (UE) 2025/1106 (SAFE)']);
+  });
+
   it('keeps every source when the model judgement is unavailable', async () => {
     mockFilter.mockResolvedValue(null);
     const layer1 = { ...empty, results: [factCheck('Climate change is a hoax', 0)] };

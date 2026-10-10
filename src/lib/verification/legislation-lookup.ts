@@ -123,6 +123,7 @@ function source(fields: { title: string; url: string; quote: string; publishedAt
     publishedAt: fields.publishedAt ?? '',
     relevantQuote: fields.quote,
     supportsOrDenies: 'neutral',
+    fromRegister: true,
   };
 }
 
