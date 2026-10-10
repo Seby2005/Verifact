@@ -15,6 +15,11 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// next/font is a build-time transform; outside Next it has no runtime export.
+jest.mock('next/font/google', () => ({
+  Onest: () => ({ style: { fontFamily: 'Onest' } }),
+}));
+
 const mockReport: VerificationReport = {
   id: 'test-report-123',
   claim: 'Armata a închis granițele naționale în această dimineață.',

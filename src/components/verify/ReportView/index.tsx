@@ -5,7 +5,6 @@ import { VerdictLabel, Callout } from '@/components/ui';
 import type { VerificationReport } from '@/types/verification';
 import { useLanguage } from '@/i18n';
 import { ReportDeepDive } from '@/components/report/ReportDeepDive';
-import { ProReportDossier } from '@/components/report/ProReportDossier';
 import { DisputeButton } from './DisputeButton';
 import { DownloadButton } from './DownloadButton';
 import { PublishReportButton } from './PublishReportButton';
@@ -50,8 +49,7 @@ function getDomain(url?: string): string {
 
 export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interactive = true }) => {
   const { locale, t } = useLanguage();
-  const { tier, isPremium, unlimited, ready } = useUserTier();
-  const canAccessDossier = unlimited || tier === 'business';
+  const { isPremium, ready } = useUserTier();
   const showSummary = isPremium && Boolean(report.executiveSummary);
   // A search provider that failed (quota, outage) leaves its layer unavailable;
   // say so, or the reader takes "few sources" for "little evidence exists".
@@ -243,7 +241,9 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, eyebrow, interac
         </ol>
       </div>
 
-      <ProReportDossier report={report} isPremium={isPremium} canAccessDossier={canAccessDossier} />
+      {/* The Business intelligence dossier is switched off for now. To restore it,
+          render <ProReportDossier report isPremium canAccessDossier /> here, where
+          canAccessDossier is `unlimited || tier === 'business'` from useUserTier. */}
 
       {interactive ? <ReportDeepDive report={report} /> : null}
 

@@ -23,7 +23,8 @@ import { sansRegular, sansSemiBold, sansBold } from './font-data';
  *
  * The layout is design 3d, "Pași de verificare": the claim, three verdict
  * tiles, then the verification told as a numbered timeline that ends in the
- * conclusion. The design's 600px artboard maps 1px → 1pt onto A4.
+ * conclusion. Everything is laid out in the design's own px units on an
+ * enlarged page, which is then scaled down to A4 by SCALE.
  */
 
 const VERDICT_WORD: Record<'ro' | 'en' | 'fr', Record<Verdict, string>> = {
@@ -201,10 +202,12 @@ interface DocProps {
   locale: 'ro' | 'en' | 'fr';
 }
 
-const PAGE_W = 595.28;
-const PAGE_H = 841.89;
-const MARGIN = 36;
-const BOTTOM = 48; // the flow stops here; page numbers sit below
+/** Printed size of one design px, in pt. Lower it to fit more on a page. */
+const SCALE = 0.8;
+const PAGE_W = 595.28 / SCALE; // A4, in design px
+const PAGE_H = 841.89 / SCALE;
+const MARGIN = 44;
+const BOTTOM = 60; // the flow stops here; page numbers sit below
 const CONTENT_W = PAGE_W - MARGIN * 2;
 const MARKER = 32; // diameter of a timeline step's circle
 const STEP_INDENT = MARKER + 16;
@@ -763,9 +766,9 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
         ? `Page ${idx + 1} sur ${totalPages}`
         : `Page ${idx + 1} of ${totalPages}`;
     p.drawText(pageNumStr, {
-      x: PAGE_W - MARGIN - reg.widthOfTextAtSize(pageNumStr, 7.5),
-      y: 20,
-      size: 7.5,
+      x: PAGE_W - MARGIN - reg.widthOfTextAtSize(pageNumStr, 9.5),
+      y: 26,
+      size: 9.5,
       font: reg,
       color: FAINT,
     });
@@ -777,11 +780,12 @@ export async function renderReportPdf({ report, synthesis, locale }: DocProps): 
         : 'Verifact AI Fact-Checking Report';
     p.drawText(footerBrand, {
       x: MARGIN,
-      y: 20,
-      size: 7.5,
+      y: 26,
+      size: 9.5,
       font: reg,
       color: FAINT,
     });
+    p.scale(SCALE, SCALE);
   });
 
   const bytes = await doc.save();
