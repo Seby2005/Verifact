@@ -33,7 +33,7 @@ const CONTENT = {
       },
       {
         title: 'Model de Finanțare Transparent',
-        text: 'Proiectul este self-hosted și finanțat independent de către fondator, susținut prin infrastructură open-source și subscripții premium opționale pentru utilizatori avansați (Pro Dossier). Nu vindem datele utilizatorilor și nu acceptăm publicitate sponsorizată.',
+        text: 'Proiectul este self-hosted și finanțat independent de către fondator, susținut prin infrastructură open-source și subscripții premium opționale pentru utilizatori avansați. Nu vindem datele utilizatorilor și nu acceptăm publicitate sponsorizată.',
       },
       {
         title: 'Politica de Corecții și Drept la Replică',
