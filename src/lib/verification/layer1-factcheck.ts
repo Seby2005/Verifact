@@ -4,6 +4,7 @@ import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import type { ExpandedQueries } from './query-expander';
 import { settleProviderCalls } from './provider-calls';
 import { searchGoogleNews } from './news-rss';
+import { searchFactCheckArchive } from '@/lib/factcheck-archive';
 import { logger } from '@/lib/utils/logger';
 
 // ─── Internal Google API types ────────────────────────────────
@@ -62,7 +63,16 @@ const RATING_MAP: Record<string, number> = {
   'désinformation': 0.0,
   'ai-generated image': 0.0,
   'ai generated': 0.0,
+  'generat de ai': 0.0,
   'deepfake': 0.0,
+  'scam': 0.0,
+  'trucat': 0.05,
+  'alterat': 0.1,
+  'nefondat': 0.1,
+  'satiră': 0.1,
+  // Veridica's labels for a narrative it documents as planted
+  'propagandă de război': 0.05,
+  'propagandă': 0.1,
 
   // Mostly false (0.1-0.35)
   'mostly false': 0.2,
@@ -96,6 +106,8 @@ const RATING_MAP: Record<string, number> = {
   'two pinocchios': 0.35,
   'one pinocchio': 0.4,
   'misleading': 0.35,
+  'înșelător': 0.35,
+  'trunchiat': 0.35,
   'manipulator': 0.3,
   'trompeur': 0.35,
   'neclar': 0.5,
@@ -110,6 +122,8 @@ const RATING_MAP: Record<string, number> = {
   'parțial fals': 0.4,
   'partial fals': 0.4,
   'context lipsă': 0.45,
+  'lipsă context': 0.45,
+  'lipsește contextul': 0.45,
   'context missing': 0.45,
   'contexte manquant': 0.45,
   'hors contexte': 0.4,
@@ -192,7 +206,10 @@ function calculateRelevance(claimText: string, queryText: string): number {
 function deduplicateByUrl(results: FactCheckResult[]): FactCheckResult[] {
   const seen = new Set<string>();
   return results.filter((r) => {
-    const key = r.reviewUrl || `${r.publisher}-${r.claimReviewed}`;
+    // The same review reaches the layer through several searches, and a live
+    // Google News result carries a redirect URL — so the reviewed claim, not
+    // the link, is what it shares with the archive's copy.
+    const key = `${r.publisher}-${r.claimReviewed}`.toLowerCase();
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -237,42 +254,100 @@ async function fetchFactChecks(query: string, lang: string): Promise<FactCheckRe
   }));
 }
 
-const EUVSDISINFO_CASE_PREFIX = /^DISINFO:\s*/i;
-const MAX_EUVSDISINFO_CASES = 5;
+/**
+ * A database of debunked narratives that publishes each case under a headline
+ * of the form "<LABEL>: <the false claim>". These are not in Google's
+ * fact-check index, but Google News indexes every case, and the headline is
+ * all a fact-check result needs: the claim that was reviewed and the verdict
+ * word. Other pages of the same site (analyses, news) carry no label and are
+ * skipped.
+ */
+interface HeadlineDatabase {
+  site: string;
+  publisher: string;
+  /** The one language the database is searched in. */
+  language: 'ro' | 'en';
+  /** Matches the label that opens a case headline. */
+  label: RegExp;
+  /** The verdict shown for a case. */
+  rating: string;
+}
+
+const MAX_HEADLINE_CASES = 5;
 
 /**
- * Cases from EUvsDisinfo, the EU's database of some 19,000 pro-Kremlin
- * disinformation claims, each published with its rebuttal.
- *
- * The database is not in Google's fact-check index and its own site sits
- * behind a bot challenge, but Google News indexes every case under a headline
- * of the form "DISINFO: <the false claim>", which is all a fact-check result
- * needs: the claim that was reviewed, and that it was found to be
- * disinformation. Other pages of the site (analyses, newsletters) are not
- * cases and are skipped.
- *
- * It is searched in English only, the one language the database exists in.
+ * EUvsDisinfo: the EU's database of some 19,000 pro-Kremlin disinformation
+ * claims, each published with its rebuttal. English only; its own site sits
+ * behind a bot challenge.
  */
-async function fetchEuvsDisinfoCases(englishQuery: string): Promise<FactCheckResult[]> {
-  const items = await searchGoogleNews(englishQuery, 'en', ['euvsdisinfo.eu']);
+const EUVSDISINFO: HeadlineDatabase = {
+  site: 'euvsdisinfo.eu',
+  publisher: 'EUvsDisinfo',
+  language: 'en',
+  label: /^DISINFO:\s*/i,
+  rating: 'Disinformation',
+};
+
+/**
+ * Veridica: fake news and disinformation narratives from Central and Eastern
+ * Europe, in Romanian. The archive (@/lib/factcheck-archive) holds its
+ * database as of the last rebuild; this live search adds what it has
+ * published since.
+ */
+const VERIDICA: HeadlineDatabase = {
+  site: 'veridica.ro',
+  publisher: 'Veridica',
+  language: 'ro',
+  label: /^(?:FAKE NEWS|DEZINFORMARE|PROPAGANDĂ(?: DE RĂZBOI)?):\s*/i,
+  rating: 'Fake news / dezinformare',
+};
+
+async function fetchHeadlineCases(database: HeadlineDatabase, query: string): Promise<FactCheckResult[]> {
+  const items = await searchGoogleNews(query, database.language, [database.site]);
 
   return items
-    .filter((item) => EUVSDISINFO_CASE_PREFIX.test(item.title))
-    .slice(0, MAX_EUVSDISINFO_CASES)
+    .filter((item) => database.label.test(item.title))
+    .slice(0, MAX_HEADLINE_CASES)
     .map((item): FactCheckResult => {
-      const claimReviewed = item.title.replace(EUVSDISINFO_CASE_PREFIX, '');
+      const claimReviewed = item.title.replace(database.label, '');
       return {
         claimReviewed,
-        rating: 'Disinformation',
+        rating: database.rating,
+        // Every case in these databases is a narrative documented as false or planted.
         ratingValue: 0,
-        publisher: 'EUvsDisinfo',
-        publisherUrl: 'https://euvsdisinfo.eu',
+        publisher: database.publisher,
+        publisherUrl: `https://${database.site}`,
         reviewUrl: item.url,
         reviewDate: item.publishedAt,
-        relevanceScore: Math.max(calculateRelevance(claimReviewed, englishQuery), 0.3),
+        relevanceScore: Math.max(calculateRelevance(claimReviewed, query), 0.3),
       };
     });
 }
+
+/**
+ * Matches from Verifact's own archive of Romanian fact-checks. It is local, so
+ * it cannot fail or time out. Searched with the claim as written and with the
+ * Romanian query — the only one that fits when the claim is in another language.
+ */
+function searchArchive(claim: string, romanianQuery: string): FactCheckResult[] {
+  return [claim, romanianQuery].flatMap((query) =>
+    searchFactCheckArchive(query).map(
+      (hit): FactCheckResult => ({
+        claimReviewed: hit.claim,
+        rating: hit.rating,
+        ratingValue: normalizeRating(hit.rating),
+        publisher: hit.publisher,
+        publisherUrl: hit.publisherUrl,
+        reviewUrl: hit.url,
+        reviewDate: hit.date,
+        relevanceScore: Math.max(hit.relevance, 0.3),
+      })
+    )
+  );
+}
+
+/** How many fact-checks go on to be read against the claim. */
+const MAX_FACT_CHECKS = 10;
 
 export function calculateLayer1Score(results: FactCheckResult[]): number {
   if (results.length === 0) return 0.5;
@@ -312,17 +387,20 @@ export async function runLayer1(
     searches.push({ provider: 'google-fact-check', run: fetchFactChecks(factAngle, roLanguage) });
   }
 
-  // EUvsDisinfo is a bonus: one narrow database (pro-Kremlin claims), so its
+  // The headline databases are a bonus: each is one narrow collection, so its
   // being reachable must not make the layer look searched when the general
   // fact-check index is down, and its being down must not fail the layer.
-  const [{ items: indexed, failure }, euvsDisinfo] = await Promise.all([
-    settleProviderCalls('layer1-factcheck', searches),
-    fetchEuvsDisinfoCases(enQuery).catch((error) => {
-      logger.warn('EUvsDisinfo search failed', { service: 'layer1-factcheck', error: String(error) });
+  const headlineCases = (database: HeadlineDatabase, query: string) =>
+    fetchHeadlineCases(database, query).catch((error) => {
+      logger.warn(`${database.publisher} search failed`, { service: 'layer1-factcheck', error: String(error) });
       return [] as FactCheckResult[];
-    }),
+    });
+  const [{ items: indexed, failure }, euvsDisinfo, veridica] = await Promise.all([
+    settleProviderCalls('layer1-factcheck', searches),
+    headlineCases(EUVSDISINFO, enQuery),
+    headlineCases(VERIDICA, roQuery),
   ]);
-  const items = [...indexed, ...euvsDisinfo];
+  const items = [...indexed, ...euvsDisinfo, ...veridica, ...searchArchive(text, roQuery)];
   if (failure) {
     return {
       status: 'unavailable',
@@ -341,8 +419,8 @@ export async function runLayer1(
 
   return {
     status: 'success',
-    matches: allResults.slice(0, 8),
-    results: allResults.slice(0, 8),
+    matches: allResults.slice(0, MAX_FACT_CHECKS),
+    results: allResults.slice(0, MAX_FACT_CHECKS),
     summary: `${allResults.length} fact-checks found`,
     layerScore,
     processingTime: Date.now() - startTime,
