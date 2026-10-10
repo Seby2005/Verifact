@@ -87,6 +87,26 @@ export const CASES: Case[] = [
   { id: 't-edge-mixed', kind: 'text', category: 'limită', input: 'România a intrat în Schengen în 2025 și tot atunci a adoptat euro, iar TVA a scăzut la 15%.', accept: ['false', 'partial'], aberrant: T },
   { id: 't-edge-satire', kind: 'text', category: 'limită', input: 'Bolojan renunță la costum și se va îmbrăca doar cu frunze.', accept: ['false', 'unclear'], aberrant: T },
 
+  // ── TEXT: English claims about Romania — search must still reach Romanian sources ──
+  { id: 't-en-ro-vat', kind: 'text', category: 'engleză despre România', input: 'Romania raised its standard VAT rate from 19% to 21% in August 2025.', language: 'en', accept: T, aberrant: F },
+  { id: 't-en-ro-oath', kind: 'text', category: 'engleză despre România', input: "Nicusor Dan was sworn in as Romania's president in May 2025.", language: 'en', accept: T, aberrant: F },
+  { id: 't-en-ro-law', kind: 'text', category: 'engleză despre România', input: 'Nicusor Dan promulgated Law no. 141/2025, which raised VAT to 21%.', language: 'en', accept: ['true', 'partial'], aberrant: F },
+
+  // ── TEXT: claims the EUvsDisinfo database has a case on ────────────────────
+  { id: 't-euvs-nuclear', kind: 'text', category: 'EUvsDisinfo', input: 'România se pregătește să amplaseze arme nucleare americane pe teritoriul său.', accept: F, aberrant: T, note: 'EUvsDisinfo, aprilie 2023' },
+  { id: 't-euvs-french-army', kind: 'text', category: 'EUvsDisinfo', input: 'Armata franceză se antrenează să se desfășoare în România ca să intre în război cu Rusia.', accept: ['false', 'unclear', 'partial'], aberrant: T, note: 'exercițiul e real, scopul atribuit e dezinformare' },
+  { id: 't-euvs-en-nato', kind: 'text', category: 'EUvsDisinfo', input: 'Romania no longer wants to be in NATO.', language: 'en', accept: F, aberrant: T },
+
+  // ── TEXT: laws looked up in the official registers ────────────────────────
+  { id: 't-law-141', kind: 'text', category: 'legi', input: 'Legea nr. 141/2025 a majorat TVA la 21%.', accept: T, aberrant: F },
+  { id: 't-law-fake-plx', kind: 'text', category: 'legi', input: 'PL-x 9999/2025 interzice plata cu numerar în România.', accept: F, aberrant: T },
+  { id: 't-law-plx-noyear', kind: 'text', category: 'legi', input: 'Legea 632 Plx aprobată în parlament va distruge țara.', accept: ['unclear', 'false', 'partial'], aberrant: T, note: 'numărul există în două sesiuni; „va distruge” e predicție' },
+  { id: 't-eu-war', kind: 'text', category: 'legi', input: 'Legea băgată de UE ne bagă în război.', accept: ['unclear', 'false'], aberrant: T },
+  { id: 't-eu-act', kind: 'text', category: 'legi', input: 'Regulamentul (UE) 2024/1689 stabilește norme privind inteligența artificială.', accept: T, aberrant: F },
+
+  // ── TEXT: a Romanian claim about another country ──────────────────────────
+  { id: 't-ro-about-fr', kind: 'text', category: 'altă țară', input: 'Franța a ridicat vârsta de pensionare la 64 de ani în 2023.', accept: ['true', 'partial'], aberrant: F },
+
   // ── SCREENSHOTS (rendered by render-screens.mjs, run through real OCR) ────
   { id: 's01-fb-true-post-false-spin', kind: 'screenshot', category: 'screenshot', input: 's01-fb-true-post-false-spin.png', accept: T, aberrant: F, mustMention: ['schengen'], note: 'postare adevărată + comentariu fals' },
   { id: 's02-whatsapp-pension-hoax', kind: 'screenshot', category: 'screenshot', input: 's02-whatsapp-pension-hoax.png', accept: F, aberrant: T, mustMention: ['pensii'] },

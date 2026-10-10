@@ -23,6 +23,21 @@ export interface ExpandedQueries {
    * search (see eu-legislation.ts). Empty or absent for every other claim.
    */
   euLawTerms?: string[];
+  /**
+   * The language the claim itself is written in — not the interface language,
+   * and not the language of the country it is about. Search always runs in
+   * Romanian and English; this says which of those result sets can be compared
+   * word-for-word with the claim, and which must be compared with the query in
+   * their own language instead (an English claim shares almost no words with
+   * the Romanian articles that confirm it).
+   */
+  claimLanguage?: 'ro' | 'en' | 'fr' | 'other';
+  /**
+   * Whose institutions hold the primary evidence: Romania's (the default),
+   * France's, or another country's / an international body's. Decides which
+   * official sites are searched — a claim about France does not belong on gov.ro.
+   */
+  officialJurisdiction?: 'ro' | 'fr' | 'other';
   tokenUsage?: TokenUsageDetail;
 }
 
@@ -160,11 +175,13 @@ Cerințe:
 1. romanianQuery: 2-5 cuvinte cheie în română, fără cuvinte de legătură (ex: "Papa Francisc geacă albă")
 2. englishQuery: traducerea în engleză a cuvintelor cheie (ex: "Pope Francis white puffer jacket")
 3. factCheckAngle: interogare orientată spre depistarea verificărilor existente și a demontărilor (ex: "Papa geacă albă fact check fals debunk")
-4. officialAngle: termeni orientați spre surse oficiale, ministere, legi, monitorul oficial sau instituții competente (ex: "Vatican comunicat oficial Papa geacă")
+4. officialAngle: termeni în română orientați spre surse oficiale, ministere, legi, monitorul oficial sau instituții competente (ex: "Vatican comunicat oficial Papa geacă")
 5. contextOriginAngle: interogare pentru găsirea originii primare a imaginii/afirmației și contextului de apariție (ex: "origine imagine Midjourney AI Balenciaga")
 6. keywords: 3-6 cuvinte cheie esențiale
 7. namedEntities: persoane, instituții, locații identificate
 8. euLawTerms: DOAR dacă afirmația pune ceva pe seama unei legi, a unui regulament sau a unei directive a Uniunii Europene (inclusiv „Bruxelles ne obligă”, „UE interzice”, „legea băgată de UE”): 6-12 cuvinte românești, cu diacritice, câte un singur cuvânt, exact în formele în care ar apărea în TITLUL oficial al actelor UE pe acea temă — termenii instituționali, nu cei din afirmație, cu formele flexionate uzuale (ex. pentru „UE ne bagă în război”: ["apărare", "apărării", "militar", "militară", "securitate", "securității", "armament", "muniție", "mobilizare"]). Fără cuvinte generice ca „lege”, „european”, „uniune”. În orice alt caz: [].
+9. claimLanguage: limba în care este SCRISĂ afirmația: "ro", "en", "fr" sau "other". Interogările de la punctele 1-5 rămân în limbile cerute acolo, indiferent de limba afirmației.
+10. officialJurisdiction: țara ale cărei instituții dețin dovada primară: "ro" pentru România (și când nu e clar), "fr" pentru Franța, "other" pentru altă țară sau pentru o organizație internațională. Contează subiectul, nu limba: o afirmație în engleză despre președintele României este "ro".
 
 Răspunde EXCLUSIV cu un obiect JSON valid:
 {
@@ -175,8 +192,15 @@ Răspunde EXCLUSIV cu un obiect JSON valid:
   "contextOriginAngle": "...",
   "keywords": ["..."],
   "namedEntities": ["..."],
-  "euLawTerms": []
+  "euLawTerms": [],
+  "claimLanguage": "ro",
+  "officialJurisdiction": "ro"
 }`;
+
+/** The model's value when it is one of the allowed ones; undefined (so callers fall back) otherwise. */
+function oneOf<T extends string>(value: unknown, allowed: readonly T[]): T | undefined {
+  return allowed.includes(value as T) ? (value as T) : undefined;
+}
 
 /**
  * Uses LLM to deconstruct a claim into targeted search queries across 3 distinct investigative angles.
@@ -242,6 +266,8 @@ export async function expandClaimQueries(
             keywords: Array.isArray(parsed.keywords) ? parsed.keywords.map(String) : fallback.keywords,
             namedEntities: Array.isArray(parsed.namedEntities) ? parsed.namedEntities.map(String) : fallback.namedEntities,
             euLawTerms: Array.isArray(parsed.euLawTerms) ? parsed.euLawTerms.map(String) : [],
+            claimLanguage: oneOf(parsed.claimLanguage, ['ro', 'en', 'fr', 'other']),
+            officialJurisdiction: oneOf(parsed.officialJurisdiction, ['ro', 'fr', 'other']),
             tokenUsage: response.usage
               ? {
                   provider: 'openrouter',
@@ -297,6 +323,8 @@ export async function expandClaimQueries(
           keywords: Array.isArray(parsed.keywords) ? parsed.keywords.map(String) : fallback.keywords,
           namedEntities: Array.isArray(parsed.namedEntities) ? parsed.namedEntities.map(String) : fallback.namedEntities,
           euLawTerms: Array.isArray(parsed.euLawTerms) ? parsed.euLawTerms.map(String) : [],
+          claimLanguage: oneOf(parsed.claimLanguage, ['ro', 'en', 'fr', 'other']),
+          officialJurisdiction: oneOf(parsed.officialJurisdiction, ['ro', 'fr', 'other']),
           tokenUsage: usage
             ? {
                 provider: 'gemini',

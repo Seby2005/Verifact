@@ -121,7 +121,7 @@ const isYear = (n: number) => n >= 1958 && n <= THIS_YEAR();
 // "Regulamentul (CE) nr. 1907/2006". Groups: 1 kind, 2 EU marker before the
 // number, 3 "nr.", 4 and 5 the two numbers, 6 EU marker after them.
 const CITED_ACT =
-  /\b(regulament|directiv|decizi)\p{L}*\s+(?:delegat\p{L}*\s+|de\s+punere\s+în\s+aplicare\s+)?(\(\s*(?:UE|CE|CEE|PESC|Euratom)[^)]{0,14}\)\s*|(?:UE|CE)\s+)?(nr\.?\s*)?(\d{1,4})\s*\/\s*(\d{1,4})(\s*\/\s*(?:UE|CE|CEE)\b)?/giu;
+  /\b(regulament|regulation|r[èe]glement|directiv|decizi|d[ée]cision)\p{L}*\s+(?:delegat\p{L}*\s+|de\s+punere\s+în\s+aplicare\s+)?(\(\s*(?:UE|EU|CE|EC|CEE|EEC|PESC|CFSP|Euratom)[^)]{0,14}\)\s*|(?:UE|EU|CE|EC)\s+)?((?:nr|no)\.?\s*|n°\s*)?(\d{1,4})\s*\/\s*(\d{1,4})(\s*\/\s*(?:UE|EU|CE|EC|CEE|EEC)\b)?/giu;
 
 /** CELEX numbers of the EU acts a text cites, e.g. "32024R1689". */
 export function findEuActReferences(text: string): string[] {
@@ -131,7 +131,7 @@ export function findEuActReferences(text: string): string[] {
     // is a Constitutional Court ruling, not a Council decision.
     if (!m[2] && !m[6]) continue;
 
-    const letter: ActLetter = /^reg/i.test(m[1]) ? 'R' : /^dir/i.test(m[1]) ? 'L' : 'D';
+    const letter: ActLetter = /^r/i.test(m[1]) ? 'R' : /^dir/i.test(m[1]) ? 'L' : 'D';
     const [first, second] = [Number(m[4]), Number(m[5])];
 
     // Since 2015 acts are numbered year/number; before that regulations were

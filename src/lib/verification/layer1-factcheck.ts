@@ -3,6 +3,8 @@ import { fetchWithRetry } from '@/lib/utils/retry';
 import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import type { ExpandedQueries } from './query-expander';
 import { settleProviderCalls } from './provider-calls';
+import { searchGoogleNews } from './news-rss';
+import { logger } from '@/lib/utils/logger';
 
 // ─── Internal Google API types ────────────────────────────────
 
@@ -235,6 +237,43 @@ async function fetchFactChecks(query: string, lang: string): Promise<FactCheckRe
   }));
 }
 
+const EUVSDISINFO_CASE_PREFIX = /^DISINFO:\s*/i;
+const MAX_EUVSDISINFO_CASES = 5;
+
+/**
+ * Cases from EUvsDisinfo, the EU's database of some 19,000 pro-Kremlin
+ * disinformation claims, each published with its rebuttal.
+ *
+ * The database is not in Google's fact-check index and its own site sits
+ * behind a bot challenge, but Google News indexes every case under a headline
+ * of the form "DISINFO: <the false claim>", which is all a fact-check result
+ * needs: the claim that was reviewed, and that it was found to be
+ * disinformation. Other pages of the site (analyses, newsletters) are not
+ * cases and are skipped.
+ *
+ * It is searched in English only, the one language the database exists in.
+ */
+async function fetchEuvsDisinfoCases(englishQuery: string): Promise<FactCheckResult[]> {
+  const items = await searchGoogleNews(englishQuery, 'en', ['euvsdisinfo.eu']);
+
+  return items
+    .filter((item) => EUVSDISINFO_CASE_PREFIX.test(item.title))
+    .slice(0, MAX_EUVSDISINFO_CASES)
+    .map((item): FactCheckResult => {
+      const claimReviewed = item.title.replace(EUVSDISINFO_CASE_PREFIX, '');
+      return {
+        claimReviewed,
+        rating: 'Disinformation',
+        ratingValue: 0,
+        publisher: 'EUvsDisinfo',
+        publisherUrl: 'https://euvsdisinfo.eu',
+        reviewUrl: item.url,
+        reviewDate: item.publishedAt,
+        relevanceScore: Math.max(calculateRelevance(claimReviewed, englishQuery), 0.3),
+      };
+    });
+}
+
 export function calculateLayer1Score(results: FactCheckResult[]): number {
   if (results.length === 0) return 0.5;
 
@@ -260,15 +299,30 @@ export async function runLayer1(
   const enQuery = expandedQueries?.englishQuery || buildFactCheckQuery(text, true);
   const factAngle = expandedQueries?.factCheckAngle;
 
+  // Each query is searched in the language it is written in. Passing the
+  // interface language instead sent the Romanian query to the English index
+  // for anyone using the English UI, and found nothing. Without expanded
+  // queries the fallback query is the claim itself, in the reader's language.
+  const roLanguage = expandedQueries ? 'ro' : language === 'unknown' ? 'ro' : language;
   const searches = [
-    { provider: 'google-fact-check', run: fetchFactChecks(roQuery, language === 'unknown' ? 'ro' : language) },
+    { provider: 'google-fact-check', run: fetchFactChecks(roQuery, roLanguage) },
     { provider: 'google-fact-check', run: fetchFactChecks(enQuery, 'en') },
   ];
   if (factAngle && factAngle !== roQuery) {
-    searches.push({ provider: 'google-fact-check', run: fetchFactChecks(factAngle, language === 'unknown' ? 'ro' : language) });
+    searches.push({ provider: 'google-fact-check', run: fetchFactChecks(factAngle, roLanguage) });
   }
 
-  const { items, failure } = await settleProviderCalls('layer1-factcheck', searches);
+  // EUvsDisinfo is a bonus: one narrow database (pro-Kremlin claims), so its
+  // being reachable must not make the layer look searched when the general
+  // fact-check index is down, and its being down must not fail the layer.
+  const [{ items: indexed, failure }, euvsDisinfo] = await Promise.all([
+    settleProviderCalls('layer1-factcheck', searches),
+    fetchEuvsDisinfoCases(enQuery).catch((error) => {
+      logger.warn('EUvsDisinfo search failed', { service: 'layer1-factcheck', error: String(error) });
+      return [] as FactCheckResult[];
+    }),
+  ]);
+  const items = [...indexed, ...euvsDisinfo];
   if (failure) {
     return {
       status: 'unavailable',

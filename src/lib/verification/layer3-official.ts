@@ -208,19 +208,30 @@ export async function runLayer3(
   const roQuery = expandedQueries?.romanianQuery || text;
   const enQuery = expandedQueries?.englishQuery || text;
   const officialQuery = expandedQueries?.officialAngle || roQuery;
-  const isFrench = _language === 'fr';
+
+  // Whose institutions to search follows what the claim is about, as the query
+  // expander read it — not the interface language, which only says who is
+  // asking: a French-speaking reader checking a claim about Romania needs
+  // gov.ro, and a claim about a third country belongs on neither national
+  // group. Without expanded queries the interface language is the only hint.
+  const claimIsFrench = expandedQueries?.claimLanguage ? expandedQueries.claimLanguage === 'fr' : _language === 'fr';
+  const jurisdiction = expandedQueries?.officialJurisdiction ?? (claimIsFrench ? 'fr' : 'ro');
+  const nationalSearch =
+    jurisdiction === 'ro'
+      ? fetchOfficial(officialQuery, 'ro', OFFICIAL_SITES.ro)
+      : jurisdiction === 'fr'
+        ? fetchOfficial(claimIsFrench ? text : enQuery, 'fr', OFFICIAL_SITES.fr)
+        : Promise.resolve([]);
 
   // Official search + Wikipedia grounding + Academic/Scientific Research search in parallel
   const [legislation, euLegislation, officialItems, enItems, wikiRo, wikiEn, wikiFr, academicItems] = await Promise.all([
     lookupCitedLegislation(text),
     lookupEuLegislation(text, expandedQueries?.euLawTerms),
-    isFrench
-      ? fetchOfficial(text, 'fr', OFFICIAL_SITES.fr)
-      : fetchOfficial(officialQuery, 'ro', OFFICIAL_SITES.ro),
+    nationalSearch,
     fetchOfficial(enQuery, 'en', OFFICIAL_SITES.international),
     fetchWikipedia(roQuery, 'ro'),
     fetchWikipedia(enQuery, 'en'),
-    isFrench ? fetchWikipedia(text, 'fr') : Promise.resolve([]),
+    claimIsFrench ? fetchWikipedia(text, 'fr') : Promise.resolve([]),
     runAcademicLayer(text),
   ]);
 

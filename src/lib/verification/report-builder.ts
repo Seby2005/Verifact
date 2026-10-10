@@ -221,15 +221,17 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
       const url = r.reviewUrl || r.url;
       if (!url) continue;
       const claimText = r.claimReviewed || r.title || '';
+      const siteUrl = publisherSiteOf(url, r.publisherUrl);
       sources.push({
         title: `Fact-check: ${claimText.slice(0, 80)}${claimText.length > 80 ? '...' : ''}`,
         url,
+        siteUrl,
         publisher: r.publisher,
         publishedAt: r.reviewDate || r.date,
         sourceType: 'fact_check',
         relevance: r.relevanceScore,
         supports: (r.ratingValue ?? 0.5) > 0.6 ? true : (r.ratingValue ?? 0.5) < 0.4 ? false : null,
-        tier: assignSourceTier(url, r.publisher),
+        tier: assignSourceTier(siteUrl ?? url, r.publisher),
       });
     }
   }

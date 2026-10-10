@@ -122,7 +122,10 @@ function deduplicateArticles(articles: NewsArticle[]): NewsArticle[] {
   });
 }
 
-/** Maps free RSS search hits to the layer's article shape, judged against `claimText`. */
+/**
+ * Maps free RSS search hits to the layer's article shape.
+ * @param claimText What the hits are compared with for relevance; must be in the hits' own language.
+ */
 function toNewsArticles(items: RssNewsItem[], claimText: string): NewsArticle[] {
   return items
     .filter((item) => !isSocialDomain(item.sourceDomain || item.url))
@@ -320,24 +323,30 @@ export async function runLayer2(
   const enQuery = expandedQueries?.englishQuery || text;
   const contextQuery = expandedQueries?.contextOriginAngle;
 
+  // Relevance is a word-overlap test, so each result set has to be compared
+  // with text in its own language: the claim itself when it is written in that
+  // language, the query otherwise. Comparing across languages silently drops
+  // nearly everything — an English claim about Romania kept 2 Romanian
+  // articles where its Romanian wording kept 12. When the claim's language is
+  // unknown (query expansion failed) it is assumed to be Romanian.
+  const claimLanguage = expandedQueries?.claimLanguage ?? 'ro';
+  const roReference = claimLanguage === 'ro' ? text : roQuery;
+  const enReference = claimLanguage === 'en' ? text : enQuery;
+
   // Verifact's own index and the free RSS engines carry the layer.
-  //
-  // English-language searches are judged for relevance against enQuery, not
-  // the claim text: an English article shares almost no tokens with a
-  // Romanian claim, so checking it against `text` silently drops all of them.
   //
   // One GDELT call only (it rate-limits to 1 req / 5s). It is a bonus that
   // fails open on its own, so it does not count toward deciding whether press
   // search worked at all.
   const [ownIndex, primary, gdelt] = await Promise.all([
-    searchOwnIndex(roQuery, text),
+    searchOwnIndex(roQuery, roReference),
     settleProviderCalls('layer2-news', [
-      { provider: 'bing-news', run: searchBingNews(roQuery, 'ro').then((r) => toNewsArticles(r, text)) },
-      { provider: 'google-news', run: searchGoogleNews(roQuery, 'ro').then((r) => toNewsArticles(r, text)) },
-      { provider: 'bing-news', run: searchBingNews(enQuery, 'en').then((r) => toNewsArticles(r, enQuery)) },
-      { provider: 'google-news', run: searchGoogleNews(enQuery, 'en').then((r) => toNewsArticles(r, enQuery)) },
+      { provider: 'bing-news', run: searchBingNews(roQuery, 'ro').then((r) => toNewsArticles(r, roReference)) },
+      { provider: 'google-news', run: searchGoogleNews(roQuery, 'ro').then((r) => toNewsArticles(r, roReference)) },
+      { provider: 'bing-news', run: searchBingNews(enQuery, 'en').then((r) => toNewsArticles(r, enReference)) },
+      { provider: 'google-news', run: searchGoogleNews(enQuery, 'en').then((r) => toNewsArticles(r, enReference)) },
     ]),
-    fetchFromGDELT(enQuery, enQuery),
+    fetchFromGDELT(enQuery, enReference),
   ]);
 
   const isRelevant = (a: NewsArticle) => a.sentiment !== 'unrelated';
@@ -352,7 +361,7 @@ export async function runLayer2(
 
   if (!unique.some(isRelevant) && process.env.TAVILY_API_KEY) {
     const reserve = await settleProviderCalls('layer2-news', [
-      { provider: 'tavily', run: fetchFromTavily(contextQuery || roQuery, text) },
+      { provider: 'tavily', run: fetchFromTavily(contextQuery || roQuery, roReference) },
     ]);
     unique = deduplicateArticles([...unique, ...reserve.items]);
     // The layer searched if either round got through.

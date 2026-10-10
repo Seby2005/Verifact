@@ -43,13 +43,15 @@ export type LegislationReference =
 
 const YEAR = String.raw`(?:19|20)\d{2}`;
 // "/2025", "/18.06.2025" (the register prints the full date), "din 2025", "din 25 iulie 2025"
-const YEAR_SUFFIX = String.raw`(?:\s*\/\s*(?:\d{1,2}\.\d{1,2}\.)?(${YEAR})|\s+din\s+(?:\d{1,2}\s+\p{L}+\s+)?(${YEAR}))`;
+// Also "of 25 July 2025" / "du 25 juillet 2025": a claim about a Romanian law is not always written in Romanian.
+const YEAR_SUFFIX = String.raw`(?:\s*\/\s*(?:\d{1,2}\.\d{1,2}\.)?(${YEAR})|\s+(?:din|of|from|du)\s+(?:\d{1,2}\s+\p{L}+\s+)?(${YEAR}))`;
 const PLX = String.raw`PL[\s-]?x\b\.?`;
+const NUMBER_MARK = String.raw`(?:(?:nr|no)\.?\s*|n°\s*)?`;
 
-const BILL_NUMBER_AFTER = new RegExp(String.raw`${PLX}\s*(?:nr\.?\s*)?(\d{1,4})${YEAR_SUFFIX}?`, 'giu');
+const BILL_NUMBER_AFTER = new RegExp(String.raw`${PLX}\s*${NUMBER_MARK}(\d{1,4})${YEAR_SUFFIX}?`, 'giu');
 // "632 Plx" — but not the year in "din 2025 PL-x 300", where the number follows.
 const BILL_NUMBER_BEFORE = new RegExp(String.raw`\b(\d{1,4})${YEAR_SUFFIX}?\s*${PLX}(?!\s*(?:nr\.?\s*)?\d)`, 'giu');
-const LAW = new RegExp(String.raw`\bleg(?:ea|ii|e)\s+(?:nr\.?\s*)?(\d{1,4})${YEAR_SUFFIX}`, 'giu');
+const LAW = new RegExp(String.raw`\b(?:leg(?:ea|ii|e)|law|loi)\s+${NUMBER_MARK}(\d{1,4})${YEAR_SUFFIX}`, 'giu');
 
 /** The bill and law numbers a text cites, in order of appearance, without repeats. */
 export function findLegislationReferences(text: string): LegislationReference[] {

@@ -10,6 +10,11 @@ describe('findEuActReferences', () => {
     ['Regulamentul (UE, Euratom) 2023/2841', ['32023R2841']],
     ['Regulamentul delegat (UE) 2023/1234 al Comisiei', ['32023R1234']],
     ['Decizia (UE) 2022/2512', ['32022D2512']],
+    // English and French wordings of the same citations.
+    ['Regulation (EU) 2024/1689 bans artificial intelligence', ['32024R1689']],
+    ['Council Directive 2006/112/EC on VAT', ['32006L0112']],
+    ['Regulation (EC) No 1907/2006', ['32006R1907']],
+    ['le règlement (UE) 2016/679', ['32016R0679']],
   ])('%s', (text, expected) => {
     expect(findEuActReferences(text)).toEqual(expected);
   });

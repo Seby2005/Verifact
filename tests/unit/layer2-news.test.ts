@@ -247,6 +247,44 @@ describe('runLayer2', () => {
     expect(result.results).toHaveLength(1);
   });
 
+  describe('a claim written in another language than the results', () => {
+    const queries = {
+      primary: 'x',
+      romanianQuery: 'TVA 21% august 2025 România',
+      englishQuery: 'Romania VAT 21% August 2025',
+      keywords: [],
+      namedEntities: [],
+      factCheckAngle: '',
+      officialAngle: '',
+      contextOriginAngle: '',
+    };
+    const romanianArticle = item({
+      title: 'TVA crește la 21% de la 1 august 2025 în România',
+      snippet: 'Cota standard de TVA a fost majorată de Guvernul României.',
+      url: 'https://digi24.ro/tva-21',
+      sourceName: 'Digi24',
+      sourceDomain: 'digi24.ro',
+    });
+    const englishClaim = 'Romania raised its standard VAT rate from 19% to 21% in August 2025';
+
+    it('keeps Romanian coverage of an English claim by comparing it with the Romanian query', async () => {
+      bing.mockImplementation((_q: string, lang: string) => Promise.resolve(lang === 'ro' ? [romanianArticle] : []));
+
+      const result = await runLayer2(englishClaim, 'en', { ...queries, claimLanguage: 'en' });
+
+      expect(result.results.map((r) => r.source)).toEqual(['Digi24']);
+    });
+
+    it('compares English coverage with the English claim itself', async () => {
+      const englishArticle = item({ title: 'Romania raised its standard VAT rate to 21% in August 2025' });
+      bing.mockImplementation((_q: string, lang: string) => Promise.resolve(lang === 'en' ? [englishArticle] : []));
+
+      const result = await runLayer2(englishClaim, 'en', { ...queries, claimLanguage: 'en' });
+
+      expect(result.results).toHaveLength(1);
+    });
+  });
+
   it('stays available when one free engine still works', async () => {
     bing.mockRejectedValue(new Error('bing-news HTTP 429'));
 

@@ -10,6 +10,11 @@ describe('findLegislationReferences', () => {
     ['Legea nr. 141/2025 a majorat TVA', [{ kind: 'law', number: 141, year: 2025 }]],
     ['prin Legea 141 din 25 iulie 2025', [{ kind: 'law', number: 141, year: 2025 }]],
     ['conform Legii nr. 198/2023 a învățământului', [{ kind: 'law', number: 198, year: 2023 }]],
+    // A claim about a Romanian law is not always written in Romanian.
+    ['Nicusor Dan promulgated Law no. 141/2025, which raised VAT', [{ kind: 'law', number: 141, year: 2025 }]],
+    ['under Law 141 of 25 July 2025', [{ kind: 'law', number: 141, year: 2025 }]],
+    ['la loi n° 141/2025 augmente la TVA', [{ kind: 'law', number: 141, year: 2025 }]],
+    ['The bill PL-x no. 200/2025 censors the internet', [{ kind: 'bill', number: 200, year: 2025 }]],
   ])('%s', (text, expected) => {
     expect(findLegislationReferences(text)).toEqual(expected);
   });

@@ -52,6 +52,42 @@ describe('runLayer3', () => {
     expect(siteLists.every((sites) => sites.length > 0)).toBe(true);
   });
 
+  describe('which country’s institutions are searched', () => {
+    const queries = {
+      primary: 'x',
+      romanianQuery: 'vârsta pensionare',
+      englishQuery: 'retirement age',
+      keywords: [],
+      namedEntities: [],
+      factCheckAngle: '',
+      officialAngle: 'Ministerul Muncii vârsta pensionare',
+      contextOriginAngle: '',
+    };
+    const nationalSites = () =>
+      google.mock.calls.map(([, , sites]) => sites as string[]).filter((sites) => !sites.includes('who.int'));
+
+    it('follows what the claim is about, not the interface language', async () => {
+      // A French-speaking reader checking a claim about Romania.
+      await runLayer3('Le président roumain a promulgué la loi', 'fr', { ...queries, claimLanguage: 'fr', officialJurisdiction: 'ro' });
+
+      expect(nationalSites()).toHaveLength(1);
+      expect(nationalSites()[0]).toContain('gov.ro');
+    });
+
+    it('searches no national group for a claim about a third country', async () => {
+      await runLayer3('Germania a închis toate centralele nucleare', 'ro', { ...queries, claimLanguage: 'ro', officialJurisdiction: 'other' });
+
+      expect(nationalSites()).toEqual([]);
+      expect(google).toHaveBeenCalledTimes(1); // the international group only
+    });
+
+    it('searches French institutions for a claim about France', async () => {
+      await runLayer3('Franța a ridicat vârsta de pensionare', 'ro', { ...queries, claimLanguage: 'ro', officialJurisdiction: 'fr' });
+
+      expect(nationalSites()[0]).toContain('gouv.fr');
+    });
+  });
+
   it('maps a known official domain to its organization name and type', async () => {
     google.mockImplementation((_q: string, lang: string) => Promise.resolve(lang === 'en' ? [item()] : []));
 

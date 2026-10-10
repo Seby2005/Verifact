@@ -60,7 +60,8 @@ export function assignSourceTier(urlStr?: string, publisher?: string): SourceTie
     pub.includes('snopes') ||
     pub.includes('factual') ||
     pub.includes('veridica') ||
-    pub.includes('politifact')
+    pub.includes('politifact') ||
+    pub.includes('euvsdisinfo')
   ) {
     return 1;
   }
@@ -92,7 +93,7 @@ export async function applyAISourceFilter(layers: LayerSet, claim: string): Prom
       id: `l1:${i}`,
       title: r.claimReviewed || r.title || '',
       snippet: `${r.publisher ?? ''} — verdict: ${r.rating ?? ''}`,
-      source: origin(r.reviewUrl || r.url),
+      source: origin(publisherSiteOf(r.reviewUrl || r.url || '', r.publisherUrl) ?? r.reviewUrl ?? r.url),
     });
   });
 
