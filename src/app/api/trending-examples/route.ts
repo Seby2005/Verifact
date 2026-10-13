@@ -3,9 +3,8 @@ import { getTrendingExamples, type ExamplesLocale } from '@/lib/examples/trendin
 export const dynamic = 'force-dynamic';
 
 /**
- * Homepage claim suggestions — curated fact-checks from recognised
- * fact-checking organisations (Factual.ro, Veridica.ro, Snopes), served
- * in both Romanian and English.
+ * Homepage claim suggestions — claims that fact-checkers (Factual.ro, AFP,
+ * Snopes) reviewed in the last week, in the interface language.
  */
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
@@ -18,7 +17,10 @@ export async function GET(request: Request): Promise<Response> {
     { examples },
     {
       headers: {
-        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
+        // The selection changes daily, so the edge may hold a copy for a few
+        // hours and serve a stale one for at most a day while it refetches —
+        // a week of stale-while-revalidate kept old suggestions on quiet days.
+        'Cache-Control': 'public, s-maxage=21600, stale-while-revalidate=86400',
       },
     }
   );
