@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { JetBrains_Mono } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/next';
+import { VisitAnalytics } from '@/components/layout/VisitAnalytics';
 
 import { Header, Footer } from '@/components/layout';
 import { SITE_URL } from '@/lib/site';
@@ -185,7 +185,7 @@ export default function RootLayout({
               </main>
               <Footer />
             </div>
-            <Analytics />
+            <VisitAnalytics />
           </ToastProvider>
         </LanguageProvider>
       </body>
