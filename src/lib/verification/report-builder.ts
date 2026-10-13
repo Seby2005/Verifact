@@ -209,7 +209,13 @@ export function generateKeyTakeaways(
   return takeaways;
 }
 
-function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
+/**
+ * The sources a report cites, in the order it lists them: one entry per link,
+ * best tier first, at most 15.
+ */
+export function buildCombinedSources(
+  params: Pick<ReportBuilderParams, 'layers' | 'layer1' | 'layer2' | 'layer3' | 'layer4' | 'passages'>
+): CombinedSource[] {
   const layer1 = params.layer1 || params.layers?.layer1;
   const layer2 = params.layer2 || params.layers?.layer2;
   const layer3 = params.layer3 || params.layers?.layer3;
@@ -253,7 +259,7 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
           a.sentiment === 'confirms' ? true
           : a.sentiment === 'contradicts' ? false
           : null,
-        excerpt: a.snippet,
+        excerpt: params.passages?.get(url) ?? a.snippet,
         tier: assignSourceTier(siteUrl ?? url, a.source),
       });
     }
@@ -276,7 +282,9 @@ function buildCombinedSources(params: ReportBuilderParams): CombinedSource[] {
           o.supportsOrDenies === 'supports' ? true
           : o.supportsOrDenies === 'denies' ? false
           : null,
-        excerpt: o.relevantQuote ?? o.snippet,
+        // A register record's own summary (a bill's stage, an act's status)
+        // says more than any one sentence of the document, so it is kept.
+        excerpt: (o.fromRegister ? undefined : params.passages?.get(url)) ?? o.relevantQuote ?? o.snippet,
         tier: assignSourceTier(siteUrl ?? url, o.organization || o.publisher),
       });
     }

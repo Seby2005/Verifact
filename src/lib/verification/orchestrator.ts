@@ -13,7 +13,8 @@ import { runLayer2 } from './layer2-news';
 import { runLayer3 } from './layer3-official';
 import { runLayer4 } from './layer4-social';
 import { calculateScore, determineEvidenceStatus, resolveVerdict } from './scoring';
-import { buildReport } from './report-builder';
+import { buildReport, buildCombinedSources } from './report-builder';
+import { findSourcePassages } from './source-passage';
 import { generateAIAnalysis, generateAIAssessment, type AIAssessment } from '@/lib/ai';
 import { applyAISourceFilter } from './ai-source-filter';
 import { getCached, setCached } from './cache';
@@ -282,6 +283,13 @@ export async function verifyContent(
     claimForSearch
   );
 
+  // Started here and awaited only when the report is built: the cited pages
+  // are read while the AI writes, so quoting them adds no waiting.
+  const passagesPromise = findSourcePassages(
+    buildCombinedSources({ layers: { layer1, layer2, layer3, layer4 } }),
+    claimForSearch
+  );
+
   const aiContext = {
     claim: claimForSearch,
     inputText: claimForSearch,
@@ -358,6 +366,7 @@ export async function verifyContent(
     layer2,
     layer3,
     layer4,
+    passages: await passagesPromise,
     scoreBreakdown,
     evidenceStatus,
     aiAnalysis,

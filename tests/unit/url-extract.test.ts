@@ -1,4 +1,4 @@
-import { extractArticleText, isValidHttpUrl, UrlExtractionError } from '@/lib/verification/url-extract';
+import { extractArticleText, fetchArticleParagraphs, isValidHttpUrl, UrlExtractionError } from '@/lib/verification/url-extract';
 
 describe('isValidHttpUrl', () => {
   it.each([
@@ -336,5 +336,39 @@ describe('extractArticleText', () => {
       expect(text).not.toMatch(/&[a-z]+;/i); // &widget; and friends are gone
       expect(text).toContain('detaliază fiecare capitol');
     });
+  });
+});
+
+describe('fetchArticleParagraphs', () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('returns each paragraph as the browser renders it', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'text/html; charset=utf-8' },
+      text: () =>
+        Promise.resolve(`
+          <html><body>
+            <nav><p>Meniu principal</p></nav>
+            <article>
+              <p><b>Guvernul</b>, a anunțat <a href="/x">Rom&acirc;nia</a>,<br>majorează&nbsp;TVA.</p>
+              <script>track();</script>
+              <p>  Al doilea
+                 paragraf.  </p>
+              <p></p>
+            </article>
+          </body></html>
+        `),
+    });
+
+    await expect(fetchArticleParagraphs('https://example.com/articol')).resolves.toEqual([
+      'Guvernul, a anunțat România, majorează TVA.',
+      'Al doilea paragraf.',
+    ]);
   });
 });

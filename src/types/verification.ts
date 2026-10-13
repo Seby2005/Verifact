@@ -419,6 +419,12 @@ export interface ReportBuilderParams {
   layer2?: Layer2Result;
   layer3?: Layer3Result;
   layer4?: Layer4Result;
+  /**
+   * Source url → a sentence quoted from that page about the claim (see
+   * source-passage.ts). Shown as the source's excerpt in place of the search
+   * engine's snippet.
+   */
+  passages?: ReadonlyMap<string, string>;
   finalScore?: number;
   verdict?: Verdict;
   evidenceStatus?: EvidenceStatus;

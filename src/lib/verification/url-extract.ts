@@ -200,8 +200,25 @@ export async function assertSafeUrl(url: string): Promise<void> {
   }
 }
 
+/**
+ * Letters and quotation marks that older publishing systems still write as
+ * named entities ("Rom&acirc;nia"). Without these the catch-all at the end of
+ * decodeEntities turns each into a space and splits the word in two.
+ */
+const NAMED_LETTERS: Record<string, string> = {
+  acirc: 'â', Acirc: 'Â', icirc: 'î', Icirc: 'Î', abreve: 'ă', Abreve: 'Ă',
+  scedil: 'ş', Scedil: 'Ş', tcedil: 'ţ', Tcedil: 'Ţ',
+  agrave: 'à', Agrave: 'À', aacute: 'á', auml: 'ä', Auml: 'Ä', ccedil: 'ç', Ccedil: 'Ç',
+  egrave: 'è', Egrave: 'È', eacute: 'é', Eacute: 'É', ecirc: 'ê', Ecirc: 'Ê', euml: 'ë',
+  iacute: 'í', iuml: 'ï', ntilde: 'ñ', oacute: 'ó', ocirc: 'ô', ouml: 'ö', Ouml: 'Ö',
+  uacute: 'ú', ugrave: 'ù', ucirc: 'û', uuml: 'ü', Uuml: 'Ü', szlig: 'ß',
+  laquo: '«', raquo: '»', ldquo: '“', rdquo: '”', bdquo: '„', lsquo: '‘', rsquo: '’',
+  euro: '€', deg: '°',
+};
+
 function decodeEntities(s: string): string {
   return s
+    .replace(/&([A-Za-z]+);/g, (entity, name: string) => NAMED_LETTERS[name] ?? entity)
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -404,7 +421,12 @@ function looksLikeProse(text: string): boolean {
   return distinctNavigationPhrases(text) < 4;
 }
 
-export async function extractArticleText(rawUrl: string): Promise<string> {
+/**
+ * Downloads the page at `rawUrl` and returns its HTML. Everything that can go
+ * wrong on the way — an unsafe or unreachable address, an error status, a
+ * front page, a file that is not a page — is raised as a UrlExtractionError.
+ */
+async function fetchArticleHtml(rawUrl: string, timeoutMs: number): Promise<string> {
   if (!isValidHttpUrl(rawUrl)) {
     throw new UrlExtractionError('Link-ul introdus nu este valid.', 'INVALID_URL');
   }
@@ -426,7 +448,7 @@ export async function extractArticleText(rawUrl: string): Promise<string> {
           'User-Agent': 'Mozilla/5.0 (compatible; VerifactBot/0.1; +https://github.com/Seby2005/fact-checker-ai)',
           Accept: 'text/html,application/xhtml+xml',
         },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeoutMs),
       });
     } catch {
       throw new UrlExtractionError(
@@ -491,7 +513,49 @@ export async function extractArticleText(rawUrl: string): Promise<string> {
     );
   }
 
-  const html = await response.text();
+  return response.text();
+}
+
+/** The page without the markup that never holds readable text. */
+function withoutScripts(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ');
+}
+
+/**
+ * The prose paragraphs of the article at `rawUrl`, in reading order, each as
+ * the text a browser shows for it: inline markup is removed without leaving a
+ * gap, so "<b>Guvernul</b>, ieri" stays "Guvernul, ieri". That fidelity is the
+ * point — these are meant to be quoted back at the page (a text-fragment link
+ * only lands when the quote matches the rendered text), which is also why
+ * nothing here is truncated or joined.
+ *
+ * Fails with a UrlExtractionError for the same reasons as extractArticleText.
+ */
+export async function fetchArticleParagraphs(
+  rawUrl: string,
+  timeoutMs: number = FETCH_TIMEOUT_MS
+): Promise<string[]> {
+  const markup = withoutScripts(await fetchArticleHtml(rawUrl, timeoutMs));
+  const article = stripChrome(contentRegion(markup) ?? markup);
+
+  const paragraphs: string[] = [];
+  const re = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(article)) !== null) {
+    const text = decodeEntities(match[1].replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ''))
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (text) paragraphs.push(text);
+  }
+  return paragraphs;
+}
+
+export async function extractArticleText(rawUrl: string): Promise<string> {
+  const html = await fetchArticleHtml(rawUrl, FETCH_TIMEOUT_MS);
 
   // Read JSON-LD first: stripping <script> below would take it with it.
   const structured = fromJsonLd(html);
@@ -500,11 +564,7 @@ export async function extractArticleText(rawUrl: string): Promise<string> {
     metaContent(html, 'og:title') ??
     decodeEntities(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '').trim();
 
-  const markup = html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
-    .replace(/<!--[\s\S]*?-->/g, ' ');
+  const markup = withoutScripts(html);
 
   const region = contentRegion(markup);
   const withoutChrome = stripChrome(markup);

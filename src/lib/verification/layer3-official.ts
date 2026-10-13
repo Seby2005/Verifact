@@ -126,7 +126,9 @@ interface WikiSearchResponse {
 
 function stripHtml(html: string): string {
   return html
-    .replace(/<[^>]+>/g, ' ')
+    // The excerpt's only markup is the inline highlight around matched words;
+    // a space in its place would turn "(HPV)" into "( HPV )".
+    .replace(/<[^>]+>/g, '')
     .replace(/&quot;/g, '"')
     .replace(/&amp;/g, '&')
     .replace(/&#039;/g, "'")
