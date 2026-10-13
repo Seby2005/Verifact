@@ -41,6 +41,27 @@ export async function getCached(hash: string): Promise<VerificationReport | null
 }
 
 /**
+ * The cached report with this id, expired or not, or null. A reader who was
+ * served from the cache holds a report that was never saved under their own
+ * account, so this is the only place it can be found again by id.
+ */
+export async function getCachedById(reportId: string): Promise<VerificationReport | null> {
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from('cached_results')
+      .select('result_json')
+      .eq('result_json->>id', reportId)
+      .limit(1)
+      .maybeSingle();
+
+    return ((data as { result_json?: unknown } | null)?.result_json as VerificationReport | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Stores a verification report in the cache with a 7-day TTL.
  * Uses upsert to handle concurrent cache writes gracefully.
  */

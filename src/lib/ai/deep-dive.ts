@@ -246,7 +246,7 @@ export async function generateDeepDiveAnswer(ctx: DeepDiveContext): Promise<Deep
           'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
           'X-Title': 'Verifact Deep Dive',
         },
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(25000),
         body: JSON.stringify({
           model: MODEL,
           messages: [{ role: 'user', content: prompt }],
@@ -254,7 +254,9 @@ export async function generateDeepDiveAnswer(ctx: DeepDiveContext): Promise<Deep
           max_tokens: 1200,
         }),
       }),
-      { label: 'Deep dive analysis' }
+      // Two tries of 25s fit the route's 60s limit; a third would outlive it
+      // and the reader would get a platform timeout instead of our error.
+      { label: 'Deep dive analysis', attempts: 2 }
     ).then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json() as Promise<{ choices?: Array<{ message?: { content?: string } }> }>;
@@ -267,7 +269,12 @@ export async function generateDeepDiveAnswer(ctx: DeepDiveContext): Promise<Deep
   }
 
   const knownUrls = collectKnownUrls(ctx.report);
-  const sanitized = stripMarkdown(raw)
+  // Not stripMarkdown: it flattens the text to one line, and the answer's
+  // paragraphs and "-" lists (which the prompt asks for) live in its line breaks.
+  const sanitized = raw
+    .replace(/^[ \t]*#+[ \t]*/gm, '')
+    .replace(/^[ \t]*[*•][ \t]+/gm, '- ')
+    .replace(/\*{1,3}/g, '')
     .replace(URL_PATTERN, (url) => {
       const candidate = url.replace(/[.,;:!?]+$/, '');
       return knownUrls.has(candidate) ? candidate : '';

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getPublicReportById } from '@/lib/verification/public-reports-query';
+import { getCachedById } from '@/lib/verification/cache';
 import { hasUnlimitedUsage } from '@/lib/usage/limits';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
 import { logger } from '@/lib/utils/logger';
@@ -12,6 +13,8 @@ import type { VerificationReport } from '@/types/verification';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// The model can take 15-25s to answer; the platform default would cut it off.
+export const maxDuration = 60;
 
 const MAX_CUSTOM_QUESTION_LENGTH = 300;
 
@@ -104,6 +107,12 @@ export async function POST(request: Request): Promise<Response> {
   if (!report) {
     const publicDetail = await getPublicReportById(reportId);
     report = publicDetail?.reportJson ?? null;
+  }
+
+  // A report served from the cache was saved under whoever verified the text
+  // first, so neither lookup above finds it for this reader.
+  if (!report) {
+    report = await getCachedById(reportId);
   }
 
   if (!report) {
