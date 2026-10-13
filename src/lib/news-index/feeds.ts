@@ -62,5 +62,5 @@ export const NEWS_FEEDS: readonly NewsFeed[] = [
   { url: 'https://recorder.ro/feed/', source: 'Recorder', kind: 'news' },
   { url: 'https://pressone.ro/api/rss', source: 'PressOne', kind: 'news' },
   { url: 'https://snoop.ro/feed/', source: 'Snoop', kind: 'news' },
-  { url: 'https://context.ro/feed/', source: 'Context.ro', kind: 'news' },
+  // Context.ro is left out: its feed sits behind a JavaScript bot challenge.
 ];
