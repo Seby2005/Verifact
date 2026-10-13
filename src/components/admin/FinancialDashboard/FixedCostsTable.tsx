@@ -294,7 +294,7 @@ export const FixedCostsTable: React.FC<FixedCostsTableProps> = ({
               {items.length === 0 ? (
                 <tr>
                   <td colSpan={6} className={styles.emptyState}>
-                    Niciun cost fix înregistrat momentan. Apasă pe "+ Adaugă Cost Fix" pentru a adăuga primul abonament.
+                    Niciun cost fix înregistrat momentan. Apasă pe &quot;+ Adaugă Cost Fix&quot; pentru a adăuga primul abonament.
                   </td>
                 </tr>
               ) : (

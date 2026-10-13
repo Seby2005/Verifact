@@ -557,8 +557,8 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ userId, onVerificati
               color: 'var(--color-ink)',
             }}
           >
-            "{itemToDelete.input_text.slice(0, 160)}
-            {itemToDelete.input_text.length > 160 ? '...' : ''}"
+            &quot;{itemToDelete.input_text.slice(0, 160)}
+            {itemToDelete.input_text.length > 160 ? '...' : ''}&quot;
           </blockquote>
         )}
 

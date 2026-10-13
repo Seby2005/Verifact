@@ -1,7 +1,7 @@
 import { XMLParser } from 'fast-xml-parser';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logger } from '@/lib/utils/logger';
-import type { OpportunityStatus, Database } from '@/types/database';
+import type { Database } from '@/types/database';
 
 export interface RawOpportunity {
   title: string;

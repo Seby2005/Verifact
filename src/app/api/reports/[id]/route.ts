@@ -95,7 +95,7 @@ export async function DELETE(
   const adminClient = createAdminClient();
 
   // Check if the caller is the report owner or an admin.
-  const { data: profile } = await (adminClient as any)
+  const { data: profile } = await adminClient
     .from('profiles')
     .select('role')
     .eq('id', user.id)
@@ -105,7 +105,7 @@ export async function DELETE(
     (profile as { role?: string } | null)?.role === 'admin' || isAdminEmail(user.email);
 
   if (!isAdmin) {
-    const { data: verification } = await (adminClient as any)
+    const { data: verification } = await adminClient
       .from('verifications')
       .select('user_id')
       .eq('id', id)
@@ -117,12 +117,12 @@ export async function DELETE(
   }
 
   // Set visibility_status to taken_down and is_public to false
-  const { error } = await (adminClient as any)
+  const { error } = await adminClient
     .from('verifications')
     .update({
       is_public: false,
       visibility_status: 'taken_down',
-    })
+    } as never)
     .eq('id', id);
 
   if (error) {

@@ -31,7 +31,7 @@ export const AdminDeleteReportButton: React.FC<AdminDeleteReportButtonProps> = (
         // Gate the button on `role` only. The email allowlist is server-side
         // (see lib/auth/admin-emails) and must not ship to the browser; the
         // DELETE route is what actually enforces authorization.
-        const { data: profile } = await (supabase as any)
+        const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', data.user.id)

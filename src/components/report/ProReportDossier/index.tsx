@@ -8,7 +8,6 @@ import type {
   SourceComparisonEntry,
   SubClaimCheck,
   SourceInsight,
-  ManipulationTechnique,
 } from '@/types/verification';
 import { synthesisFromReport } from '@/lib/ai/report-synthesis';
 import { sourceHref } from '@/components/verify/ReportView/sourceLink';

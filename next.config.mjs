@@ -18,17 +18,6 @@ const supabaseOrigin = (() => {
   }
 })();
 
-// Self-hosted tools the BROWSER talks to directly need their origin in the CSP,
-// or the browser silently blocks the request. Each is derived from env and
-// collapses to '' (filtered out) when the tool isn't configured — so a stock
-// setup keeps exactly the old, tight policy and only widens when you opt in.
-const originOf = (value) => {
-  try {
-    return value ? new URL(value).origin : '';
-  } catch {
-    return '';
-  }
-};
 // Google Identity Services (One Tap / "Sign in with Google"): the browser loads
 // its script, opens its popup in an iframe, and posts the ID token — all on
 // accounts.google.com. Only widened when a Google Client ID is configured.

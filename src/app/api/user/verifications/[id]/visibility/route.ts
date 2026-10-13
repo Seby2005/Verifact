@@ -1,6 +1,5 @@
 import { revalidatePath } from 'next/cache';
 import { getAuthenticatedUser } from '@/lib/supabase/auth-helpers';
-import { createClient as createServerClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 

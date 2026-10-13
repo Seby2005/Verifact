@@ -32,7 +32,7 @@ export default async function AdminOpportunitiesPage() {
 
   // 2. Load active/new content opportunities
   const adminClient = createAdminClient();
-  let { data: opportunities, error } = await (adminClient.from('content_opportunities') as unknown as {
+  const { data: loaded, error } = await (adminClient.from('content_opportunities') as unknown as {
     select: (fields: string) => {
       eq: (field: string, val: string) => {
         order: (field: string, opts: { ascending: boolean }) => {
@@ -48,6 +48,7 @@ export default async function AdminOpportunitiesPage() {
     .eq('status', 'new')
     .order('fetched_at', { ascending: false })
     .order('trend_rank', { ascending: true, nullsFirst: false });
+  let opportunities = loaded;
 
   // If no opportunities exist in the database (e.g. fresh environment or cron hasn't fired yet),
   // automatically aggregate once on first admin visit
