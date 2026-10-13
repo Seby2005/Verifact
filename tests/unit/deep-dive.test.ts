@@ -2,6 +2,7 @@ import { generateDeepDiveAnswer } from '@/lib/ai/deep-dive';
 import { POST } from '@/app/api/report/deep-dive/route';
 import { getPublicReportById } from '@/lib/verification/public-reports-query';
 import { getCachedById } from '@/lib/verification/cache';
+import { PRIMARY_MODEL } from '@/lib/ai/models';
 import type { VerificationReport } from '@/types/verification';
 
 // The route reads the caller through createClient(); the deep-dive answer is
@@ -156,7 +157,7 @@ describe('generateDeepDiveAnswer', () => {
 
     const [, init] = fetchMock.mock.calls[0] as [string, { body?: string }];
     const body = JSON.parse(init.body ?? '{}') as { model?: string };
-    expect(body.model).toBe('deepseek/deepseek-chat');
+    expect(body.model).toBe(PRIMARY_MODEL);
     expect(answer).toContain('parțial adevărată');
   });
 
@@ -168,6 +169,24 @@ describe('generateDeepDiveAnswer', () => {
     const prompt = capturePrompt(fetchMock);
     expect(prompt).toContain('ad hominem');
     expect(prompt).toContain('cherry-picking');
+  });
+
+  it('shows the model the post as submitted when a claim was extracted from it', async () => {
+    const fetchMock = mockLlmResponse(
+      'Postarea folosește un titlu senzaționalist și un apel la urgență pentru a grăbi distribuirea.'
+    );
+    await generateDeepDiveAnswer({
+      report: {
+        ...minimalReport,
+        inputText: 'ȘOC!!! NASA a recunoscut: Pământul este PLAT. Distribuie înainte să fie șters!',
+        verifiedClaim: 'NASA a recunoscut că Pământul este plat.',
+      },
+      actionType: 'manipulation_techniques',
+      locale: 'ro',
+    });
+    const prompt = capturePrompt(fetchMock);
+    expect(prompt).toContain('"NASA a recunoscut că Pământul este plat."');
+    expect(prompt).toContain('Distribuie înainte să fie șters!');
   });
 
   it('passes the custom question through into the prompt', async () => {
