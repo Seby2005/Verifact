@@ -142,7 +142,6 @@ export default function PreturiPage() {
             name: 'Pro',
             priceMonthly: '3,99 €',
             priceYearly: '2,99 €',
-            tagline: 'Pour journalistes, chercheurs et utilisateurs quotidiens.',
             checks: 'Plus de 10× plus de vérifications que l’offre gratuite.',
             features: [
               'De plus de 10× plus de vérifications',
@@ -160,7 +159,6 @@ export default function PreturiPage() {
             checks: 'Volume et fonctionnalités sur-mesure',
             features: [
               'Volume sur-mesure de vérifications',
-              'Dossier avancé d’analyse & consensus des sources',
               'Accès API REST & intégrations',
               'Comptes d’équipe & gestion multi-utilisateurs',
             ],
@@ -179,7 +177,6 @@ export default function PreturiPage() {
             { label: 'Lien direct vers la phrase citée', free: false, pro: true, business: true },
             { label: 'AI Report Deep-Dive (Q&R interactif)', free: false, pro: true, business: true },
             { label: 'Support prioritaire', free: false, pro: true, business: true },
-            { label: 'Dossier avancé d’analyse & consensus', free: false, pro: false, business: true },
             { label: 'Accès API & intégrations', free: false, pro: false, business: true },
             { label: 'Comptes d’équipe & licences multiples', free: false, pro: false, business: true },
           ],
@@ -212,7 +209,6 @@ export default function PreturiPage() {
             name: 'Pro',
             priceMonthly: '€3.99',
             priceYearly: '€2.99',
-            tagline: 'For journalists, researchers, and anyone who checks daily.',
             checks: 'Over 10× more checks than the free plan.',
             features: [
               'Over 10× more monthly checks',
@@ -230,7 +226,6 @@ export default function PreturiPage() {
             checks: 'Custom volume and features',
             features: [
               'Custom verification volume',
-              'Advanced Intelligence Dossier & cross-source consensus',
               'REST API access & integrations',
               'Team accounts & multi-seat billing',
             ],
@@ -249,7 +244,6 @@ export default function PreturiPage() {
             { label: 'Exact link & highlight to cited sentence', free: false, pro: true, business: true },
             { label: 'AI Report Deep-Dive (interactive Q&A)', free: false, pro: true, business: true },
             { label: 'Priority support', free: false, pro: true, business: true },
-            { label: 'Advanced Intelligence Dossier & consensus', free: false, pro: false, business: true },
             { label: 'REST API access', free: false, pro: false, business: true },
             { label: 'Team billing and seats', free: false, pro: false, business: true },
           ],
@@ -281,7 +275,6 @@ export default function PreturiPage() {
             name: 'Pro',
             priceMonthly: '€3,99',
             priceYearly: '€2,99',
-            tagline: 'Pentru jurnaliști, cercetători și oricine verifică zilnic.',
             checks: 'De peste 10× mai multe verificări ca planul gratuit.',
             features: [
               'De peste 10× mai multe verificări ca Free',
@@ -299,7 +292,6 @@ export default function PreturiPage() {
             checks: 'Volum și funcții la cerere',
             features: [
               'Volum personalizat de verificări',
-              'Dosar avansat de analiză & consens între surse',
               'Acces API REST & integrări',
               'Conturi de echipă & locuri multiple',
             ],
@@ -318,7 +310,6 @@ export default function PreturiPage() {
             { label: 'Link exact la propoziția din fiecare sursă', free: false, pro: true, business: true },
             { label: 'AI Report Deep-Dive (Q&A pe raport)', free: false, pro: true, business: true },
             { label: 'Suport prioritar', free: false, pro: true, business: true },
-            { label: 'Dosar avansat de analiză & consens între surse', free: false, pro: false, business: true },
             { label: 'Acces API', free: false, pro: false, business: true },
             { label: 'Facturare și locuri pentru echipă', free: false, pro: false, business: true },
           ],
@@ -424,7 +415,6 @@ export default function PreturiPage() {
                 {billing === 'yearly' ? c.billedYearly : '\u00A0'}
               </p>
               <p className={styles.checks}>{c.pro.checks}</p>
-              <p className={styles.forWho}>{c.pro.tagline}</p>
               {renderCardFeatures(c.pro.features)}
             </div>
             <div className={styles.planCta}>
