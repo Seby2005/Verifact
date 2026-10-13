@@ -1,0 +1,328 @@
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Period chips — same shape as the verification log's filters. */
+.periods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-ink-secondary);
+  text-decoration: none;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+}
+
+.chip:hover {
+  border-color: var(--color-line-strong);
+  color: var(--color-ink);
+}
+
+.chipActive,
+.chipActive:hover {
+  color: var(--color-paper);
+  background-color: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+/* Headline numbers */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.tileLabel {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink-muted);
+}
+
+.tileValue {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.1;
+  color: var(--color-ink);
+}
+
+.tileChange {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink-secondary);
+}
+
+.tileFoot {
+  margin-top: auto;
+  padding-top: var(--space-2);
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+}
+
+/* Panels */
+.panel {
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.panelTitle {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-ink-muted);
+}
+
+/* Day-by-day columns. One series, so ink: colour is kept for verdicts. */
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 180px;
+  padding-top: var(--space-6);
+  border-bottom: 1px solid var(--color-line-strong);
+}
+
+.slot {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  height: 100%;
+}
+
+.bar {
+  position: relative;
+  width: 100%;
+  max-width: 24px;
+  min-height: 2px;
+  background-color: var(--color-ink);
+  border-radius: 4px 4px 0 0;
+}
+
+.slot:hover .bar {
+  background-color: var(--color-ink-secondary);
+}
+
+/* The one direct label: the busiest day's value, sitting on its column. */
+.peak {
+  position: absolute;
+  bottom: calc(100% + var(--space-1));
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-secondary);
+}
+
+.tip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  z-index: 1;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-caption);
+  white-space: nowrap;
+  color: var(--color-paper);
+  background-color: var(--color-ink);
+  border-radius: var(--radius-sm);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.slot:hover .tip {
+  display: flex;
+}
+
+/* Near an edge the tooltip opens inward, so it never leaves the panel. */
+.slotStart .tip {
+  left: 0;
+  transform: none;
+}
+
+.slotEnd .tip {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  color: var(--color-ink-muted);
+}
+
+/* Tables: the chart's numbers, and the most active people. */
+.table {
+  margin-top: var(--space-4);
+  font-size: var(--font-size-body-sm);
+}
+
+.table summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-ink-secondary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.people {
+  overflow-x: auto;
+}
+
+.table table,
+.people table {
+  width: 100%;
+  font-size: var(--font-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td,
+.people th,
+.people td {
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--color-ink-secondary);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.table thead th,
+.people thead th {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-ink-muted);
+}
+
+.table tbody th,
+.people tbody th {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-ink);
+}
+
+/* Breakdowns */
+.breakdowns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .breakdowns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.shares {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.share {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--font-size-body-sm);
+}
+
+.shareLabel {
+  color: var(--color-ink);
+}
+
+.shareValue {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-muted);
+}
+
+.shareTrack {
+  grid-column: 1 / -1;
+  height: 8px;
+  background-color: var(--color-paper-shade);
+  border-radius: var(--radius-pill);
+}
+
+.shareFill {
+  display: block;
+  min-width: 2px;
+  height: 100%;
+  background-color: var(--color-ink);
+  border-radius: var(--radius-pill);
+}
+
+.true {
+  background-color: var(--verdict-true);
+}
+
+.partial {
+  background-color: var(--verdict-partial);
+}
+
+.unclear {
+  background-color: var(--verdict-unclear);
+}
+
+.false {
+  background-color: var(--verdict-false);
+}
+
+.note {
+  max-width: 72ch;
+  margin: 0;
+  font-size: var(--font-size-body-sm);
+  line-height: 1.6;
+  color: var(--color-ink-muted);
+}
+
+.note a {
+  color: var(--color-ink-secondary);
+}

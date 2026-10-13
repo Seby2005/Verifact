@@ -218,6 +218,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ user, onSignOut })
               </div>
               <span className={styles.adminActionArrow}>→</span>
             </Link>
+
+            <Link href="/admin/statistici" className={styles.adminActionCard}>
+              <div className={styles.adminActionIconWrap} style={{ background: '#ede9fe', color: '#6d28d9' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                </svg>
+              </div>
+              <div className={styles.adminActionContent}>
+                <div className={styles.adminActionTitle}>Statistici</div>
+                <div className={styles.adminActionDesc}>Câți oameni folosesc Verifact, cât de des revin și ce verifică, fără verificările echipei.</div>
+              </div>
+              <span className={styles.adminActionArrow}>→</span>
+            </Link>
           </div>
         </div>
       )}

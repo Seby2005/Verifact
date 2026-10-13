@@ -310,6 +310,12 @@ export const AuthPanel: React.FC = () => {
                   Toate verificările →
                 </a>
               </div>
+              <div className={styles.accountRow}>
+                <span className={styles.accountLabel}>Statistici</span>
+                <a href="/admin/statistici" className={styles.textLink}>
+                  Cine folosește Verifact →
+                </a>
+              </div>
             </>
           ) : null}
         </div>
