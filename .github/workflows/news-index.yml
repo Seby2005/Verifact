@@ -30,7 +30,9 @@ jobs:
       - name: Refresh the news index
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          APP_URL: ${{ vars.APP_URL || 'https://verifact.ro' }}
+          # The www host on purpose: verifact.ro answers 308 to it, and curl
+          # neither follows a redirect nor carries the secret across hosts.
+          APP_URL: ${{ vars.APP_URL || 'https://www.verifact.ro' }}
         run: |
           # Not configured yet: skip instead of failing, or GitHub would mail a
           # failure notice every half hour until the secret is added.
@@ -38,6 +40,14 @@ jobs:
             echo "::warning::The CRON_SECRET repository secret is not set; skipping the refresh."
             exit 0
           fi
-          curl --fail-with-body --silent --show-error --max-time 90 \
+          # Anything but 200 fails the run, a redirect included: it would
+          # otherwise pass as a success while nothing was ingested.
+          status=$(curl --silent --show-error --max-time 90 \
+            -o response.txt -w '%{http_code}' \
             -X POST -H "Authorization: Bearer $CRON_SECRET" \
-            "$APP_URL/api/cron/news-index"
+            "$APP_URL/api/cron/news-index")
+          cat response.txt
+          if [ "$status" != "200" ]; then
+            echo "::error::The news index endpoint answered HTTP $status."
+            exit 1
+          fi
