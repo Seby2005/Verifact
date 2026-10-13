@@ -186,6 +186,31 @@ describe('ingestNewsFeeds', () => {
     expect(report.failedFeeds).toEqual([{ source: 'Broken', error: 'HTTP 503' }]);
   });
 
+  it('reads an outlet through Google News when its own feed refuses the request', async () => {
+    const { stored } = fakeSupabase();
+    const googleItem = (id: string, title: string, date: string) =>
+      `<item><title>${title} - Blocked</title><link>https://news.google.com/rss/articles/${id}?oc=5</link><pubDate>${date}</pubDate><source url="https://www.blocked.ro">Blocked</source></item>`;
+    global.fetch = jest.fn().mockImplementation((url: string) =>
+      Promise.resolve(
+        url.startsWith('https://news.google.com/')
+          ? feedResponse(
+              rss(
+                googleItem('NEW', 'Titlu de azi', new Date().toUTCString()) +
+                  googleItem('OLD', 'Titlu vechi', 'Mon, 18 Mar 2019 07:00:00 GMT')
+              )
+            )
+          : feedResponse('', 403)
+      )
+    );
+
+    const report = await ingestNewsFeeds([{ url: 'https://www.blocked.ro/feed', source: 'Blocked', kind: 'news' }]);
+
+    expect(report).toMatchObject({ failedFeeds: [], seen: 1, inserted: 1 });
+    expect([...stored]).toEqual(['https://news.google.com/rss/articles/NEW?oc=5']);
+    const googleUrl = (global.fetch as jest.Mock).mock.calls.map(([u]) => decodeURIComponent(u as string))[1];
+    expect(googleUrl).toContain('q=when:2d site:www.blocked.ro');
+  });
+
   it('counts an article syndicated by two feeds once', async () => {
     fakeSupabase();
     global.fetch = jest.fn().mockResolvedValue(feedResponse(rss(fresh('same'))));

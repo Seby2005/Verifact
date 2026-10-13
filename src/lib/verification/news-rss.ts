@@ -87,7 +87,11 @@ function toIso(pubDate: string): string {
 }
 
 /** Fetches a feed and splits it into raw <item> blocks; rejects when it is not a feed. */
-async function fetchFeedItems(engine: 'google-news' | 'bing-news', url: string): Promise<string[]> {
+async function fetchFeedItems(
+  engine: 'google-news' | 'bing-news',
+  url: string,
+  maxItems: number = MAX_ITEMS
+): Promise<string[]> {
   const response = await withCircuitBreaker(engine, () =>
     fetchWithRetry(
       url,
@@ -107,7 +111,29 @@ async function fetchFeedItems(engine: 'google-news' | 'bing-news', url: string):
   // otherwise read as "no news about this".
   if (!/<rss[\s>]/i.test(xml)) throw new Error(`${engine} returned a non-RSS page`);
 
-  return xml.split(/<item>/i).slice(1, MAX_ITEMS + 1);
+  return xml.split(/<item>/i).slice(1, maxItems + 1);
+}
+
+/** One Google News <item> block as a result, or nothing when it has no link or headline. */
+function googleNewsItem(item: string): RssNewsItem[] {
+  const url = tag(item, 'link');
+  const sourceName = tag(item, 'source');
+  const sourceUrl = item.match(/<source[^>]*url="([^"]+)"/i)?.[1] ?? '';
+  // Google appends " - Publisher" to every title.
+  const rawTitle = tag(item, 'title');
+  const title = sourceName && rawTitle.endsWith(` - ${sourceName}`)
+    ? rawTitle.slice(0, -(sourceName.length + 3))
+    : rawTitle;
+  if (!url || !title) return [];
+
+  return [{
+    title,
+    url,
+    sourceName: sourceName || hostOf(sourceUrl),
+    sourceDomain: hostOf(sourceUrl),
+    publishedAt: toIso(tag(item, 'pubDate')),
+    snippet: title,
+  }];
 }
 
 /**
@@ -128,26 +154,23 @@ export async function searchGoogleNews(
     `https://news.google.com/rss/search?q=${encodeURIComponent(terms + siteFilter)}&${GOOGLE_EDITION[language]}`
   );
 
-  return items.flatMap((item): RssNewsItem[] => {
-    const url = tag(item, 'link');
-    const sourceName = tag(item, 'source');
-    const sourceUrl = item.match(/<source[^>]*url="([^"]+)"/i)?.[1] ?? '';
-    // Google appends " - Publisher" to every title.
-    const rawTitle = tag(item, 'title');
-    const title = sourceName && rawTitle.endsWith(` - ${sourceName}`)
-      ? rawTitle.slice(0, -(sourceName.length + 3))
-      : rawTitle;
-    if (!url || !title) return [];
+  return items.flatMap(googleNewsItem);
+}
 
-    return [{
-      title,
-      url,
-      sourceName: sourceName || hostOf(sourceUrl),
-      sourceDomain: hostOf(sourceUrl),
-      publishedAt: toIso(tag(item, 'pubDate')),
-      snippet: title,
-    }];
-  });
+/**
+ * What Google News lists from one site over the last two days, up to 100
+ * headlines. This is how an outlet is still read when its own feed refuses
+ * the caller. `host` is matched as given: "www.gov.ro" leaves out the other
+ * gov.ro subdomains. Google occasionally mixes in older items, so callers
+ * that care about age must check `publishedAt` themselves.
+ */
+export async function latestFromSite(host: string): Promise<RssNewsItem[]> {
+  const items = await fetchFeedItems(
+    'google-news',
+    `https://news.google.com/rss/search?q=${encodeURIComponent(`when:2d site:${host}`)}&${GOOGLE_EDITION.ro}`,
+    100
+  );
+  return items.flatMap(googleNewsItem);
 }
 
 /** Searches Bing News. */

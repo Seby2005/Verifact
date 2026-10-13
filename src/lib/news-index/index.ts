@@ -22,7 +22,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logger } from '@/lib/utils/logger';
 import type { NewsIndexInsert, NewsIndexRow } from '@/types/database';
-import type { RssNewsItem } from '@/lib/verification/news-rss';
+import { latestFromSite, type RssNewsItem } from '@/lib/verification/news-rss';
 import { NEWS_FEEDS, type NewsFeed } from './feeds';
 
 /**
@@ -193,13 +193,58 @@ export function parseFeed(xml: string, feed: NewsFeed, now: number = Date.now())
   return rows;
 }
 
-async function readFeed(feed: NewsFeed): Promise<NewsIndexInsert[]> {
+async function readOwnFeed(feed: NewsFeed): Promise<NewsIndexInsert[]> {
   const response = await fetch(feed.url, {
     headers: { 'User-Agent': USER_AGENT, Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*' },
     signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return parseFeed(await response.text(), feed);
+}
+
+/**
+ * The outlet's recent headlines as Google News lists them. The links are
+ * Google's redirects and there is no description, so this stands in for a
+ * feed that cannot be read; it is not an equal of one.
+ */
+async function readViaGoogleNews(feed: NewsFeed, now: number): Promise<NewsIndexInsert[]> {
+  const oldest = now - RETENTION_DAYS[feed.kind] * DAY_MS;
+  const items = await latestFromSite(new URL(feed.url).hostname);
+
+  return items.flatMap((item): NewsIndexInsert[] => {
+    const published = parseFeedDate(item.publishedAt, now);
+    if (published.getTime() < oldest) return [];
+    return [{
+      url: item.url,
+      title: item.title.slice(0, MAX_TITLE_CHARS),
+      snippet: '',
+      source_name: feed.source,
+      source_domain: item.sourceDomain || hostOf(feed.url),
+      kind: feed.kind,
+      published_at: published.toISOString(),
+    }];
+  });
+}
+
+/**
+ * One outlet's current items. Several outlets and institutions refuse
+ * requests coming from a hosting provider, so a feed that cannot be read is
+ * retried through Google News before the outlet is given up for this run.
+ * Rejects with the feed's own error when both ways fail.
+ */
+async function readFeed(feed: NewsFeed): Promise<NewsIndexInsert[]> {
+  try {
+    return await readOwnFeed(feed);
+  } catch (error) {
+    const rows = await readViaGoogleNews(feed, Date.now()).catch(() => []);
+    if (rows.length === 0) throw error;
+    logger.warn('News feed unreadable, read through Google News instead', {
+      service: 'news-index',
+      feed: feed.url,
+      error: String(error),
+    });
+    return rows;
+  }
 }
 
 /* ------------------------------- ingestion ------------------------------- */
