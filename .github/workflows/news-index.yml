@@ -9,6 +9,10 @@ name: News index
 # Needs the repository secret CRON_SECRET (same value as in Vercel). The site
 # address can be overridden with the repository variable APP_URL.
 #
+# GitHub runs the schedule only from the repository's default branch (main);
+# until 2026-10-15 that was a stale dev branch without this file, so the
+# schedule never fired.
+#
 # GitHub pauses scheduled workflows after 60 days without repository activity;
 # the daily provider-health check reports the index as stale if that happens.
 
