@@ -70,7 +70,8 @@ const csp = [
   // compilation, not arbitrary eval(), so it stays far tighter than the
   // 'unsafe-eval' that dev's HMR needs.
   `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''}${googleAuthOrigin ? ` ${googleAuthOrigin}` : ''} ${turnstileOrigin} ${umamiOrigin} ${vercelAnalyticsOrigin}`,
-  "style-src 'self' 'unsafe-inline'",
+  // Google Identity Services styles its One Tap prompt from this stylesheet.
+  `style-src 'self' 'unsafe-inline'${googleAuthOrigin ? ` ${googleAuthOrigin}/gsi/style` : ''}`,
   // Video clip verification loads the uploaded file into a <video> element via a
   // blob: URL to sample frames for OCR (src/lib/transcription/video-frames.ts).
   // The file never leaves the browser, so only 'self' and blob: are needed.
