@@ -1,8 +1,13 @@
 {
+  "regions": ["fra1"],
   "crons": [
     {
       "path": "/api/cron/content-opportunities",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/provider-health",
+      "schedule": "0 6 * * *"
     }
   ]
 }

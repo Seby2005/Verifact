@@ -317,17 +317,12 @@ describe('Cron Content Opportunities Route Handler', () => {
     expect(data.success).toBe(true);
   });
 
-  it('accepts requests with valid ?secret= query parameter', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      text: async () => MOCK_GOOGLE_TRENDS_XML,
-    } as Response);
-
+  it('rejects requests with ?secret= query parameter to prevent secret leaks in logs', async () => {
     const request = new Request('http://localhost:3000/api/cron/content-opportunities?secret=test_secret_123');
     const response = await GET(request);
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(401);
     const data = await response.json();
-    expect(data.success).toBe(true);
+    expect(data.error).toMatch(/Unauthorized/);
   });
 });

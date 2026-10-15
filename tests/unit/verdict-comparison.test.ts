@@ -6,8 +6,8 @@ describe('Claim Verification & Scoring Equivalence Check', () => {
       claim: 'România a aderat la Uniunea Europeană în 2007 (Factual True)',
       layers: {
         layer1: { status: 'success' as const, layerScore: 0.95, results: [{}, {}, {}] },
-        layer2: { status: 'success' as const, layerScore: 0.90, results: [{}, {}, {}, {}] },
-        layer3: { status: 'success' as const, layerScore: 0.95, results: [{}, {}] },
+        layer2: { status: 'success' as const, layerScore: 0.90, results: [{ sentiment: 'confirms' }, { sentiment: 'confirms' }, { sentiment: 'confirms' }, { sentiment: 'confirms' }] },
+        layer3: { status: 'success' as const, layerScore: 0.95, results: [{ supportsOrDenies: 'supports' }, { supportsOrDenies: 'supports' }] },
         layer4: { status: 'skipped' as const, layerScore: 0.5, results: [] },
         ai: { score: 95, confidence: 0.95 },
       },
@@ -18,8 +18,8 @@ describe('Claim Verification & Scoring Equivalence Check', () => {
       claim: 'Vaccinurile ARNm conțin microcipuri pentru controlul populației (Debunked False)',
       layers: {
         layer1: { status: 'success' as const, layerScore: 0.05, results: [{}, {}, {}, {}] },
-        layer2: { status: 'success' as const, layerScore: 0.10, results: [{}, {}, {}] },
-        layer3: { status: 'success' as const, layerScore: 0.10, results: [{}] },
+        layer2: { status: 'success' as const, layerScore: 0.10, results: [{ sentiment: 'confirms' }, { sentiment: 'confirms' }, { sentiment: 'confirms' }] },
+        layer3: { status: 'success' as const, layerScore: 0.10, results: [{ supportsOrDenies: 'supports' }] },
         layer4: { status: 'skipped' as const, layerScore: 0.5, results: [] },
         ai: { score: 5, confidence: 0.98 },
       },

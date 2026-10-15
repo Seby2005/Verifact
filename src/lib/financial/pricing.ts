@@ -13,6 +13,16 @@ export const USD_TO_RON_RATE = 4.577;
 
 export const STANDARD_PRO_PRICE_EUR = 3.99;
 
+/**
+ * List price of a Business contract. Business is sold by email rather than
+ * self-serve (the pricing page shows "Contact"), so no checkout ever records
+ * this number — the financial dashboard needs it to value the tier. Valuing a
+ * Business account at the Pro price under-reports its MRR roughly 12x, so the
+ * two prices are kept apart. Override with BUSINESS_PRICE_EUR when the signed
+ * contracts differ from the list price.
+ */
+export const STANDARD_BUSINESS_PRICE_EUR = Number(process.env.BUSINESS_PRICE_EUR) || 49;
+
 export const DEFAULT_MODEL_PRICING: Record<string, ModelPricing> = {
   // Google Gemini Direct Models
   'gemini-2.0-flash': {
@@ -67,6 +77,23 @@ export const DEFAULT_MODEL_PRICING: Record<string, ModelPricing> = {
   'google/gemini-2.0-pro-exp-02-05:free': {
     pricePerMillionInputTokens: 0.0,
     pricePerMillionOutputTokens: 0.0,
+    currency: 'USD',
+  },
+
+  // OpenRouter — current verification chain (see src/lib/ai/models.ts), Oct 2026 list prices
+  'openai/gpt-5.6-luna': {
+    pricePerMillionInputTokens: 0.20,
+    pricePerMillionOutputTokens: 1.20,
+    currency: 'USD',
+  },
+  'anthropic/claude-haiku-5.5': {
+    pricePerMillionInputTokens: 0.10,
+    pricePerMillionOutputTokens: 0.50,
+    currency: 'USD',
+  },
+  'deepseek/deepseek-v4.1-flash': {
+    pricePerMillionInputTokens: 0.30,
+    pricePerMillionOutputTokens: 1.20,
     currency: 'USD',
   },
 

@@ -26,15 +26,17 @@ describe('runLayer4', () => {
   afterEach(() => {
     global.fetch = originalFetch;
     delete process.env.TWITTER_BEARER_TOKEN;
-    delete process.env.TAVILY_API_KEY;
   });
 
-  it('returns success with an empty result set when neither provider is configured', async () => {
+  it('reports itself skipped, without searching, when no social provider is configured', async () => {
+    global.fetch = jest.fn();
+
     const result = await runLayer4('Klaus Iohannis a declarat ceva', 'ro');
 
-    expect(result.status).toBe('success');
+    expect(result.status).toBe('skipped');
     expect(result.results).toEqual([]);
     expect(result.layerScore).toBe(0.5);
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('finds a post via Twitter when configured, and scores an original source highest', async () => {
@@ -56,47 +58,13 @@ describe('runLayer4', () => {
     expect(result.layerScore).toBe(0.7);
   });
 
-  it('falls through to Tavily when the Twitter search fails', async () => {
+  it('reports itself unavailable when the configured provider fails', async () => {
     process.env.TWITTER_BEARER_TOKEN = 'twitter-token';
-    process.env.TAVILY_API_KEY = 'tavily-key';
-
-    global.fetch = jest.fn().mockImplementation((url: string) => {
-      if (url.includes('twitter.com')) {
-        return Promise.resolve(jsonResponse({}, false, 503));
-      }
-      return Promise.resolve(
-        jsonResponse({
-          results: [
-            {
-              title: 'Klaus Iohannis: o declaratie publica',
-              url: 'https://facebook.com/post/1',
-              content: 'Continutul postarii',
-              score: 0.7,
-            },
-          ],
-        })
-      );
-    });
+    global.fetch = jest.fn().mockResolvedValue(jsonResponse({}, false, 503));
 
     const result = await runLayer4('Klaus Iohannis a declarat ceva', 'ro');
 
-    expect(result.status).toBe('success');
-    expect(result.results.length).toBeGreaterThanOrEqual(1);
-    expect(result.results[0].platform).toBe('facebook');
-  });
-
-  it('handles invalid search response gracefully returning empty results', async () => {
-    process.env.TAVILY_API_KEY = 'tavily-key';
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      json: () => Promise.reject(new Error('invalid json')),
-    });
-
-    const result = await runLayer4('Klaus Iohannis a declarat ceva', 'ro');
-
-    expect(result.status).toBe('success');
+    expect(result.status).toBe('unavailable');
     expect(result.results).toEqual([]);
   });
 });

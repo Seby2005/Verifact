@@ -4,14 +4,16 @@ import {
   generateOpenRouterAnalysis,
   filterRelevantSourcesWithOpenRouter,
   type SourceCandidate,
+  type SourceFilterResult,
 } from './openrouter';
 import { logger } from '@/lib/utils/logger';
 import { normalizeRomanianDiacritics } from '@/lib/utils/romanian-text';
 import type { AIAnalysisContext } from '@/types/verification';
 import type { AIAssessment, AIAnalysisResult } from './gemini';
+import { FALLBACK_MODELS } from './models';
 
 export type { AIAssessment, AIAnalysisResult };
-export type { SourceCandidate };
+export type { SourceCandidate, SourceFilterResult };
 
 type Provider = 'openrouter' | 'gemini';
 
@@ -37,13 +39,13 @@ function resolveProvider(): Provider {
  * equivalent because this step was added while Gemini sat at a zero free-tier
  * quota, and writing a second implementation nothing would call was not worth
  * it. When no OpenRouter key is configured this returns null, which the caller
- * reads as "keep every source" — the pipeline degrades to the keyword filter
- * in verification/relevance.ts rather than failing.
+ * reads as "keep every source, take no side" — the report still lists what the
+ * keyword filter in verification/relevance.ts let through, rather than failing.
  */
 export async function filterRelevantSources(
   claim: string,
   candidates: SourceCandidate[]
-): Promise<string[] | null> {
+): Promise<SourceFilterResult | null> {
   if (!process.env.OPENROUTER_API_KEY) return null;
   return filterRelevantSourcesWithOpenRouter(claim, candidates);
 }
@@ -91,7 +93,7 @@ export async function generateAIAnalysis(context: AIAnalysisContext): Promise<AI
 // the fallback inside OpenRouter (rather than the direct Gemini SDK, which needs
 // its own often-misconfigured key) is why a slow primary no longer strands the
 // report without an AI section.
-const OPENROUTER_FALLBACK_MODEL = 'deepseek/deepseek-chat';
+const OPENROUTER_FALLBACK_MODEL = FALLBACK_MODELS[0];
 
 async function requestAnalysis(context: AIAnalysisContext): Promise<AIAnalysisResult> {
   const provider = resolveProvider();

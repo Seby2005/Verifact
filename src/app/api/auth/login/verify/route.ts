@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
+import { getClientIp } from '@/lib/utils/client-ip';
 
 interface LoginVerifyBody {
   email?: unknown;
@@ -29,10 +30,7 @@ export async function POST(request: Request): Promise<Response> {
   const email = b.email.trim();
   const token = b.token.trim();
 
-  const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
-    request.headers.get('x-real-ip') ??
-    'unknown';
+  const ip = getClientIp(request);
 
   // Tighter than login-start: a 6-digit code is only ~1M combinations, so
   // this endpoint is the actual brute-force surface.

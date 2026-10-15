@@ -145,7 +145,11 @@ describe('financial/stats', () => {
     expect(metrics.subscribers.proCount).toBe(2);
     expect(metrics.subscribers.businessCount).toBe(1);
     expect(metrics.subscribers.totalActivePremium).toBe(3);
-    expect(metrics.subscribers.currentMrrEur).toBeCloseTo(3 * 3.99, 2);
+    // Each tier is valued at its own price — Business must not be counted at
+    // the Pro price, which under-reported MRR ~12x per Business account.
+    expect(metrics.subscribers.proMrrEur).toBeCloseTo(2 * 3.99, 2);
+    expect(metrics.subscribers.businessMrrEur).toBeCloseTo(1 * 49, 2);
+    expect(metrics.subscribers.currentMrrEur).toBeCloseTo(2 * 3.99 + 49, 2);
 
     // Fixed costs: 20 USD (~18.4 EUR) + 1 EUR = ~19.4 EUR
     expect(metrics.fixedCosts.totalMonthlyEur).toBeCloseTo(19.4, 1);

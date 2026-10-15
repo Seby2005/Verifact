@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/supabase/auth-helpers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
+import { getClientIp } from '@/lib/utils/client-ip';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // 1. Rate limiting check (max 5 delete attempts per hour per user)
-    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
+    const clientIp = getClientIp(req);
     const rateCheck = await checkRateLimit(`delete-account:${user.id || clientIp}`, 5, 60 * 60 * 1000);
 
     if (!rateCheck.success) {

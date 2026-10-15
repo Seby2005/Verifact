@@ -7,7 +7,33 @@ jest.mock('@/lib/utils/circuit-breaker', () => ({
   withCircuitBreaker: (_name: string, fn: () => Promise<unknown>) => fn(),
 }));
 
+jest.mock('@/lib/verification/news-rss', () => ({
+  searchGoogleNews: jest.fn(),
+}));
+
+// The archive has its own tests; here it finds nothing unless a test says otherwise.
+jest.mock('@/lib/factcheck-archive', () => ({
+  searchFactCheckArchive: jest.fn(() => []),
+}));
+
 import { runLayer1, buildFactCheckQuery } from '@/lib/verification/layer1-factcheck';
+import { searchGoogleNews } from '@/lib/verification/news-rss';
+import { searchFactCheckArchive } from '@/lib/factcheck-archive';
+import type { ExpandedQueries } from '@/lib/verification/query-expander';
+
+const googleNews = searchGoogleNews as jest.Mock;
+const archive = searchFactCheckArchive as jest.Mock;
+
+const QUERIES: ExpandedQueries = {
+  primary: 'x',
+  romanianQuery: 'România arme nucleare SUA',
+  englishQuery: 'Romania US nuclear weapons',
+  keywords: [],
+  namedEntities: [],
+  factCheckAngle: 'România arme nucleare fact check',
+  officialAngle: '',
+  contextOriginAngle: '',
+};
 
 function jsonResponse(body: unknown, ok = true, status = 200) {
   return {
@@ -30,6 +56,163 @@ describe('runLayer1', () => {
 
   beforeEach(() => {
     process.env.GOOGLE_FACT_CHECK_API_KEY = 'test-key';
+    googleNews.mockReset().mockResolvedValue([]);
+    archive.mockReset().mockReturnValue([]);
+  });
+
+  const newsItem = (title: string, path: string) => ({
+    title,
+    url: `https://news.google.com/rss/articles/${path}`,
+    sourceName: 'EUvsDisinfo',
+    sourceDomain: 'euvsdisinfo.eu',
+    publishedAt: '2023-04-13T07:00:00.000Z',
+    snippet: title,
+  });
+
+  it('adds EUvsDisinfo cases as fact-checks rated disinformation, skipping pages that are not cases', async () => {
+    global.fetch = jest.fn().mockResolvedValue(jsonResponse({ claims: [] }));
+    googleNews.mockResolvedValue([
+      newsItem('DISINFO: Romania prepares to deploy US nuclear weapons on its territory', 'case-1'),
+      newsItem('How to justify crimes against humanity: the Kremlin method', 'analysis-1'),
+    ]);
+
+    const result = await runLayer1('România se pregătește să amplaseze arme nucleare americane', 'ro', QUERIES);
+
+    expect(googleNews).toHaveBeenCalledWith('Romania US nuclear weapons', 'en', ['euvsdisinfo.eu']);
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0]).toMatchObject({
+      publisher: 'EUvsDisinfo',
+      claimReviewed: 'Romania prepares to deploy US nuclear weapons on its territory',
+      rating: 'Disinformation',
+      ratingValue: 0,
+      publisherUrl: 'https://euvsdisinfo.eu',
+    });
+  });
+
+  it('adds Veridica narratives published since the archive was built, skipping its news pages', async () => {
+    global.fetch = jest.fn().mockResolvedValue(jsonResponse({ claims: [] }));
+    googleNews.mockImplementation((_query: string, _lang: string, sites: string[]) =>
+      Promise.resolve(
+        sites[0] === 'veridica.ro'
+          ? [
+              newsItem('FAKE NEWS: SUA bagă România în război cu Iranul', 'veridica-1'),
+              newsItem('PROPAGANDĂ DE RĂZBOI: Ucraina este un pseudo-stat', 'veridica-2'),
+              newsItem('Trump sugerează că Ucraina are nevoie de un nou președinte', 'veridica-news'),
+            ]
+          : []
+      )
+    );
+
+    const result = await runLayer1('SUA baga Romania in razboi', 'ro', QUERIES);
+
+    expect(googleNews).toHaveBeenCalledWith('România arme nucleare SUA', 'ro', ['veridica.ro']);
+    expect(result.results.map((r) => r.claimReviewed)).toEqual([
+      'SUA bagă România în război cu Iranul',
+      'Ucraina este un pseudo-stat',
+    ]);
+    expect(result.results[0]).toMatchObject({ publisher: 'Veridica', ratingValue: 0, publisherUrl: 'https://veridica.ro' });
+  });
+
+  it('adds matches from the archive of Romanian fact-checks, with the publisher verdict on the common scale', async () => {
+    global.fetch = jest.fn().mockResolvedValue(jsonResponse({ claims: [] }));
+    archive.mockImplementation((query: string) =>
+      query === 'avioanele ne otravesc cu chemtrails'
+        ? [
+            {
+              claim: 'Avioanele ne otrăvesc cu „chemtrails”',
+              rating: 'FALS',
+              publisher: 'Factual.ro',
+              publisherUrl: 'https://factual.ro',
+              url: 'https://www.factual.ro/dezinformari-rs/fals-chemtrails/',
+              date: '2025-03-01',
+              relevance: 0.97,
+            },
+            {
+              claim: 'O narațiune documentată ca propagandă',
+              rating: 'PROPAGANDĂ DE RĂZBOI',
+              publisher: 'Veridica',
+              publisherUrl: 'https://veridica.ro',
+              url: 'https://www.veridica.ro/x',
+              date: '2024-01-01',
+              relevance: 0.4,
+            },
+          ]
+        : []
+    );
+
+    const result = await runLayer1('avioanele ne otravesc cu chemtrails', 'ro', QUERIES);
+
+    expect(result.results).toEqual([
+      {
+        claimReviewed: 'Avioanele ne otrăvesc cu „chemtrails”',
+        rating: 'FALS',
+        ratingValue: 0,
+        publisher: 'Factual.ro',
+        publisherUrl: 'https://factual.ro',
+        reviewUrl: 'https://www.factual.ro/dezinformari-rs/fals-chemtrails/',
+        reviewDate: '2025-03-01',
+        relevanceScore: 0.97,
+      },
+      expect.objectContaining({ publisher: 'Veridica', rating: 'PROPAGANDĂ DE RĂZBOI', ratingValue: 0.05 }),
+    ]);
+  });
+
+  it('keeps one copy of a review that the live index and the archive both return', async () => {
+    const review = {
+      text: 'România ar fi dat Ucrainei energie gratis',
+      claimReview: [{ publisher: { name: 'Factual.ro', site: 'factual.ro' }, url: 'https://www.factual.ro/a/', textualRating: 'FALS' }],
+    };
+    global.fetch = jest.fn().mockResolvedValue(jsonResponse({ claims: [review] }));
+    archive.mockReturnValue([
+      {
+        claim: 'România ar fi dat Ucrainei energie gratis',
+        rating: 'FALS',
+        publisher: 'Factual.ro',
+        publisherUrl: 'https://factual.ro',
+        url: 'https://www.factual.ro/a',
+        date: '2026-01-01',
+        relevance: 1,
+      },
+    ]);
+
+    const result = await runLayer1('România ar fi dat Ucrainei energie gratis', 'ro', QUERIES);
+
+    expect(result.results).toHaveLength(1);
+  });
+
+  it('carries on without EUvsDisinfo when its search fails', async () => {
+    global.fetch = jest.fn().mockResolvedValue(jsonResponse({ claims: [] }));
+    googleNews.mockRejectedValue(new Error('google-news HTTP 429'));
+
+    const result = await runLayer1('Orice afirmatie', 'ro', QUERIES);
+
+    expect(result.status).toBe('success');
+    expect(result.results).toEqual([]);
+  });
+
+  it('stays unavailable when the fact-check index is down, even if EUvsDisinfo answered', async () => {
+    global.fetch = jest.fn().mockResolvedValue(jsonResponse({}, false, 500));
+    googleNews.mockResolvedValue([newsItem('DISINFO: something else entirely', 'case-2')]);
+
+    const result = await runLayer1('Orice afirmatie', 'ro', QUERIES);
+
+    expect(result.status).toBe('unavailable');
+  });
+
+  it('searches each query in its own language, whatever language the interface is in', async () => {
+    global.fetch = jest.fn().mockResolvedValue(jsonResponse({ claims: [] }));
+
+    await runLayer1('Romania prepares to deploy US nuclear weapons', 'en', QUERIES);
+
+    const searched = (global.fetch as jest.Mock).mock.calls.map(([url]) => {
+      const params = new URL(String(url)).searchParams;
+      return `${params.get('query')} [${params.get('languageCode')}]`;
+    });
+    expect(searched).toEqual([
+      'România arme nucleare SUA [ro]',
+      'Romania US nuclear weapons [en]',
+      'România arme nucleare fact check [ro]',
+    ]);
   });
 
   afterEach(() => {
@@ -76,15 +259,16 @@ describe('runLayer1', () => {
     expect(result.layerScore).toBe(0.5);
   });
 
-  it('handles fetch errors gracefully returning empty results', async () => {
+  it('reports itself unavailable when the fact-check API fails, rather than finding nothing', async () => {
     global.fetch = jest.fn().mockResolvedValue(jsonResponse({}, false, 500));
 
     const result = await runLayer1('Orice afirmatie', 'ro');
-    expect(result.status).toBe('success');
+    expect(result.status).toBe('unavailable');
     expect(result.results).toEqual([]);
+    expect(result.error).toContain('google-fact-check');
   });
 
-  it('deduplicates results by review URL', async () => {
+  it('deduplicates the same review returned by several searches', async () => {
     let callCount = 0;
     global.fetch = jest.fn().mockImplementation(() => {
       callCount += 1;

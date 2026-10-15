@@ -15,6 +15,10 @@ const PROVIDER_KEYS = [
   'GEMINI_API_KEY',
   'TAVILY_API_KEY',
   'NEWS_API_KEY',
+  // Same story for the service-role key: with it set, public-reports switches
+  // to the admin client and saveVerification writes to the news index, both
+  // against the placeholder Supabase host instead of the test's mock.
+  'SUPABASE_SERVICE_ROLE_KEY',
 ];
 
 for (const key of PROVIDER_KEYS) {

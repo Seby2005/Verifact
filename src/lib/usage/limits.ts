@@ -1,4 +1,5 @@
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/auth/admin-emails';
 import { logger } from '@/lib/utils/logger';
 import { TIER_CONFIG } from '@/types/user';
 import type { UsageLimitCheck, UserTier } from '@/types/user';
@@ -17,23 +18,7 @@ interface ProfileRecord {
  * rule can never drift between the two.
  */
 export function hasUnlimitedUsage(role?: string | null, email?: string | null): boolean {
-  if (role === 'admin') return true;
-  if (email) {
-    const norm = email.trim().toLowerCase();
-    if (norm === 'sebi.iancu23@gmail.com') return true;
-    if (process.env.ADMIN_EMAILS) {
-      const adminEmails = process.env.ADMIN_EMAILS.split(',').map((e) => e.trim().toLowerCase());
-      if (adminEmails.includes(norm)) return true;
-    }
-  }
-  return false;
-}
-
-function getFirstOfNextMonth(): string {
-  const date = new Date();
-  return new Date(date.getFullYear(), date.getMonth() + 1, 1)
-    .toISOString()
-    .split('T')[0];
+  return role === 'admin' || isAdminEmail(email);
 }
 
 export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> {
@@ -85,15 +70,11 @@ export async function checkUsageLimit(userId: string): Promise<UsageLimitCheck> 
   const resetDate = profile.verifications_reset || today;
   let currentCount = profile.verifications_count || 0;
 
+  // Read-only: on month rollover the enforcement path (reserve_usage_slot)
+  // performs the actual reset on its next write. Reflect it in the displayed
+  // count without persisting — writing here raced that RPC and reset the
+  // enforced counter from a mere page view (a free-cap bypass).
   if (resetDate && today > resetDate) {
-    const firstOfNextMonth = getFirstOfNextMonth();
-    await supabase
-      .from('profiles')
-      .update({
-        verifications_count: 0,
-        verifications_reset: firstOfNextMonth,
-      } as never)
-      .eq('id', userId);
     currentCount = 0;
   }
 

@@ -7,7 +7,6 @@ import { Button, Modal, Callout } from '@/components/ui';
 import { useLanguage } from '@/i18n';
 import type { VerificationReport } from '@/types/verification';
 import { createClient } from '@/lib/supabase/client';
-import { isScoreDecisive } from '@/lib/verification/public-reports';
 
 export interface PublishReportButtonProps {
   report: VerificationReport;
@@ -41,7 +40,6 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
     return null;
   }
 
-  const score = report.score;
   const isAlreadyPublic = report.isPublic || report.visibilityStatus === 'public';
   const isScreenshot = report.inputType === 'screenshot' || (report as unknown as Record<string, unknown>).input_type === 'screenshot';
 
@@ -69,7 +67,7 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
       if (!res.ok || !data.success) {
         setResult({
           success: false,
-          error: data.error || 'A apărut o eroare la publicarea raportului.',
+          error: data.error || t('reportView.errorPublish'),
         });
       } else {
         setResult({
@@ -83,7 +81,7 @@ export const PublishReportButton: React.FC<PublishReportButtonProps> = ({ report
     } catch {
       setResult({
         success: false,
-        error: 'A apărut o eroare de rețea. Te rugăm să reîncerci.',
+        error: t('reportView.errorPublishNetwork'),
       });
     } finally {
       setIsSubmitting(false);

@@ -3,6 +3,7 @@ import { withCircuitBreaker } from '@/lib/utils/circuit-breaker';
 import { fetchWithRetry } from '@/lib/utils/retry';
 import { normalizeRomanianDiacritics, stripMarkdown } from '@/lib/utils/romanian-text';
 import type { VerificationReport } from '@/types/verification';
+import { PRIMARY_MODEL, NO_REASONING } from './models';
 
 /**
  * Pro-only interactive analysis of a finished verification report. Where the
@@ -44,8 +45,9 @@ export interface DeepDiveContext {
   locale: 'ro' | 'en' | 'fr';
 }
 
-const MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat';
+const MODEL = PRIMARY_MODEL;
 const MAX_SOURCES_IN_PROMPT = 12;
+const MAX_ORIGINAL_CHARS = 1500;
 /**
  * The model must not produce URLs at all; anything not in the report is
  * stripped. Dots are part of a URL (domains), so trailing punctuation is
@@ -114,6 +116,10 @@ function buildPrompt(ctx: DeepDiveContext): string {
 
   const claim = report.verifiedClaim ?? report.claim ?? report.inputText ?? '';
   const commentary = report.posterCommentary?.trim();
+  // The framing a post uses (capitals, urgency, "share before it's deleted")
+  // lives in what was submitted, not in the clean claim extracted from it.
+  const submitted = (report.inputText ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_ORIGINAL_CHARS);
+  const original = submitted && submitted !== claim.trim() ? submitted : '';
   const verdictLabel: Record<VerificationReport['verdict'], string> = {
     true: isRo ? 'Probabil adevărat' : isFr ? 'Probablement vrai' : 'Likely true',
     false: isRo ? 'Probabil fals' : isFr ? 'Probablement faux' : 'Likely false',
@@ -148,7 +154,7 @@ function buildPrompt(ctx: DeepDiveContext): string {
 
 AFIRMAȚIA VERIFICATĂ:
 "${claim}"
-
+${original ? `\nTEXTUL TRIMIS SPRE VERIFICARE, AȘA CUM A FOST PRIMIT (din el a fost extrasă afirmația):\n"${original}"\n` : ''}
 VERDICT: ${verdictLabel[report.verdict]} — scor ${report.score}/100, încredere ${report.confidenceLevel}
 ${commentary ? `COMENTARIUL CELUI CARE A DISTRIBUIT (opinie separată de afirmația factuală): "${commentary}"\n` : ''}
 REZUMATUL EXECUTIV AL RAPORTULUI:
@@ -197,10 +203,10 @@ function buildActionInstruction(
         : 'Present the strongest alternative perspectives or counter-evidence regarding this claim. For each one, indicate how well it is supported by the cited sources (or how weakly). Do not change the report\'s verdict — the goal is to lay out opposing arguments fairly, not to dismiss them superficially.';
     case 'manipulation_techniques':
       return isRo
-        ? 'Analizează afirmația, postarea originală și felul în care este prezentată pentru tehnici de manipulare sau propagandă: titlu senzaționalist (clickbait), apel la emoție, cherry-picking, scoțare din context, ad hominem, autoritate falsă, generalizare excesivă, falsă echilibristică etc. Enumeră tehnicile care chiar se aplică, cu o propoziție fiecare despre cum se manifestă în acest caz concret. Dacă nicio tehnică nu se aplică, spune-o explicit.'
+        ? 'Analizează afirmația, postarea originală și felul în care este prezentată pentru tehnici de manipulare sau propagandă: titlu senzaționalist (clickbait), apel la emoție, cherry-picking, scoțare din context, ad hominem, autoritate falsă, generalizare excesivă, falsă echilibristică etc. Enumeră tehnicile care chiar se aplică, cu o propoziție fiecare despre cum se manifestă în acest caz concret. Dacă nicio tehnică nu se aplică, spune-o explicit. Analizează numai textul trimis spre verificare, nu articolele-sursă: nu atribui celui care a distribuit tehnici pe care le folosește o sursă citată. Dacă a fost trimisă doar o afirmație scurtă, fără postare sau titlu, spune că nu există material de prezentare de analizat și limitează-te la formularea afirmației.'
         : isFr
-        ? 'Analysez l’affirmation, la publication d’origine et son cadrage pour identifier d’éventuelles techniques de manipulation ou de propagande : sensationnalisme (clickbait), appel à l’émotion, sélection biaisée (cherry-picking), déscontextualisation, faux dilemme, etc. Détaillez uniquement les procédés effectivement observés avec un exemple précis. Si aucune technique ne s’applique, mentionnez-le clairement.'
-        : 'Analyze the claim, the original post, and how it is presented for manipulation or propaganda techniques: sensationalist/clickbait headline, appeal to emotion, cherry-picking, out-of-context framing, ad hominem, false authority, overgeneralization, false balance, etc. List the techniques that actually apply, with one sentence each on how they manifest in this specific case. If no technique applies, say so explicitly.';
+        ? 'Analysez l’affirmation, la publication d’origine et son cadrage pour identifier d’éventuelles techniques de manipulation ou de propagande : sensationnalisme (clickbait), appel à l’émotion, sélection biaisée (cherry-picking), déscontextualisation, faux dilemme, etc. Détaillez uniquement les procédés effectivement observés avec un exemple précis. Si aucune technique ne s’applique, mentionnez-le clairement. N’analysez que le texte soumis à la vérification, pas les articles-sources : n’attribuez pas à l’auteur du partage des procédés employés par une source citée. Si seule une courte affirmation a été soumise, sans publication ni titre, indiquez qu’il n’y a pas de cadrage à analyser et limitez-vous à la formulation de l’affirmation.'
+        : 'Analyze the claim, the original post, and how it is presented for manipulation or propaganda techniques: sensationalist/clickbait headline, appeal to emotion, cherry-picking, out-of-context framing, ad hominem, false authority, overgeneralization, false balance, etc. List the techniques that actually apply, with one sentence each on how they manifest in this specific case. If no technique applies, say so explicitly. Analyze only the text submitted for verification, not the source articles: do not attribute to the sharer techniques that a cited source uses. If only a short claim was submitted, with no post or headline, say there is no framing to analyze and keep to the wording of the claim.';
     case 'custom_question':
     default: {
       const q = (customQuestion ?? '').trim();
@@ -246,15 +252,18 @@ export async function generateDeepDiveAnswer(ctx: DeepDiveContext): Promise<Deep
           'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://verifact.ro',
           'X-Title': 'Verifact Deep Dive',
         },
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(25000),
         body: JSON.stringify({
           model: MODEL,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.2,
           max_tokens: 1200,
+          ...NO_REASONING,
         }),
       }),
-      { label: 'Deep dive analysis' }
+      // Two tries of 25s fit the route's 60s limit; a third would outlive it
+      // and the reader would get a platform timeout instead of our error.
+      { label: 'Deep dive analysis', attempts: 2 }
     ).then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json() as Promise<{ choices?: Array<{ message?: { content?: string } }> }>;
@@ -267,7 +276,12 @@ export async function generateDeepDiveAnswer(ctx: DeepDiveContext): Promise<Deep
   }
 
   const knownUrls = collectKnownUrls(ctx.report);
-  const sanitized = stripMarkdown(raw)
+  // Not stripMarkdown: it flattens the text to one line, and the answer's
+  // paragraphs and "-" lists (which the prompt asks for) live in its line breaks.
+  const sanitized = raw
+    .replace(/^[ \t]*#+[ \t]*/gm, '')
+    .replace(/^[ \t]*[*•][ \t]+/gm, '- ')
+    .replace(/\*{1,3}/g, '')
     .replace(URL_PATTERN, (url) => {
       const candidate = url.replace(/[.,;:!?]+$/, '');
       return knownUrls.has(candidate) ? candidate : '';

@@ -43,6 +43,12 @@
 .unclear { --vc: var(--verdict-unclear); }
 .false { --vc: var(--verdict-false); }
 
+.corroborated { --vc: var(--verdict-true); }
+.contradicted { --vc: var(--verdict-false); }
+.missing_context { --vc: var(--verdict-partial); }
+.unverified_no_sources { --vc: var(--verdict-unclear); }
+.open_debate { --vc: var(--color-blue-600, #2563eb); }
+
 /* The claim yields first: it is the least important of the three. */
 .claim {
   font-family: var(--font-family-serif);

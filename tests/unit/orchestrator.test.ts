@@ -16,6 +16,10 @@ jest.mock('@/lib/ai/gemini', () => ({
   generateAIAnalysis: mockGenerateAIAnalysis,
 }));
 jest.mock('@/lib/verification/cache', () => ({ getCached: mockGetCached, setCached: mockSetCached }));
+// The source filter has its own tests; here the layers reach scoring as the mocks return them.
+jest.mock('@/lib/verification/ai-source-filter', () => ({ applyAISourceFilter: async (layers: unknown) => layers }));
+// Reading the cited pages is network I/O with its own tests.
+jest.mock('@/lib/verification/source-passage', () => ({ findSourcePassages: async () => new Map() }));
 
 import { verifyContent } from '@/lib/verification/orchestrator';
 import type { Layer1Result, Layer2Result, Layer3Result, Layer4Result, VerificationInput } from '@/types/verification';

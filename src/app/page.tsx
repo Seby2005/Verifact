@@ -7,7 +7,15 @@ import { Reveal } from '@/components/ui';
 import { VerifyTool } from '@/components/verify';
 import { useLanguage } from '@/i18n';
 import { Logo } from '@/components/layout/Logo';
+import { JsonLd } from '@/components/JsonLd';
 import styles from './page.module.css';
+
+// Substantive, crawlable copy the tool-first hero deliberately omits. Kept low
+// on the page so it never competes with the input box, but present in the HTML
+// so search engines and AI assistants can read what Verifact is. The questions
+// live in the i18n dictionary (home.faq) and are mirrored into FAQPage
+// structured data inside the component so the markup always matches what shows.
+const FAQ_KEYS = [1, 2, 3, 4, 5] as const;
 
 const AnimatedDemo = dynamic(
   () => import('@/components/verify/AnimatedDemo').then((mod) => mod.AnimatedDemo),
@@ -56,6 +64,25 @@ function heroFrames(order: number[]): React.ReactNode {
  */
 export default function HomePage() {
   const { t, locale } = useLanguage();
+
+  // FAQ text comes from the dictionary so it follows the language switch, and
+  // the FAQPage schema is built from the same strings so markup matches copy.
+  const faq = useMemo(
+    () => FAQ_KEYS.map((n) => ({ q: t(`home.faq.q${n}`), a: t(`home.faq.a${n}`) })),
+    [t]
+  );
+  const faqSchema = useMemo(
+    () => ({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faq.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    }),
+    [faq]
+  );
 
   // Curated evergreen claims shown instantly; upgraded to live trending
   // Romanian claims once /api/trending-examples responds (falls back to these).
@@ -152,6 +179,29 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Substance for readers who scroll and for crawlers: what Verifact is,
+          in prose, plus the questions people actually ask. Kept below the tool. */}
+      <section className={`container-narrow ${styles.faq}`}>
+        <JsonLd data={faqSchema} />
+        <Reveal>
+          <h2 className={styles.faqTitle}>{t('home.faq.title')}</h2>
+          <p className={styles.faqIntro}>{t('home.faq.intro')}</p>
+        </Reveal>
+
+        <Reveal delay={80}>
+          <ul className={styles.faqList}>
+            {faq.map((item) => (
+              <li key={item.q}>
+                <details className={styles.faqItem}>
+                  <summary className={styles.faqQ}>{item.q}</summary>
+                  <p className={styles.faqA}>{item.a}</p>
+                </details>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+      </section>
+
       {/* The promise, in one line — signed off with the mark. */}
       <section className={`container-narrow ${styles.trust}`}>
         <Reveal>
@@ -159,7 +209,7 @@ export default function HomePage() {
           <Logo className={styles.trustMark} />
           <p className={styles.trustLinks}>
             <Link href="/resurse" className={styles.textLink}>
-              Resurse & Glosar
+              {t('home.trust.resourcesLink')}
             </Link>
             <span className={styles.trustDot}>·</span>
             <Link href="/transparenta" className={styles.textLink}>

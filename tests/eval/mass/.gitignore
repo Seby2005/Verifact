@@ -1,0 +1,3 @@
+# Benchmark run logs and scratch scripts; the .jsonl results and .md summaries are kept.
+*.log
+tmp/

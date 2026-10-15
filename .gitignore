@@ -179,3 +179,56 @@ graphify-out/
 # Claude Code local worktrees
 .claude/worktrees/
 .freebuff/
+.continue/
+skills-lock.json
+
+# Marketing assets, video scripts & TikTok strategies (internal only, not for GitHub)
+public/marketing/
+scripts/marketing/
+docs/marketing/
+TIKTOK_VIRAL_STRATEGY.md
+
+# Preview artifacts
+public/editorial_landing_preview.jpg
+public/redesign-preview.html
+
+# Internal workspace & temporary deliverables
+.workbuddy-ai/
+deliverables/
+
+# Personal / academic documents
+*.docx
+Referat_Laborator_*
+
+# Large ML models & runtime binaries (downloaded dynamically or served via CDN)
+public/models/
+public/ort/
+
+# Sentry & GlitchTip config files
+sentry.*.config.ts
+.env.sentry-build-plugin
+
+# Internal docs & companion projects (not part of the core verification web engine)
+DESIGN.md
+CLAUDE.md
+CLAUDE-SECURITY-*
+docs/ANALIZA_ECONOMICA.md
+docs/CREEM_INTEGRATION.md
+docs/DISASTER_RECOVERY.md
+docs/RECAPITULARI_LUNARE.md
+docs/REDESIGN_AGENT_BRIEF.md
+docs/REORG_LOG.md
+docs/guides/
+docs/sales/
+docs/tools/
+mobile/
+extension/
+
+# Self-hosted container stack (not used)
+docker-compose.yml
+docker/
+services/
+workflows/
+# ...but not GitHub Actions, which the rule above would also swallow.
+!.github/workflows/
+

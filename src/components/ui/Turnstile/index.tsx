@@ -58,7 +58,7 @@ export const Turnstile = forwardRef<TurnstileRef, TurnstileProps>(
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [, setIsLoaded] = useState(false);
 
     const siteKey = propSiteKey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 

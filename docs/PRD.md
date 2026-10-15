@@ -222,12 +222,15 @@ editorială finală. Consultați sursele citate pentru context complet.
 - Google OAuth (recomandat — un click)
 - GitHub OAuth (util pentru utilizatori tech)
 
-**Tier-uri:**
+**Tier-uri** (sursa unică de adevăr pentru limite: `TIER_CONFIG` în `src/types/user.ts`; pentru prețuri: `src/lib/financial/pricing.ts` și `/preturi`):
+
 | Tier | Preț | Verificări/lună | Features |
 |---|---|---|---|
-| **Free** | Gratuit | 10 | Raport standard, partajare publică |
-| **Pro** | €7.99/lună | 200 | Raport detaliat + export PDF, API key personal |
-| **Business** | €49/lună | 2000 | API acces, webhook, dashboard analytics |
+| **Free** | Gratuit | 3 | Raport standard, partajare publică |
+| **Pro** | €3.99/lună (€2.99/lună la plata anuală, €35.90/an) | 35 (avertisment la 30) | Raport detaliat + export PDF, Deep-Dive AI, API key personal |
+| **Business** | €49/lună, vândut prin email (pagina publică afișează „Contact") | Volum negociat (implicit 1000) | API acces, webhook, dashboard analytics |
+
+> Numerele Pro (35 / 30) sunt interne: în produs planul se comunică drept „de peste 10× mai multe verificări ca Free", niciodată ca cifră.
 
 #### F6 — Dashboard Utilizator
 
@@ -320,12 +323,12 @@ editorială finală. Consultați sursele citate pentru context complet.
 
 ### La 6 luni
 - 2,000 utilizatori înregistrați
-- 50 utilizatori Pro (revenue: ~€400/lună)
+- 50 utilizatori Pro (revenue: ~€200/lună la €3.99)
 - Acuratețe algoritm: minim 80% (benchmark față de Snopes/PolitiFact)
 
 ### La 12 luni
 - 10,000 utilizatori înregistrați
-- 200 Pro + 5 Business (revenue: ~€1,850/lună)
+- 200 Pro + 5 Business (revenue: ~€1,043/lună la €3.99 + €49)
 - Parteneriat cu cel puțin 1 publicație media românească
 - Feature în cel puțin 1 articol de presă major
 

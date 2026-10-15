@@ -5,71 +5,14 @@ import { validateTurnstileToken } from '@/lib/security/turnstile';
 import { saveVerification, reserveUsageSlot, releaseUsageSlot } from '@/lib/verification/db-operations';
 import { checkAnonymousLimit } from '@/lib/usage/anonymous-limit';
 import { hasUnlimitedUsage } from '@/lib/usage/limits';
-import type { Language, InputType, VerifyAPIError, VerifyStreamEvent } from '@/types/verification';
-import { extractArticleText, isValidHttpUrl, UrlExtractionError } from '@/lib/verification/url-extract';
+import type { VerifyAPIError, VerifyStreamEvent } from '@/types/verification';
+import { extractArticleText, UrlExtractionError } from '@/lib/verification/url-extract';
+import { validateVerifyInput } from '@/lib/verification/validate-input';
 import { logger } from '@/lib/utils/logger';
-
-const MAX_TEXT_LENGTH = 2000;
-
-// Input validation
-interface ValidatedInput {
-  text: string;
-  language: Language;
-  isPublic: boolean;
-  inputType: InputType;
-}
-
-function validateVerifyInput(body: unknown): { success: true; data: ValidatedInput } | { success: false; error: string } {
-  if (typeof body !== 'object' || body === null) {
-    return { success: false, error: 'Corp cerere invalid' };
-  }
-
-  const b = body as Record<string, unknown>;
-
-  // URL input is validated as a URL; its article text is fetched separately
-  // before this point, so the length rules below do not apply to it.
-  if (b.inputType === 'url') {
-    if (typeof b.text !== 'string' || !isValidHttpUrl(b.text)) {
-      return { success: false, error: 'Link-ul introdus nu este valid.' };
-    }
-    const urlLang: Language = b.language === 'fr' ? 'fr' : b.language === 'en' ? 'en' : 'ro';
-    return {
-      success: true,
-      data: { text: b.text.trim(), language: urlLang, isPublic: Boolean(b.isPublic), inputType: 'url' },
-    };
-  }
-
-  if (typeof b.text !== 'string' || b.text.trim().length < 10) {
-    return { success: false, error: 'Textul trebuie sa aiba minim 10 caractere' };
-  }
-
-  // Long input is truncated rather than rejected: pasting a whole article is a
-  // normal thing to do, and the first 2000 characters carry the claim in
-  // practice. Rejecting it outright just made the tool look broken.
-  const text = b.text.length > MAX_TEXT_LENGTH ? b.text.slice(0, MAX_TEXT_LENGTH) : b.text;
-
-  const validLanguages: Language[] = ['ro', 'en', 'fr', 'unknown'];
-  const language: Language = validLanguages.includes(b.language as Language)
-    ? (b.language as Language)
-    : 'unknown';
-
-  const validInputTypes: InputType[] = ['text', 'screenshot', 'url'];
-  const inputType: InputType = validInputTypes.includes(b.inputType as InputType)
-    ? (b.inputType as InputType)
-    : 'text';
-
-  return {
-    success: true,
-    data: {
-      text: text.trim(),
-      language,
-      isPublic: Boolean(b.isPublic),
-      inputType,
-    },
-  };
-}
+import { getClientIp } from '@/lib/utils/client-ip';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // 60s max execution time for Vercel serverless function
 
 export async function POST(request: Request): Promise<Response> {
   // 1. Parse and validate input
@@ -98,10 +41,7 @@ export async function POST(request: Request): Promise<Response> {
   const { data: validatedInput } = validation;
 
   // 2. Rate limiting per IP (10 req/min)
-  const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
-    request.headers.get('x-real-ip') ??
-    'unknown';
+  const ip = getClientIp(request);
 
   const rateLimitResult = await checkRateLimit(`verify:${ip}`, 10, 60 * 1000);
   if (!rateLimitResult.success) {

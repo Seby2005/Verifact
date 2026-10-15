@@ -31,18 +31,6 @@ export function useBookmarks(userId?: string) {
     }
   }, [storageKey]);
 
-  const saveBookmarks = useCallback(
-    (next: BookmarkedVerification[]) => {
-      setBookmarks(next);
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(next));
-      } catch {
-        // Ignore localStorage write error
-      }
-    },
-    [storageKey]
-  );
-
   const isBookmarked = useCallback(
     (id: string) => bookmarks.some((item) => item.id === id),
     [bookmarks]

@@ -138,4 +138,50 @@ describe('renderReportPdf', () => {
     expect(pdfBuffer.length).toBeGreaterThan(1000);
     expect(pdfBuffer.slice(0, 5).toString('utf8')).toBe('%PDF-');
   });
+
+  it.each([
+    ['true', 'ro'],
+    ['partial', 'en'],
+    ['unclear', 'fr'],
+    ['false', 'ro'],
+  ] as const)('renders the %s verdict in %s', async (verdict, locale) => {
+    const pdfBuffer = await renderReportPdf({
+      report: { ...mockReport, verdict, posterCommentary: 'Comentariu de test' },
+      synthesis: mockSynthesis,
+      locale,
+    });
+    expect(pdfBuffer.slice(0, 5).toString('utf8')).toBe('%PDF-');
+  });
+
+  it('skips the steps a sparse synthesis has nothing to show for', async () => {
+    const sparse: ReportSynthesis = {
+      ...mockSynthesis,
+      verdictRationale: '',
+      whatToRemember: [],
+      subClaims: [],
+      sourceInsights: [],
+      crossSourceAnalysis: { ...mockSynthesis.crossSourceAnalysis, agreements: '', contradictions: '' },
+      manipulationAnalysis: { detected: false, summary: '', techniques: [] },
+      investigatorToolkit: { missingEvidence: [], foiaRecommendations: [], journalistFaq: [] },
+    };
+    const pdfBuffer = await renderReportPdf({
+      report: { ...mockReport, sources: [] },
+      synthesis: sparse,
+      locale: 'ro',
+    });
+    expect(pdfBuffer.slice(0, 5).toString('utf8')).toBe('%PDF-');
+  });
+
+  it('keeps a long report with an unbreakable source title inside the page flow', async () => {
+    const sources = Array.from({ length: 10 }, (_, i) => ({
+      ...mockReport.sources[0],
+      title: i === 0 ? `https://example.com/${'segment-foarte-lung-'.repeat(12)}` : `Sursa ${i + 1}`,
+    }));
+    const pdfBuffer = await renderReportPdf({
+      report: { ...mockReport, verifiedClaim: 'Afirmație lungă de test. '.repeat(20), sources },
+      synthesis: mockSynthesis,
+      locale: 'ro',
+    });
+    expect(pdfBuffer.slice(0, 5).toString('utf8')).toBe('%PDF-');
+  });
 });

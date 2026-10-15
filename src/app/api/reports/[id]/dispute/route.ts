@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
+import { getClientIp } from '@/lib/utils/client-ip';
 import { fileDispute } from '@/lib/verification/disputes';
 
 export const dynamic = 'force-dynamic';
@@ -28,10 +29,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
-    request.headers.get('x-real-ip') ??
-    'unknown';
+  const ip = getClientIp(request);
 
   const rateLimitResult = await checkRateLimit(`dispute:${ip}`, 5, 60 * 60 * 1000);
   if (!rateLimitResult.success) {

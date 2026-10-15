@@ -11,8 +11,11 @@
  * back page furniture.
  */
 
+import { lookup } from 'dns/promises';
+
 const FETCH_TIMEOUT_MS = 10_000;
 const MAX_CHARS = 2000;
+const MAX_REDIRECTS = 3;
 
 export class UrlExtractionError extends Error {
   constructor(
@@ -33,14 +36,204 @@ export function isValidHttpUrl(value: string): boolean {
   }
 }
 
+/* ------------------------------------------------------------------------ */
+/* SSRF guard                                                                */
+/*                                                                          */
+/* The verification flow fetches an arbitrary user-supplied URL, so without  */
+/* a guard the server becomes an open proxy into the internal network and    */
+/* cloud metadata endpoints (169.254.169.254). The whole defence lives in    */
+/* this one section: `assertSafeUrl` is called before the first fetch and    */
+/* again on every redirect hop, because a public URL can 30x straight to a   */
+/* private address. Blocked targets raise UNREACHABLE with the same generic  */
+/* message as any other failure, so we never reveal that a host was refused  */
+/* for being internal.                                                       */
+/* ------------------------------------------------------------------------ */
+
+/** Single blocked-target error: identical to a plain "could not reach". */
+function blockedUrlError(): UrlExtractionError {
+  return new UrlExtractionError(
+    'Nu am putut accesa acest link. Verifică adresa sau încearcă alt articol.',
+    'UNREACHABLE'
+  );
+}
+
+const IPV4_LITERAL_RE = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+
+function parseIpv4(ip: string): [number, number, number, number] | null {
+  const m = IPV4_LITERAL_RE.exec(ip);
+  if (!m) return null;
+  const octets = [Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4])];
+  return octets.every((o) => o >= 0 && o <= 255)
+    ? [octets[0], octets[1], octets[2], octets[3]]
+    : null;
+}
+
+/**
+ * True for any IPv4 that is not a public routable address: loopback, RFC1918
+ * private, link-local, CGNAT, "this network", multicast and reserved ranges.
+ */
+function isPrivateOrReservedIpv4(ip: string): boolean {
+  const octets = parseIpv4(ip);
+  if (!octets) return false; // not an IPv4 literal — caller decides
+  const [a, b] = octets;
+
+  if (a === 0) return true; // 0.0.0.0/8 "this network"
+  if (a === 10) return true; // 10.0.0.0/8 private
+  if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 CGNAT
+  if (a === 127) return true; // 127.0.0.0/8 loopback
+  if (a === 169 && b === 254) return true; // 169.254.0.0/16 link-local (metadata)
+  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12 private
+  if (a === 192 && b === 168) return true; // 192.168.0.0/16 private
+  if (a >= 224) return true; // 224.0.0.0/4 multicast + 240.0.0.0/4 reserved
+  return false;
+}
+
+/**
+ * Expands an IPv6 address into its eight 16-bit groups. Returns null when the
+ * address carries an embedded dotted IPv4 tail (handled separately) or is
+ * malformed. Only what the range checks below need — not a full parser.
+ */
+function parseIpv6Groups(ip: string): number[] | null {
+  if (ip.includes('.')) return null; // embedded IPv4 → handled by caller
+  const hasCompression = ip.includes('::');
+  const halves = ip.split('::');
+  if (halves.length > 2) return null;
+
+  const left = halves[0] === '' ? [] : halves[0].split(':');
+  const right = hasCompression && halves[1] !== '' ? halves[1].split(':') : hasCompression ? [] : null;
+
+  let groups: string[];
+  if (hasCompression) {
+    const missing = 8 - (left.length + (right?.length ?? 0));
+    if (missing < 0) return null;
+    groups = [...left, ...Array<string>(missing).fill('0'), ...(right ?? [])];
+  } else {
+    groups = left;
+  }
+
+  if (groups.length !== 8) return null;
+  const values = groups.map((g) => parseInt(g, 16));
+  return values.every((v) => Number.isInteger(v) && v >= 0 && v <= 0xffff) ? values : null;
+}
+
+/** True for IPv6 loopback, ULA, link-local, unspecified and mapped-v4 ranges. */
+function isPrivateOrReservedIpv6(ip: string): boolean {
+  const lower = ip.toLowerCase();
+
+  // IPv4-mapped IPv6 (::ffff:a.b.c.d) — re-check the embedded v4.
+  const mappedDotted = /::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(lower);
+  if (mappedDotted) return isPrivateOrReservedIpv4(mappedDotted[1]);
+
+  const groups = parseIpv6Groups(lower);
+  if (!groups) return false;
+  const [g0, g1, g2, g3, g4, g5, g6, g7] = groups;
+
+  // ::1 loopback and :: unspecified.
+  if (groups.every((g) => g === 0) || (g7 === 1 && groups.slice(0, 7).every((g) => g === 0))) {
+    return true;
+  }
+  // IPv4-mapped written in pure hex: 0:0:0:0:0:ffff:xxxx:xxxx.
+  if (g0 === 0 && g1 === 0 && g2 === 0 && g3 === 0 && g4 === 0 && g5 === 0xffff) {
+    const v4 = `${(g6 >> 8) & 0xff}.${g6 & 0xff}.${(g7 >> 8) & 0xff}.${g7 & 0xff}`;
+    return isPrivateOrReservedIpv4(v4);
+  }
+  if ((g0 & 0xfe00) === 0xfc00) return true; // fc00::/7 unique-local
+  if ((g0 & 0xffc0) === 0xfe80) return true; // fe80::/10 link-local
+  if ((g0 & 0xff00) === 0xff00) return true; // ff00::/8 multicast
+  return false;
+}
+
+/** Dispatch on address family for any resolved/literal address. */
+function isPrivateOrReservedIp(address: string): boolean {
+  return address.includes(':')
+    ? isPrivateOrReservedIpv6(address)
+    : isPrivateOrReservedIpv4(address);
+}
+
+/** Hostnames that always name a local/internal target regardless of DNS. */
+function isLocalHostname(host: string): boolean {
+  return (
+    host === 'localhost' ||
+    host.endsWith('.localhost') ||
+    host === 'internal' ||
+    host.endsWith('.internal')
+  );
+}
+
+/**
+ * Throws UNREACHABLE when `url` resolves to (or literally is) a private,
+ * loopback, link-local or otherwise reserved address. Resolves the hostname
+ * with DNS and rejects if ANY returned address is non-public, so a hostname
+ * that round-robins between a public and an internal IP is still refused.
+ *
+ * Called before the first fetch and on every redirect hop.
+ */
+export async function assertSafeUrl(url: string): Promise<void> {
+  let host = '';
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    throw blockedUrlError();
+  }
+  // WHATWG keeps brackets on IPv6 literals ("[::1]") — strip them.
+  host = host.replace(/^\[|\]$/g, '');
+
+  if (host === '' || isLocalHostname(host)) throw blockedUrlError();
+
+  // Literal IPs need no DNS — check them directly.
+  if (parseIpv4(host) || host.includes(':')) {
+    if (isPrivateOrReservedIp(host)) throw blockedUrlError();
+    return;
+  }
+
+  let addresses: Array<{ address: string; family: number }>;
+  try {
+    addresses = await lookup(host, { all: true });
+  } catch {
+    // Unresolvable host is indistinguishable from an unreachable one.
+    throw blockedUrlError();
+  }
+  if (addresses.length === 0) throw blockedUrlError();
+
+  for (const { address } of addresses) {
+    if (isPrivateOrReservedIp(address)) throw blockedUrlError();
+  }
+}
+
+/**
+ * Letters and quotation marks that older publishing systems still write as
+ * named entities ("Rom&acirc;nia"). Without these the catch-all at the end of
+ * decodeEntities turns each into a space and splits the word in two.
+ */
+const NAMED_LETTERS: Record<string, string> = {
+  acirc: 'â', Acirc: 'Â', icirc: 'î', Icirc: 'Î', abreve: 'ă', Abreve: 'Ă',
+  scedil: 'ş', Scedil: 'Ş', tcedil: 'ţ', Tcedil: 'Ţ',
+  agrave: 'à', Agrave: 'À', aacute: 'á', auml: 'ä', Auml: 'Ä', ccedil: 'ç', Ccedil: 'Ç',
+  egrave: 'è', Egrave: 'È', eacute: 'é', Eacute: 'É', ecirc: 'ê', Ecirc: 'Ê', euml: 'ë',
+  iacute: 'í', iuml: 'ï', ntilde: 'ñ', oacute: 'ó', ocirc: 'ô', ouml: 'ö', Ouml: 'Ö',
+  uacute: 'ú', ugrave: 'ù', ucirc: 'û', uuml: 'ü', Uuml: 'Ü', szlig: 'ß',
+  laquo: '«', raquo: '»', ldquo: '“', rdquo: '”', bdquo: '„', lsquo: '‘', rsquo: '’',
+  euro: '€', deg: '°',
+};
+
 function decodeEntities(s: string): string {
   return s
+    .replace(/&([A-Za-z]+);/g, (entity, name: string) => NAMED_LETTERS[name] ?? entity)
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)));
+    .replace(/&(?:apos|#39);/g, "'")
+    .replace(/&bull;/g, '•')
+    .replace(/&(?:hellip|#8230);/g, '…')
+    .replace(/&(?:mdash|#8212);/g, '—')
+    .replace(/&(?:ndash|#8211);/g, '–')
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    // Any named entity we don't translate would otherwise ride along as literal
+    // "&word;" inside a claim — drop the leftovers so search isn't polluted.
+    .replace(/&[a-z]+;/gi, ' ');
 }
 
 /** Markup in, readable text out. */
@@ -152,7 +345,10 @@ function paragraphsOf(html: string): string {
 
   while ((match = re.exec(html)) !== null) {
     const text = textOf(match[1]);
-    if (text.length > 60) paragraphs.push(text);
+    // Wiki template residue ("[[Fișier:…|20px|…]]") leaks out of attributes
+    // the tag regex cannot parse; one such paragraph used to sink the whole
+    // page in looksLikeProse's separator check.
+    if (text.length > 60 && !/\[\[|\]\]|\{\{|\}\}/.test(text)) paragraphs.push(text);
   }
   return paragraphs.join(' ');
 }
@@ -204,11 +400,19 @@ function looksLikeProse(text: string): boolean {
   const words = text.split(/\s+/).filter(Boolean).length;
   if (words < 12) return false;
 
+  // A homepage headline list survives the sentence test (each headline reads as
+  // a sentence) but strings items together with bullet/pipe separators and
+  // byline+date+count runs. Real article prose almost never carries four of
+  // these, so their density is a reliable "this is a feed, not a story" signal.
+  const separators = (text.match(/[•|›»]/g) ?? []).length;
+  if (separators >= 4) return false;
+
   const sentences = text
-    .split(/(?<=[.!?])\s+/)
+    // "…" ends the teaser of a paywalled article as surely as a full stop.
+    .split(/(?<=[.!?…])\s+/)
     .filter((part) => {
       const trimmed = part.trim();
-      return /[.!?]["'’)\]]?$/.test(trimmed) && trimmed.split(/\s+/).length >= 6;
+      return /[.!?…]["'’)\]]?$/.test(trimmed) && trimmed.split(/\s+/).length >= 6;
     }).length;
 
   if (sentences === 0) return false;
@@ -217,23 +421,67 @@ function looksLikeProse(text: string): boolean {
   return distinctNavigationPhrases(text) < 4;
 }
 
-export async function extractArticleText(rawUrl: string): Promise<string> {
+/**
+ * Downloads the page at `rawUrl` and returns its HTML. Everything that can go
+ * wrong on the way — an unsafe or unreachable address, an error status, a
+ * front page, a file that is not a page — is raised as a UrlExtractionError.
+ */
+async function fetchArticleHtml(rawUrl: string, timeoutMs: number): Promise<string> {
   if (!isValidHttpUrl(rawUrl)) {
     throw new UrlExtractionError('Link-ul introdus nu este valid.', 'INVALID_URL');
   }
 
-  let response: Response;
-  try {
-    response = await fetch(rawUrl.trim(), {
-      redirect: 'follow',
-      headers: {
-        // Some publishers reject requests without a browser-like UA.
-        'User-Agent': 'Mozilla/5.0 (compatible; VerifactBot/0.1; +https://github.com/Seby2005/fact-checker-ai)',
-        Accept: 'text/html,application/xhtml+xml',
-      },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-  } catch {
+  // Validate the origin before any network I/O, then re-validate every
+  // redirect target: a public URL can 30x straight to a private address.
+  let currentUrl = rawUrl.trim();
+  await assertSafeUrl(currentUrl);
+
+  let response: Response | null = null;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    try {
+      response = await fetch(currentUrl, {
+        // Never let fetch follow redirects on its own — each Location must be
+        // re-checked by assertSafeUrl before we chase it.
+        redirect: 'manual',
+        headers: {
+          // Some publishers reject requests without a browser-like UA.
+          'User-Agent': 'Mozilla/5.0 (compatible; VerifactBot/0.1; +https://github.com/Seby2005/fact-checker-ai)',
+          Accept: 'text/html,application/xhtml+xml',
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch {
+      throw new UrlExtractionError(
+        'Nu am putut accesa acest link. Verifică adresa sau încearcă alt articol.',
+        'UNREACHABLE'
+      );
+    }
+
+    const isRedirect = response.status >= 300 && response.status < 400;
+    if (!isRedirect) break;
+
+    if (hop === MAX_REDIRECTS) {
+      throw new UrlExtractionError(
+        'Nu am putut accesa acest link. Verifică adresa sau încearcă alt articol.',
+        'UNREACHABLE'
+      );
+    }
+
+    const location = response.headers.get('location');
+    if (!location) break; // Redirect with no target — treat as the final response.
+
+    const nextUrl = new URL(location, currentUrl).toString();
+    if (!isValidHttpUrl(nextUrl)) {
+      throw new UrlExtractionError(
+        'Nu am putut accesa acest link. Verifică adresa sau încearcă alt articol.',
+        'UNREACHABLE'
+      );
+    }
+    await assertSafeUrl(nextUrl);
+    currentUrl = nextUrl;
+  }
+
+  if (!response) {
     throw new UrlExtractionError(
       'Nu am putut accesa acest link. Verifică adresa sau încearcă alt articol.',
       'UNREACHABLE'
@@ -247,6 +495,16 @@ export async function extractArticleText(rawUrl: string): Promise<string> {
     );
   }
 
+  // A site's front page is a feed of headlines, never one article — and many
+  // publishers answer a dead article link with a redirect to it, so this also
+  // catches broken links that would otherwise "verify" today's headlines.
+  if (new URL(currentUrl).pathname.replace(/\/+$/, '') === '') {
+    throw new UrlExtractionError(
+      'Link-ul duce la prima pagină a site-ului, nu la un articol. Deschide articolul și copiază link-ul lui.',
+      'NO_CONTENT'
+    );
+  }
+
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('html') && !contentType.includes('text')) {
     throw new UrlExtractionError(
@@ -255,7 +513,49 @@ export async function extractArticleText(rawUrl: string): Promise<string> {
     );
   }
 
-  const html = await response.text();
+  return response.text();
+}
+
+/** The page without the markup that never holds readable text. */
+function withoutScripts(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ');
+}
+
+/**
+ * The prose paragraphs of the article at `rawUrl`, in reading order, each as
+ * the text a browser shows for it: inline markup is removed without leaving a
+ * gap, so "<b>Guvernul</b>, ieri" stays "Guvernul, ieri". That fidelity is the
+ * point — these are meant to be quoted back at the page (a text-fragment link
+ * only lands when the quote matches the rendered text), which is also why
+ * nothing here is truncated or joined.
+ *
+ * Fails with a UrlExtractionError for the same reasons as extractArticleText.
+ */
+export async function fetchArticleParagraphs(
+  rawUrl: string,
+  timeoutMs: number = FETCH_TIMEOUT_MS
+): Promise<string[]> {
+  const markup = withoutScripts(await fetchArticleHtml(rawUrl, timeoutMs));
+  const article = stripChrome(contentRegion(markup) ?? markup);
+
+  const paragraphs: string[] = [];
+  const re = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(article)) !== null) {
+    const text = decodeEntities(match[1].replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ''))
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (text) paragraphs.push(text);
+  }
+  return paragraphs;
+}
+
+export async function extractArticleText(rawUrl: string): Promise<string> {
+  const html = await fetchArticleHtml(rawUrl, FETCH_TIMEOUT_MS);
 
   // Read JSON-LD first: stripping <script> below would take it with it.
   const structured = fromJsonLd(html);
@@ -264,11 +564,7 @@ export async function extractArticleText(rawUrl: string): Promise<string> {
     metaContent(html, 'og:title') ??
     decodeEntities(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '').trim();
 
-  const markup = html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
-    .replace(/<!--[\s\S]*?-->/g, ' ');
+  const markup = withoutScripts(html);
 
   const region = contentRegion(markup);
   const withoutChrome = stripChrome(markup);
@@ -286,7 +582,9 @@ export async function extractArticleText(rawUrl: string): Promise<string> {
   ];
 
   for (const candidate of candidates) {
-    const text = candidate?.replace(/\s+/g, ' ').trim();
+    // Judge only the part that will be verified: a footer navbox far below the
+    // article (Wikipedia's "Van der Bellen • Filip • …") must not reject it.
+    const text = candidate?.replace(/\s+/g, ' ').trim().slice(0, MAX_CHARS);
     if (!text || !looksLikeProse(text)) continue;
 
     return [title, text].filter(Boolean).join('. ').slice(0, MAX_CHARS);

@@ -101,7 +101,7 @@
 | **SerpAPI** | SerpAPI | Alternativă căutare avansată | $50/lună (100 req/zi gratuit) |
 
 > **Strategie costuri API pentru v1:**
-> - Maxim 10 verificări gratuite/utilizator/lună → limităm expunerea la cost
+> - Maxim 3 verificări gratuite/utilizator/lună (`TIER_CONFIG.free` în `src/types/user.ts`) → limităm expunerea la cost
 > - Caching agresiv: dacă aceeași afirmație a mai fost verificată, returnăm cached
 > - Strat 1 (Fact Check API) = gratuit → rulăm întotdeauna
 > - Straturile 2-4 = costisitoare → rulăm paralel, nu secvențial (reduce latența)

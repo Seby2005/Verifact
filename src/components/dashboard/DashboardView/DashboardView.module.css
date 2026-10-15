@@ -115,6 +115,26 @@
   border-color: #6ee7b7;
 }
 
+.apiKeysBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.4rem 0.85rem;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent, #2563eb);
+  background: color-mix(in srgb, var(--color-accent, #2563eb) 8%, transparent);
+  border: var(--border-width-hairline) solid color-mix(in srgb, var(--color-accent, #2563eb) 20%, transparent);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.apiKeysBtn:hover {
+  background: color-mix(in srgb, var(--color-accent, #2563eb) 15%, transparent);
+}
+
 .adminQuickSection {
   background: var(--color-surface);
   border: var(--border-width-hairline) solid var(--color-line);

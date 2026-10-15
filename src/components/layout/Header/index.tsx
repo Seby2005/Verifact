@@ -13,7 +13,6 @@ const NAV_ITEMS = [
   { href: '/', key: 'header.nav.home' },
   { href: '/rapoarte', key: 'header.nav.reports' },
   { href: '/despre-dezinformare', key: 'header.nav.disinformation' },
-  { href: '/transparenta', key: 'header.nav.transparency' },
   { href: '/preturi', key: 'header.nav.pricing' },
 ];
 
@@ -88,7 +87,7 @@ export const Header: React.FC = () => {
   return (
     <header className={styles.header}>
       <div className={`container ${styles.inner}`}>
-        <Link href="/" className={styles.wordmark} aria-label="Verifact — acasă">
+        <Link href="/" className={styles.wordmark} aria-label={t('header.nav.homeAria')}>
           <Logo />
         </Link>
 
@@ -155,7 +154,7 @@ export const Header: React.FC = () => {
               </button>
 
               {langMenuOpen && (
-                <ul className={styles.langMenu} role="menu" aria-label="Language options">
+                <ul className={styles.langMenu} role="menu" aria-label={t('header.nav.langOptions')}>
                   {LANGUAGES.map((l) => {
                     const isSelected = locale === l.code;
                     return (

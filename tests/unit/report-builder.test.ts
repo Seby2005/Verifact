@@ -75,4 +75,30 @@ describe('extractExecutiveSummary', () => {
     expect(summary).toContain('Prima linie a rezumatului');
     expect(summary).toContain('A doua linie continua ideea.');
   });
+
+  it('strips leaking UI prefixes like Afirmatia "..." Rezumat:', () => {
+    const analysis = 'Afirmația "Guvernul României a interzis motoarele diesel" Rezumat: Nu există nicio bază legală pentru această afirmație.';
+
+    expect(extractExecutiveSummary(analysis)).toBe(
+      'Nu există nicio bază legală pentru această afirmație.'
+    );
+  });
+});
+
+describe('generateKeyTakeaways with hypothesis', () => {
+  const { generateKeyTakeaways } = jest.requireActual('@/lib/verification/report-builder');
+
+  it('prepends the evaluated hypothesis when verifiedClaim differs from inputText', () => {
+    const takeaways = generateKeyTakeaways(
+      'Nicușor Dan are autism',
+      'Nu există nicio dovadă.',
+      [],
+      10,
+      'ro',
+      'Nicușor Dan are autism / a fost diagnosticat cu autism',
+      'Nicusor Dan este autist?'
+    );
+
+    expect(takeaways[0]).toContain('Am verificat ipoteza: „Nicușor Dan are autism / a fost diagnosticat cu autism” — Verdict: Fals / Fără Temei.');
+  });
 });

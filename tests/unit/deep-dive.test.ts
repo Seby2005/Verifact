@@ -1,6 +1,8 @@
 import { generateDeepDiveAnswer } from '@/lib/ai/deep-dive';
 import { POST } from '@/app/api/report/deep-dive/route';
 import { getPublicReportById } from '@/lib/verification/public-reports-query';
+import { getCachedById } from '@/lib/verification/cache';
+import { PRIMARY_MODEL } from '@/lib/ai/models';
 import type { VerificationReport } from '@/types/verification';
 
 // The route reads the caller through createClient(); the deep-dive answer is
@@ -13,6 +15,10 @@ jest.mock('@/lib/supabase/server', () => ({
 
 jest.mock('@/lib/verification/public-reports-query', () => ({
   getPublicReportById: jest.fn(),
+}));
+
+jest.mock('@/lib/verification/cache', () => ({
+  getCachedById: jest.fn().mockResolvedValue(null),
 }));
 
 const minimalReport: VerificationReport = {
@@ -151,7 +157,7 @@ describe('generateDeepDiveAnswer', () => {
 
     const [, init] = fetchMock.mock.calls[0] as [string, { body?: string }];
     const body = JSON.parse(init.body ?? '{}') as { model?: string };
-    expect(body.model).toBe('deepseek/deepseek-chat');
+    expect(body.model).toBe(PRIMARY_MODEL);
     expect(answer).toContain('parțial adevărată');
   });
 
@@ -163,6 +169,24 @@ describe('generateDeepDiveAnswer', () => {
     const prompt = capturePrompt(fetchMock);
     expect(prompt).toContain('ad hominem');
     expect(prompt).toContain('cherry-picking');
+  });
+
+  it('shows the model the post as submitted when a claim was extracted from it', async () => {
+    const fetchMock = mockLlmResponse(
+      'Postarea folosește un titlu senzaționalist și un apel la urgență pentru a grăbi distribuirea.'
+    );
+    await generateDeepDiveAnswer({
+      report: {
+        ...minimalReport,
+        inputText: 'ȘOC!!! NASA a recunoscut: Pământul este PLAT. Distribuie înainte să fie șters!',
+        verifiedClaim: 'NASA a recunoscut că Pământul este plat.',
+      },
+      actionType: 'manipulation_techniques',
+      locale: 'ro',
+    });
+    const prompt = capturePrompt(fetchMock);
+    expect(prompt).toContain('"NASA a recunoscut că Pământul este plat."');
+    expect(prompt).toContain('Distribuie înainte să fie șters!');
   });
 
   it('passes the custom question through into the prompt', async () => {
@@ -205,6 +229,20 @@ describe('generateDeepDiveAnswer', () => {
     expect(answer).not.toContain('şi');
     expect(answer).toContain('informația');
     expect(answer).not.toContain('informaţia');
+  });
+
+  it('keeps the paragraphs and list lines of the answer while dropping Markdown markers', async () => {
+    mockLlmResponse(
+      '## Ce este adevărat\n\n- **Prima** idee susținută de surse.\n* A doua idee, la fel de clară.\n\n\n\nConcluzia raportului rămâne neschimbată.'
+    );
+    const { answer } = await generateDeepDiveAnswer({
+      report: minimalReport,
+      actionType: 'explain_simple',
+      locale: 'ro',
+    });
+    expect(answer).toBe(
+      'Ce este adevărat\n\n- Prima idee susținută de surse.\n- A doua idee, la fel de clară.\n\nConcluzia raportului rămâne neschimbată.'
+    );
   });
 
   it('rejects when the provider returns an empty answer', async () => {
@@ -297,6 +335,23 @@ describe('POST /api/report/deep-dive', () => {
 
     const res = await postJson({ reportId: 'missing-id', actionType: 'explain_simple' });
     expect(res.status).toBe(404);
+  });
+
+  it('answers on a report the caller was served from the cache', async () => {
+    process.env.OPENROUTER_API_KEY = 'test-key';
+    process.env.OPENROUTER_BASE_URL = 'https://llm.test/v1';
+    mockLlmResponse(
+      'Răspuns de test pentru un raport din cache: sursele citate contrazic afirmația verificată.'
+    );
+    mockCreateClient.mockReturnValue(
+      buildSupabaseClient({ user: { id: 'u3', email: 'pro3@test.ro' }, profile: { tier: 'pro', role: 'user' } })
+    );
+    (getPublicReportById as jest.Mock).mockResolvedValue(null);
+    (getCachedById as jest.Mock).mockResolvedValueOnce(minimalReport);
+
+    const res = await postJson({ reportId: minimalReport.id, actionType: 'explain_simple' });
+    expect(res.status).toBe(200);
+    expect(getCachedById).toHaveBeenCalledWith(minimalReport.id);
   });
 
   it('answers on a public report for any Pro caller', async () => {

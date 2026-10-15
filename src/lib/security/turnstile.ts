@@ -41,8 +41,17 @@ export async function validateTurnstileToken(
 ): Promise<TurnstileValidationResult> {
   const secret = process.env.TURNSTILE_SECRET_KEY || process.env.TURNSTILE_SECRET;
 
-  // In environments without a configured secret, allow requests to proceed gracefully
+  // In environments without a configured secret: fail closed in production, allow in dev/test
   if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('TURNSTILE_SECRET_KEY is missing in production — failing closed', {
+        service: 'Turnstile',
+      });
+      return {
+        success: false,
+        error: 'Verificarea de securitate este indisponibilă momentan.',
+      };
+    }
     return { success: true };
   }
 

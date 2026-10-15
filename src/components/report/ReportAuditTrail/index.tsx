@@ -12,11 +12,10 @@ export interface ReportAuditTrailProps {
 }
 
 export const ReportAuditTrail: React.FC<ReportAuditTrailProps> = ({ report, id, date }) => {
-  const { locale } = useLanguage();
-  const isEn = locale === 'en';
+  const { locale, t } = useLanguage();
 
   const displayDate = date || report?.publishedAt || report?.createdAt || new Date().toISOString();
-  const langTag = isEn ? 'en-US' : 'ro-RO';
+  const langTag = locale === 'en' ? 'en-US' : locale === 'fr' ? 'fr-FR' : 'ro-RO';
   const formattedDate = new Date(displayDate).toLocaleString(langTag, {
     day: 'numeric',
     month: 'short',
@@ -33,10 +32,10 @@ export const ReportAuditTrail: React.FC<ReportAuditTrailProps> = ({ report, id, 
 
   const confidenceLabel =
     report?.confidenceLevel === 'high'
-      ? isEn ? 'High' : 'Ridicată'
+      ? t('auditTrail.confidenceHigh')
       : report?.confidenceLevel === 'medium'
-      ? isEn ? 'Medium' : 'Medie'
-      : isEn ? 'Moderate' : 'Moderată';
+      ? t('auditTrail.confidenceMedium')
+      : t('auditTrail.confidenceModerate');
 
   // Count sources per layer
   const layer1Count = report?.layers?.layer1?.results?.length ?? report?.layers?.factCheck?.results?.length ?? 0;
@@ -48,68 +47,60 @@ export const ReportAuditTrail: React.FC<ReportAuditTrailProps> = ({ report, id, 
   return (
     <section className={styles.auditCard} aria-labelledby="audit-trail-title">
       <div className={styles.auditHeader}>
-        <span className={styles.auditEyebrow}>
-          {isEn ? 'Methodology & Integrity' : 'Metodologie & Integritate'}
-        </span>
+        <span className={styles.auditEyebrow}>{t('auditTrail.eyebrow')}</span>
         <h2 id="audit-trail-title" className={styles.auditTitle}>
-          {isEn ? 'Verification Audit Trail' : 'Pista de Audit a Verificării'}
+          {t('auditTrail.title')}
         </h2>
       </div>
 
       <div className={styles.bylineBlock}>
-        <strong>{isEn ? 'Transparency Byline: ' : 'Notă de Transparență: '}</strong>
-        {isEn
-          ? `Analysis generated automatically by Verifact Core v1.0 • Evaluated against open public sources • Published at ${formattedDate}.`
-          : `Analiză generată automat de Verifact Core v1.0 • Evaluată pe baza surselor publice deschise • Publicată la ${formattedDate}.`}
+        <strong>{t('auditTrail.bylineLabel')}</strong>
+        {t('auditTrail.byline', { date: formattedDate })}
       </div>
 
       <div className={styles.metricsGrid}>
         <div className={styles.metricItem}>
-          <span className={styles.metricLabel}>{isEn ? 'Processing Time' : 'Timp Analiză'}</span>
+          <span className={styles.metricLabel}>{t('auditTrail.processingTime')}</span>
           <span className={styles.metricValue}>{processingTime}</span>
         </div>
         <div className={styles.metricItem}>
-          <span className={styles.metricLabel}>{isEn ? 'Confidence Level' : 'Nivel Încredere'}</span>
+          <span className={styles.metricLabel}>{t('auditTrail.confidenceLevel')}</span>
           <span className={styles.metricValue}>{confidenceLabel}</span>
         </div>
         <div className={styles.metricItem}>
-          <span className={styles.metricLabel}>{isEn ? 'Total Sources' : 'Surse Consultate'}</span>
+          <span className={styles.metricLabel}>{t('auditTrail.totalSources')}</span>
           <span className={styles.metricValue}>{totalSourcesCount}</span>
         </div>
         <div className={styles.metricItem}>
-          <span className={styles.metricLabel}>{isEn ? 'Verification Engine' : 'Motor Verificare'}</span>
+          <span className={styles.metricLabel}>{t('auditTrail.engine')}</span>
           <span className={styles.metricValue}>Verifact Core</span>
         </div>
       </div>
 
       <div className={styles.layersSection}>
-        <div className={styles.layersTitle}>
-          {isEn ? 'Multi-Layer Pipeline Coverage' : 'Acoperire Straturi Metodologice'}
-        </div>
+        <div className={styles.layersTitle}>{t('auditTrail.pipelineTitle')}</div>
         <ul className={styles.layersList}>
           <li className={styles.layerBadge}>
-            <span className={styles.layerName}>{isEn ? '1. Fact-Check Databases' : '1. Baze Fact-Checking'}</span>
-            <span className={styles.layerCount}>{layer1Count} {isEn ? 'matches' : 'potriviri'}</span>
+            <span className={styles.layerName}>{t('auditTrail.layer1')}</span>
+            <span className={styles.layerCount}>{layer1Count} {t('auditTrail.unitMatches')}</span>
           </li>
           <li className={styles.layerBadge}>
-            <span className={styles.layerName}>{isEn ? '2. Credible News Media' : '2. Presă & Știri de Încredere'}</span>
-            <span className={styles.layerCount}>{layer2Count} {isEn ? 'articles' : 'articole'}</span>
+            <span className={styles.layerName}>{t('auditTrail.layer2')}</span>
+            <span className={styles.layerCount}>{layer2Count} {t('auditTrail.unitArticles')}</span>
           </li>
           <li className={styles.layerBadge}>
-            <span className={styles.layerName}>{isEn ? '3. Official & Public Records' : '3. Surse Oficiale & Arhive'}</span>
-            <span className={styles.layerCount}>{layer3Count} {isEn ? 'records' : 'documente'}</span>
+            <span className={styles.layerName}>{t('auditTrail.layer3')}</span>
+            <span className={styles.layerCount}>{layer3Count} {t('auditTrail.unitRecords')}</span>
           </li>
           <li className={styles.layerBadge}>
-            <span className={styles.layerName}>{isEn ? '4. Social Propagation Context' : '4. Context Social Media'}</span>
-            <span className={styles.layerCount}>{layer4Count} {isEn ? 'signals' : 'semnale'}</span>
+            <span className={styles.layerName}>{t('auditTrail.layer4')}</span>
+            <span className={styles.layerCount}>{layer4Count} {t('auditTrail.unitSignals')}</span>
           </li>
         </ul>
       </div>
 
       <div className={styles.hashFooter}>
-        <span className={styles.hashKey}>
-          {isEn ? 'Verification Unique ID:' : 'ID Unic Verificare:'}
-        </span>
+        <span className={styles.hashKey}>{t('auditTrail.uniqueId')}</span>
         <code>{id}</code>
       </div>
     </section>
