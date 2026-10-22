@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isCronAuthorized } from '@/lib/security/cron-auth';
+import { cronRunAllowed, isCronAuthorized } from '@/lib/security/cron-auth';
 import { checkSearchProviders, type ProviderCheck } from '@/lib/health/search-providers';
 import { getAdminEmails } from '@/lib/auth/admin-emails';
 import { sendEmail } from '@/lib/email';
@@ -30,6 +30,10 @@ function alertEmail(failed: ProviderCheck[]): { subject: string; html: string; t
 async function handle(request: Request): Promise<Response> {
   if (!isCronAuthorized(request, 'CronProviderHealth')) {
     return NextResponse.json({ error: 'Unauthorized. Valid CRON_SECRET required.' }, { status: 401 });
+  }
+  // Daily job that calls paid providers and emails the admins.
+  if (!(await cronRunAllowed('provider-health', 6))) {
+    return NextResponse.json({ error: 'Too many runs this hour.' }, { status: 429 });
   }
 
   const checks = await checkSearchProviders();

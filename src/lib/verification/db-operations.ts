@@ -83,7 +83,18 @@ export interface UsageReservation {
   allowed: boolean;
   limit: number;
   used: number;
+  /**
+   * The quota could not be checked (RPC error or no answer). The reservation
+   * is refused rather than waved through: verifications cost real money, so an
+   * outage of the meter must not turn into unlimited free use. Callers answer
+   * with a retry-later error, not with the usage-limit message.
+   */
+  unavailable?: boolean;
 }
+
+const UNAVAILABLE: UsageReservation = { allowed: false, limit: 0, used: 0, unavailable: true };
+
+type UsageRow = { allowed: boolean; usage_limit: number; used: number };
 
 /**
  * Atomically checks the caller's monthly usage limit and, if allowed,
@@ -95,9 +106,9 @@ export interface UsageReservation {
  * concurrent requests could both read a count under the limit, both pass,
  * and both increment, letting usage exceed the tier limit.
  *
- * Call this BEFORE running a verification. If the reservation is not
- * actually consumed (cache hit, verification failure, save failure), call
- * releaseUsageSlot() to roll it back — see /api/verify/route.ts.
+ * Call this BEFORE running a verification. If no work is done for it (cache
+ * hit, verification failure), call releaseUsageSlot() to roll it back — see
+ * /api/verify/route.ts.
  *
  * The RPC identifies the caller via auth.uid() from the request's JWT, not
  * a passed-in id, so a caller can only ever reserve against their own row.
@@ -111,42 +122,78 @@ export async function reserveUsageSlot(
   // — see types/database.ts's header comment); the explicit cast below pins
   // the shape the migration's RETURNS TABLE(...) actually produces.
   const { data, error } = await supabase.rpc('reserve_usage_slot') as unknown as {
-    data: { allowed: boolean; usage_limit: number; used: number }[] | null;
+    data: UsageRow[] | null;
     error: { message: string } | null;
   };
 
-  if (error) {
-    logger.error('reserve_usage_slot RPC failed, failing open', {
-      service: 'db-operations',
-      operation: 'reserveUsageSlot',
-      error: error.message,
-    });
-    // Fail open (mirrors the previous behaviour when the profile lookup
-    // errored) rather than blocking every verification on an RPC hiccup.
-    return { allowed: true, limit: 10, used: 0 };
-  }
+  return toReservation(data, error, 'reserveUsageSlot');
+}
 
+/**
+ * reserveUsageSlot() for a caller identified by id rather than by a session
+ * (API keys). Goes through the service-role-only reserve_usage_slot_for RPC.
+ */
+export async function reserveUsageSlotFor(userId: string): Promise<UsageReservation> {
+  try {
+    const admin = createAdminClient();
+    // .bind(): supabase-js's rpc() reads this.rest, so a detached call throws.
+    const rpc = admin.rpc.bind(admin) as unknown as (
+      fn: 'reserve_usage_slot_for',
+      args: { p_user_id: string }
+    ) => Promise<{ data: UsageRow[] | null; error: { message: string } | null }>;
+    const { data, error } = await rpc('reserve_usage_slot_for', { p_user_id: userId });
+    return toReservation(data, error, 'reserveUsageSlotFor');
+  } catch (err) {
+    return toReservation(null, { message: err instanceof Error ? err.message : String(err) }, 'reserveUsageSlotFor');
+  }
+}
+
+function toReservation(
+  data: UsageRow[] | null,
+  error: { message: string } | null,
+  operation: string
+): UsageReservation {
   const row = data?.[0];
-  if (!row) {
-    return { allowed: true, limit: 10, used: 0 };
+  if (error || !row) {
+    logger.error('Usage reservation RPC failed, refusing the request', {
+      service: 'db-operations',
+      operation,
+      error: error?.message ?? 'no row returned',
+    });
+    return UNAVAILABLE;
   }
-
   return { allowed: row.allowed, limit: row.usage_limit, used: row.used };
 }
 
 /**
- * Rolls back a usage reservation made by reserveUsageSlot() that was not
- * consumed by an actual, saved verification.
+ * Rolls back a usage reservation that produced no work (cache hit, or a
+ * verification that failed before finishing).
+ *
+ * Runs through the service-role-only release_usage_slot_for RPC. The older
+ * release_usage_slot() was callable by any signed-in browser straight through
+ * PostgREST, which let a user reset their own monthly counter at will;
+ * migration 021 takes it away from them, and nothing here depends on it.
  */
-export async function releaseUsageSlot(
-  supabase: SupabaseClient<Database>
-): Promise<void> {
-  const { error } = await supabase.rpc('release_usage_slot');
-  if (error) {
-    logger.error('release_usage_slot RPC failed', {
+export async function releaseUsageSlot(userId: string): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const rpc = admin.rpc.bind(admin) as unknown as (
+      fn: 'release_usage_slot_for',
+      args: { p_user_id: string }
+    ) => Promise<{ error: { message: string } | null }>;
+    const { error } = await rpc('release_usage_slot_for', { p_user_id: userId });
+    if (error) {
+      logger.error('release_usage_slot_for RPC failed', {
+        service: 'db-operations',
+        operation: 'releaseUsageSlot',
+        error: error.message,
+      });
+    }
+  } catch (err) {
+    logger.error('releaseUsageSlot failed', {
       service: 'db-operations',
       operation: 'releaseUsageSlot',
-      error: error.message,
+      error: err instanceof Error ? err.message : String(err),
     });
   }
 }

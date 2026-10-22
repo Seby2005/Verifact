@@ -1,6 +1,5 @@
 import { getAuthenticatedUser } from '@/lib/supabase/auth-helpers';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { isAdminEmail } from '@/lib/auth/admin-emails';
 
 interface VerificationRecord {
   id: string;
@@ -10,6 +9,11 @@ interface VerificationRecord {
 }
 
 export const dynamic = 'force-dynamic';
+
+// What a reader may see of a report. Never `select('*')`: the row also holds
+// the anonymous IP hash, the owner's id, moderation stamps and AI token counts.
+const READER_COLUMNS =
+  'id, user_id, input_type, input_text, verdict, score, report_json, is_public, visibility_status, language, show_author, image_urls, created_at, published_at';
 
 export async function GET(
   _request: Request,
@@ -21,7 +25,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from('verifications')
-    .select('*')
+    .select(READER_COLUMNS)
     .eq('id', id)
     .single();
 
@@ -32,10 +36,13 @@ export async function GET(
   const report = data as VerificationRecord;
 
   if (!report.is_public && report.user_id !== user?.id) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Report not found' }, { status: 404 });
   }
 
-  return Response.json({ report });
+  // user_id was read only for the ownership check above.
+  const { user_id: _owner, ...visible } = report;
+  void _owner;
+  return Response.json({ report: visible });
 }
 
 export async function PATCH(
@@ -94,15 +101,16 @@ export async function DELETE(
   const { createAdminClient } = await import('@/lib/supabase/admin');
   const adminClient = createAdminClient();
 
-  // Check if the caller is the report owner or an admin.
+  // Check if the caller is the report owner or an admin. Admin is
+  // profiles.role only: ADMIN_EMAILS lifts usage caps, it does not let anyone
+  // take down other people's reports.
   const { data: profile } = await adminClient
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single();
 
-  const isAdmin =
-    (profile as { role?: string } | null)?.role === 'admin' || isAdminEmail(user.email);
+  const isAdmin = (profile as { role?: string } | null)?.role === 'admin';
 
   if (!isAdmin) {
     const { data: verification } = await adminClient
@@ -126,7 +134,7 @@ export async function DELETE(
     .eq('id', id);
 
   if (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Ștergerea raportului a eșuat.' }, { status: 500 });
   }
 
   // Purge Next.js cache on Vercel

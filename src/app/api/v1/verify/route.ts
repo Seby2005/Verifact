@@ -7,6 +7,8 @@ import { corsHeaders, handlePreflight } from '@/lib/api/cors';
 import { authenticateCaller, reserveSlot, releaseSlot, type Caller } from './authenticate';
 import type { VerifyAPIError } from '@/types/verification';
 import { logger } from '@/lib/utils/logger';
+import { getClientIp } from '@/lib/utils/client-ip';
+import { randomUUID } from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,11 +52,9 @@ export async function POST(request: Request): Promise<Response> {
   const input = validation.data;
 
   // 2. Cheap per-IP throttle before any auth/DB work, to bound abuse and the
-  //    cost of the token lookups below.
-  const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
-    request.headers.get('x-real-ip') ??
-    'unknown';
+  //    cost of the token lookups below. Same trusted-header order as every
+  //    other route: the first X-Forwarded-For entry is whatever the client sent.
+  const ip = getClientIp(request);
   const ipLimit = await checkRateLimit(`v1:ip:${ip}`, 30, 60 * 1000);
   if (!ipLimit.success) {
     return jsonError(request, 429, 'RATE_LIMIT', 'Prea multe cereri. Incearca din nou in cateva minute.');
@@ -70,9 +70,10 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // 3b. A generous per-key throttle for business keys (higher than the shared
-  //     per-IP one, since a server calls from a single IP).
+  //     per-IP one, since a server calls from a single IP). Bucketed per key,
+  //     so one runaway key cannot starve the account's other keys.
   if (caller.kind === 'apikey') {
-    const keyLimit = await checkRateLimit(`v1:key:${caller.userId}`, 60, 60 * 1000);
+    const keyLimit = await checkRateLimit(`v1:key:${caller.keyId}`, 60, 60 * 1000);
     if (!keyLimit.success) {
       return jsonError(request, 429, 'RATE_LIMIT', 'Prea multe cereri. Incearca din nou in cateva minute.');
     }
@@ -81,6 +82,9 @@ export async function POST(request: Request): Promise<Response> {
   // 4. Reserve a monthly slot (atomic where metered). Released below if the run
   //    produces no saved report.
   const slot = await reserveSlot(caller);
+  if (slot.unavailable) {
+    return jsonError(request, 503, 'SERVER_ERROR', 'Nu am putut verifica limita contului. Incearca din nou peste cateva momente.');
+  }
   if (!slot.allowed) {
     const msg =
       caller.kind === 'anonymous'
@@ -111,7 +115,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // 6. Run the verification to completion, then respond once.
   try {
-    const report = await verifyContent({
+    let report = await verifyContent({
       text: claimText,
       language: input.language,
       type: input.inputType,
@@ -120,15 +124,15 @@ export async function POST(request: Request): Promise<Response> {
       userId,
     });
 
-    // 7. Save. A cache hit did no new work, so refund the reserved slot rather
-    //    than charging the quota; a save failure means no history row, so refund
-    //    then too — but still return the report the caller waited for.
+    // 7. Save, exactly as /api/verify does: a cache hit refunds the slot but
+    //    is still saved as the caller's own copy (fresh id, no AI cost on it);
+    //    a fresh verification keeps its slot even if the save fails, since the
+    //    work was done and refunding on a failed insert made it free.
     if (report.fromCache) {
       await releaseSlot(caller);
-    } else {
-      const saved = await saveVerification(report, undefined, slot.anonymousHash);
-      if (!saved) await releaseSlot(caller);
+      report = { ...report, id: randomUUID(), createdAt: new Date().toISOString(), tokenUsage: undefined };
     }
+    await saveVerification(report, undefined, slot.anonymousHash);
 
     return Response.json(
       {

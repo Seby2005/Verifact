@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'crypto';
 import { logger } from '@/lib/utils/logger';
+import { checkRateLimit } from '@/lib/utils/rate-limit';
 
 function safeCompare(a: string, b: string): boolean {
   const bufA = Buffer.from(a);
@@ -32,4 +33,17 @@ export function isCronAuthorized(request: Request, service: string): boolean {
 
   const customHeader = request.headers.get('x-cron-secret');
   return Boolean(customHeader && safeCompare(customHeader.trim(), cronSecret));
+}
+
+/**
+ * Whether a cron job may run now: at most `maxPerHour` runs per job, well
+ * above the real schedule. A leaked CRON_SECRET then cannot be looped into a
+ * stream of paid provider calls, emails and overlapping writes.
+ */
+export async function cronRunAllowed(job: string, maxPerHour: number): Promise<boolean> {
+  const result = await checkRateLimit(`cron:${job}`, maxPerHour, 60 * 60 * 1000);
+  if (!result.success) {
+    logger.warn('Cron job throttled: too many runs this hour', { service: job });
+  }
+  return result.success;
 }

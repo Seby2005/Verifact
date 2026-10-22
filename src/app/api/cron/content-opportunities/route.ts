@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { aggregateDailyOpportunities, saveOpportunities } from '@/lib/opportunities/trends-service';
 import { logger } from '@/lib/utils/logger';
-import { isCronAuthorized } from '@/lib/security/cron-auth';
+import { cronRunAllowed, isCronAuthorized } from '@/lib/security/cron-auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60s max execution time for Vercel Cron serverless function
@@ -12,6 +12,10 @@ async function handleCronRequest(request: Request): Promise<Response> {
       { error: 'Unauthorized. Valid CRON_SECRET required.' },
       { status: 401 }
     );
+  }
+  // Daily job that spends Google News and AI calls.
+  if (!(await cronRunAllowed('content-opportunities', 6))) {
+    return NextResponse.json({ error: 'Too many runs this hour.' }, { status: 429 });
   }
 
   try {

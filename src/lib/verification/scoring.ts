@@ -282,8 +282,11 @@ const CONTRADICTION_CEILING = 50;
 export function determineEvidenceStatus(input: EvidenceStatusInput): EvidenceStatus {
   const { score, layers, ai } = input;
 
-  // 1. Explicit satire/parody detection from the LLM cross-examination
-  if (ai?.isSatireOrParody) {
+  // 1. Explicit satire/parody detection from the LLM cross-examination. Held
+  //    to the same ceiling as every other contradiction signal: a satire flag
+  //    on a score that does not lean against the claim is inconsistent, and
+  //    it is the one flag a crafted input could use to brand a true claim false.
+  if (ai?.isSatireOrParody && score < CONTRADICTION_CEILING) {
     return 'contradicted';
   }
 

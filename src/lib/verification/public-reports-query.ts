@@ -55,6 +55,20 @@ export interface PublicReportDetail {
   imageUrls: string[];
 }
 
+/**
+ * Report images rendered on public pages and in og:image, restricted to files
+ * in our own `report-images` bucket. The admin composer is the only writer and
+ * it uploads there, so anything else in the column did not come from the app
+ * and would make every visitor's browser call a foreign host.
+ */
+function ownReportImages(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) return [];
+  const prefix = `${new URL(supabaseUrl).origin}/storage/v1/object/public/report-images/`;
+  return value.filter((url): url is string => typeof url === 'string' && url.startsWith(prefix));
+}
+
 export interface ListPublicReportsOptions {
   page?: number;
   limit?: number;
@@ -104,7 +118,7 @@ export async function getPublicReportById(id: string): Promise<PublicReportDetai
       showAuthor,
       authorName,
       reportJson: (row.report_json as VerificationReport | null) || null,
-      imageUrls: Array.isArray(row.image_urls) ? (row.image_urls as string[]) : [],
+      imageUrls: ownReportImages(row.image_urls),
     };
 
     return detail;
@@ -158,7 +172,7 @@ export async function listPublicReports({
         createdAt: String(item.created_at),
         showAuthor,
         authorName,
-        imageUrls: Array.isArray(item.image_urls) ? (item.image_urls as string[]) : [],
+        imageUrls: ownReportImages(item.image_urls),
       };
     });
 

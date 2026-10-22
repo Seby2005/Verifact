@@ -15,6 +15,10 @@ export interface ValidatedInput {
  * streaming /api/verify route and the programmatic /api/v1/verify route so the
  * two can never drift on what counts as valid input (length bounds, URL check,
  * language/inputType allowlists).
+ *
+ * `isPublic` is always false here, whatever the body says: a new report is
+ * saved private, and only the publish flow (setReportVisibility, guarded by the
+ * publication rules) can make it public.
  */
 export function validateVerifyInput(
   body: unknown
@@ -34,7 +38,7 @@ export function validateVerifyInput(
     const urlLang: Language = b.language === 'fr' ? 'fr' : b.language === 'en' ? 'en' : 'ro';
     return {
       success: true,
-      data: { text: b.text.trim(), language: urlLang, isPublic: Boolean(b.isPublic), inputType: 'url' },
+      data: { text: b.text.trim(), language: urlLang, isPublic: false, inputType: 'url' },
     };
   }
 
@@ -62,7 +66,7 @@ export function validateVerifyInput(
     data: {
       text: text.trim(),
       language,
-      isPublic: Boolean(b.isPublic),
+      isPublic: false,
       inputType,
     },
   };

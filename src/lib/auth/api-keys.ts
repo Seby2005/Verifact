@@ -2,7 +2,6 @@ import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logger } from '@/lib/utils/logger';
 import type { UserTier } from '@/types/user';
-import type { UsageReservation } from '@/lib/verification/db-operations';
 
 export interface ApiKeyRecord {
   id: string;
@@ -39,6 +38,12 @@ interface ProfileDbRow {
   tier: string | null;
   role: string | null;
 }
+
+/** The operations a key can be granted. `verify` is the only one the API has. */
+const ALLOWED_SCOPES = ['verify'] as const;
+/** Active (unrevoked) keys one account may hold, so a revocation sweep stays tractable. */
+const MAX_ACTIVE_KEYS = 10;
+const MAX_KEY_NAME_LENGTH = 64;
 
 const BASE62_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const KEY_PREFIX_HEADER = 'vf_live_';
@@ -98,7 +103,7 @@ export function generateRawApiKey(): { rawKey: string; keyHash: string; keyPrefi
  */
 export async function authenticateApiKey(
   rawKey: string
-): Promise<{ userId: string; tier: UserTier; scopes?: string[] } | null> {
+): Promise<{ userId: string; keyId: string; tier: UserTier; scopes: string[] } | null> {
   if (!rawKey || typeof rawKey !== 'string' || !rawKey.startsWith(KEY_PREFIX_HEADER)) {
     return null;
   }
@@ -159,6 +164,7 @@ export async function authenticateApiKey(
 
   return {
     userId: profileData.id,
+    keyId: keyData.id,
     tier,
     scopes,
   };
@@ -166,14 +172,27 @@ export async function authenticateApiKey(
 
 /**
  * Creates a new API key for a business user.
- * Validates that the user has 'business' tier (or admin role).
+ * Validates that the user has 'business' tier (or admin role), and that the
+ * account is under MAX_ACTIVE_KEYS. `name` and `scopes` come straight from a
+ * request body, so anything malformed is replaced rather than stored: a name
+ * that is not a short string becomes the default, and scopes are filtered to
+ * ALLOWED_SCOPES. Errors carry a stable code (FORBIDDEN, KEY_LIMIT), never a
+ * database message.
  * The rawKey is returned ONLY in the result of this function and is never stored.
  */
 export async function createApiKey(
   userId: string,
-  name = 'Default Key',
-  scopes: string[] = ['verify']
+  nameInput: unknown = 'Default Key',
+  scopesInput: unknown = ['verify']
 ): Promise<ApiKeyCreatedResult> {
+  const name =
+    typeof nameInput === 'string' && nameInput.trim()
+      ? nameInput.trim().slice(0, MAX_KEY_NAME_LENGTH)
+      : 'Default Key';
+  const requested: unknown[] = Array.isArray(scopesInput) ? scopesInput : [];
+  const scopes: string[] = ALLOWED_SCOPES.filter((scope) => requested.includes(scope));
+  if (scopes.length === 0) scopes.push('verify');
+
   const adminClient = createAdminClient();
 
   // Validate tier: only business tier (or admin) may create keys
@@ -192,11 +211,20 @@ export async function createApiKey(
     throw new Error('FORBIDDEN: Only Business accounts may create API keys');
   }
 
+  const { count: activeKeys } = await (adminClient
+    .from('api_keys')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .is('revoked_at', null) as unknown as Promise<{ count: number | null }>);
+  if ((activeKeys ?? 0) >= MAX_ACTIVE_KEYS) {
+    throw new Error('KEY_LIMIT: Too many active API keys');
+  }
+
   const { rawKey, keyHash, keyPrefix } = generateRawApiKey();
 
   const insertPayload = {
     user_id: userId,
-    name: name.trim() || 'Default Key',
+    name,
     key_hash: keyHash,
     key_prefix: keyPrefix,
     scopes,
@@ -220,7 +248,7 @@ export async function createApiKey(
       userId,
       error: error?.message,
     });
-    throw new Error(`Failed to create API key: ${error?.message || 'Unknown database error'}`);
+    throw new Error('Failed to create API key');
   }
 
   return {
@@ -250,7 +278,7 @@ export async function listApiKeys(userId: string): Promise<ApiKeyRecord[]> {
       userId,
       error: error.message,
     });
-    throw new Error(`Failed to list API keys: ${error.message}`);
+    throw new Error('Failed to list API keys');
   }
 
   return (data || []).map((row) => ({
@@ -265,22 +293,26 @@ export async function listApiKeys(userId: string): Promise<ApiKeyRecord[]> {
 }
 
 /**
- * Revokes an API key for a user.
+ * Revokes one of the user's API keys. 'not_found' covers both a wrong id and
+ * someone else's key, so the answer never says which keys exist.
  */
-export async function revokeApiKey(keyId: string, userId: string): Promise<boolean> {
+export async function revokeApiKey(keyId: string, userId: string): Promise<'revoked' | 'not_found' | 'error'> {
   const adminClient = createAdminClient();
 
-  const { error } = await (adminClient
+  const { data, error } = await (adminClient
     .from('api_keys') as unknown as {
       update: (data: { revoked_at: string }) => {
         eq: (col1: string, val1: string) => {
-          eq: (col2: string, val2: string) => Promise<{ error: { message: string } | null }>;
+          eq: (col2: string, val2: string) => {
+            select: (cols: string) => Promise<{ data: { id: string }[] | null; error: { message: string } | null }>;
+          };
         };
       };
     })
     .update({ revoked_at: new Date().toISOString() })
     .eq('id', keyId)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) {
     logger.error('Failed to revoke API key', {
@@ -289,62 +321,8 @@ export async function revokeApiKey(keyId: string, userId: string): Promise<boole
       userId,
       error: error.message,
     });
-    return false;
+    return 'error';
   }
 
-  return true;
-}
-
-/**
- * Calls the atomic RPC reserve_usage_slot_for(p_user_id) using service_role.
- * Mode B metering helper for API keys.
- */
-export async function reserveUsageSlotFor(userId: string): Promise<UsageReservation> {
-  const adminClient = createAdminClient();
-
-  const { data, error } = (await (adminClient.rpc as unknown as (fn: string, params: { p_user_id: string }) => Promise<{
-    data: { allowed: boolean; usage_limit: number; used: number }[] | null;
-    error: { message: string } | null;
-  }>)('reserve_usage_slot_for', {
-    p_user_id: userId,
-  }));
-
-  if (error) {
-    logger.error('reserve_usage_slot_for RPC failed, failing open', {
-      service: 'auth/api-keys',
-      operation: 'reserveUsageSlotFor',
-      userId,
-      error: error.message,
-    });
-    return { allowed: true, limit: 1000, used: 0 };
-  }
-
-  const row = data?.[0];
-  if (!row) {
-    return { allowed: true, limit: 1000, used: 0 };
-  }
-
-  return { allowed: row.allowed, limit: row.usage_limit, used: row.used };
-}
-
-/**
- * Calls the rollback RPC release_usage_slot_for(p_user_id) using service_role.
- */
-export async function releaseUsageSlotFor(userId: string): Promise<void> {
-  const adminClient = createAdminClient();
-
-  const { error } = await (adminClient.rpc as unknown as (fn: string, params: { p_user_id: string }) => Promise<{
-    error: { message: string } | null;
-  }>)('release_usage_slot_for', {
-    p_user_id: userId,
-  });
-
-  if (error) {
-    logger.error('release_usage_slot_for RPC failed', {
-      service: 'auth/api-keys',
-      operation: 'releaseUsageSlotFor',
-      userId,
-      error: error.message,
-    });
-  }
+  return data && data.length > 0 ? 'revoked' : 'not_found';
 }

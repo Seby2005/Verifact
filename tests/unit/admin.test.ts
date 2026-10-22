@@ -130,6 +130,6 @@ describe('logAdminAction', () => {
         targetTable: 'disputes',
         targetId: 'dispute-1',
       })
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(false);
   });
 });

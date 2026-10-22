@@ -21,6 +21,7 @@ interface VerificationForDispute {
   is_public: boolean;
   input_text: string;
   language: string;
+  disputed: boolean;
 }
 
 /**
@@ -28,12 +29,12 @@ interface VerificationForDispute {
  * handler so it's unit-testable without constructing a fake NextRequest —
  * same shape as saveVerification/reserveUsageSlot in db-operations.ts.
  *
- * `supabase` must be the caller's request-scoped client (so the visibility
- * check and the disputes insert run under the caller's own RLS context —
- * see the INSERT policy in supabase/migrations/005_disputes.sql, which
- * mirrors the visibility check below at the database level too). The
- * flag-as-disputed and cache-invalidation steps use the admin client
- * internally, since the disputer may not own the report they're disputing.
+ * `supabase` must be the caller's request-scoped client, so the visibility
+ * check runs under the caller's own RLS context: an anonymous caller cannot
+ * even learn that a private report exists. The insert, the flag-as-disputed
+ * and cache-invalidation steps use the admin client, so the disputes table
+ * needs no public INSERT policy (migration 021 drops it) and the only way in
+ * is this route, with its per-IP rate limit.
  */
 export async function fileDispute(
   params: FileDisputeParams,
@@ -41,7 +42,7 @@ export async function fileDispute(
 ): Promise<FileDisputeResult> {
   const { data: verificationData, error: fetchError } = await supabase
     .from('verifications')
-    .select('id, user_id, is_public, input_text, language')
+    .select('id, user_id, is_public, input_text, language, disputed')
     .eq('id', params.verificationId)
     .single();
 
@@ -64,7 +65,7 @@ export async function fileDispute(
     resolution_note: null,
   };
 
-  const { error: insertError } = await supabase.from('disputes').insert(insertData as never);
+  const { error: insertError } = await createAdminClient().from('disputes').insert(insertData as never);
 
   if (insertError) {
     logger.error('Failed to record dispute', { service: 'Disputes', error: insertError.message });
@@ -85,8 +86,14 @@ export async function fileDispute(
  * (if any) so it's never served from cache again. Best-effort: the dispute
  * itself is already recorded by the time this runs, so a failure here is
  * logged, not surfaced as a request failure.
+ *
+ * Only the first dispute of a report does this. Expiring the shared cache
+ * forces the next reader of that text onto a fresh, paid verification, and
+ * repeating the dispute (no account needed) would otherwise repeat the cost.
  */
 async function flagAndInvalidate(verification: VerificationForDispute): Promise<void> {
+  if (verification.disputed) return;
+
   const admin = createAdminClient();
 
   const { error: flagError } = await admin

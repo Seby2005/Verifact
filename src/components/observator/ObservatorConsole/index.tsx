@@ -9,6 +9,7 @@ import {
   type Narrative,
   type Verdict,
 } from '@/lib/observator/seed';
+import { safeHttpUrl } from '@/lib/utils/safe-url';
 import styles from './ObservatorConsole.module.css';
 
 const VERDICT_COLOR: Record<Verdict, string> = {
@@ -273,7 +274,7 @@ export function ObservatorConsole() {
               <div className={styles.srcs}>
                 <span className={styles.srcsLab}>Surse</span>
                 {selected.sources.map((s) => (
-                  <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className={styles.src}>
+                  <a key={s.url} href={safeHttpUrl(s.url) ?? '#'} target="_blank" rel="noopener noreferrer" className={styles.src}>
                     {s.name}
                   </a>
                 ))}

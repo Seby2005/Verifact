@@ -1,7 +1,6 @@
 import { generateDeepDiveAnswer } from '@/lib/ai/deep-dive';
 import { POST } from '@/app/api/report/deep-dive/route';
 import { getPublicReportById } from '@/lib/verification/public-reports-query';
-import { getCachedById } from '@/lib/verification/cache';
 import { PRIMARY_MODEL } from '@/lib/ai/models';
 import type { VerificationReport } from '@/types/verification';
 
@@ -15,10 +14,6 @@ jest.mock('@/lib/supabase/server', () => ({
 
 jest.mock('@/lib/verification/public-reports-query', () => ({
   getPublicReportById: jest.fn(),
-}));
-
-jest.mock('@/lib/verification/cache', () => ({
-  getCachedById: jest.fn().mockResolvedValue(null),
 }));
 
 const minimalReport: VerificationReport = {
@@ -335,23 +330,6 @@ describe('POST /api/report/deep-dive', () => {
 
     const res = await postJson({ reportId: 'missing-id', actionType: 'explain_simple' });
     expect(res.status).toBe(404);
-  });
-
-  it('answers on a report the caller was served from the cache', async () => {
-    process.env.OPENROUTER_API_KEY = 'test-key';
-    process.env.OPENROUTER_BASE_URL = 'https://llm.test/v1';
-    mockLlmResponse(
-      'Răspuns de test pentru un raport din cache: sursele citate contrazic afirmația verificată.'
-    );
-    mockCreateClient.mockReturnValue(
-      buildSupabaseClient({ user: { id: 'u3', email: 'pro3@test.ro' }, profile: { tier: 'pro', role: 'user' } })
-    );
-    (getPublicReportById as jest.Mock).mockResolvedValue(null);
-    (getCachedById as jest.Mock).mockResolvedValueOnce(minimalReport);
-
-    const res = await postJson({ reportId: minimalReport.id, actionType: 'explain_simple' });
-    expect(res.status).toBe(200);
-    expect(getCachedById).toHaveBeenCalledWith(minimalReport.id);
   });
 
   it('answers on a public report for any Pro caller', async () => {

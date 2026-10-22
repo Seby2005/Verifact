@@ -7,8 +7,14 @@ describe('sourceHref — free plan', () => {
     );
   });
 
-  it('falls back to the raw string when the url is unparseable', () => {
-    expect(sourceHref('not a url', 'text', false)).toBe('not a url');
+  it('points nowhere when the url is unparseable', () => {
+    expect(sourceHref('not a url', 'text', false)).toBe('#');
+  });
+
+  it('never returns a script URL, on any plan', () => {
+    expect(sourceHref('javascript:alert(1)', 'text', false)).toBe('#');
+    expect(sourceHref('javascript:alert(1)', 'a long enough excerpt to anchor', true)).toBe('#');
+    expect(sourceHref('https://example.com/a', 'text', false, 'javascript:alert(1)')).toBe('https://example.com');
   });
 });
 

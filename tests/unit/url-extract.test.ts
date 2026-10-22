@@ -1,3 +1,10 @@
+// The network layer is pinnedFetch (node http with a guarded DNS lookup); these
+// tests drive the parsing and redirect logic through a mocked global fetch.
+jest.mock('@/lib/verification/pinned-fetch', () => ({
+  ...jest.requireActual('@/lib/verification/pinned-fetch'),
+  pinnedFetch: (url: string) => global.fetch(url),
+}));
+
 import { extractArticleText, fetchArticleParagraphs, isValidHttpUrl, UrlExtractionError } from '@/lib/verification/url-extract';
 
 describe('isValidHttpUrl', () => {

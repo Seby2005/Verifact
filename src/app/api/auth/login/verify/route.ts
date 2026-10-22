@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { checkRateLimit } from '@/lib/utils/rate-limit';
+import { accountKey, checkRateLimit } from '@/lib/utils/rate-limit';
 import { getClientIp } from '@/lib/utils/client-ip';
 
 interface LoginVerifyBody {
@@ -34,8 +34,13 @@ export async function POST(request: Request): Promise<Response> {
 
   // Tighter than login-start: a 6-digit code is only ~1M combinations, so
   // this endpoint is the actual brute-force surface.
+  // The IP bucket alone lets a guesser spread attempts across addresses, so
+  // the account gets its own: 5 tries per 15 minutes, wherever they come from.
   const rateLimitResult = await checkRateLimit(`auth-login-verify:${ip}`, 5, 60 * 1000);
-  if (!rateLimitResult.success) {
+  const accountLimit = rateLimitResult.success
+    ? await checkRateLimit(`auth-otp-account:${accountKey(email)}`, 5, 15 * 60 * 1000)
+    : rateLimitResult;
+  if (!rateLimitResult.success || !accountLimit.success) {
     return Response.json(
       { success: false, error: 'Prea multe încercări. Așteaptă un minut.' },
       { status: 429 }

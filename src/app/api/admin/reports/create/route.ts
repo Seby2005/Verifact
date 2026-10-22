@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { requireAdmin, AuthorizationError, logAdminAction } from '@/lib/auth/admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logger } from '@/lib/utils/logger';
+import { safeHttpUrl } from '@/lib/utils/safe-url';
 import type { Verdict, VerificationReport, CombinedSource } from '@/types/verification';
 
 export const dynamic = 'force-dynamic';
@@ -92,6 +93,13 @@ export async function POST(request: Request) {
     }
   }
 
+  // Source URLs become links on the public report page, so anything other than
+  // an http(s) URL (a pasted `javascript:` link, say) is refused outright.
+  const badSource = sourcesInput.find((s) => s.url?.trim() && !safeHttpUrl(s.url));
+  if (badSource) {
+    return Response.json({ error: 'Sursele trebuie să fie linkuri http(s) valide.' }, { status: 400 });
+  }
+
   // --- Collect & validate image files -------------------------------------
   const files = form.getAll('images').filter((f): f is File => f instanceof File && f.size > 0);
   if (files.length > MAX_IMAGES) {
@@ -132,11 +140,11 @@ export async function POST(request: Request) {
 
   // --- Build report_json --------------------------------------------------
   const sources: CombinedSource[] = sourcesInput
-    .filter((s) => s.url && s.url.trim())
+    .filter((s) => safeHttpUrl(s.url))
     .map((s) => ({
       title: s.title?.trim() || s.publisher?.trim() || s.url!.trim(),
       publisher: s.publisher?.trim() || '',
-      url: s.url!.trim(),
+      url: safeHttpUrl(s.url)!,
       sourceType: 'news',
       relevance: 1,
     }));

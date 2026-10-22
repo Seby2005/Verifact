@@ -12,9 +12,8 @@ export async function GET() {
   try {
     const keys = await listApiKeys(user.id);
     return Response.json({ success: true, keys });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Eroare la încărcarea cheilor API';
-    return Response.json({ error: message }, { status: 500 });
+  } catch {
+    return Response.json({ error: 'Eroare la încărcarea cheilor API' }, { status: 500 });
   }
 }
 
@@ -24,7 +23,7 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: { name?: string; scopes?: string[] } = {};
+  let body: { name?: unknown; scopes?: unknown } = {};
   try {
     body = await request.json();
   } catch {
@@ -35,13 +34,20 @@ export async function POST(request: Request) {
     const apiKey = await createApiKey(user.id, body.name, body.scopes);
     return Response.json({ success: true, apiKey });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Eroare la crearea cheii API';
+    // Only stable codes leave this route; database detail stays in the log.
+    const message = err instanceof Error ? err.message : '';
     if (message.includes('FORBIDDEN')) {
       return Response.json(
         { error: 'Accesul la chei API este rezervat conturilor Business.' },
         { status: 403 }
       );
     }
-    return Response.json({ error: message }, { status: 500 });
+    if (message.includes('KEY_LIMIT')) {
+      return Response.json(
+        { error: 'Ai atins numărul maxim de chei active. Revocă o cheie înainte să creezi alta.' },
+        { status: 400 }
+      );
+    }
+    return Response.json({ error: 'Eroare la crearea cheii API' }, { status: 500 });
   }
 }

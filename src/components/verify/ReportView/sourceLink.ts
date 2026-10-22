@@ -1,3 +1,5 @@
+import { safeHttpUrl } from '@/lib/utils/safe-url';
+
 /**
  * Where a source citation points, decided in one place so the on-page report,
  * the PDF document, and the paywall preview can never disagree.
@@ -6,14 +8,21 @@
  * search matched — a browser text fragment (`#:~:text=`) drops the reader on
  * the passage instead of the top of a long page. Free plans get the site only:
  * the exact-passage link is part of what Pro pays for.
+ *
+ * Anything that is not an http(s) URL (a `javascript:` link in stored report
+ * data, say) comes back as `#`, so it can never run as script.
  */
 export function sourceHref(
-  url: string,
+  rawUrl: string,
   excerpt: string | undefined,
   isPremium: boolean,
   /** The publisher's site when `url` is an aggregator redirect (see CombinedSource.siteUrl). */
-  siteUrl?: string
+  rawSiteUrl?: string
 ): string {
+  const url = safeHttpUrl(rawUrl);
+  if (!url) return '#';
+  const siteUrl = safeHttpUrl(rawSiteUrl) ?? undefined;
+
   if (!isPremium) {
     if (siteUrl) return siteUrl;
     try {

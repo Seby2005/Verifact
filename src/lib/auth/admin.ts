@@ -33,8 +33,9 @@ interface ProfileRoleRow {
  * Pass `{ allowModerator: true }` to also accept the 'moderator' role for
  * actions that don't require full admin privileges.
  *
- * Infrastructure only — no route currently calls this. Admin UI/endpoints
- * are out of scope here and will wire it in when they're built.
+ * Every /api/admin handler and every /admin page calls this, and
+ * app/admin/layout.tsx calls it again as a safety net. The role comes from
+ * profiles.role only; the ADMIN_EMAILS list never passes this gate.
  */
 export async function requireAdmin(
   options: { allowModerator?: boolean } = {}
@@ -86,9 +87,10 @@ export interface LogAdminActionParams {
  *
  * Logging failures are non-fatal (matches saveVerification's pattern) —
  * the caller's actual action already happened; losing the audit record of
- * it shouldn't also fail the request.
+ * it shouldn't also fail the request. The result says whether the record was
+ * written, so a caller that must not act unaudited can check it.
  */
-export async function logAdminAction(params: LogAdminActionParams): Promise<void> {
+export async function logAdminAction(params: LogAdminActionParams): Promise<boolean> {
   const admin = createAdminClient();
 
   const insertData = {
@@ -104,6 +106,14 @@ export async function logAdminAction(params: LogAdminActionParams): Promise<void
   }).insert(insertData);
 
   if (error) {
-    logger.error('Failed to log admin action', { service: 'Audit', error: error.message });
+    logger.error('Failed to log admin action', {
+      service: 'Audit',
+      error: error.message,
+      actionType: params.actionType,
+      targetTable: params.targetTable,
+      targetId: params.targetId,
+    });
+    return false;
   }
+  return true;
 }

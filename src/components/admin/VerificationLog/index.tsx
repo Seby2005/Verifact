@@ -6,6 +6,7 @@ import {
   type VerificationLogPage,
   type VerificationLogQuery,
 } from '@/lib/verification/admin-log';
+import { safeHttpUrl } from '@/lib/utils/safe-url';
 import styles from './VerificationLog.module.css';
 
 interface VerificationLogProps {
@@ -168,7 +169,7 @@ export const VerificationLog: React.FC<VerificationLogProps> = ({ log, query }) 
                       <ul className={styles.sources}>
                         {entry.sources.map((source, i) => (
                           <li key={i}>
-                            <a href={source.url} target="_blank" rel="noopener noreferrer">
+                            <a href={safeHttpUrl(source.url) ?? '#'} target="_blank" rel="noopener noreferrer">
                               {source.title || source.url}
                             </a>
                             <span className={styles.sourceMeta}>

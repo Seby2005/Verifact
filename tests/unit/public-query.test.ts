@@ -17,7 +17,9 @@ describe('Public Reports Query Helper & show_author Security Tests', () => {
     it('allows the report owner to toggle show_author', async () => {
       const mockUpdate = jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ error: null }),
+          eq: jest.fn().mockReturnValue({
+            select: jest.fn().mockResolvedValue({ data: [{ id: 'v1' }], error: null }),
+          }),
         }),
       });
 
@@ -96,9 +98,10 @@ describe('Public Reports Query Helper & show_author Security Tests', () => {
         showAuthor: true,
       });
 
+      // Someone else's report answers exactly like a missing one.
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.code).toBe('FORBIDDEN');
+        expect(result.code).toBe('REPORT_NOT_FOUND');
       }
     });
   });

@@ -1,11 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { UserTier } from '@/types/user';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { reserveUsageSlot, releaseUsageSlot } from '@/lib/verification/db-operations';
+import { reserveUsageSlot, reserveUsageSlotFor, releaseUsageSlot } from '@/lib/verification/db-operations';
 import { checkAnonymousLimit } from '@/lib/usage/anonymous-limit';
 import { hasUnlimitedUsage } from '@/lib/usage/limits';
-import { logger } from '@/lib/utils/logger';
 import { getClientIp } from '@/lib/utils/client-ip';
 
 // ---------------------------------------------------------------------------
@@ -25,7 +23,7 @@ import { authenticateApiKey } from '@/lib/auth/api-keys';
 export type Caller =
   | { kind: 'anonymous'; ip: string; userAgent: string }
   | { kind: 'user'; userId: string; tier: UserTier; unlimited: boolean; client: SupabaseClient<Database> }
-  | { kind: 'apikey'; userId: string; tier: UserTier }
+  | { kind: 'apikey'; userId: string; keyId: string; tier: UserTier }
   | { kind: 'invalid' }
   | { kind: 'forbidden' };
 
@@ -38,6 +36,9 @@ function bearer(request: Request): string | null {
   const m = /^Bearer\s+(.+)$/i.exec(h.trim());
   return m ? m[1].trim() : null;
 }
+
+/** Fixed agent string for anonymous API callers, so their allowance is per IP. */
+const ANONYMOUS_API_AGENT = 'verifact-api-v1';
 
 function clientIp(request: Request): string {
   return getClientIp(request);
@@ -67,7 +68,10 @@ export async function authenticateCaller(request: Request): Promise<Caller> {
     // Only Business may use programmatic keys; a downgraded account's key is
     // rejected rather than silently metered at a lower tier.
     if (resolved.tier !== 'business') return { kind: 'forbidden' };
-    return { kind: 'apikey', userId: resolved.userId, tier: resolved.tier };
+    // A key may only do what its scopes say. 'verify' is the one operation
+    // there is today; checking it now keeps the contract's promise real.
+    if (!resolved.scopes.includes('verify')) return { kind: 'forbidden' };
+    return { kind: 'apikey', userId: resolved.userId, keyId: resolved.keyId, tier: resolved.tier };
   }
 
   // Supabase JWT path (extension logged-in Pro/Business).
@@ -98,6 +102,8 @@ export interface SlotResult {
   anonymousHash?: string;
   /** Number the free-tier limit message may print; undefined otherwise. */
   freeLimit?: number;
+  /** The quota could not be checked; the route answers 503, not USAGE_LIMIT. */
+  unavailable?: boolean;
 }
 
 // The Pro cap is deliberately never surfaced as a number anywhere in the
@@ -112,17 +118,20 @@ function computeRemaining(tier: UserTier, limit: number, used: number): number |
  * caller is metered. Mirrors /api/verify's reservation, dispatched by caller
  * kind: JWT users go through reserve_usage_slot() (auth.uid()); API keys go
  * through the service-role reserve_usage_slot_for(p_user_id); anonymous callers
- * are capped by IP+UA hash. Admins/unlimited never consume a slot.
+ * are capped per IP. Admins/unlimited never consume a slot.
  */
 export async function reserveSlot(caller: ActiveCaller): Promise<SlotResult> {
   if (caller.kind === 'anonymous') {
-    const check = await checkAnonymousLimit(caller.ip, caller.userAgent);
+    // Per IP only: the programmatic API has no Turnstile, so a free User-Agent
+    // header must not mint a fresh anonymous allowance on every request.
+    const check = await checkAnonymousLimit(caller.ip, ANONYMOUS_API_AGENT);
     return {
       allowed: check.allowed,
       tier: 'free',
       remaining: check.allowed ? Math.max(0, check.limit - 1) : 0,
       anonymousHash: check.hash,
       freeLimit: check.limit,
+      unavailable: check.unavailable,
     };
   }
 
@@ -136,62 +145,27 @@ export async function reserveSlot(caller: ActiveCaller): Promise<SlotResult> {
       tier: caller.tier,
       remaining: computeRemaining(caller.tier, r.limit, r.used),
       freeLimit: caller.tier === 'free' ? r.limit : undefined,
+      unavailable: r.unavailable,
     };
   }
 
-  // apikey (business). The *_for RPCs are added by migration 018 (Track A);
-  // until types/database.ts is regenerated to include them, call through a
-  // loosened rpc signature.
-  const admin = createAdminClient();
-  const rpc = admin.rpc as unknown as (
-    fn: string,
-    args: Record<string, unknown>
-  ) => Promise<{
-    data: { allowed: boolean; usage_limit: number; used: number }[] | null;
-    error: { message: string } | null;
-  }>;
-  const { data, error } = await rpc('reserve_usage_slot_for', { p_user_id: caller.userId });
-  if (error) {
-    // Fail open, matching reserveUsageSlot()'s behaviour on an RPC hiccup.
-    logger.error('reserve_usage_slot_for RPC failed, failing open', {
-      service: 'api/v1/verify',
-      operation: 'reserveSlot',
-      error: error.message,
-    });
-    return { allowed: true, tier: caller.tier, remaining: null };
-  }
-  const row = data?.[0];
-  if (!row) return { allowed: true, tier: caller.tier, remaining: null };
+  // apikey (business): metered through the service-role reserve_usage_slot_for.
+  const r = await reserveUsageSlotFor(caller.userId);
   return {
-    allowed: row.allowed,
+    allowed: r.allowed,
     tier: caller.tier,
-    remaining: computeRemaining(caller.tier, row.usage_limit, row.used),
+    remaining: r.unavailable ? null : computeRemaining(caller.tier, r.limit, r.used),
+    unavailable: r.unavailable,
   };
 }
 
 /**
- * Refunds a slot reserved by reserveSlot() that produced no saved report (cache
- * hit, verification failure, or save failure). Anonymous and unlimited callers
- * reserved nothing, so this is a no-op for them.
+ * Refunds a slot reserved by reserveSlot() that produced no work (cache hit or
+ * a verification that failed). Anonymous and unlimited callers reserved
+ * nothing, so this is a no-op for them.
  */
 export async function releaseSlot(caller: ActiveCaller): Promise<void> {
-  if (caller.kind === 'user' && !caller.unlimited) {
-    await releaseUsageSlot(caller.client);
-    return;
-  }
-  if (caller.kind === 'apikey') {
-    const admin = createAdminClient();
-    const rpc = admin.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>
-    ) => Promise<{ error: { message: string } | null }>;
-    const { error } = await rpc('release_usage_slot_for', { p_user_id: caller.userId });
-    if (error) {
-      logger.error('release_usage_slot_for RPC failed', {
-        service: 'api/v1/verify',
-        operation: 'releaseSlot',
-        error: error.message,
-      });
-    }
+  if ((caller.kind === 'user' && !caller.unlimited) || caller.kind === 'apikey') {
+    await releaseUsageSlot(caller.userId);
   }
 }

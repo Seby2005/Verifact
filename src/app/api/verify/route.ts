@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { verifyContent } from '@/lib/verification/orchestrator';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
@@ -14,8 +15,15 @@ import { getClientIp } from '@/lib/utils/client-ip';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60s max execution time for Vercel serverless function
 
+const MAX_BODY_BYTES = 256 * 1024;
+
 export async function POST(request: Request): Promise<Response> {
-  // 1. Parse and validate input
+  // 1. Parse and validate input. The body is a short text or a link; anything
+  //    far larger is refused before it is read into memory.
+  if (Number(request.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) {
+    const err: VerifyAPIError = { success: false, error: 'Cererea este prea mare.', code: 'INPUT_INVALID' };
+    return Response.json(err, { status: 413 });
+  }
   let body: unknown;
   try {
     body = await request.json();
@@ -59,7 +67,12 @@ export async function POST(request: Request): Promise<Response> {
     (typeof rawBody.turnstileToken === 'string' ? rawBody.turnstileToken : undefined) ??
     (typeof rawBody['cf-turnstile-response'] === 'string' ? rawBody['cf-turnstile-response'] : undefined);
 
-  const turnstileResult = await validateTurnstileToken(turnstileToken, ip);
+  const turnstileResult = await validateTurnstileToken(
+    turnstileToken,
+    ip,
+    'verify',
+    new URL(request.url).hostname
+  );
   if (!turnstileResult.success) {
     const err: VerifyAPIError = {
       success: false,
@@ -85,6 +98,9 @@ export async function POST(request: Request): Promise<Response> {
 
   let usageReserved = false;
   let anonymousHash: string | undefined;
+  const releaseReservation = async () => {
+    if (usageReserved && user) await releaseUsageSlot(user.id);
+  };
 
   if (user) {
     // Admins are uncapped: skip the reservation entirely so their count never
@@ -100,6 +116,14 @@ export async function POST(request: Request): Promise<Response> {
 
     if (!isAdmin) {
       const reservation = await reserveUsageSlot(supabase);
+      if (reservation.unavailable) {
+        const err: VerifyAPIError = {
+          success: false,
+          error: 'Nu am putut verifica limita contului tău. Te rugăm să încerci din nou peste câteva momente.',
+          code: 'SERVER_ERROR',
+        };
+        return Response.json(err, { status: 503 });
+      }
       if (!reservation.allowed) {
         // The free cap (3) is advertised, so naming it here is fine and drives
         // the upsell. The Pro cap is deliberately never printed anywhere, so
@@ -120,6 +144,14 @@ export async function POST(request: Request): Promise<Response> {
     const userAgent = request.headers.get('user-agent') ?? 'unknown';
     const anonymousCheck = await checkAnonymousLimit(ip, userAgent);
     anonymousHash = anonymousCheck.hash;
+    if (anonymousCheck.unavailable) {
+      const err: VerifyAPIError = {
+        success: false,
+        error: 'Serviciul este momentan indisponibil. Te rugăm să încerci din nou peste câteva momente.',
+        code: 'SERVER_ERROR',
+      };
+      return Response.json(err, { status: 503 });
+    }
     if (!anonymousCheck.allowed) {
       const err: VerifyAPIError = {
         success: false,
@@ -137,6 +169,8 @@ export async function POST(request: Request): Promise<Response> {
     try {
       claimText = await extractArticleText(validatedInput.text);
     } catch (error) {
+      // Nothing was verified, so the reader keeps the slot.
+      await releaseReservation();
       const err: VerifyAPIError = {
         success: false,
         error:
@@ -170,7 +204,7 @@ export async function POST(request: Request): Promise<Response> {
       };
 
       try {
-        const report = await verifyContent(
+        let report = await verifyContent(
           {
             text: claimText,
             language: validatedInput.language,
@@ -183,22 +217,25 @@ export async function POST(request: Request): Promise<Response> {
             send({ type: 'progress', step: ev.step, status: ev.status, count: ev.count, error: ev.error })
         );
 
-        // 5. Save to Supabase. A cache hit did no new work, so any reserved slot
-        //    is released instead of charging the user's monthly quota; a save
-        //    failure means the report won't appear in history, so release then
-        //    too — but still hand the reader the report they waited for.
+        // 5. Save to Supabase.
+        //    A cache hit did no new work, so the reserved slot goes back. The
+        //    reader still gets a copy of their own (fresh id, no AI cost on it),
+        //    so it shows in their history, can be published and opened in Deep
+        //    Dive, and an anonymous reader's free check is counted.
+        //    A fresh verification keeps its slot even if the save fails: the
+        //    work was done and paid for, and refunding on a failed insert let a
+        //    request built to fail the insert verify for free, over and over.
         if (report.fromCache) {
-          if (usageReserved) await releaseUsageSlot(supabase);
-        } else {
-          const saved = await saveVerification(report, supabase, anonymousHash);
-          if (!saved && usageReserved) await releaseUsageSlot(supabase);
+          await releaseReservation();
+          report = { ...report, id: randomUUID(), createdAt: new Date().toISOString(), tokenUsage: undefined };
         }
+        await saveVerification(report, supabase, anonymousHash);
 
         send({ type: 'report', report });
       } catch (error) {
         // The reservation was consumed for a verification that never completed
         // — release it rather than charging the user's quota for nothing.
-        if (usageReserved) await releaseUsageSlot(supabase);
+        await releaseReservation();
 
         if (error instanceof Error && error.message === 'ALL_LAYERS_FAILED') {
           send({

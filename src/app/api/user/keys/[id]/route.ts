@@ -17,8 +17,11 @@ export async function DELETE(
     return Response.json({ error: 'Identificator cheie lipsă' }, { status: 400 });
   }
 
-  const success = await revokeApiKey(id, user.id);
-  if (!success) {
+  const result = await revokeApiKey(id, user.id);
+  if (result === 'not_found') {
+    return Response.json({ error: 'Cheia API nu a fost găsită.' }, { status: 404 });
+  }
+  if (result === 'error') {
     return Response.json({ error: 'Eroare la revocarea cheii API' }, { status: 500 });
   }
 

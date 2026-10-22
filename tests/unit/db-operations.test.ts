@@ -1,3 +1,16 @@
+// Releases go through the service-role client (release_usage_slot_for); the
+// same mocked rpc drives both sides so the atomic store below sees them all.
+// saveVerification falls back to the caller's client when no service key is
+// configured, so the admin client exists only where a test asks for it.
+const mockAdminRpc = jest.fn();
+let mockAdminAvailable = false;
+jest.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => {
+    if (!mockAdminAvailable) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
+    return { rpc: mockAdminRpc };
+  },
+}));
+
 import {
   reserveUsageSlot,
   releaseUsageSlot,
@@ -30,7 +43,7 @@ function createAtomicUsageStore(initialCount: number, limit: number) {
         count += 1;
         return { data: [{ allowed: true, usage_limit: limit, used: count }], error: null };
       }
-      if (fn === 'release_usage_slot') {
+      if (fn === 'release_usage_slot_for') {
         count = Math.max(count - 1, 0);
         return { data: null, error: null };
       }
@@ -47,6 +60,13 @@ function createAtomicUsageStore(initialCount: number, limit: number) {
 }
 
 describe('reserveUsageSlot concurrency', () => {
+  beforeAll(() => {
+    mockAdminAvailable = true;
+  });
+  afterAll(() => {
+    mockAdminAvailable = false;
+  });
+
   it('never allows more than `limit` reservations under 20 concurrent callers', async () => {
     const LIMIT = 10;
     const store = createAtomicUsageStore(0, LIMIT);
@@ -80,35 +100,37 @@ describe('reserveUsageSlot concurrency', () => {
     const store = createAtomicUsageStore(0, LIMIT);
     const supabase = { rpc: store.rpc } as unknown as SupabaseLike;
 
+    mockAdminRpc.mockImplementation(store.rpc);
+
     const first = await reserveUsageSlot(supabase);
     expect(first.allowed).toBe(true);
 
     const second = await reserveUsageSlot(supabase);
     expect(second.allowed).toBe(false);
 
-    await releaseUsageSlot(supabase);
+    await releaseUsageSlot('user-1');
 
     const third = await reserveUsageSlot(supabase);
     expect(third.allowed).toBe(true);
   });
 
-  it('fails open when the RPC errors, so an outage does not block every verification', async () => {
+  it('refuses (marked unavailable) when the RPC errors, so a meter outage is not free use', async () => {
     const rpc = jest.fn().mockResolvedValue({ data: null, error: { message: 'connection lost' } });
     const supabase = { rpc } as unknown as SupabaseLike;
 
     const result = await reserveUsageSlot(supabase);
 
-    expect(result.allowed).toBe(true);
+    expect(result.allowed).toBe(false);
+    expect(result.unavailable).toBe(true);
     expect(rpc).toHaveBeenCalledWith('reserve_usage_slot');
   });
 
-  it('release calls the release_usage_slot RPC with no arguments', async () => {
-    const rpc = jest.fn().mockResolvedValue({ data: null, error: null });
-    const supabase = { rpc } as unknown as SupabaseLike;
+  it('release goes through the service-role release_usage_slot_for RPC for that user', async () => {
+    mockAdminRpc.mockResolvedValue({ data: null, error: null });
 
-    await releaseUsageSlot(supabase);
+    await releaseUsageSlot('user-42');
 
-    expect(rpc).toHaveBeenCalledWith('release_usage_slot');
+    expect(mockAdminRpc).toHaveBeenCalledWith('release_usage_slot_for', { p_user_id: 'user-42' });
   });
 });
 
@@ -168,7 +190,7 @@ describe('saveVerification', () => {
     expect(insert.mock.calls[0][0].user_id).toBe('user-1');
   });
 
-  it('returns false when the insert fails, so callers can release a reserved slot', async () => {
+  it('returns false when the insert fails (logged; the slot stays used, the work was done)', async () => {
     const { supabase } = makeSupabase({ message: 'insert failed' });
 
     const result = await saveVerification(baseReport, supabase);

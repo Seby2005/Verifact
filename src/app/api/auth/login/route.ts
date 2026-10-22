@@ -1,5 +1,5 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { checkRateLimit } from '@/lib/utils/rate-limit';
+import { accountKey, checkRateLimit } from '@/lib/utils/rate-limit';
 import { getClientIp } from '@/lib/utils/client-ip';
 import { logger } from '@/lib/utils/logger';
 import type { Database } from '@/types/database';
@@ -35,8 +35,13 @@ export async function POST(request: Request): Promise<Response> {
 
   const ip = getClientIp(request);
 
+  // Per IP and per account: the account bucket stops a password guess spread
+  // across many addresses from ever reaching more than a handful of tries.
   const rateLimitResult = await checkRateLimit(`auth-login:${ip}`, 5, 60 * 1000);
-  if (!rateLimitResult.success) {
+  const accountLimit = rateLimitResult.success
+    ? await checkRateLimit(`auth-login-account:${accountKey(email)}`, 10, 15 * 60 * 1000)
+    : rateLimitResult;
+  if (!rateLimitResult.success || !accountLimit.success) {
     return Response.json(
       { success: false, error: 'Prea multe încercări. Așteaptă un minut.' },
       { status: 429 }
@@ -59,10 +64,16 @@ export async function POST(request: Request): Promise<Response> {
 
   const { error: passwordError } = await anon.auth.signInWithPassword({ email, password });
   if (passwordError) {
-    const message = passwordError.message.includes('Email not confirmed')
-      ? 'Contul nu a fost confirmat. Verifică emailul pentru linkul de confirmare.'
-      : 'Email sau parolă incorectă.';
-    return Response.json({ success: false, error: message }, { status: 401 });
+    // One message for every failure. Supabase only says "Email not confirmed"
+    // once the password is right, so a distinct reply would confirm a guessed
+    // password; the shared text still points a real user at the confirmation.
+    return Response.json(
+      {
+        success: false,
+        error: 'Email sau parolă incorectă. Dacă abia ți-ai creat contul, confirmă-l mai întâi din linkul primit pe email.',
+      },
+      { status: 401 }
+    );
   }
 
   // The password check above issued a real (if unpersisted) session on the

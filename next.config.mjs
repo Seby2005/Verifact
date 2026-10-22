@@ -62,8 +62,10 @@ const csp = [
   "default-src 'self'",
   // Next.js's App Router hydration payload ships as inline <script> tags
   // (no nonce plumbing set up yet) — 'unsafe-inline' is required for the
-  // app to boot, not an oversight. Tightening this to a nonce-based policy
-  // is tracked as follow-up work, not part of this pass.
+  // app to boot, not an oversight. A nonce-based policy would force every
+  // page to render dynamically (no static pages, ISR or CDN caching), so it
+  // is a deliberate trade-off; the XSS sinks themselves are closed instead
+  // (data-driven links go through safeHttpUrl, never raw into href).
   // 'wasm-unsafe-eval' lets the browser compile WebAssembly — required by
   // onnxruntime-web, which runs the Whisper transcription model client-side
   // (src/lib/transcription/browser-whisper.ts). It permits only WASM
@@ -95,7 +97,9 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
-  productionBrowserSourceMaps: true,
+  // Off: public source maps hand anyone the readable TypeScript (limits, scoring,
+  // report shape). They were on only for a Lighthouse best-practices audit.
+  productionBrowserSourceMaps: false,
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,

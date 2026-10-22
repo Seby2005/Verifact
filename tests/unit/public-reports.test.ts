@@ -83,7 +83,7 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
       }
     });
 
-    it('returns FORBIDDEN if user does not own the verification', async () => {
+    it('answers REPORT_NOT_FOUND (same as a missing report) if user does not own the verification', async () => {
       mockServerFrom.mockImplementation((table: string) => {
         if (table === 'verifications') {
           return {
@@ -101,8 +101,67 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
       const result = await checkPublishEligibility({ verificationId: 'v1', userId: 'other-user' });
       expect(result.eligible).toBe(false);
       if (!result.eligible) {
-        expect(result.reason).toBe('FORBIDDEN');
+        expect(result.reason).toBe('REPORT_NOT_FOUND');
       }
+    });
+
+    it('checks ownership before content, so a screenshot of someone else reveals nothing', async () => {
+      mockServerFrom.mockImplementation((table: string) => {
+        if (table === 'verifications') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({
+              data: { id: 'v1', user_id: 'user-owner', input_type: 'screenshot', score: null, is_public: false, visibility_status: 'private' },
+              error: null,
+            }),
+          };
+        }
+        if (table === 'profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: { tier: 'free', role: 'user' }, error: null }),
+          };
+        }
+        throw new Error(`Unexpected table ${table}`);
+      });
+
+      const result = await checkPublishEligibility({ verificationId: 'v1', userId: 'other-user' });
+      expect(result.eligible).toBe(false);
+      if (!result.eligible) {
+        expect(result.reason).toBe('REPORT_NOT_FOUND');
+      }
+    });
+
+    it('gives an ADMIN_EMAILS address no power over someone else\'s report without role admin', async () => {
+      mockServerFrom.mockImplementation((table: string) => {
+        if (table === 'verifications') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({
+              data: { id: 'v1', user_id: 'user-owner', input_type: 'text', score: 90, is_public: false, visibility_status: 'private' },
+              error: null,
+            }),
+          };
+        }
+        if (table === 'profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            single: jest.fn().mockResolvedValue({ data: { tier: 'free', role: 'user' }, error: null }),
+          };
+        }
+        throw new Error(`Unexpected table ${table}`);
+      });
+
+      const result = await checkPublishEligibility({
+        verificationId: 'v1',
+        userId: 'user-sebi',
+        userEmail: 'sebi.iancu23@gmail.com',
+      });
+      expect(result.eligible).toBe(false);
     });
 
     it('returns SCREENSHOT_NOT_PUBLISHABLE when report input_type is screenshot', async () => {
@@ -280,7 +339,7 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
       }
     });
 
-    it('returns eligible = true for admin user with email sebi.iancu23@gmail.com', async () => {
+    it('returns eligible = true, unlimited, for a profile with role admin', async () => {
       mockServerFrom.mockImplementation((table: string) => {
         if (table === 'verifications') {
           return {
@@ -296,7 +355,7 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
               return {
                 eq: jest.fn().mockReturnThis(),
                 single: jest.fn().mockResolvedValue({
-                  data: { id: 'v1', user_id: 'user-sebi', score: 90, is_public: false, visibility_status: 'private' },
+                  data: { id: 'v1', user_id: 'someone-else', score: 90, is_public: false, visibility_status: 'private' },
                   error: null,
                 }),
               };
@@ -308,7 +367,7 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
             select: jest.fn().mockReturnThis(),
             eq: jest.fn().mockReturnThis(),
             single: jest.fn().mockResolvedValue({
-              data: { tier: 'free', role: 'user', created_at: new Date(Date.now() - 100 * 3600 * 1000).toISOString(), verifications_count: 5 },
+              data: { tier: 'free', role: 'admin', created_at: new Date(Date.now() - 100 * 3600 * 1000).toISOString(), verifications_count: 5 },
               error: null,
             }),
           };
@@ -432,7 +491,9 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
     it('unpublishes report successfully when isPublic is false', async () => {
       const mockUpdate = jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ error: null }),
+          eq: jest.fn().mockReturnValue({
+            select: jest.fn().mockResolvedValue({ data: [{ id: 'v1' }], error: null }),
+          }),
         }),
       });
 
@@ -460,7 +521,9 @@ describe('Public Reports System — Core Logic & Eligibility', () => {
       const recentCreatedAt = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
       const mockUpdate = jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ error: null }),
+          eq: jest.fn().mockReturnValue({
+            select: jest.fn().mockResolvedValue({ data: [{ id: 'v1' }], error: null }),
+          }),
         }),
       });
 

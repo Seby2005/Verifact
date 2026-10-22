@@ -50,6 +50,8 @@ interface AnonymousLimitResult {
   limit: number;
   windowDays: number;
   hash: string;
+  /** The count could not be read; callers answer "try again", not "limit reached". */
+  unavailable?: boolean;
 }
 
 /**
@@ -82,10 +84,11 @@ export async function checkAnonymousLimit(
 
   if (error) {
     logger.error('Failed to check anonymous verification limit', { service: 'AnonymousLimit', error: error.message });
-    // Fail open: allow the verification but log the error.
-    // In production, you may want to fail closed instead.
+    // Fail closed: an anonymous verification costs real money, so a database
+    // hiccup must not turn into unlimited free checks.
     return {
-      allowed: true,
+      allowed: false,
+      unavailable: true,
       current: 0,
       limit: ANONYMOUS_MAX_VERIFICATIONS,
       windowDays: ANONYMOUS_WINDOW_DAYS,

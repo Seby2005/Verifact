@@ -17,9 +17,8 @@ import {
   createApiKey,
   listApiKeys,
   revokeApiKey,
-  reserveUsageSlotFor,
-  releaseUsageSlotFor,
 } from '@/lib/auth/api-keys';
+import { reserveUsageSlotFor, releaseUsageSlot } from '@/lib/verification/db-operations';
 
 describe('API Keys Unit Tests', () => {
   beforeEach(() => {
@@ -142,6 +141,7 @@ describe('API Keys Unit Tests', () => {
       const res = await authenticateApiKey('vf_live_validactivekey1234567890123');
       expect(res).toEqual({
         userId: 'user-456',
+        keyId: 'key-123',
         tier: 'business',
         scopes: ['verify'],
       });
@@ -185,6 +185,7 @@ describe('API Keys Unit Tests', () => {
       const res = await authenticateApiKey('vf_live_adminkey123456789012345678');
       expect(res).toEqual({
         userId: 'admin-user',
+        keyId: 'key-admin',
         tier: 'pro',
         scopes: ['verify'],
       });
@@ -233,6 +234,12 @@ describe('API Keys Unit Tests', () => {
         }
         if (table === 'api_keys') {
           return {
+            // active-key count
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                is: jest.fn().mockResolvedValue({ count: 2 }),
+              }),
+            }),
             insert: mockInsert.mockReturnValue({
               select: mockSelect.mockReturnValue({
                 single: mockSingle,
@@ -243,7 +250,8 @@ describe('API Keys Unit Tests', () => {
         return {};
       });
 
-      const res = await createApiKey('user-biz-id', 'Production Bot');
+      // Scopes outside the allow-list are dropped, not stored.
+      const res = await createApiKey('user-biz-id', 'Production Bot', ['verify', 'admin']);
       expect(res.id).toBe('key-new-id');
       expect(res.name).toBe('Production Bot');
       expect(res.keyPrefix).toBe('vf_live_12345678');
@@ -290,18 +298,48 @@ describe('API Keys Unit Tests', () => {
     it('revokeApiKey updates revoked_at for the target key and user', async () => {
       const mockUpdate = jest.fn().mockReturnThis();
       const mockEq1 = jest.fn().mockReturnThis();
-      const mockEq2 = jest.fn().mockResolvedValue({ error: null });
+      const mockSelect = jest.fn().mockResolvedValue({ data: [{ id: 'key-1' }], error: null });
 
       mockAdminFrom.mockReturnValue({
         update: mockUpdate.mockReturnValue({
           eq: mockEq1.mockReturnValue({
-            eq: mockEq2,
+            eq: jest.fn().mockReturnValue({ select: mockSelect }),
           }),
         }),
       });
 
-      const success = await revokeApiKey('key-1', 'user-123');
-      expect(success).toBe(true);
+      expect(await revokeApiKey('key-1', 'user-123')).toBe('revoked');
+    });
+
+    it('revokeApiKey answers not_found when no row matched (wrong id or someone else\'s key)', async () => {
+      mockAdminFrom.mockReturnValue({
+        update: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({ select: jest.fn().mockResolvedValue({ data: [], error: null }) }),
+          }),
+        }),
+      });
+
+      expect(await revokeApiKey('key-x', 'user-123')).toBe('not_found');
+    });
+
+    it('createApiKey refuses once the account holds the maximum of active keys', async () => {
+      mockAdminFrom.mockImplementation((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            maybeSingle: jest.fn().mockResolvedValue({ data: { tier: 'business', role: 'user' }, error: null }),
+          };
+        }
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({ is: jest.fn().mockResolvedValue({ count: 10 }) }),
+          }),
+        };
+      });
+
+      await expect(createApiKey('user-biz-id', 'One too many')).rejects.toThrow(/KEY_LIMIT/);
     });
   });
 
@@ -319,10 +357,10 @@ describe('API Keys Unit Tests', () => {
       expect(res).toEqual({ allowed: true, limit: 1000, used: 5 });
     });
 
-    it('releaseUsageSlotFor calls rpc release_usage_slot_for with p_user_id', async () => {
+    it('releaseUsageSlot calls rpc release_usage_slot_for with p_user_id', async () => {
       mockAdminRpc.mockResolvedValue({ error: null });
 
-      await releaseUsageSlotFor('user-biz-123');
+      await releaseUsageSlot('user-biz-123');
       expect(mockAdminRpc).toHaveBeenCalledWith('release_usage_slot_for', {
         p_user_id: 'user-biz-123',
       });

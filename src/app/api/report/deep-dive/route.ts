@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import { getPublicReportById } from '@/lib/verification/public-reports-query';
-import { getCachedById } from '@/lib/verification/cache';
 import { hasUnlimitedUsage } from '@/lib/usage/limits';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
 import { logger } from '@/lib/utils/logger';
@@ -69,8 +68,13 @@ export async function POST(request: Request): Promise<Response> {
 
   // Generous per-user bucket: deep-dive hits the paid LLM, so it must be
   // protected from loops, but a Pro user asking follow-ups is normal usage.
+  // Plus a daily ceiling, so the bucket cannot be refilled around the clock:
+  // deep-dive is not metered against the monthly quota.
   const rateLimit = await checkRateLimit(`deep-dive:${user.id}`, 30, 10 * 60 * 1000);
-  if (!rateLimit.success) {
+  const dailyLimit = rateLimit.success
+    ? await checkRateLimit(`deep-dive-day:${user.id}`, 150, 24 * 60 * 60 * 1000)
+    : rateLimit;
+  if (!rateLimit.success || !dailyLimit.success) {
     return Response.json({ error: 'Prea multe cereri. Încearcă din nou mai târziu.' }, { status: 429 });
   }
 
@@ -104,15 +108,12 @@ export async function POST(request: Request): Promise<Response> {
   let report: VerificationReport | null =
     (ownRow?.report_json as VerificationReport | null) ?? null;
 
+  // A report served from the cache is saved as the reader's own copy by
+  // /api/verify, so the lookup above finds it too; there is no reason left to
+  // read the shared cache by id, which had no owner check at all.
   if (!report) {
     const publicDetail = await getPublicReportById(reportId);
     report = publicDetail?.reportJson ?? null;
-  }
-
-  // A report served from the cache was saved under whoever verified the text
-  // first, so neither lookup above finds it for this reader.
-  if (!report) {
-    report = await getCachedById(reportId);
   }
 
   if (!report) {

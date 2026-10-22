@@ -1,4 +1,4 @@
-import { requireAdmin, AuthorizationError } from '@/lib/auth/admin';
+import { requireAdmin, AuthorizationError, logAdminAction } from '@/lib/auth/admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
   aggregateDailyOpportunities,
@@ -52,8 +52,10 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  let adminUserId: string;
   try {
-    await requireAdmin({ allowModerator: true });
+    const { user } = await requireAdmin({ allowModerator: true });
+    adminUserId = user.id;
   } catch (error) {
     if (error instanceof AuthorizationError) {
       return Response.json({ error: error.message }, { status: error.status });
@@ -78,6 +80,16 @@ export async function POST(request: Request): Promise<Response> {
 
     const result = await saveOpportunities(candidates);
 
+    // The only admin write that used to leave no trace: it also spends paid
+    // Google News and AI calls, so the audit trail should say who ran it.
+    await logAdminAction({
+      adminId: adminUserId,
+      actionType: 'opportunity.generate',
+      targetTable: 'content_opportunities',
+      targetId: 'batch',
+      details: { query: customQuery, result },
+    });
+
     const adminClient = createAdminClient();
     const { data: updatedOpportunities, error: fetchError } = await (adminClient.from('content_opportunities') as unknown as {
       select: (fields: string) => {
@@ -97,7 +109,7 @@ export async function POST(request: Request): Promise<Response> {
       .order('trend_rank', { ascending: true, nullsFirst: false });
 
     if (fetchError) {
-      return Response.json({ error: fetchError.message }, { status: 500 });
+      return Response.json({ error: 'Eroare la încărcarea oportunităților.' }, { status: 500 });
     }
 
     return Response.json({
@@ -105,8 +117,7 @@ export async function POST(request: Request): Promise<Response> {
       result,
       opportunities: updatedOpportunities ?? [],
     });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Eroare la agregarea oportunităților.';
-    return Response.json({ error: message }, { status: 500 });
+  } catch {
+    return Response.json({ error: 'Eroare la agregarea oportunităților.' }, { status: 500 });
   }
 }

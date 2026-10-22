@@ -27,6 +27,40 @@ function verifyCreemSignature(rawBody: string, signatureHeader: string, secret: 
   }
 }
 
+/** Products that grant Pro: the same env ids the checkout route sells. */
+function proProductIds(): Set<string> {
+  return new Set(
+    [
+      process.env.NEXT_PUBLIC_CREEM_PRO_PRODUCT_ID,
+      process.env.NEXT_PUBLIC_CREEM_PRO_YEARLY_PRODUCT_ID,
+      process.env.CREEM_PRO_YEARLY_PRODUCT_ID,
+    ].filter((id): id is string => Boolean(id))
+  );
+}
+
+/**
+ * The product an event is about. Creem sends it as `product` (an id or an
+ * expanded object), as `product_id`, or nested under the checkout's
+ * `subscription` / `order`, depending on the event.
+ */
+function productIdOf(object: Record<string, unknown>): string | undefined {
+  const fromValue = (value: unknown): string | undefined => {
+    if (typeof value === 'string' && value) return value;
+    if (value && typeof value === 'object' && typeof (value as { id?: unknown }).id === 'string') {
+      return (value as { id: string }).id;
+    }
+    return undefined;
+  };
+  const nested = (key: string) => {
+    const child = object[key];
+    return child && typeof child === 'object' ? fromValue((child as Record<string, unknown>).product) : undefined;
+  };
+  return fromValue(object.product) ?? fromValue(object.product_id) ?? nested('subscription') ?? nested('order');
+}
+
+/** Statuses that mean the money did not arrive; any other (or none) is accepted. */
+const UNPAID_STATUSES = new Set(['pending', 'failed', 'expired', 'canceled', 'cancelled', 'unpaid', 'incomplete', 'refunded']);
+
 /**
  * Creem webhook handler.
  *
@@ -36,6 +70,13 @@ function verifyCreemSignature(rawBody: string, signatureHeader: string, secret: 
  *
  * The metadata object contains the user_id we pass at checkout time.
  * The signature header is "creem-signature" (HMAC-SHA256 of the raw body).
+ *
+ * A valid signature proves Creem sent the body, not what was bought or when,
+ * so the handler also: grants Pro only for the Pro products and only when the
+ * object is not in an unpaid state; processes each event id once (a replayed
+ * body is acknowledged and ignored, via the webhook_events table); and only
+ * ever moves an account between free and pro, never touching a Business tier
+ * that was granted by hand.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -98,34 +139,73 @@ export async function POST(req: NextRequest) {
       'subscription.paid',
     ];
 
-    // Events that mean the user should lose Pro access:
+    // Events that mean the user should lose Pro access. past_due is not one:
+    // Creem retries the card, and if it never succeeds it sends expired.
     const deactivateProEvents = [
       'subscription.canceled',
       'subscription.expired',
       'subscription.unpaid',
-      'subscription.past_due',
     ];
 
-    if (activateProEvents.includes(eventType) && userId) {
-      const { error } = await supabaseAdmin
-        .from('profiles')
-        .update({ tier: 'pro' } as never)
-        .eq('id', userId);
+    const isActivation = activateProEvents.includes(eventType);
+    const isDeactivation = deactivateProEvents.includes(eventType);
+    if (!userId || (!isActivation && !isDeactivation)) {
+      return NextResponse.json({ received: true });
+    }
 
-      if (error) {
-        console.error('[Creem Webhook] Eroare la activarea Pro pentru', userId, error);
-        return NextResponse.json({ error: 'Eroare la actualizarea bazei de date.' }, { status: 500 });
-      }
-    } else if (deactivateProEvents.includes(eventType) && userId) {
-      const { error } = await supabaseAdmin
-        .from('profiles')
-        .update({ tier: 'free' } as never)
-        .eq('id', userId);
+    const productId = productIdOf(eventObject);
+    const isProProduct = productId !== undefined && proProductIds().has(productId);
+    const status = typeof eventObject.status === 'string' ? eventObject.status.toLowerCase() : undefined;
 
-      if (error) {
-        console.error('[Creem Webhook] Eroare la dezactivarea Pro pentru', userId, error);
-        return NextResponse.json({ error: 'Eroare la actualizarea bazei de date.' }, { status: 500 });
+    if (isActivation && (!isProProduct || (status && UNPAID_STATUSES.has(status)))) {
+      console.warn('[Creem Webhook] Activare ignorată: produs sau status neacceptat.', { eventType, productId, status });
+      return NextResponse.json({ received: true, ignored: true });
+    }
+    if (isDeactivation && productId !== undefined && !isProProduct) {
+      return NextResponse.json({ received: true, ignored: true });
+    }
+
+    // Idempotency: record the event id before acting. A second delivery of the
+    // same event (Creem retry or a replayed capture) hits the primary key and
+    // is acknowledged without effect. Until migration 021 creates the table the
+    // insert fails with "relation does not exist" and processing carries on.
+    const eventId = typeof body.id === 'string' ? body.id : undefined;
+    let eventRecorded = false;
+    if (eventId) {
+      const { error: recordError } = await supabaseAdmin
+        .from('webhook_events' as never)
+        .insert({ id: eventId, provider: 'creem', event_type: eventType } as never);
+      if (recordError?.code === '23505') {
+        return NextResponse.json({ received: true, duplicate: true });
       }
+      if (recordError) {
+        console.warn('[Creem Webhook] Nu am putut înregistra evenimentul (idempotență indisponibilă):', recordError.message);
+      } else {
+        eventRecorded = true;
+      }
+    }
+
+    // Activation never lowers a Business account; deactivation only ever
+    // moves pro -> free, so a hand-granted Business tier is left alone.
+    const { error } = isActivation
+      ? await supabaseAdmin
+          .from('profiles')
+          .update({ tier: 'pro' } as never)
+          .eq('id', userId)
+          .neq('tier', 'business')
+      : await supabaseAdmin
+          .from('profiles')
+          .update({ tier: 'free' } as never)
+          .eq('id', userId)
+          .eq('tier', 'pro');
+
+    if (error) {
+      console.error('[Creem Webhook] Eroare la actualizarea tier-ului pentru', userId, error);
+      // Let Creem's retry through: forget the event so the retry is processed.
+      if (eventRecorded && eventId) {
+        await supabaseAdmin.from('webhook_events' as never).delete().eq('id', eventId);
+      }
+      return NextResponse.json({ error: 'Eroare la actualizarea bazei de date.' }, { status: 500 });
     }
 
     return NextResponse.json({ received: true });

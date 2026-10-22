@@ -56,21 +56,33 @@ describe('checkRateLimit', () => {
     });
   });
 
-  it('fails open when the RPC returns an error, so an outage does not take down the API', async () => {
+  it('keeps serving through an RPC error, so an outage does not take down the API', async () => {
     mockRpc.mockResolvedValue({ data: null, error: { message: 'connection refused' } });
 
-    const result = await checkRateLimit('verify:1.2.3.4', 5, 1000);
+    const result = await checkRateLimit('verify:outage-1', 5, 1000);
 
     expect(result.success).toBe(true);
-    expect(result.remaining).toBe(5);
+    expect(result.remaining).toBe(4);
   });
 
-  it('fails open when the RPC call throws', async () => {
+  it('keeps serving when the RPC call throws', async () => {
     mockRpc.mockRejectedValue(new Error('network error'));
 
-    const result = await checkRateLimit('verify:1.2.3.4', 5, 1000);
+    const result = await checkRateLimit('verify:outage-2', 5, 1000);
 
     expect(result.success).toBe(true);
+  });
+
+  it('still enforces the limit in memory while the RPC is failing, instead of failing open', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'connection refused' } });
+
+    const results = [];
+    for (let i = 0; i < 7; i++) {
+      results.push(await checkRateLimit('verify:outage-3', 5, 60_000));
+    }
+
+    expect(results.filter((r) => r.success)).toHaveLength(5);
+    expect(results[6].success).toBe(false);
   });
 });
 

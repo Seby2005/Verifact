@@ -6,6 +6,7 @@ import { useLanguage } from '@/i18n';
 import type { PublicReportSummary, PublicReportDetail } from '@/lib/verification/public-reports-query';
 import type { Verdict, CombinedSource } from '@/types/verification';
 import { AdminDeleteReportButton } from '@/components/public-reports/AdminDeleteReportButton';
+import { safeHttpUrl } from '@/lib/utils/safe-url';
 import styles from './PublicReportCard.module.css';
 
 export interface PublicReportCardProps {
@@ -70,17 +71,16 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
       return;
     }
 
+    // The route translates the stored report by id, never caller-supplied text,
+    // so it cannot be used as a free general-purpose LLM.
+    const translateUrl = (field: 'claim' | 'analysis') =>
+      `/api/translate?${new URLSearchParams({ id: report.id, field, lang: locale })}`;
+
     Promise.all([
-      fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: report.inputText, targetLang: locale }),
-      }).then(r => r.json()).then(d => d.translatedText).catch(() => report.inputText),
-      rawAnalysisText ? fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: rawAnalysisText, targetLang: locale }),
-      }).then(r => r.json()).then(d => d.translatedText).catch(() => rawAnalysisText) : Promise.resolve(''),
+      fetch(translateUrl('claim')).then(r => r.json()).then(d => d.translatedText).catch(() => report.inputText),
+      rawAnalysisText
+        ? fetch(translateUrl('analysis')).then(r => r.json()).then(d => d.translatedText).catch(() => rawAnalysisText)
+        : Promise.resolve(''),
     ]).then(([claimRes, analysisRes]) => {
       if (isMounted) {
         if (claimRes) setClaimText(claimRes);
@@ -147,7 +147,7 @@ export const PublicReportCard: React.FC<PublicReportCardProps> = ({ report, vari
           <ul className={styles.sourcesList}>
             {sources.map((src, idx) => (
               <li key={idx} className={styles.sourceItem}>
-                <a href={src.url} target="_blank" rel="noopener noreferrer" className={styles.sourceLink}>
+                <a href={safeHttpUrl(src.url) ?? '#'} target="_blank" rel="noopener noreferrer" className={styles.sourceLink}>
                   {src.publisher || src.title}
                 </a>
                 {src.title && src.publisher && <span className={styles.sourceTitleText}> — {src.title}</span>}

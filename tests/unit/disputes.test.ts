@@ -1,6 +1,9 @@
 const mockAdminUpdate = jest.fn();
 const mockAdminMaybeSingle = jest.fn();
 const mockAdminFrom = jest.fn();
+// Disputes are inserted with the admin client (after the caller-scoped
+// visibility check), so the insert mock lives on the admin side.
+const mockAdminDisputesInsert = jest.fn();
 
 jest.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: mockAdminFrom }),
@@ -19,6 +22,7 @@ const PUBLIC_VERIFICATION = {
   is_public: true,
   input_text: 'Pământul este plat.',
   language: 'ro',
+  disputed: false,
 };
 
 const PRIVATE_VERIFICATION = {
@@ -40,7 +44,7 @@ function makeUserClient(options: {
     error: fetchError,
   });
 
-  const disputesInsert = jest.fn().mockResolvedValue({ error: insertError });
+  const disputesInsert = mockAdminDisputesInsert.mockResolvedValue({ error: insertError });
 
   const from = jest.fn((table: string) => {
     if (table === 'verifications') {
@@ -49,9 +53,6 @@ function makeUserClient(options: {
         eq: jest.fn().mockReturnThis(),
         single: verificationsSingle,
       };
-    }
-    if (table === 'disputes') {
-      return { insert: disputesInsert };
     }
     throw new Error(`Unexpected table: ${table}`);
   });
@@ -65,6 +66,9 @@ describe('fileDispute', () => {
     mockAdminMaybeSingle.mockResolvedValue({ data: null, error: null });
     mockAdminUpdate.mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) });
     mockAdminFrom.mockImplementation((table: string) => {
+      if (table === 'disputes') {
+        return { insert: mockAdminDisputesInsert };
+      }
       if (table === 'verifications') {
         return { update: mockAdminUpdate };
       }
@@ -176,6 +180,9 @@ describe('fileDispute', () => {
     const verificationsEq = jest.fn().mockResolvedValue({ error: null });
 
     mockAdminFrom.mockImplementation((table: string) => {
+      if (table === 'disputes') {
+        return { insert: mockAdminDisputesInsert };
+      }
       if (table === 'verifications') {
         return { update: jest.fn().mockReturnValue({ eq: verificationsEq }) };
       }
@@ -197,6 +204,20 @@ describe('fileDispute', () => {
 
     const expectedHash = createContentHash(PUBLIC_VERIFICATION.input_text, PUBLIC_VERIFICATION.language);
     expect(cacheEq).toHaveBeenCalledWith('content_hash', expectedHash);
+  });
+
+  it('expires the shared cache only on the first dispute of a report', async () => {
+    const { supabase } = makeUserClient({ verification: { ...PUBLIC_VERIFICATION, disputed: true } });
+
+    const result = await fileDispute(
+      { verificationId: PUBLIC_VERIFICATION.id, reason: 'This claim is false', email: null, userId: null },
+      supabase
+    );
+
+    expect(result).toEqual({ success: true });
+    expect(mockAdminDisputesInsert).toHaveBeenCalled();
+    expect(mockAdminFrom).not.toHaveBeenCalledWith('cached_results');
+    expect(mockAdminUpdate).not.toHaveBeenCalled();
   });
 
   it('does not fail the whole request when no matching cache entry exists', async () => {

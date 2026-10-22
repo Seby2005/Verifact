@@ -1,8 +1,15 @@
 import { createHmac } from 'crypto';
 
-const mockEq = jest.fn();
+// profiles: update(...).eq('id', ...).neq|eq(...) resolves; webhook_events: insert(...) resolves.
+const mockFinal = jest.fn();
+const mockEq = jest.fn(() => ({ neq: mockFinal, eq: mockFinal }));
 const mockUpdate = jest.fn(() => ({ eq: mockEq }));
-const mockFrom = jest.fn(() => ({ update: mockUpdate }));
+const mockInsert = jest.fn();
+const mockFrom = jest.fn((table: string) =>
+  table === 'webhook_events'
+    ? { insert: mockInsert, delete: () => ({ eq: jest.fn().mockResolvedValue({ error: null }) }) }
+    : { update: mockUpdate }
+);
 
 jest.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: mockFrom }),
@@ -11,8 +18,13 @@ jest.mock('@/lib/supabase/admin', () => ({
 import { POST } from '@/app/api/webhooks/creem/route';
 
 const SECRET = 'test_creem_webhook_secret';
+const PRO_PRODUCT = 'prod_pro_monthly';
 const USER_ID = 'e9c3e210-9b43-4dc9-98fe-e1529dfb8cf8';
-const PAYLOAD = { eventType: 'checkout.completed', object: { metadata: { user_id: USER_ID } } };
+const PAYLOAD = {
+  id: 'evt_1',
+  eventType: 'checkout.completed',
+  object: { status: 'completed', product: { id: PRO_PRODUCT }, metadata: { user_id: USER_ID } },
+};
 
 function makeRequest(body: object, headers: Record<string, string>) {
   return new Request('https://verifact.ro/api/webhooks/creem', {
@@ -32,13 +44,14 @@ function signed(body: object, secret: string) {
   });
 }
 
-describe('Creem webhook — fail-closed signature verification', () => {
+describe('Creem webhook', () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...OLD_ENV };
-    mockEq.mockResolvedValue({ error: null });
+    process.env = { ...OLD_ENV, NEXT_PUBLIC_CREEM_PRO_PRODUCT_ID: PRO_PRODUCT };
+    mockFinal.mockResolvedValue({ error: null });
+    mockInsert.mockResolvedValue({ error: null });
   });
 
   afterAll(() => {
@@ -65,7 +78,7 @@ describe('Creem webhook — fail-closed signature verification', () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it('processes a valid signature and activates Pro', async () => {
+  it('processes a valid signature for the Pro product and activates Pro, never over a Business tier', async () => {
     process.env.CREEM_WEBHOOK_SECRET = SECRET;
 
     const res = await POST(signed(PAYLOAD, SECRET) as never);
@@ -73,8 +86,51 @@ describe('Creem webhook — fail-closed signature verification', () => {
 
     expect(res.status).toBe(200);
     expect(json.received).toBe(true);
-    expect(mockFrom).toHaveBeenCalledWith('profiles');
+    expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({ id: 'evt_1', provider: 'creem' }));
     expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ tier: 'pro' }));
     expect(mockEq).toHaveBeenCalledWith('id', USER_ID);
+    expect(mockFinal).toHaveBeenCalledWith('tier', 'business');
+  });
+
+  it('ignores a purchase of any product other than Pro', async () => {
+    process.env.CREEM_WEBHOOK_SECRET = SECRET;
+    const other = { ...PAYLOAD, object: { ...PAYLOAD.object, product: { id: 'prod_something_else' } } };
+
+    const res = await POST(signed(other, SECRET) as never);
+
+    expect(res.status).toBe(200);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it('ignores an activation whose object is not paid', async () => {
+    process.env.CREEM_WEBHOOK_SECRET = SECRET;
+    const unpaid = { ...PAYLOAD, object: { ...PAYLOAD.object, status: 'pending' } };
+
+    await POST(signed(unpaid, SECRET) as never);
+
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it('acknowledges a replayed event id without acting on it', async () => {
+    process.env.CREEM_WEBHOOK_SECRET = SECRET;
+    mockInsert.mockResolvedValue({ error: { code: '23505', message: 'duplicate key' } });
+
+    const res = await POST(signed(PAYLOAD, SECRET) as never);
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.duplicate).toBe(true);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it('downgrades only a pro account on cancellation, and ignores past_due', async () => {
+    process.env.CREEM_WEBHOOK_SECRET = SECRET;
+
+    await POST(signed({ ...PAYLOAD, id: 'evt_2', eventType: 'subscription.past_due' }, SECRET) as never);
+    expect(mockUpdate).not.toHaveBeenCalled();
+
+    await POST(signed({ ...PAYLOAD, id: 'evt_3', eventType: 'subscription.canceled' }, SECRET) as never);
+    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ tier: 'free' }));
+    expect(mockFinal).toHaveBeenCalledWith('tier', 'pro');
   });
 });

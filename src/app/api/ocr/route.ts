@@ -10,6 +10,12 @@ import type { OcrRequest } from '@/types/verification';
 
 export const dynamic = 'force-dynamic';
 
+// A 10 MB image is ~13.4 MB as base64, plus a little JSON around it.
+const MAX_BODY_BYTES = 14 * 1024 * 1024;
+// OCR is a paid call with no account behind it: besides the per-minute burst
+// limit, one address gets a generous daily allowance and no more.
+const DAILY_OCR_PER_IP = 100;
+
 // The mobile shell (Capacitor) shares a screenshot from another app, runs it
 // through OCR here, then opens the site with the extracted text pre-filled — a
 // cross-origin call, so this route answers preflight and echoes CORS headers for
@@ -27,8 +33,11 @@ export async function POST(req: NextRequest) {
     // 1. Rate Limiting per IP
     const clientIp = getClientIp(req);
     const rateCheck = await checkRateLimit(`ocr:${clientIp}`, 10, 60 * 1000);
+    const dailyCheck = rateCheck.success
+      ? await checkRateLimit(`ocr-day:${clientIp}`, DAILY_OCR_PER_IP, 24 * 60 * 60 * 1000)
+      : rateCheck;
 
-    if (!rateCheck.success) {
+    if (!rateCheck.success || !dailyCheck.success) {
       return NextResponse.json(
         {
           success: false,
@@ -39,7 +48,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Parse request body
+    // 2. Parse request body, refusing an oversized one before reading it
+    if (Number(req.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Imaginea este prea mare. Maximul permis este de 10MB.',
+          code: 'IMAGE_TOO_LARGE',
+        },
+        { status: 413, headers: cors }
+      );
+    }
     const body: OcrRequest = await req.json();
     const { imageBase64, mimeType } = body;
 

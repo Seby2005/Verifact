@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ContentOpportunity, OpportunityStatus } from '@/types/database';
+import { safeHttpUrl } from '@/lib/utils/safe-url';
 import styles from './OpportunitiesList.module.css';
 
 interface OpportunitiesListProps {
@@ -428,7 +429,7 @@ export const OpportunitiesList: React.FC<OpportunitiesListProps> = ({
 
                       {item.source_url && (
                         <a
-                          href={item.source_url}
+                          href={safeHttpUrl(item.source_url) ?? '#'}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={styles.sourceLink}

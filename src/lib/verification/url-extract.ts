@@ -12,10 +12,15 @@
  */
 
 import { lookup } from 'dns/promises';
+import { pinnedFetch, PinnedFetchError } from './pinned-fetch';
 
 const FETCH_TIMEOUT_MS = 10_000;
 const MAX_CHARS = 2000;
 const MAX_REDIRECTS = 3;
+/** Largest page body read, after decompression; real articles are far below. */
+const MAX_PAGE_BYTES = 3 * 1024 * 1024;
+/** Deadline for one DNS answer, so a silent resolver cannot stall the request. */
+const DNS_TIMEOUT_MS = 3_000;
 
 export class UrlExtractionError extends Error {
   constructor(
@@ -93,8 +98,17 @@ function isPrivateOrReservedIpv4(ip: string): boolean {
  * address carries an embedded dotted IPv4 tail (handled separately) or is
  * malformed. Only what the range checks below need — not a full parser.
  */
-function parseIpv6Groups(ip: string): number[] | null {
-  if (ip.includes('.')) return null; // embedded IPv4 → handled by caller
+function parseIpv6Groups(raw: string): number[] | null {
+  // A dotted IPv4 tail (::ffff:1.2.3.4, 64:ff9b::1.2.3.4) becomes two hex
+  // groups, so every embedded-IPv4 form goes through the same range checks.
+  let ip = raw;
+  const dotted = /(\d+\.\d+\.\d+\.\d+)$/.exec(raw);
+  if (dotted) {
+    const v4 = parseIpv4(dotted[1]);
+    if (!v4) return null;
+    const hex = `${((v4[0] << 8) | v4[1]).toString(16)}:${((v4[2] << 8) | v4[3]).toString(16)}`;
+    ip = raw.slice(0, dotted.index) + hex;
+  }
   const hasCompression = ip.includes('::');
   const halves = ip.split('::');
   if (halves.length > 2) return null;
@@ -132,10 +146,19 @@ function isPrivateOrReservedIpv6(ip: string): boolean {
   if (groups.every((g) => g === 0) || (g7 === 1 && groups.slice(0, 7).every((g) => g === 0))) {
     return true;
   }
-  // IPv4-mapped written in pure hex: 0:0:0:0:0:ffff:xxxx:xxxx.
-  if (g0 === 0 && g1 === 0 && g2 === 0 && g3 === 0 && g4 === 0 && g5 === 0xffff) {
-    const v4 = `${(g6 >> 8) & 0xff}.${g6 & 0xff}.${(g7 >> 8) & 0xff}.${g7 & 0xff}`;
-    return isPrivateOrReservedIpv4(v4);
+  const embeddedV4 = (hi: number, lo: number) =>
+    `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
+  // IPv4-mapped (::ffff:a.b.c.d) and the deprecated IPv4-compatible (::a.b.c.d).
+  if (g0 === 0 && g1 === 0 && g2 === 0 && g3 === 0 && g4 === 0 && (g5 === 0xffff || g5 === 0)) {
+    return isPrivateOrReservedIpv4(embeddedV4(g6, g7));
+  }
+  // NAT64 (64:ff9b::/96) and 6to4 (2002::/16) carry an IPv4 that a gateway
+  // on the path would reach: judge them by it.
+  if (g0 === 0x64 && g1 === 0xff9b && g2 === 0 && g3 === 0 && g4 === 0 && g5 === 0) {
+    return isPrivateOrReservedIpv4(embeddedV4(g6, g7));
+  }
+  if (g0 === 0x2002) {
+    return isPrivateOrReservedIpv4(embeddedV4(g1, g2));
   }
   if ((g0 & 0xfe00) === 0xfc00) return true; // fc00::/7 unique-local
   if ((g0 & 0xffc0) === 0xfe80) return true; // fe80::/10 link-local
@@ -166,7 +189,10 @@ function isLocalHostname(host: string): boolean {
  * with DNS and rejects if ANY returned address is non-public, so a hostname
  * that round-robins between a public and an internal IP is still refused.
  *
- * Called before the first fetch and on every redirect hop.
+ * Called before the first fetch and on every redirect hop. This is the fast,
+ * early refusal; the binding check happens again inside the connection's own
+ * DNS lookup (pinned-fetch.ts), so a second, different DNS answer cannot
+ * redirect the actual request.
  */
 export async function assertSafeUrl(url: string): Promise<void> {
   let host = '';
@@ -188,7 +214,15 @@ export async function assertSafeUrl(url: string): Promise<void> {
 
   let addresses: Array<{ address: string; family: number }>;
   try {
-    addresses = await lookup(host, { all: true });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('DNS timeout')), DNS_TIMEOUT_MS);
+    });
+    try {
+      addresses = await Promise.race([lookup(host, { all: true }), timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
   } catch {
     // Unresolvable host is indistinguishable from an unreachable one.
     throw blockedUrlError();
@@ -439,18 +473,28 @@ async function fetchArticleHtml(rawUrl: string, timeoutMs: number): Promise<stri
   let response: Response | null = null;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     try {
-      response = await fetch(currentUrl, {
-        // Never let fetch follow redirects on its own — each Location must be
-        // re-checked by assertSafeUrl before we chase it.
-        redirect: 'manual',
+      // pinnedFetch never follows redirects on its own — each Location is
+      // re-checked by assertSafeUrl before we chase it — and it dials only an
+      // address its own lookup has just checked.
+      response = await pinnedFetch(currentUrl, {
         headers: {
           // Some publishers reject requests without a browser-like UA.
           'User-Agent': 'Mozilla/5.0 (compatible; VerifactBot/0.1; +https://github.com/Seby2005/fact-checker-ai)',
           Accept: 'text/html,application/xhtml+xml',
         },
-        signal: AbortSignal.timeout(timeoutMs),
+        timeoutMs,
+        maxBytes: MAX_PAGE_BYTES,
+        isBlockedAddress: isPrivateOrReservedIp,
+        lookupTimeoutMs: DNS_TIMEOUT_MS,
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof PinnedFetchError && error.reason === 'TOO_LARGE') {
+        throw new UrlExtractionError(
+          'Pagina este prea mare pentru a fi citită. Copiază textul articolului și lipește-l în câmpul de text.',
+          'NOT_HTML'
+        );
+      }
+      if (error instanceof PinnedFetchError && error.reason === 'BLOCKED') throw blockedUrlError();
       throw new UrlExtractionError(
         'Nu am putut accesa acest link. Verifică adresa sau încearcă alt articol.',
         'UNREACHABLE'

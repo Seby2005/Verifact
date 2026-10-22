@@ -7,6 +7,13 @@
  * to a private address is refused on the redirect hop — without ever leaking
  * that the refusal was because the target was internal (always UNREACHABLE).
  */
+// The network layer is pinnedFetch (node http with a guarded DNS lookup); these
+// tests drive the parsing and redirect logic through a mocked global fetch.
+jest.mock('@/lib/verification/pinned-fetch', () => ({
+  ...jest.requireActual('@/lib/verification/pinned-fetch'),
+  pinnedFetch: (url: string) => global.fetch(url),
+}));
+
 import { extractArticleText, assertSafeUrl, UrlExtractionError } from '@/lib/verification/url-extract';
 import { lookup } from 'dns/promises';
 
@@ -70,6 +77,9 @@ describe('extractArticleText SSRF guard', () => {
     'http://127.0.0.1/', // loopback
     'http://localhost/', // localhost hostname
     'http://10.0.0.1/', // RFC1918 private
+    'http://[64:ff9b::a9fe:a9fe]/', // NAT64 wrapping 169.254.169.254
+    'http://[2002:a9fe:a9fe::1]/', // 6to4 wrapping 169.254.169.254
+    'http://[::ffff:7f00:1]/', // IPv4-mapped loopback in hex
   ])('rejects %s before any fetch, as UNREACHABLE', async (url) => {
     global.fetch = jest.fn();
 

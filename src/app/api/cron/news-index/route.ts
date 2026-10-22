@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isCronAuthorized } from '@/lib/security/cron-auth';
+import { cronRunAllowed, isCronAuthorized } from '@/lib/security/cron-auth';
 import { ingestNewsFeeds } from '@/lib/news-index';
 import { logger } from '@/lib/utils/logger';
 
@@ -14,6 +14,10 @@ export const maxDuration = 60;
 async function handle(request: Request): Promise<Response> {
   if (!isCronAuthorized(request, 'CronNewsIndex')) {
     return NextResponse.json({ error: 'Unauthorized. Valid CRON_SECRET required.' }, { status: 401 });
+  }
+  // Scheduled every 30 minutes; room for manual runs on top.
+  if (!(await cronRunAllowed('news-index', 12))) {
+    return NextResponse.json({ error: 'Too many runs this hour.' }, { status: 429 });
   }
 
   try {

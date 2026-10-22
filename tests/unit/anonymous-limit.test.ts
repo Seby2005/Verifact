@@ -57,13 +57,13 @@ describe('checkAnonymousLimit', () => {
     expect(result.allowed).toBe(false);
   });
 
-  it('fails open (allows) when the count query errors', async () => {
+  it('fails closed (refuses, marked unavailable) when the count query errors', async () => {
     mockGte.mockResolvedValue({ count: null, error: { message: 'db down' } });
 
     const result = await checkAnonymousLimit('203.0.113.4', 'Mozilla/5.0');
 
-    expect(result.allowed).toBe(true);
-    expect(result.current).toBe(0);
+    expect(result.allowed).toBe(false);
+    expect(result.unavailable).toBe(true);
   });
 
   it('queries verifications filtered by the computed hash', async () => {
