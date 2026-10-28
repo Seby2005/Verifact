@@ -130,7 +130,8 @@ describe('getTrendingExamples', () => {
               { text: '„(...) PSD ce a mai făcut? A dat legea Salarizării în sistemul public”', ageDays: 1 },
               { text: 'Donald Trump l-ar fi chemat de urgență pe Călin Georgescu la Casa Albă', ageDays: 1 },
               { text: 'Clip IA cu un primar care nu există în realitate', ageDays: 1 },
-              { text: '„Vot ca maghiara să devină limbă oficială în România”', ageDays: 2 },
+              { text: 'Deepfake cu președintele Ucrainei și președinta Comisiei europene', ageDays: 1 },
+              { text: 'Polonia vrea să iasă din UE', ageDays: 2 },
               { text: 'Acesta este un reportaj real privind confiscarea a 140 de milioane în numerar.', ageDays: 1 },
               { text: 'The government banned all diesel cars starting this year', ageDays: 1, languageCode: 'en' },
             ])
@@ -147,20 +148,25 @@ describe('getTrendingExamples', () => {
     expect([...examples].sort()).toEqual(
       [
         'Donald Trump l-ar fi chemat de urgență pe Călin Georgescu la Casa Albă',
-        'Vot ca maghiara să devină limbă oficială în România',
+        'Polonia vrea să iasă din UE',
         'Valul de căldură extremă este provocat de nanoparticule pulverizate în atmosferă',
       ].sort()
     );
   });
 
-  it('unwraps a claim quoted whole but leaves a quoted word inside a claim alone', async () => {
+  it("skips a speaker's words quoted whole but keeps a claim that only quotes a word", async () => {
     global.fetch = jest.fn().mockImplementation((url: string) =>
       Promise.resolve(
         String(url).includes('factual.ro')
           ? apiPage([
               { text: 'Avioanele ne otrăvesc cu „chemtrails”', ageDays: 1 },
-              { text: '„Perchezițiile nu s-ar putea efectua în lipsa proprietarilor”.', ageDays: 1 },
-              { text: 'Bolojan ar fi singurul premier care a umblat la banii persoanelor cu dizabilități', ageDays: 2 },
+              {
+                text: '„Cred că sunt șapte ani de când dreapta este la putere, fără să câștige nici măcar un rând de alegeri în România.”',
+                ageDays: 1,
+              },
+              { text: '„Astăzi, ca să dau o cifră, aproape un leu din zece pleacă către plata dobânzilor.”', ageDays: 1 },
+              { text: 'Florin Barbu spune că Ministerul Agriculturii nu cheltuie bani de la bugetul de stat', ageDays: 1 },
+              { text: 'FALS | Peste 5.600 de români ar fi murit într-o singură lună, din cauza vaccinurilor', ageDays: 2 },
             ])
           : apiPage([])
       )
@@ -168,8 +174,13 @@ describe('getTrendingExamples', () => {
 
     const examples = await getTrendingExamples('ro');
 
-    expect(examples).toContain('Avioanele ne otrăvesc cu „chemtrails”');
-    expect(examples).toContain('Perchezițiile nu s-ar putea efectua în lipsa proprietarilor');
+    expect([...examples].sort()).toEqual(
+      [
+        'Avioanele ne otrăvesc cu „chemtrails”',
+        'Florin Barbu spune că Ministerul Agriculturii nu cheltuie bani de la bugetul de stat',
+        'Peste 5.600 de români ar fi murit într-o singură lună, din cauza vaccinurilor',
+      ].sort()
+    );
   });
 
   it('fills the row from the curated set when the fact-checkers cannot be reached', async () => {

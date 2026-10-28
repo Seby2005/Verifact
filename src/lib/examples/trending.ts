@@ -212,20 +212,17 @@ async function fetchNewestReviews(site: string, languageCode: string): Promise<R
 
 /**
  * Fact-check APIs sometimes hand back the claim with the transcription's
- * markup still attached (bold stars, bullets, stray quotes, line breaks). Strip
- * that back to a plain sentence so it reads as a clean homepage chip.
+ * markup still attached (bold stars, bullets, line breaks, a verdict label such
+ * as "FALS |"). Strip that back to a plain sentence so it reads as a clean
+ * homepage chip — and so the chip does not give the verdict away.
  */
 function cleanClaim(raw: string): string {
-  const text = raw
+  return raw
     .replace(/[*_`#•▪●]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .replace(/^[\s.-]+/, '');
-
-  // A claim quoted whole loses its quotation marks; one that merely contains a
-  // quoted word keeps them — stripping an end mark alone left „chemtrails open.
-  const quoted = text.match(/^["“„«]\s*(.+?)\s*["”»]\.?$/);
-  return quoted && !/["“„”«»]/.test(quoted[1]) ? quoted[1] : text;
+    .replace(/^[\s.-]+/, '')
+    .replace(/^\p{Lu}+\s*\|\s*/u, '');
 }
 
 /**
@@ -235,17 +232,25 @@ function cleanClaim(raw: string): string {
  * for the words to point at.
  */
 const POINTS_AT_MEDIA =
-  /(?<!\p{L})(videoclip\p{L}*|clip\p{L}*|imagin\p{L}*|fotografi\p{L}*|captur\p{L}+ de ecran|vid[eé]os?|images?|photos?|footage|screenshots?|pictures?)(?!\p{L})|^(aceast[aă]|acest[aei]?|ace[sș]ti|this|these|cette|ces?|cet)(?!\p{L})/iu;
+  /(?<!\p{L})(videoclip\p{L}*|clip\p{L}*|deepfake\p{L}*|imagin\p{L}*|fotografi\p{L}*|captur\p{L}+ de ecran|vid[eé]os?|images?|photos?|footage|screenshots?|pictures?)(?!\p{L})|^(aceast[aă]|acest[aei]?|ace[sș]ti|this|these|cette|ces?|cet)(?!\p{L})/iu;
 
 /** A fact-checker's cut inside a quote: "(...) PSD ce a mai făcut?" is no longer a sentence. */
 const ELIDED_QUOTE = /[([](?:\.\.\.|…)[)\]]/;
+
+/**
+ * A speaker's own words, quoted whole without saying who spoke them
+ * („Cred că sunt șapte ani de când…”). On the homepage they read as a stranger
+ * talking in the first person, with no one to attribute the claim to. The
+ * fact-checker's summary ("Florin Barbu spune că…") names the speaker instead.
+ */
+const SPEAKERS_WORDS = /^["“„«]/;
 
 /** A usable example is a plausible standalone sentence the reader could paste and check. */
 function isUsableClaim(text: string): boolean {
   if (text.length < 20 || text.length > 160) return false;
   if (/^https?:\/\//i.test(text)) return false;
   if (text.split(/\s+/).length < 4) return false;
-  if (ELIDED_QUOTE.test(text) || POINTS_AT_MEDIA.test(text)) return false;
+  if (SPEAKERS_WORDS.test(text) || ELIDED_QUOTE.test(text) || POINTS_AT_MEDIA.test(text)) return false;
   // Real claims read as sentences and start with a capital; a fragment lifted
   // out of a quote ("merele noastre…") starts lower-case — drop those.
   const firstLetter = text.match(/\p{L}/u)?.[0];
