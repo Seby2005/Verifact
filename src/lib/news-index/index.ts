@@ -325,6 +325,32 @@ export async function searchNewsIndex(query: string, limit: number = 12): Promis
 }
 
 /**
+ * The fact-checks published in the last `days` days, newest first, as their
+ * headline and publication time. Resolves to [] when no database is
+ * configured; rejects when the database call fails.
+ */
+export async function recentFactChecks(
+  days: number,
+  limit: number = 100
+): Promise<Array<{ title: string; publishedAt: string }>> {
+  if (!isConfigured()) return [];
+
+  const { data, error } = await db()
+    .from('news_index')
+    .select('title, published_at')
+    .eq('kind', 'factcheck')
+    .gte('published_at', new Date(Date.now() - days * DAY_MS).toISOString())
+    .order('published_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`news index is not readable: ${error.message}`);
+
+  return ((data ?? []) as Array<Pick<NewsIndexRow, 'title' | 'published_at'>>).map((row) => ({
+    title: row.title,
+    publishedAt: row.published_at,
+  }));
+}
+
+/**
  * When the index last received an item, or null if it is empty. A stale value
  * means the scheduled ingestion has stopped running.
  */

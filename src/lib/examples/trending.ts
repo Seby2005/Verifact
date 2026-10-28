@@ -1,12 +1,15 @@
 import { logger } from '@/lib/utils/logger';
+import { createContentHash } from '@/lib/utils/hash';
+import { getCachedVerdicts } from '@/lib/verification/cache';
+import { recentFactChecks } from '@/lib/news-index';
+import { archivedFactChecksSince } from '@/lib/factcheck-archive';
 
 export type ExamplesLocale = 'ro' | 'en' | 'fr';
 
 /**
  * A curated fact-check entry linking to a real verification from a recognised
  * fact-checking organisation. Used ONLY as an offline fallback when the live
- * Google Fact Check lookup returns nothing (no API key, network error, or an
- * empty result set). Each entry carries the claim text in all supported languages.
+ * sources return nothing (no API key, network error, or an empty result set). Each entry carries the claim text in all supported languages.
  *
  * Sources:
  *   🇷🇴 Factual.ro  — https://www.factual.ro
@@ -39,9 +42,10 @@ const CURATED_FALLBACK: readonly CuratedFactCheck[] = [
 ];
 
 /**
- * How long a fetched set is reused before the module goes back to the API.
- * This only bounds how often a single warm server instance hits Google; the
- * selection itself moves on once a day (see pickSuggestions).
+ * How long a fully prepared row is reused before the module looks again. This
+ * only bounds how often a single warm server instance reads its sources; the
+ * selection itself moves on once a day (see pickSuggestions). A row still
+ * waiting on its verifications is not kept, so it fills in as they land.
  */
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
@@ -49,24 +53,41 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const SUGGESTION_COUNT = 3;
 
 /**
- * The fact-checkers whose newest reviews become suggestions, per interface
+ * How many claims are lined up for the row, in order. More than the row shows:
+ * a claim the verification could not settle is passed over for the next one,
+ * and tomorrow's row is mostly already in this list (it moves on by three).
+ */
+const CANDIDATE_COUNT = 12;
+
+/**
+ * The fact-checkers read live through Google's Fact Check API, per interface
  * language. Listed by publisher rather than searched by topic: a topic search
  * ("guvern", "România") comes back ordered by relevance, not by date, so a
  * weekly rotation of seven topic words surfaced the same years-old claims
  * every week. A publisher's own listing is newest-first.
+ *
+ * Factual.ro is read from Verifact's own news index instead (see gatherPools):
+ * its feed headlines name the speaker ("Luca Niculescu spune că…") where the
+ * API hands back the speaker's bare words in the first person.
  */
 const PUBLISHERS: Record<ExamplesLocale, readonly string[]> = {
-  ro: ['factual.ro', 'verificat.afp.com'],
+  ro: ['verificat.afp.com'],
   fr: ['factuel.afp.com'],
   en: ['snopes.com', 'factcheck.afp.com'],
 };
 
 /**
- * How old a reviewed claim may be and still be suggested. A week by default;
- * the wider window is used only when the fact-checkers published too little
- * that week to fill the row.
+ * Sites the Romanian archive is not read for, because they are read live
+ * above: the archive's copy would only repeat them in other words.
+ */
+const ARCHIVE_SKIPPED_SITES: readonly string[] = ['factual.ro', 'verificat.afp.com'];
+
+/**
+ * How old a reviewed claim may be and still be suggested. Claims from the
+ * last week come first; the month only fills the places the week leaves.
  */
 const FRESH_WINDOWS_DAYS = [7, 30] as const;
+const OLDEST_DAYS = FRESH_WINDOWS_DAYS[FRESH_WINDOWS_DAYS.length - 1];
 
 /** How many of a publisher's newest reviews are read on each refresh. */
 const REVIEWS_PER_PUBLISHER = 50;
@@ -74,6 +95,19 @@ const REVIEWS_PER_PUBLISHER = 50;
 export interface RecentClaim {
   text: string;
   reviewDate: number; // epoch ms; 0 when the source gave no date
+}
+
+/**
+ * Where a lined-up claim stands with the verification:
+ *  - 'clear'     verified in advance, with a verdict; opening it is instant
+ *  - 'unclear'   verified in advance, and the evidence settled nothing
+ *  - 'unchecked' not verified yet (or the result has expired)
+ */
+export type CandidateStatus = 'clear' | 'unclear' | 'unchecked';
+
+export interface Candidate {
+  text: string;
+  status: CandidateStatus;
 }
 
 interface GoogleClaim {
@@ -84,11 +118,12 @@ interface GoogleClaim {
 const moduleCache = new Map<ExamplesLocale, { at: number; examples: string[] }>();
 
 /**
- * Homepage claim suggestions — three claims that fact-checkers reviewed in the
- * last week, changing every day and never older than the freshness window
- * while there is enough new material. Falls back to a small curated set only
- * when the live lookup yields nothing, so the homepage is never blank and
- * never invents a claim.
+ * Homepage claim suggestions — three claims that fact-checkers reviewed
+ * recently, changing every day. Claims already verified in advance come first,
+ * so clicking one opens its report at once; one whose verification settled
+ * nothing is never shown. Falls back to a small curated set only when the live
+ * sources yield nothing, so the homepage is never blank and never invents a
+ * claim.
  */
 export async function getTrendingExamples(locale: ExamplesLocale): Promise<string[]> {
   const cached = moduleCache.get(locale);
@@ -97,13 +132,15 @@ export async function getTrendingExamples(locale: ExamplesLocale): Promise<strin
   }
 
   try {
-    const pools = await Promise.all(PUBLISHERS[locale].map((site) => fetchNewestReviews(site, locale)));
-    const examples = pickSuggestions(pools, Date.now());
-    if (examples.length === SUGGESTION_COUNT) {
+    const candidates = await getCandidates(locale);
+    const ready = candidates.filter((c) => c.status === 'clear').map((c) => c.text);
+    const waiting = candidates.filter((c) => c.status === 'unchecked').map((c) => c.text);
+    const examples = [...ready, ...waiting].slice(0, SUGGESTION_COUNT);
+
+    if (ready.length >= SUGGESTION_COUNT) {
       moduleCache.set(locale, { at: Date.now(), examples });
-      return examples;
     }
-    // Partial live result — top up with the curated fallback rather than
+    // Short on live claims — top up with the curated fallback rather than
     // showing one lonely chip, but keep whatever live claims we did get.
     return [...examples, ...CURATED_FALLBACK.map((c) => c[locale])].slice(0, SUGGESTION_COUNT);
   } catch (error) {
@@ -116,29 +153,82 @@ export async function getTrendingExamples(locale: ExamplesLocale): Promise<strin
 }
 
 /**
- * Chooses the suggestions from each publisher's recent claims.
+ * The claims lined up for the homepage today, in the order they would be
+ * shown, each with where it stands with the verification. The suggestions job
+ * (prepare.ts) verifies them in this same order, so the two always agree on
+ * what comes next.
+ */
+export async function getCandidates(locale: ExamplesLocale, now: number = Date.now()): Promise<Candidate[]> {
+  const pools = await gatherPools(locale, now);
+  const texts = pickSuggestions(pools, now, CANDIDATE_COUNT);
+  const hashes = texts.map((text) => createContentHash(text, locale));
+  const verdicts = await getCachedVerdicts(hashes);
+
+  return texts.map((text, i) => {
+    const verdict = verdicts.get(hashes[i]);
+    const status: CandidateStatus = !verdict ? 'unchecked' : verdict === 'unclear' ? 'unclear' : 'clear';
+    return { text, status };
+  });
+}
+
+/**
+ * Every source's recent claims, one pool per source, cleaned and filtered to
+ * the ones a reader could paste and check. A source that cannot be read only
+ * leaves its pool empty.
+ */
+async function gatherPools(locale: ExamplesLocale, now: number): Promise<RecentClaim[][]> {
+  const live = Promise.all(PUBLISHERS[locale].map((site) => fetchNewestReviews(site, locale)));
+  if (locale !== 'ro') return live;
+
+  const ownIndex = recentFactChecks(OLDEST_DAYS)
+    .then((items) => usable(items.map((item) => ({ text: item.title, reviewDate: Date.parse(item.publishedAt) }))))
+    .catch(() => [] as RecentClaim[]);
+
+  const since = new Date(now - OLDEST_DAYS * DAY_MS).toISOString().slice(0, 10);
+  const archive = usable(
+    archivedFactChecksSince(since)
+      .filter((entry) => !ARCHIVE_SKIPPED_SITES.includes(entry.site))
+      .map((entry) => ({ text: entry.claim, reviewDate: Date.parse(entry.date) }))
+  );
+
+  return [await ownIndex, ...(await live), archive];
+}
+
+/** Claims cleaned up for a chip, keeping only the ones usable as one. */
+function usable(claims: RecentClaim[]): RecentClaim[] {
+  return claims
+    .map((claim) => ({
+      text: cleanClaim(claim.text),
+      reviewDate: Number.isNaN(claim.reviewDate) ? 0 : claim.reviewDate,
+    }))
+    .filter((claim) => isUsableClaim(claim.text));
+}
+
+/**
+ * Lines up to `count` claims from the sources' recent claims, in the order
+ * they should be shown.
  *
- * Only claims reviewed inside the freshness window are eligible, so nothing
- * stays on the homepage for months. Within the window the choice moves on by
- * a full row every day, and the publishers take turns, so one prolific
+ * Only claims reviewed inside the freshness windows are eligible, so nothing
+ * stays on the homepage for months; the last week comes first and the month
+ * only fills the places the week leaves. Within a window the order moves on by
+ * a full row every day, and the sources take turns, so one prolific
  * fact-checker does not fill every slot. Returns fewer than `count` when even
  * the widest window is short on material.
  */
 export function pickSuggestions(pools: RecentClaim[][], now: number, count: number = SUGGESTION_COUNT): string[] {
   const day = Math.floor(now / DAY_MS);
-  let best: string[] = [];
+  const chosen: string[] = [];
+  const seen = new Set<string>();
 
   for (const windowDays of FRESH_WINDOWS_DAYS) {
     const oldest = now - windowDays * DAY_MS;
     const fresh = pools.map((pool) =>
       rotate(
         pool.filter((claim) => claim.reviewDate >= oldest).sort((a, b) => b.reviewDate - a.reviewDate),
-        day * count
+        day * SUGGESTION_COUNT
       )
     );
 
-    const chosen: string[] = [];
-    const seen = new Set<string>();
     for (let turn = 0; chosen.length < count && fresh.some((pool) => turn < pool.length); turn++) {
       for (const pool of fresh) {
         const claim = pool[turn];
@@ -149,12 +239,9 @@ export function pickSuggestions(pools: RecentClaim[][], now: number, count: numb
         chosen.push(claim.text);
       }
     }
-
-    if (chosen.length === count) return chosen;
-    if (chosen.length > best.length) best = chosen;
   }
 
-  return best;
+  return chosen;
 }
 
 /** The list starting from `offset`, wrapping round — a different slice of it each day. */
@@ -222,7 +309,7 @@ function cleanClaim(raw: string): string {
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/^[\s.-]+/, '')
-    .replace(/^\p{Lu}+\s*\|\s*/u, '');
+    .replace(/^[\p{Lu} ]+\|\s*/u, '');
 }
 
 /**
@@ -245,12 +332,18 @@ const ELIDED_QUOTE = /[([](?:\.\.\.|…)[)\]]/;
  */
 const SPEAKERS_WORDS = /^["“„«]/;
 
+/**
+ * A headline that names a speaker and a subject but no claim ("Sorin Grindeanu
+ * despre partidele politice…"): there is nothing in it to be true or false.
+ */
+const TOPIC_ONLY = /^(?:\p{Lu}[\p{L}-]*\s){1,4}despre\s/u;
+
 /** A usable example is a plausible standalone sentence the reader could paste and check. */
 function isUsableClaim(text: string): boolean {
   if (text.length < 20 || text.length > 160) return false;
   if (/^https?:\/\//i.test(text)) return false;
   if (text.split(/\s+/).length < 4) return false;
-  if (SPEAKERS_WORDS.test(text) || ELIDED_QUOTE.test(text) || POINTS_AT_MEDIA.test(text)) return false;
+  if (SPEAKERS_WORDS.test(text) || TOPIC_ONLY.test(text) || ELIDED_QUOTE.test(text) || POINTS_AT_MEDIA.test(text)) return false;
   // Real claims read as sentences and start with a capital; a fragment lifted
   // out of a quote ("merele noastre…") starts lower-case — drop those.
   const firstLetter = text.match(/\p{L}/u)?.[0];

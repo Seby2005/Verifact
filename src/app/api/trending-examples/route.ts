@@ -4,7 +4,8 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Homepage claim suggestions — claims that fact-checkers (Factual.ro, AFP,
- * Snopes) reviewed in the last week, in the interface language.
+ * Veridica, Snopes…) reviewed recently, in the interface language, the ones
+ * already verified in advance first.
  */
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
@@ -17,10 +18,11 @@ export async function GET(request: Request): Promise<Response> {
     { examples },
     {
       headers: {
-        // The selection changes daily, so the edge may hold a copy for a few
-        // hours and serve a stale one for at most a day while it refetches —
-        // a week of stale-while-revalidate kept old suggestions on quiet days.
-        'Cache-Control': 'public, s-maxage=21600, stale-while-revalidate=86400',
+        // The selection changes daily and fills in as the hourly job verifies
+        // it, so the edge holds a copy for an hour and serves a stale one for
+        // at most a day while it refetches — a week of stale-while-revalidate
+        // kept old suggestions on quiet days.
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
       },
     }
   );

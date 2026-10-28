@@ -177,3 +177,16 @@ export function searchFactCheckArchive(query: string, limit: number = 6): Archiv
     };
   });
 }
+
+/**
+ * The archived fact-checks reviewed on or after `since` (YYYY-MM-DD), with
+ * the site that published each. The archive is rebuilt by hand, so this only
+ * reaches as far as its last rebuild.
+ */
+export function archivedFactChecksSince(since: string): Array<{ claim: string; site: string; date: string }> {
+  return ENTRIES.filter((entry) => entry[4] >= since).map(([claim, , publisherIndex, , date]) => ({
+    claim,
+    site: PUBLISHERS[publisherIndex].site,
+    date,
+  }));
+}

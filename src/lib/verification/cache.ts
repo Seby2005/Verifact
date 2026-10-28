@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { VerificationReport } from '@/types/verification';
+import type { VerificationReport, Verdict } from '@/types/verification';
 import { CACHE_TTL_DAYS } from './constants';
 import { logger } from '@/lib/utils/logger';
 
@@ -38,6 +38,32 @@ export async function getCached(hash: string): Promise<VerificationReport | null
   } catch {
     return null; // Cache failure is non-fatal
   }
+}
+
+/**
+ * The verdicts of whichever of these hashes have a live cache entry, without
+ * reading the reports or counting a hit. An empty map when the cache cannot
+ * be read: to the caller that is the same as nothing being cached yet.
+ */
+export async function getCachedVerdicts(hashes: string[]): Promise<Map<string, Verdict>> {
+  const verdicts = new Map<string, Verdict>();
+  if (hashes.length === 0) return verdicts;
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from('cached_results')
+      .select('content_hash, verdict:result_json->>verdict')
+      .in('content_hash', hashes)
+      .gt('expires_at', new Date().toISOString());
+    if (error || !data) return verdicts;
+
+    for (const row of data as unknown as Array<{ content_hash: string; verdict: Verdict | null }>) {
+      if (row.verdict) verdicts.set(row.content_hash, row.verdict);
+    }
+  } catch {
+    /* cache failure is non-fatal */
+  }
+  return verdicts;
 }
 
 /**

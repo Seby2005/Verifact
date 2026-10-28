@@ -1,0 +1,45 @@
+name: Homepage suggestions
+
+# Verifies the homepage claim suggestions ahead of the reader, so clicking one
+# opens a finished report (src/lib/examples/prepare.ts). Hourly from here
+# rather than vercel.json because Vercel's cron runs at most once a day on the
+# current plan, and one run only verifies a couple of claims per language.
+#
+# Needs the repository secret CRON_SECRET (same value as in Vercel). The site
+# address can be overridden with the repository variable APP_URL.
+
+on:
+  schedule:
+    # Off the hour on purpose: GitHub delays or drops runs queued at :00.
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: suggestions
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify the homepage suggestions
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # The www host on purpose: verifact.ro answers 308 to it, and curl
+          # neither follows a redirect nor carries the secret across hosts.
+          APP_URL: ${{ vars.APP_URL || 'https://www.verifact.ro' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::The CRON_SECRET repository secret is not set; skipping."
+            exit 0
+          fi
+          status=$(curl --silent --show-error --max-time 90 \
+            -o response.txt -w '%{http_code}' \
+            -X POST -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/cron/suggestions")
+          cat response.txt
+          if [ "$status" != "200" ]; then
+            echo "::error::The suggestions endpoint answered HTTP $status."
+            exit 1
+          fi

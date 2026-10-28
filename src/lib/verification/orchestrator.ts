@@ -411,8 +411,11 @@ export async function verifyContent(
     (l) => l.status === 'success' && l.results.length > 0
   ).length;
 
+  // Awaited, not fired and forgotten: a background caller (the homepage
+  // suggestions job) returns as soon as this does, and a serverless function
+  // may be frozen with the write still in flight. setCached never throws.
   if (!hasUnavailableLayer && layersWithData >= 2 && aiAvailable) {
-    void setCached(contentHash, report);
+    await setCached(contentHash, report);
   }
 
   return report;
